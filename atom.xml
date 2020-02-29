@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://epitomm.github.io</id>
     <title>Gridea</title>
-    <updated>2020-02-19T03:13:28.180Z</updated>
+    <updated>2020-02-29T01:54:46.075Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://epitomm.github.io"/>
     <link rel="self" href="https://epitomm.github.io/atom.xml"/>
@@ -17,18 +17,43 @@
         </link>
         <updated>2020-02-18T16:09:50.000Z</updated>
         <content type="html"><![CDATA[<h1 id="问题一">问题一</h1>
+<h3 id="我的环境">我的环境</h3>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>操作系统</td>
+<td>Windows10</td>
+</tr>
+<tr>
+<td>软件版本</td>
+<td>0.9.1</td>
+</tr>
+<tr>
+<td>主题名称</td>
+<td>Notes</td>
+</tr>
+</tbody>
+</table>
 <h2 id="问题描述">问题描述</h2>
 <p>根据教程设置好一系列信息，经测试域名可访问，并且确保其他信息均正确</p>
 <p>检查远程连接错误：<strong>远程连接失败,请检查仓库、用户名和 token 设置</strong></p>
 <h2 id="问题分析">问题分析</h2>
 <ol>
-<li>先查看 C:\Users\Only\Documents\Gridea\output.git 目录下的 config 文件，看是否有 [remote &quot;origin&quot;] 信息，如果没有自行添加</li>
+<li>先查看 <code>gridea</code> 文件存储目录：C:\Users\Only\Documents\Gridea\output.git 下的 config 文件，看是否有 [remote &quot;origin&quot;] 信息，如果没有自行添加</li>
 </ol>
 <pre><code>[remote &quot;origin&quot;]
 	url = https://你的github用户名:Token@github.com/你的github用户/仓库名
 	fetch = +refs/heads/*:refs/remotes/origin/*
 </code></pre>
-<ol start="2">
+<p>附：查看<code>gridea</code>文件存储目录<br>
+<img src="https://epitomm.github.io/post-images/1582604204611.png" alt="" loading="lazy"></p>
+<ol>
 <li>检查错误信息：<br>
 <img src="https://epitomm.github.io/post-images/1582041933549.png" alt="" loading="lazy"></li>
 </ol>
@@ -40,8 +65,8 @@
 <li>谷歌 433 错误，得知是<strong>没有设置代理服务器</strong>的原因。</li>
 </ol>
 <p>以下为网上一高赞解决方式，可自行尝试，（不过对我的问题无效果）</p>
-<figure data-type="image" tabindex="1"><img src="https://uploader.shimo.im/f/h6D7P0bwAwE4UAsN.png!thumbnail" alt="图片" loading="lazy"></figure>
-<ol start="2">
+<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/1582604339501.png" alt="" loading="lazy"></figure>
+<ol>
 <li>再次谷歌 git 如何设置代理服务器</li>
 </ol>
 <pre><code>git config --global http.proxy 'socks5://127.0.0.1:1080'
@@ -54,9 +79,32 @@ git config --global https.proxy 'socks5://127.0.0.1:1080'
 </ol>
 <p>接下来同步查看效果完成后就可以开启开心的写作之旅啦~</p>
 <h1 id="问题二">问题二</h1>
+<h3 id="我的环境-2">我的环境</h3>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>操作系统</td>
+<td>Windows10</td>
+</tr>
+<tr>
+<td>软件版本</td>
+<td>0.9.2</td>
+</tr>
+<tr>
+<td>主题名称</td>
+<td>Notes</td>
+</tr>
+</tbody>
+</table>
 <h2 id="问题描述-2">问题描述</h2>
 <p>版本更新到 0.9.2 后重新安装了 gridea ，再次检测远程连接失败</p>
-<figure data-type="image" tabindex="2"><img src="https://uploader.shimo.im/f/uY521NPCTwAnCa4Z.png!thumbnail" alt="图片" loading="lazy"></figure>
+<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/1582604400732.png" alt="" loading="lazy"></figure>
 <p>错误信息</p>
 <pre><code>connect ETIMEDOUT 140.82.114.4:443
 </code></pre>
