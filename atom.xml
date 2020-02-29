@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://epitomm.github.io</id>
     <title>Gridea</title>
-    <updated>2020-02-29T01:54:46.075Z</updated>
+    <updated>2020-02-29T01:58:28.921Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://epitomm.github.io"/>
     <link rel="self" href="https://epitomm.github.io/atom.xml"/>
@@ -53,7 +53,7 @@
 </code></pre>
 <p>附：查看<code>gridea</code>文件存储目录<br>
 <img src="https://epitomm.github.io/post-images/1582604204611.png" alt="" loading="lazy"></p>
-<ol>
+<ol start="2">
 <li>检查错误信息：<br>
 <img src="https://epitomm.github.io/post-images/1582041933549.png" alt="" loading="lazy"></li>
 </ol>
@@ -66,7 +66,7 @@
 </ol>
 <p>以下为网上一高赞解决方式，可自行尝试，（不过对我的问题无效果）</p>
 <figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/1582604339501.png" alt="" loading="lazy"></figure>
-<ol>
+<ol start="2">
 <li>再次谷歌 git 如何设置代理服务器</li>
 </ol>
 <pre><code>git config --global http.proxy 'socks5://127.0.0.1:1080'
