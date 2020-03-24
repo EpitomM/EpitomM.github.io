@@ -1,0 +1,424 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>面试题系列 —— Java 集合 | SSM</title>
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1585051507273">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="面试题系列 —— Java 集合 | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="1. 说一说 List、Set、Map 三者的区别
+
+List 是存储有序的集合
+Set 集合元素不可重复
+Map 是存储键值对的集合
+
+2. ArrayList 与 LinkedList 的区别
+
+底层存储数据结构：
+
+
+ArrayLis..." />
+    <meta name="keywords" content="" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://epitomm.github.io">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1585051507273" alt="">
+  </a>
+  <h1 class="site-title">
+    SSM
+  </h1>
+  <p class="site-description">
+    热心善良的老学姐
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              面试题系列 —— Java 集合
+            </h2>
+            <div class="post-info">
+              <span>
+                2020-03-24
+              </span>
+              <span>
+                9 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <h1 id="1-说一说-list-set-map-三者的区别">1. 说一说 List、Set、Map 三者的区别</h1>
+<ul>
+<li>List 是存储有序的集合</li>
+<li>Set 集合元素不可重复</li>
+<li>Map 是存储键值对的集合</li>
+</ul>
+<h1 id="2-arraylist-与-linkedlist-的区别">2. ArrayList 与 LinkedList 的区别</h1>
+<ol>
+<li>底层存储数据结构：</li>
+</ol>
+<ul>
+<li>ArrayList 初始容量时 10，底层是 Object 数组，所以具有数组的特性，可随机访问，并且实现了RandomAccess 接口标识支持随机访问。</li>
+<li>LinkedList 底层是双向链表，所以具有双向链表的特性，增删速度快，但每个节点都有维护前后两个指针，占用存储空间较大。</li>
+</ul>
+<ol start="2">
+<li>增删查效率：</li>
+</ol>
+<ul>
+<li>ArrayList 如果添加到末尾，时间复杂度 O(1)；如果添加中间到指定 i 位置，需要把 i ~ n 位置的元素统一向后移动，时间复杂度 O(n-i)。如果按下标查找，时间复杂度O(1)</li>
+<li>LinkedList 如果添加末尾，时间复杂度 O(1)，如果插入到中间第 i 个位置，需要先查找到到 i 个位置的元素，查找效率 O(n)，然后执行添加操作，修改指针指向，复杂度 O(1)。如果按下标查找，需要判断下标是否大于当前 size/2 ，如果大于则从末尾向中间查找；否则从头向中间查找，时间复杂度 O(n)</li>
+</ul>
+<h1 id="3-arraylist-扩容机制">3. ArrayList 扩容机制</h1>
+<pre><code>private void grow(int minCapacity) {
+    // overflow-conscious code
+    int oldCapacity = elementData.length;
+    int newCapacity = oldCapacity + (oldCapacity &gt;&gt; 1);
+    if (newCapacity - minCapacity &lt; 0)
+        newCapacity = minCapacity;
+    if (newCapacity - MAX_ARRAY_SIZE &gt; 0)
+        newCapacity = hugeCapacity(minCapacity);
+    // minCapacity is usually close to size, so this is a win:
+    elementData = Arrays.copyOf(elementData, newCapacity);
+}
+</code></pre>
+<blockquote>
+<p>上述代码基于 JDK1.8</p>
+</blockquote>
+<h1 id="4-arraylist-和-vector-的区别">4. ArrayList 和 Vector 的区别</h1>
+<p>线程安全</p>
+<ul>
+<li>ArrayLis 线程不安全</li>
+<li>Vector 方法都使用 synchronized 修饰，所以线程安全，同时效率也低。正因为 Vector 效率低，所以一般不会使用，如果想实现同步，可以使用 Collections.synchronizedList(new ArrayList&lt;&gt;());</li>
+</ul>
+<p>扩容机制：</p>
+<ul>
+<li>ArrayList 扩容后的容量为原来的 1.5 倍</li>
+<li>Vector 扩容后的容量 是原来的 2 倍</li>
+</ul>
+<h1 id="5-hashmap-和-hashtable的区别">5. HashMap 和 Hashtable的区别</h1>
+<p>线程安全：</p>
+<ul>
+<li>HashMap 线程不安全</li>
+<li>Hashtable 的方法使用 synchronized 修饰，所以线程安全，也是正因为用 synchronized 修饰，所以效率较低。</li>
+</ul>
+<p>初始大小扩容机制：</p>
+<ul>
+<li>HashMap 的默认初始容量为 16（2 &lt;&lt; 4）；如果指定了初始容量，会把它扩充为 2 的幂次。扩容后容量为原来的 2n</li>
+<li>Hashtable 默认初始容量时 11，如果指定初始容量，使用初始容量。扩容后容量为原来的 2n+1</li>
+</ul>
+<p>是否允许 null 键值</p>
+<ul>
+<li>HashMap 允许 null 键值</li>
+<li>Hashtable 不允许 null 键值</li>
+</ul>
+<h1 id="6-hashmap-的-put-方法的具体流程">6. HashMap 的 put 方法的具体流程</h1>
+<pre><code>public V put(K key, V value) {
+    return putVal(hash(key), key, value, false, true);
+}
+
+final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
+               boolean evict) {
+    Node&lt;K,V&gt;[] tab; Node&lt;K,V&gt; p; int n, i;
+    if ((tab = table) == null || (n = tab.length) == 0)
+        n = (tab = resize()).length;
+    if ((p = tab[i = (n - 1) &amp; hash]) == null)
+        tab[i] = newNode(hash, key, value, null);
+    else {
+        Node&lt;K,V&gt; e; K k;
+        if (p.hash == hash &amp;&amp;
+            ((k = p.key) == key || (key != null &amp;&amp; key.equals(k))))
+            e = p;
+        else if (p instanceof TreeNode)
+            e = ((TreeNode&lt;K,V&gt;)p).putTreeVal(this, tab, hash, key, value);
+        else {
+            for (int binCount = 0; ; ++binCount) {
+                if ((e = p.next) == null) {
+                    p.next = newNode(hash, key, value, null);
+                    if (binCount &gt;= TREEIFY_THRESHOLD - 1) // -1 for 1st
+                        treeifyBin(tab, hash);
+                    break;
+                }
+                if (e.hash == hash &amp;&amp;
+                    ((k = e.key) == key || (key != null &amp;&amp; key.equals(k))))
+                    break;
+                p = e;
+            }
+        }
+        if (e != null) { // existing mapping for key
+            V oldValue = e.value;
+            if (!onlyIfAbsent || oldValue == null)
+                e.value = value;
+            afterNodeAccess(e);
+            return oldValue;
+        }
+    }
+    ++modCount;
+    if (++size &gt; threshold)
+        resize();
+    afterNodeInsertion(evict);
+    return null;
+}
+</code></pre>
+<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/put.png" alt="图片" loading="lazy"></figure>
+<ol>
+<li>如果散列表为 null，resize() 初始化散列表</li>
+<li>没有发生碰撞，直接添加元素到散列表中</li>
+<li>如果发生碰撞，判断时红黑树还是链表，然后调用相应的插入方法</li>
+<li>HashMap 的 resize() 扩容方法</li>
+</ol>
+<h1 id="7-hashmap-的-resize-扩容方法">7. HashMap 的 resize() 扩容方法</h1>
+<p>如果当前容量 &gt; 阈值（容量 * 装填因子），则扩容</p>
+<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/resize.png" alt="图片" loading="lazy"></figure>
+<h1 id="8-hashmap-容量为什么是-2-的幂次">8. HashMap 容量为什么是 2 的幂次</h1>
+<p>减少 hash 冲突，因为要用 hash &amp; (n-1) 确定元素存在数组中的下标位置，如果 n 是 2 的幂（1000），那么 n-1 得到的结果就全为 1 （10000 - 1 = 1111），这样 (n-1) &amp; hash 的值就是 hash。如果 n-1 中有某位为 0，那么 0 与任何数 &amp; 结果都为0，增加了hash 冲突的概率。</p>
+<h1 id="9-hashmap-17-18-对比">9. HashMap 1.7 1.8 对比</h1>
+<ul>
+<li>JDK 1.7</li>
+</ul>
+<p>数据结构：数组+链表</p>
+<p>JDK 1.7 hash 方法：9 次扰动（4 次位运算，5 次异或运算）</p>
+<pre><code>static int hash(int h) {
+    // This function ensures that hashCodes that differ only by
+    // constant multiples at each bit position have a bounded
+    // number of collisions (approximately 8 at default load factor).
+    h ^= (h &gt;&gt;&gt; 20) ^ (h &gt;&gt;&gt; 12);
+    return h ^ (h &gt;&gt;&gt; 7) ^ (h &gt;&gt;&gt; 4);
+}
+</code></pre>
+<ul>
+<li>JDK 1.8</li>
+</ul>
+<p>数据结构：数组 + 链表 + 红黑树</p>
+<p>JDK 1.8 hash 方法：2 次扰动（1 次位运算，1 次异或运算）</p>
+<pre><code>static final int hash(Object key) {
+    int h;
+    // key.hashCode()：返回散列值也就是hashcode
+    // ^ ：按位异或
+    // &gt;&gt;&gt;:⽆符号右移，忽略符号位，空位都以0补⻬
+    return (key == null) ? 0 : (h = key.hashCode()) ^ (h &gt;&gt;&gt; 16);
+}
+</code></pre>
+<p>贴一张比较详细的图：<br>
+<img src="https://epitomm.github.io/post-images/hashmap.png" alt="图片" loading="lazy"></p>
+<p>图片来源；<a href="https://mp.weixin.qq.com/s?__biz=MzI4Njg5MDA5NA==&amp;mid=2247485685&amp;idx=2&amp;sn=b393e444487c88e8c204821faddff370&amp;chksm=ebd749f4dca0c0e257e15c656f4504f224456495ad78e8aeb9ea370214ebd4b5c455b15e6045&amp;token=1948873548&amp;lang=zh_CN#rd">https://mp.weixin.qq.com/s?__biz=MzI4Njg5MDA5NA==&amp;mid=2247485685&amp;idx=2&amp;sn=b393e444487c88e8c204821faddff370&amp;chksm=ebd749f4dca0c0e257e15c656f4504f224456495ad78e8aeb9ea370214ebd4b5c455b15e6045&amp;token=1948873548&amp;lang=zh_CN#rd</a></p>
+<h1 id="10-hashmap-是怎么解决哈希冲突的">10. HashMap 是怎么解决哈希冲突的</h1>
+<p>什么是哈希冲突：两个不同的输入值，根据同一散列函数，计算出相同的散列值。</p>
+<ul>
+<li>使用<strong>拉链法</strong>来链接具有相同 hash 值的数据</li>
+<li>使用<strong>两次扰动函数</strong>（hash 函数）来降低哈希冲突的概率，使得<strong>数据分布更均匀</strong></li>
+<li>引入<strong>红黑树</strong>降低查找的时间复杂度</li>
+</ul>
+<h1 id="11-hashmap-17-18多线程操作导致死循环问题">11. HashMap 1.7 1.8多线程操作导致死循环问题</h1>
+<p>参考链接：<a href="https://coolshell.cn/articles/9606.html">https://coolshell.cn/articles/9606.html</a></p>
+<h1 id="12-hashmap-的-key-值要是为类对象则该类需要满足什么条件">12. HashMap 的 key 值要是为类对象则该类需要满⾜什么条件？</h1>
+<p><strong>重写 hashCode() 和 equals() 方法。</strong></p>
+<p>Hashmap 中放入相同的 key，会覆盖 value 值，而不是重新添加一个 key-value 对，这就要求我们判断 key 是否相同。</p>
+<p>以下为 HashMap 的 final V putVal(int hash, K key, V value, boolean onlyIfAbsent, boolean evict) 方法：</p>
+<pre><code>if (p.hash == hash &amp;&amp;
+    ((k = p.key) == key || (key != null &amp;&amp; key.equals(k))))
+</code></pre>
+<p>从源码得知判断分为三个步骤：①判断 key 的 hash 值是否相同，这就要求我们重写 hashCode() 方法；② 通过 == 判断 key 对象引用是否相等；③ 使用 equals() 判断对象是否相等，这就要求我们重写 equals() 方法。</p>
+<h1 id="13-concurrenthashmap-的底层实现方式">13. ConcurrentHashMap 的底层实现方式</h1>
+<p>JDK 1.7</p>
+<ul>
+<li>数据结构：分段数组（Segment 继承了 ReentrantLock，每个段都有一个锁） + 链表（HashEntry）</li>
+<li>线程安全：对整个桶数组进行了分割分段，每把锁只锁住一段，多线程访问其他段的数据时不会产生冲突。</li>
+</ul>
+<p>JDK 1.8</p>
+<ul>
+<li>数据结构：数组 + 链表 + 红黑树</li>
+<li>线程安全：部分锁定 + CAS。synchronized 只锁定当前链表或红黑二叉树的首节点，这样只要 hash 不冲突，就不会产生并发。</li>
+</ul>
+<h1 id="14-concurrenthashmap-和-hashtable-的区别">14. ConcurrentHashMap 和 Hashtable 的区别</h1>
+<p>Hashtable 数据结构：数组 + 链表</p>
+<p>Hashtable 实现线程安全：会锁住整个数组，某个线程在进行 put 操作时，其他线程只能阻塞。</p>
+<h1 id="15-如何选用集合">15. 如何选用集合</h1>
+<ul>
+<li>如果存储键值对，选 Map 接口下的集合
+<ul>
+<li>如果需要排序，选择 TreeMap</li>
+<li>如果不需要排序，优先选择 HashMap</li>
+<li>如果需要线程安全，选择 ConcurrentHashMap</li>
+</ul>
+</li>
+<li>只需要存放元素值时，选择 Collection 接口下的集合
+<ul>
+<li>如果需要顺序放取，选择 ArrayList</li>
+<li>如果需要频繁增删，选择 LinkedList</li>
+<li>如果需要元素不重复且排序，选择 TreeSet</li>
+<li>如果需要元素不重复但无需排序，优先选择 HashSet</li>
+</ul>
+</li>
+</ul>
+<p>参考链接：</p>
+<p><a href="https://github.com/ZhongFuCheng3y/3y">https://github.com/ZhongFuCheng3y/3y</a></p>
+<p><a href="https://github.com/Snailclimb/JavaGuide">https://github.com/Snailclimb/JavaGuide</a></p>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li><a href="#1-%E8%AF%B4%E4%B8%80%E8%AF%B4-list-set-map-%E4%B8%89%E8%80%85%E7%9A%84%E5%8C%BA%E5%88%AB">1. 说一说 List、Set、Map 三者的区别</a></li>
+<li><a href="#2-arraylist-%E4%B8%8E-linkedlist-%E7%9A%84%E5%8C%BA%E5%88%AB">2. ArrayList 与 LinkedList 的区别</a></li>
+<li><a href="#3-arraylist-%E6%89%A9%E5%AE%B9%E6%9C%BA%E5%88%B6">3. ArrayList 扩容机制</a></li>
+<li><a href="#4-arraylist-%E5%92%8C-vector-%E7%9A%84%E5%8C%BA%E5%88%AB">4. ArrayList 和 Vector 的区别</a></li>
+<li><a href="#5-hashmap-%E5%92%8C-hashtable%E7%9A%84%E5%8C%BA%E5%88%AB">5. HashMap 和 Hashtable的区别</a></li>
+<li><a href="#6-hashmap-%E7%9A%84-put-%E6%96%B9%E6%B3%95%E7%9A%84%E5%85%B7%E4%BD%93%E6%B5%81%E7%A8%8B">6. HashMap 的 put 方法的具体流程</a></li>
+<li><a href="#7-hashmap-%E7%9A%84-resize-%E6%89%A9%E5%AE%B9%E6%96%B9%E6%B3%95">7. HashMap 的 resize() 扩容方法</a></li>
+<li><a href="#8-hashmap-%E5%AE%B9%E9%87%8F%E4%B8%BA%E4%BB%80%E4%B9%88%E6%98%AF-2-%E7%9A%84%E5%B9%82%E6%AC%A1">8. HashMap 容量为什么是 2 的幂次</a></li>
+<li><a href="#9-hashmap-17-18-%E5%AF%B9%E6%AF%94">9. HashMap 1.7 1.8 对比</a></li>
+<li><a href="#10-hashmap-%E6%98%AF%E6%80%8E%E4%B9%88%E8%A7%A3%E5%86%B3%E5%93%88%E5%B8%8C%E5%86%B2%E7%AA%81%E7%9A%84">10. HashMap 是怎么解决哈希冲突的</a></li>
+<li><a href="#11-hashmap-17-18%E5%A4%9A%E7%BA%BF%E7%A8%8B%E6%93%8D%E4%BD%9C%E5%AF%BC%E8%87%B4%E6%AD%BB%E5%BE%AA%E7%8E%AF%E9%97%AE%E9%A2%98">11. HashMap 1.7 1.8多线程操作导致死循环问题</a></li>
+<li><a href="#12-hashmap-%E7%9A%84-key-%E5%80%BC%E8%A6%81%E6%98%AF%E4%B8%BA%E7%B1%BB%E5%AF%B9%E8%B1%A1%E5%88%99%E8%AF%A5%E7%B1%BB%E9%9C%80%E8%A6%81%E6%BB%A1%E8%B6%B3%E4%BB%80%E4%B9%88%E6%9D%A1%E4%BB%B6">12. HashMap 的 key 值要是为类对象则该类需要满⾜什么条件？</a></li>
+<li><a href="#13-concurrenthashmap-%E7%9A%84%E5%BA%95%E5%B1%82%E5%AE%9E%E7%8E%B0%E6%96%B9%E5%BC%8F">13. ConcurrentHashMap 的底层实现方式</a></li>
+<li><a href="#14-concurrenthashmap-%E5%92%8C-hashtable-%E7%9A%84%E5%8C%BA%E5%88%AB">14. ConcurrentHashMap 和 Hashtable 的区别</a></li>
+<li><a href="#15-%E5%A6%82%E4%BD%95%E9%80%89%E7%94%A8%E9%9B%86%E5%90%88">15. 如何选用集合</a></li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://epitomm.github.io/post/zookeeper-mian-shi-ti/">
+              <h3 class="post-title">
+                面试题系列 —— Zookeeper
+              </h3>
+            </a>
+          </div>
+        
+
+        
+          
+            <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+<script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+
+<div id="gitalk-container"></div>
+
+<script>
+
+  var gitalk = new Gitalk({
+    clientID: '974bd77fbbd52c2a0647',
+    clientSecret: '6344370ca1314dbd553f45e75a2121a160ef1c44',
+    repo: 'EpitomM.github.io',
+    owner: 'EpitomM',
+    admin: ['EpitomM'],
+    id: (location.pathname).substring(0, 49),      // Ensure uniqueness and length less than 50
+    distractionFreeMode: false  // Facebook-like distraction free mode
+  })
+
+  gitalk.render('gitalk-container')
+
+</script>
+
+          
+
+          
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/EpitomM/EpitomM.github.io" target="_blank">EpitomM</a>
+  <a class="rss" href="https://epitomm.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

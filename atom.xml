@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://epitomm.github.io</id>
     <title>SSM</title>
-    <updated>2020-03-15T11:10:44.874Z</updated>
+    <updated>2020-03-24T12:05:13.188Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://epitomm.github.io"/>
     <link rel="self" href="https://epitomm.github.io/atom.xml"/>
@@ -10,6 +10,220 @@
     <logo>https://epitomm.github.io/images/avatar.png</logo>
     <icon>https://epitomm.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, SSM</rights>
+    <entry>
+        <title type="html"><![CDATA[面试题系列 —— Java 集合]]></title>
+        <id>https://epitomm.github.io/post/mian-shi-ti-xi-lie-java-ji-he/</id>
+        <link href="https://epitomm.github.io/post/mian-shi-ti-xi-lie-java-ji-he/">
+        </link>
+        <updated>2020-03-24T11:57:19.000Z</updated>
+        <content type="html"><![CDATA[<h1 id="1-说一说-list-set-map-三者的区别">1. 说一说 List、Set、Map 三者的区别</h1>
+<ul>
+<li>List 是存储有序的集合</li>
+<li>Set 集合元素不可重复</li>
+<li>Map 是存储键值对的集合</li>
+</ul>
+<h1 id="2-arraylist-与-linkedlist-的区别">2. ArrayList 与 LinkedList 的区别</h1>
+<ol>
+<li>底层存储数据结构：</li>
+</ol>
+<ul>
+<li>ArrayList 初始容量时 10，底层是 Object 数组，所以具有数组的特性，可随机访问，并且实现了RandomAccess 接口标识支持随机访问。</li>
+<li>LinkedList 底层是双向链表，所以具有双向链表的特性，增删速度快，但每个节点都有维护前后两个指针，占用存储空间较大。</li>
+</ul>
+<ol start="2">
+<li>增删查效率：</li>
+</ol>
+<ul>
+<li>ArrayList 如果添加到末尾，时间复杂度 O(1)；如果添加中间到指定 i 位置，需要把 i ~ n 位置的元素统一向后移动，时间复杂度 O(n-i)。如果按下标查找，时间复杂度O(1)</li>
+<li>LinkedList 如果添加末尾，时间复杂度 O(1)，如果插入到中间第 i 个位置，需要先查找到到 i 个位置的元素，查找效率 O(n)，然后执行添加操作，修改指针指向，复杂度 O(1)。如果按下标查找，需要判断下标是否大于当前 size/2 ，如果大于则从末尾向中间查找；否则从头向中间查找，时间复杂度 O(n)</li>
+</ul>
+<h1 id="3-arraylist-扩容机制">3. ArrayList 扩容机制</h1>
+<pre><code>private void grow(int minCapacity) {
+    // overflow-conscious code
+    int oldCapacity = elementData.length;
+    int newCapacity = oldCapacity + (oldCapacity &gt;&gt; 1);
+    if (newCapacity - minCapacity &lt; 0)
+        newCapacity = minCapacity;
+    if (newCapacity - MAX_ARRAY_SIZE &gt; 0)
+        newCapacity = hugeCapacity(minCapacity);
+    // minCapacity is usually close to size, so this is a win:
+    elementData = Arrays.copyOf(elementData, newCapacity);
+}
+</code></pre>
+<blockquote>
+<p>上述代码基于 JDK1.8</p>
+</blockquote>
+<h1 id="4-arraylist-和-vector-的区别">4. ArrayList 和 Vector 的区别</h1>
+<p>线程安全</p>
+<ul>
+<li>ArrayLis 线程不安全</li>
+<li>Vector 方法都使用 synchronized 修饰，所以线程安全，同时效率也低。正因为 Vector 效率低，所以一般不会使用，如果想实现同步，可以使用 Collections.synchronizedList(new ArrayList&lt;&gt;());</li>
+</ul>
+<p>扩容机制：</p>
+<ul>
+<li>ArrayList 扩容后的容量为原来的 1.5 倍</li>
+<li>Vector 扩容后的容量 是原来的 2 倍</li>
+</ul>
+<h1 id="5-hashmap-和-hashtable的区别">5. HashMap 和 Hashtable的区别</h1>
+<p>线程安全：</p>
+<ul>
+<li>HashMap 线程不安全</li>
+<li>Hashtable 的方法使用 synchronized 修饰，所以线程安全，也是正因为用 synchronized 修饰，所以效率较低。</li>
+</ul>
+<p>初始大小扩容机制：</p>
+<ul>
+<li>HashMap 的默认初始容量为 16（2 &lt;&lt; 4）；如果指定了初始容量，会把它扩充为 2 的幂次。扩容后容量为原来的 2n</li>
+<li>Hashtable 默认初始容量时 11，如果指定初始容量，使用初始容量。扩容后容量为原来的 2n+1</li>
+</ul>
+<p>是否允许 null 键值</p>
+<ul>
+<li>HashMap 允许 null 键值</li>
+<li>Hashtable 不允许 null 键值</li>
+</ul>
+<h1 id="6-hashmap-的-put-方法的具体流程">6. HashMap 的 put 方法的具体流程</h1>
+<pre><code>public V put(K key, V value) {
+    return putVal(hash(key), key, value, false, true);
+}
+
+final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
+               boolean evict) {
+    Node&lt;K,V&gt;[] tab; Node&lt;K,V&gt; p; int n, i;
+    if ((tab = table) == null || (n = tab.length) == 0)
+        n = (tab = resize()).length;
+    if ((p = tab[i = (n - 1) &amp; hash]) == null)
+        tab[i] = newNode(hash, key, value, null);
+    else {
+        Node&lt;K,V&gt; e; K k;
+        if (p.hash == hash &amp;&amp;
+            ((k = p.key) == key || (key != null &amp;&amp; key.equals(k))))
+            e = p;
+        else if (p instanceof TreeNode)
+            e = ((TreeNode&lt;K,V&gt;)p).putTreeVal(this, tab, hash, key, value);
+        else {
+            for (int binCount = 0; ; ++binCount) {
+                if ((e = p.next) == null) {
+                    p.next = newNode(hash, key, value, null);
+                    if (binCount &gt;= TREEIFY_THRESHOLD - 1) // -1 for 1st
+                        treeifyBin(tab, hash);
+                    break;
+                }
+                if (e.hash == hash &amp;&amp;
+                    ((k = e.key) == key || (key != null &amp;&amp; key.equals(k))))
+                    break;
+                p = e;
+            }
+        }
+        if (e != null) { // existing mapping for key
+            V oldValue = e.value;
+            if (!onlyIfAbsent || oldValue == null)
+                e.value = value;
+            afterNodeAccess(e);
+            return oldValue;
+        }
+    }
+    ++modCount;
+    if (++size &gt; threshold)
+        resize();
+    afterNodeInsertion(evict);
+    return null;
+}
+</code></pre>
+<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/put.png" alt="图片" loading="lazy"></figure>
+<ol>
+<li>如果散列表为 null，resize() 初始化散列表</li>
+<li>没有发生碰撞，直接添加元素到散列表中</li>
+<li>如果发生碰撞，判断时红黑树还是链表，然后调用相应的插入方法</li>
+<li>HashMap 的 resize() 扩容方法</li>
+</ol>
+<h1 id="7-hashmap-的-resize-扩容方法">7. HashMap 的 resize() 扩容方法</h1>
+<p>如果当前容量 &gt; 阈值（容量 * 装填因子），则扩容</p>
+<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/resize.png" alt="图片" loading="lazy"></figure>
+<h1 id="8-hashmap-容量为什么是-2-的幂次">8. HashMap 容量为什么是 2 的幂次</h1>
+<p>减少 hash 冲突，因为要用 hash &amp; (n-1) 确定元素存在数组中的下标位置，如果 n 是 2 的幂（1000），那么 n-1 得到的结果就全为 1 （10000 - 1 = 1111），这样 (n-1) &amp; hash 的值就是 hash。如果 n-1 中有某位为 0，那么 0 与任何数 &amp; 结果都为0，增加了hash 冲突的概率。</p>
+<h1 id="9-hashmap-17-18-对比">9. HashMap 1.7 1.8 对比</h1>
+<ul>
+<li>JDK 1.7</li>
+</ul>
+<p>数据结构：数组+链表</p>
+<p>JDK 1.7 hash 方法：9 次扰动（4 次位运算，5 次异或运算）</p>
+<pre><code>static int hash(int h) {
+    // This function ensures that hashCodes that differ only by
+    // constant multiples at each bit position have a bounded
+    // number of collisions (approximately 8 at default load factor).
+    h ^= (h &gt;&gt;&gt; 20) ^ (h &gt;&gt;&gt; 12);
+    return h ^ (h &gt;&gt;&gt; 7) ^ (h &gt;&gt;&gt; 4);
+}
+</code></pre>
+<ul>
+<li>JDK 1.8</li>
+</ul>
+<p>数据结构：数组 + 链表 + 红黑树</p>
+<p>JDK 1.8 hash 方法：2 次扰动（1 次位运算，1 次异或运算）</p>
+<pre><code>static final int hash(Object key) {
+    int h;
+    // key.hashCode()：返回散列值也就是hashcode
+    // ^ ：按位异或
+    // &gt;&gt;&gt;:⽆符号右移，忽略符号位，空位都以0补⻬
+    return (key == null) ? 0 : (h = key.hashCode()) ^ (h &gt;&gt;&gt; 16);
+}
+</code></pre>
+<p>贴一张比较详细的图：<br>
+<img src="https://epitomm.github.io/post-images/hashmap.png" alt="图片" loading="lazy"></p>
+<p>图片来源；<a href="https://mp.weixin.qq.com/s?__biz=MzI4Njg5MDA5NA==&amp;mid=2247485685&amp;idx=2&amp;sn=b393e444487c88e8c204821faddff370&amp;chksm=ebd749f4dca0c0e257e15c656f4504f224456495ad78e8aeb9ea370214ebd4b5c455b15e6045&amp;token=1948873548&amp;lang=zh_CN#rd">https://mp.weixin.qq.com/s?__biz=MzI4Njg5MDA5NA==&amp;mid=2247485685&amp;idx=2&amp;sn=b393e444487c88e8c204821faddff370&amp;chksm=ebd749f4dca0c0e257e15c656f4504f224456495ad78e8aeb9ea370214ebd4b5c455b15e6045&amp;token=1948873548&amp;lang=zh_CN#rd</a></p>
+<h1 id="10-hashmap-是怎么解决哈希冲突的">10. HashMap 是怎么解决哈希冲突的</h1>
+<p>什么是哈希冲突：两个不同的输入值，根据同一散列函数，计算出相同的散列值。</p>
+<ul>
+<li>使用<strong>拉链法</strong>来链接具有相同 hash 值的数据</li>
+<li>使用<strong>两次扰动函数</strong>（hash 函数）来降低哈希冲突的概率，使得<strong>数据分布更均匀</strong></li>
+<li>引入<strong>红黑树</strong>降低查找的时间复杂度</li>
+</ul>
+<h1 id="11-hashmap-17-18多线程操作导致死循环问题">11. HashMap 1.7 1.8多线程操作导致死循环问题</h1>
+<p>参考链接：<a href="https://coolshell.cn/articles/9606.html">https://coolshell.cn/articles/9606.html</a></p>
+<h1 id="12-hashmap-的-key-值要是为类对象则该类需要满足什么条件">12. HashMap 的 key 值要是为类对象则该类需要满⾜什么条件？</h1>
+<p><strong>重写 hashCode() 和 equals() 方法。</strong></p>
+<p>Hashmap 中放入相同的 key，会覆盖 value 值，而不是重新添加一个 key-value 对，这就要求我们判断 key 是否相同。</p>
+<p>以下为 HashMap 的 final V putVal(int hash, K key, V value, boolean onlyIfAbsent, boolean evict) 方法：</p>
+<pre><code>if (p.hash == hash &amp;&amp;
+    ((k = p.key) == key || (key != null &amp;&amp; key.equals(k))))
+</code></pre>
+<p>从源码得知判断分为三个步骤：①判断 key 的 hash 值是否相同，这就要求我们重写 hashCode() 方法；② 通过 == 判断 key 对象引用是否相等；③ 使用 equals() 判断对象是否相等，这就要求我们重写 equals() 方法。</p>
+<h1 id="13-concurrenthashmap-的底层实现方式">13. ConcurrentHashMap 的底层实现方式</h1>
+<p>JDK 1.7</p>
+<ul>
+<li>数据结构：分段数组（Segment 继承了 ReentrantLock，每个段都有一个锁） + 链表（HashEntry）</li>
+<li>线程安全：对整个桶数组进行了分割分段，每把锁只锁住一段，多线程访问其他段的数据时不会产生冲突。</li>
+</ul>
+<p>JDK 1.8</p>
+<ul>
+<li>数据结构：数组 + 链表 + 红黑树</li>
+<li>线程安全：部分锁定 + CAS。synchronized 只锁定当前链表或红黑二叉树的首节点，这样只要 hash 不冲突，就不会产生并发。</li>
+</ul>
+<h1 id="14-concurrenthashmap-和-hashtable-的区别">14. ConcurrentHashMap 和 Hashtable 的区别</h1>
+<p>Hashtable 数据结构：数组 + 链表</p>
+<p>Hashtable 实现线程安全：会锁住整个数组，某个线程在进行 put 操作时，其他线程只能阻塞。</p>
+<h1 id="15-如何选用集合">15. 如何选用集合</h1>
+<ul>
+<li>如果存储键值对，选 Map 接口下的集合
+<ul>
+<li>如果需要排序，选择 TreeMap</li>
+<li>如果不需要排序，优先选择 HashMap</li>
+<li>如果需要线程安全，选择 ConcurrentHashMap</li>
+</ul>
+</li>
+<li>只需要存放元素值时，选择 Collection 接口下的集合
+<ul>
+<li>如果需要顺序放取，选择 ArrayList</li>
+<li>如果需要频繁增删，选择 LinkedList</li>
+<li>如果需要元素不重复且排序，选择 TreeSet</li>
+<li>如果需要元素不重复但无需排序，优先选择 HashSet</li>
+</ul>
+</li>
+</ul>
+<p>参考链接：</p>
+<p><a href="https://github.com/ZhongFuCheng3y/3y">https://github.com/ZhongFuCheng3y/3y</a></p>
+<p><a href="https://github.com/Snailclimb/JavaGuide">https://github.com/Snailclimb/JavaGuide</a></p>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[面试题系列 —— Zookeeper]]></title>
         <id>https://epitomm.github.io/post/zookeeper-mian-shi-ti/</id>
