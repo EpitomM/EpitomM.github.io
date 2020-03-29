@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://epitomm.github.io</id>
     <title>SSM</title>
-    <updated>2020-03-29T06:21:19.051Z</updated>
+    <updated>2020-03-29T15:53:57.053Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://epitomm.github.io"/>
     <link rel="self" href="https://epitomm.github.io/atom.xml"/>
@@ -782,7 +782,9 @@ if (child_pid == 0) { //我是子进程.
 <p>为了减少磁盘 I/O 操作，磁盘往往不是严格按需读取，而是每次都会预读。预读过程中，磁盘进行顺序读取，顺序读取不需要进行磁盘寻道，并且只需要很短的磁盘旋转时间，速度会非常快。</p>
 <p>操作系统一般将内存和磁盘分割成固定大小的块，每一块称为一页，内存与磁盘以页为单位交换数据。数据库系统将索引的一个节点的大小设置为页的大小，使得一次 I/O 就能完全载入一个节点。并且可以利用预读特性，相邻的节点也能够被预先载入。</p>
 <blockquote>
-<p><a href="https://mp.weixin.qq.com/s/IZpRNTKs3EHiXO-vYphk1w">为什么MySQL的索引要使用B+树而不是其它树形结构?比如B树？</a></p>
+<p><a href="https://mp.weixin.qq.com/s/IZpRNTKs3EHiXO-vYphk1w">为什么MySQL的索引要使用B+树而不是其它树形结构?比如B树？</a><br>
+因为B树不管叶子节点还是非叶子节点，都会保存数据，这样导致在非叶子节点中能保存的指针数量变（有些资料也称为扇出）<br>
+指针少的情况下要保存大量数据，只能增加树的高度，导致IO操作变多，查询性能变低；</p>
 </blockquote>
 <h1 id="17mysql-读写分离-主从复制">17.MySQL 读写分离、主从复制</h1>
 <h2 id="读写分离-2">读写分离</h2>
@@ -1264,7 +1266,7 @@ public static void main(String[] args) {
 </ol>
 <ul>
 <li><code>ArrayList</code> 如果添加到<strong>末尾</strong>，时间复杂度<strong>O(1)</strong>；如果添加<strong>中间</strong>到指定 i 位置，需要把 i ~ n 位置的元素统一向后移动，时间复杂度 <strong>O(n-i)</strong>。如果<strong>按下标查找</strong>，时间复杂度<strong>O(1)</strong>。</li>
-<li><code>LinkedList</code> 如果添加<strong>末尾</strong>，时间复杂度 <strong>O(1)</strong>，如果插入到<strong>中间</strong>第 i 个位置，需要先查找到到 i 个位置的元素，查找效率 <strong>O(n)</strong>，然后执行添加操作，修改指针指向，复杂度** O(1)<strong>。如果</strong>按下标查找**，需要判断下标是否大于当前 <code>size/2</code> ，如果大于则从末尾向中间查找；否则从头向中间查找，时间复杂度** O(n)**。</li>
+<li><code>LinkedList</code> 如果添加<strong>末尾</strong>，时间复杂度 <strong>O(1)</strong>，如果插入到<strong>中间</strong>第 i 个位置，需要先查找到到 i 个位置的元素，查找效率 <strong>O(n)</strong>，然后执行添加操作，修改指针指向，复杂度<strong>O(1)</strong>。如果<strong>按下标查找</strong>，需要判断下标是否大于当前 <code>size/2</code> ，如果大于则从末尾向中间查找；否则从头向中间查找，时间复杂度<strong>O(n)</strong>。</li>
 </ul>
 <h1 id="3-arraylist-扩容机制">3. ArrayList 扩容机制</h1>
 <pre><code>private void grow(int minCapacity) {

@@ -3,7 +3,7 @@
     <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>面试题系列 —— Java 集合 | SSM</title>
-<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1585462876401">
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1585497234045">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
 <link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
 <link rel="alternate" type="application/atom+xml" title="面试题系列 —— Java 集合 | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
@@ -32,7 +32,7 @@ ArrayLis..." />
       <div class="main-content">
         <div class="site-header">
   <a href="https://epitomm.github.io">
-  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1585462876401" alt="">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1585497234045" alt="">
   </a>
   <h1 class="site-title">
     SSM
@@ -128,7 +128,7 @@ ArrayLis..." />
 </ol>
 <ul>
 <li><code>ArrayList</code> 如果添加到<strong>末尾</strong>，时间复杂度<strong>O(1)</strong>；如果添加<strong>中间</strong>到指定 i 位置，需要把 i ~ n 位置的元素统一向后移动，时间复杂度 <strong>O(n-i)</strong>。如果<strong>按下标查找</strong>，时间复杂度<strong>O(1)</strong>。</li>
-<li><code>LinkedList</code> 如果添加<strong>末尾</strong>，时间复杂度 <strong>O(1)</strong>，如果插入到<strong>中间</strong>第 i 个位置，需要先查找到到 i 个位置的元素，查找效率 <strong>O(n)</strong>，然后执行添加操作，修改指针指向，复杂度** O(1)<strong>。如果</strong>按下标查找**，需要判断下标是否大于当前 <code>size/2</code> ，如果大于则从末尾向中间查找；否则从头向中间查找，时间复杂度** O(n)**。</li>
+<li><code>LinkedList</code> 如果添加<strong>末尾</strong>，时间复杂度 <strong>O(1)</strong>，如果插入到<strong>中间</strong>第 i 个位置，需要先查找到到 i 个位置的元素，查找效率 <strong>O(n)</strong>，然后执行添加操作，修改指针指向，复杂度<strong>O(1)</strong>。如果<strong>按下标查找</strong>，需要判断下标是否大于当前 <code>size/2</code> ，如果大于则从末尾向中间查找；否则从头向中间查找，时间复杂度<strong>O(n)</strong>。</li>
 </ul>
 <h1 id="3-arraylist-扩容机制">3. ArrayList 扩容机制</h1>
 <pre><code>private void grow(int minCapacity) {
