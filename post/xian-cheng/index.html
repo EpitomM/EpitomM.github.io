@@ -3,7 +3,7 @@
     <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>线程 | SSM</title>
-<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1585454430294">
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1585460879263">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
 <link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
 <link rel="alternate" type="application/atom+xml" title="线程 | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
@@ -26,7 +26,7 @@
       <div class="main-content">
         <div class="site-header">
   <a href="https://epitomm.github.io">
-  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1585454430294" alt="">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1585460879263" alt="">
   </a>
   <h1 class="site-title">
     SSM
@@ -208,13 +208,14 @@ void blockzero (unsigned char *p, int length) {
 <li><strong>就绪</strong>：一个线程是就绪态就是指它可以运行但当前还没有运行。它的 TCB 被放在就绪队列上，它的寄存器的值被保存在它的 TCB 中。在任意时刻，调度器可以让一个线程从就绪态到运行态，只需要把它保存在 TCB 中的寄存器的值恢复到处理机的寄存器上。</li>
 <li><strong>运行</strong>：一个线程是运行态就是指它正在一个处理机上运行。此时，它的寄存器的值还在处理机的寄存器上，而不是TCB 中。一个运行态的线程可以按下面两种方式切换到就绪态：
 <ul>
-<li>调度器抢占一个运行的线程，然后将它放到就绪态，通过（1）保存线程的寄存器值到它的 TCB 中；并且</li>
-</ul>
+<li>
+<p>调度器抢占一个运行的线程，然后将它放到就绪态，通过（1）保存线程的寄存器值到它的 TCB 中；并且（2）将处理机切换去执行就绪队列中某线程</p>
+</li>
+<li>
+<p>一个运行态的线程可以自愿地放弃(relinquish)处理机然后从运行态到就绪态，通过调用 yield(例如，线程库中的 thread_yield)</p>
 </li>
 </ul>
-<p>（2）将处理机切换去执行就绪队列中某线程</p>
-<ul>
-<li>一个运行态的线程可以自愿地放弃(relinquish)处理机然后从运行态到就绪态，通过调用 yield(例如，线程库中的 thread_yield)</li>
+</li>
 </ul>
 <p>注：一个线程可以从就绪态到运行态，再从运行态到就绪态，这样多次切换。</p>
 <ul>
