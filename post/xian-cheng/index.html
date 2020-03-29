@@ -1,0 +1,448 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>线程 | SSM</title>
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1585454430294">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="线程 | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="1. 线程抽象
+一个线程是一个单一的执行序列，它表示了一个单独被调度的任务.
+
+单一的执行序列. 每个线程执行一个指令序列——赋值，条件，循环，过程, 等等
+单独被调度的任务. 操作系统可以在任意时刻，运行，暂停或者继续一个线程。
+运行，挂..." />
+    <meta name="keywords" content="操作系统" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://epitomm.github.io">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1585454430294" alt="">
+  </a>
+  <h1 class="site-title">
+    SSM
+  </h1>
+  <p class="site-description">
+    热心善良的老学姐
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              线程
+            </h2>
+            <div class="post-info">
+              <span>
+                2020-03-29
+              </span>
+              <span>
+                24 min read
+              </span>
+              
+                <a href="https://epitomm.github.io/tag/g4QXI5q0H/" class="post-tag">
+                  # 操作系统
+                </a>
+              
+            </div>
+            
+              <img class="post-feature-image" src="https://epitomm.github.io/post-images/xian-cheng.jpg" alt="">
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <h1 id="p-stylecolorred1-线程抽象p"><p style="color:red">1. 线程抽象</p></h1>
+<p>一个线程是一个单一的执行序列，它表示了一个单独被调度的任务.</p>
+<ul>
+<li><strong>单一的执行序列</strong>. 每个线程执行一个指令序列——赋值，条件，循环，过程, 等等</li>
+<li><strong>单独被调度的任务</strong>. 操作系统可以在任意时刻，运行，暂停或者继续一个线程。</li>
+<li><strong>运行，挂起和继续执行的线程</strong></li>
+</ul>
+<p>线程提供了一个有无限个处理机的幻象。OS 如何实现这样的幻象呢？它必须执行每个进程的指令使得每个线程都有进展，但实际的硬件只有有限个数的处理机，甚至只有 1 个</p>
+<p>为了将任意数量的线程映射到有限个处理机上，OS 包含一个调度器(scheduler)能够在运行和就绪的线程之间来回切换。但是线程的切换对线程来说是透明的，只是某些时刻处理机的执行变得比较慢而已。</p>
+<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/%E7%BA%BF%E7%A8%8B%E4%B8%8D%E5%90%8C%E7%9A%84%E6%89%A7%E8%A1%8C%E9%A1%BA%E5%BA%8F.jpg" alt="图片" loading="lazy"></figure>
+<p><strong>图 4.3</strong>: 一个线程 3 种可能的执行方式 ，对于程序员来说是无差的.</p>
+<p>上图说明了一个程序员角度的一个简单程序有三种不同的执行方式，这取决于调度器。从线程的角度，除了执行的速度不一样，这些是没差的。确实，线程并不知道有其他线程在执行。</p>
+<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/%E7%BA%BF%E7%A8%8B%E4%BA%A4%E9%94%99%E6%89%A7%E8%A1%8C.jpg" alt="图片" loading="lazy"></figure>
+<p><strong>图 4.4</strong>: 3 个线程在运行时许多种可能的交错执行的方式.</p>
+<p>上图展示了 3 个线程的交替执行。他们的这种速度是不可控的，每次执行可能都不一样。</p>
+<p><strong>例子</strong>:内核中断处理程序是一个线程?</p>
+<p><strong>回答： 不，一个中断处理程序不是一个线程</strong>. 一个内核中断处理程序和线程有一些相似性: 它是一个指令的序列， 从开头执行到结尾。然而，一个中断处理程序<strong>不是独立可调度的</strong>: 它被一个硬件I/O 事件所触发执行,  而不是内核中线程调度器来决定什么时候执行. 一旦开始，中断处理程序运行到结束，除非被另外一个优先级更高的中断抢占.</p>
+<h1 id="p-stylecolorred2-简化的线程-apip"><p style="color:red">2. 简化的线程 API</p></h1>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">void thread_create  (thread, func,arg)</th>
+<th style="text-align:left">创建一个新线程, 把信息存入 thread. 和调用的线程并发执行，线程执行函数 func，其参数为 arg.</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">void thread_yield()</td>
+<td style="text-align:left">调用的线程自愿放弃处理机让其他线程来运行。调度器也可以继续运行调用的线程.</td>
+</tr>
+<tr>
+<td style="text-align:left">int thread_join  (thread)</td>
+<td style="text-align:left">等待 thread 结束如果 thread 还没有结束的话; 然后返回由 thread 通过 thread_exit 传递来的参数. 注意， 对每个线程，thread_join 只能被调用一次.</td>
+</tr>
+<tr>
+<td style="text-align:left">void thread_exit(ret)</td>
+<td style="text-align:left">完成当前的线程. 将 ret 的值存在当前线程的数据结构中。如果另一个线程已经用 thread_join 等待该线程, 则继续执行那个等待的线程.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>图 4.5</strong>:使用线程简化的 API</p>
+<p>图 4.5 展示了使用线程的简单的API. 这个简化的API 是基于POSIX 标准的pthreads API, 但是它忽略了某些POSIX 选项和错误处理(为了简化). 绝大多数其他线程包也类似，如果你理解如何用这个 API 编程的话，你会发现对于绝大多数标准的线程 API 来说，其代码很容易编写.</p>
+<p>我们看见 UNIX 进程抽象中有类似的概念. thread_create 类似于UNIX 进程 fork 和 exec, 而 thread_join 类似于 UNIX 进程wait. UNIX fork 创建了一个新的进程和原来调用 fork 的进程并发的执行;UNIX exec 导致进程运行一个指定的程序。UNIX wait 运行调用的进程暂停执行直到新的进程完成为止。</p>
+<h2 id="1-多线程的hello-world">1. 多线程的Hello World!</h2>
+<figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/%E5%A4%9A%E7%BA%BF%E7%A8%8Bhelloworld%E8%BE%93%E5%87%BA%E7%BB%93%E6%9E%9C.png" alt="图片" loading="lazy"></figure>
+<p><strong>图 4.6</strong>: 用简单线程API 来打印”Hello”十次的多线程编程的例子。也展示了一种可能的输出。</p>
+<p>上图是一个多线程的程序，用了简单的线程 API 来打印 hello 十次。也展示了一个可能的输出结果。Main 函数用 thread_create 创建了 10 个子线程。有趣的参数是第二个和第三个。第二个参数 go 是一个函数指针——新创建的检测应该开始执行的代码位置。第三个参数 i 传递给 go 函数。因此，thread_create 初始化第i 个线程的状态使得它准备调用函数 go，参数是 i。</p>
+<p>当调度者运行第 i 个线程，线程运行函数go，参数为 i，打印 hello from 线程 i。 线程接着返回值 i+100 通过调用 thread_exit. 这个调用将特定的值保存到 trhead_t 的对象里，使得 thread_join 能够找到它。</p>
+<p>Main 函数用thread_join 来等待每个它创建的线程。当每个线程完成的时候，main 的代码会的读取完成线程的退出值并打印。</p>
+<p><strong>例子</strong>：为什么来自线程 2 的“线程 returned”的消息<strong>一定是</strong>在来自线程 5 的线程 returned 的消息打印之前先打印？</p>
+<p>回答：虽然每个创建的线程完成的顺序是不确定的，但是主线程是按照创建的顺序按顺序检查的。</p>
+<p><strong>例子</strong>：当线程 5 打印 hello 的时候未退出的线程的最少数是多少？最多数是多少？</p>
+<p><strong>回答</strong>：最少是 2，最多是 11</p>
+<h2 id="2-创建线程thread_create和线程等待thread_join在并行计算中的应用">2. 创建线程(thread_create)和线程等待(thread_join)在并行计算中的应用</h2>
+<p>尽管线程接口很简单，但非常强大。例如用”<strong>fork-join 并行”</strong>（<strong>fork-join 并行</strong>即 thread_create 和 thread_join 一起使用来实现并行化计算）, 一个线程可以创建子线程来执行工作(“fork”, 或者 thread_create), 它可以等待他们的结果(“join”).</p>
+<pre><code>// 为了传递两个参数，我们需要一个结构来保存它们.
+typedef struct bzeroparams {
+   unsigned char *buffer; int length;
+};
+#define NTHREADS 10
+void go (struct bzeroparams *p) {
+   memset(p-&gt;buffer, 0, p-&gt;length);
+}
+//用多线程对一个块进行清零.
+void blockzero (unsigned char *p, int length) {
+  int i;
+  thread_t threads[NTHREADS];
+  struct bzeroparams params[NTHREADS];
+  // 为了简化，假设长度可以被NTHREADS 整除. assert((length   NTHREADS) == 0);
+  for (i = 0; i &lt; NTHREADS; i++) {
+      params[i].buffer = p + i * length/NTHREADS; params[i].length = length/NTHREADS; thread_create_p(&amp;(threads[i]), &amp;go, &amp;params[i]);
+  }
+  for (i = 0; i &lt; NTHREADS; i++) {
+      thread_join(threads[i]);
+    }
+}
+</code></pre>
+<p><strong>图 4.7</strong>: 使用多线程并行地对一个内存连续区域清零的程序.<br>
+<strong>例子：并行的块清零</strong>.在操作系统中一个应用 fork-join 并行的简单例子是对一段连续内存块清零的过程. 每当一个进程结束的时候，为了阻止无意的数据泄露, 操作系统必须把分配给这个进程中的内存清零。否则，一个新的进程可能会被重新分配给这个内存, 使得这个进程可以读取潜在的敏感的数据。例如，一个操作系统的远程登录程序可能暂时存储一个用户的密码在内存中，但是下一个使用同一内存区间的进程可能会是一个被一个恶意用户调用的扫描内存的程序.</p>
+<p>对于一个大的进程，并行地清零的函数是合理的。在现代计算机上，对 1GB 的内存清零需要大约 50 毫秒; 相比之下，创建和启动一个新的线程只需要几十微秒.</p>
+<p>图 4.7 展示了一个使用fork-join 并行清零的代码。多线程的 blockzero 创建了一系列线程并给每个分配了一段不相交的内存区间; 当所有线程都完成它们的工作的时候整个区间都被清零. 操作系统可以创建一系列低优先级的线程来运行 blockzero. 之后，当内存被需要的时候，内核可以调用 thread_join. 如果那个时候已经完全清零，则join 会立即返回；否则它需要等待直到这块内存可以被安全使用.</p>
+<h1 id="p-stylecolorred3-线程的数据结构p"><p style="color:red">3. 线程的数据结构</p></h1>
+<p>为了理解操作系统如何实现线程的抽象，我们必须定义两种状态，一个是每个线程的状态(the Per-Thread State)， 另一个是多个线程的共享状态(the Shared State)。然后我们才能给描述一个线程的生命周期——提供上述抽象，操作系统是如何能够创建，开始，暂停和删除线程的。</p>
+<figure data-type="image" tabindex="4"><img src="https://epitomm.github.io/post-images/%E7%BA%BF%E7%A8%8B%E7%9A%84%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84.jpg" alt="图片" loading="lazy"></figure>
+<p><strong>图 4.8</strong>: 一个多线程的进程或者操作系统的内核既有每个线程的状态也有共享状态. 线程控制块（TCB）存储了每个线程的状态: 线程当前的计算状态(例如，被保存的处理机的寄存器和一个指向(内核)栈的指针)和需要管理该线程的元数据(例如，线程的 ID，调度优先级，拥有者). 共享的状态包括程序的代码，全局静态变量和堆.</p>
+<p>一个多线程的进程或者操作系统内核都有每个线程的状态和共享状态。线程控制块保存着每个线程的状态: 线程计算当前的状态(例如，保存的处理机的寄存器和(内核)栈指针)和需要管理这个线程的元数据(例如，线程的 ID， 调度的优先级，拥有者)。共享状态包括：程序的代码，全局变量和堆。</p>
+<ul>
+<li><strong>每个线程的状态(Per-Thread State)和线程控制块(TCB)</strong></li>
+</ul>
+<p>操作系统需要一个数据结构来表示一个线程的状态；线程就好比是这个数据结构下的一个具体的对象。这个数据结构被称为线程控制块(线程控制块, TCB)。对于每个操作系统创建的线程，它就创建一个TCB。</p>
+<p>线程控制块记录两种类型的每个线程的信息：</p>
+<ol>
+<li>这个线程当前的计算状态：栈和处理器中寄存器的值</li>
+<li>用于管理该线程的元数据</li>
+</ol>
+<ul>
+<li><strong>共享状态</strong></li>
+</ul>
+<p>有一些状态是属于同一应用进程里的不同线程之间共享的状态，或者是操作系统内核内的线程之间共享的状态。特别的，程序代码是同一进程中所有线程共享的，尽管每个线程可能执行代码的不同位置。除此以外，静态分配的  全局变量和动态分配的堆变量也是同一进程的所有线程所共享的。</p>
+<p><strong>警告</strong>：这是逻辑上的区分状态（Per-Thread State 和 Shared State），而操作系统往往不强制这种区分，换句话说，一个线程可以去访问同一进程内的其他线程的每个线程的状态，例如访问其他线程的用户栈。<strong>这是被允许的</strong>。那么为了避免不要的错误，编写一个多线程的程序的时候必须要清楚哪些变量是线程之间共享的，哪些是私有的。以防一个线程会破坏其他线程。</p>
+<h1 id="p-stylecolorred4-线程的生命周期p"><p style="color:red">4. 线程的生命周期</p></h1>
+<figure data-type="image" tabindex="5"><img src="https://epitomm.github.io/post-images/%E7%BA%BF%E7%A8%8B%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F.jpg" alt="图片" loading="lazy"></figure>
+<p><strong>图 4.9: 一个线程在它的生命周期中的状态.</strong></p>
+<p>上图展示了一个线程的生命周期。</p>
+<ul>
+<li><strong>新建</strong>：线程创建会把一个线程设为新建状态，分配和初始化每个线程的的数据结构。一旦这些完成，thread_ creation 代码会把该线程放到就绪队列中（隐含的意思是设置为READY 状态）。</li>
+<li><strong>就绪</strong>：一个线程是就绪态就是指它可以运行但当前还没有运行。它的 TCB 被放在就绪队列上，它的寄存器的值被保存在它的 TCB 中。在任意时刻，调度器可以让一个线程从就绪态到运行态，只需要把它保存在 TCB 中的寄存器的值恢复到处理机的寄存器上。</li>
+<li><strong>运行</strong>：一个线程是运行态就是指它正在一个处理机上运行。此时，它的寄存器的值还在处理机的寄存器上，而不是TCB 中。一个运行态的线程可以按下面两种方式切换到就绪态：
+<ul>
+<li>调度器抢占一个运行的线程，然后将它放到就绪态，通过（1）保存线程的寄存器值到它的 TCB 中；并且</li>
+</ul>
+</li>
+</ul>
+<p>（2）将处理机切换去执行就绪队列中某线程</p>
+<ul>
+<li>一个运行态的线程可以自愿地放弃(relinquish)处理机然后从运行态到就绪态，通过调用 yield(例如，线程库中的 thread_yield)</li>
+</ul>
+<p>注：一个线程可以从就绪态到运行态，再从运行态到就绪态，这样多次切换。</p>
+<ul>
+<li><strong>等待</strong>：一个线程在等待态是指它在等待某个事件。调度器能够将一个线程从就绪态移动到运行态，一个在等待态的线程却不能切换到运行态，它必须要等待某个其他的线程将它从等待态移动到就绪态。</li>
+<li><strong>完成</strong>：一个线程在完成态就意味着它用于不会再运行了。系统能够释放部分或者它的全部状态，但它仍然要保留线程残留的一些信息，并把线程的 TCB 放到一个完成队列上。例如，thread_exit 调用会让一个线程将它的退出值通过 thread_join 传递给它的父亲线程。当一个线程的状态再没任何用处的时候（例如，当它的退出值已经被 thread_join 读取了），系统就可以删除和取回该线程的状态。</li>
+</ul>
+<figure data-type="image" tabindex="6"><img src="https://epitomm.github.io/post-images/%E4%B8%8D%E5%90%8C%E7%8A%B6%E6%80%81%E4%B8%8B%E7%BA%BF%E7%A8%8B%E7%9A%84%E4%BD%8D%E7%BD%AE.png" alt="图片" loading="lazy"></figure>
+<p><strong>图 4.10: 在不同状态下线程的每个线程状态的位置.</strong></p>
+<p>理解这些状态的一种方式就是考虑一个线程的 TCB 和寄存器值存放的位置，如上图所示。当所有线程在就绪态，它们的 TCB 被放在就绪队列，它们的寄存器的值的拷贝也放在 TCB 中。所有在运行态的线程，它们的 TCB 被放在运行队列上，它们的寄存器值是在硬件寄存器上。所有在等待态的线程它们的 TCB 是放在不同的同步变量的等待队列上。</p>
+<hr>
+<p><strong>idle 线 程</strong></p>
+<p>如果一个系统有 k 个处理机,  绝大多数操作系统确保正好有 k 个执行态的线程,  通过在每个处理机上维护一个低优先级的 <strong>idle 线程</strong>以保证当该处理机没有什么事情可做的时候，仍然有线程在执行.</p>
+<p>在旧机器上，idle 线程会在一个紧凑循环中什么也不做. 而今天，idle 线程仍然在一个loop 中 spin, 但是为了省电，在每次迭代中，它把处理机进入一个低耗电的睡眠模式。在睡眠模式中，处理机暂停执行指令直到出现一个硬件中断。然后，处理机醒来并按照通常的方式来处理中断—保存当前正在执行的线程(idle 线程)的状态并执行处理程序. 在运行了处理程序之后，一个等待此 I/O 事件的线程现在可以是就绪态. 如果是这样的话，调度器接下来就执行这个进入就绪态的线程；否则 idle 线程继续执行，让处理机再次去睡觉.</p>
+<hr>
+<p><strong>例子</strong>：对于线程 Hello 程序，在一个单处理机上，主线程进入就绪态的最少次数是多少？最多次数又是多少？</p>
+<p><strong>回答</strong>：当主线程被创建时，它必须进入就绪态；否则它永远不会被调度。在一个单处理机上，它必须放弃处理机为了让它的线程运行。在主线程被重新调度之前，子线程们接下来可以完成运行。一旦孩子们完成，主线程可以完成运行。<strong>因此最小的次数是 2</strong>.</p>
+<p><strong>最大的次数则是接近于无穷大</strong>。一个运行的线程可以被抢占然后被重新调度若干次，而不影响执行的正确性。</p>
+<h1 id="p-stylecolorred5-实现内核线程p"><p style="color:red">5. 实现内核线程</p></h1>
+<p>我们介绍内核线程的实现。这是所有线程实现中最基础的，也是最简单的。</p>
+<h2 id="p-stylecolorreda-创建内核线程代码不要求但后面介绍的基本步骤需要掌握p"><p style="color:red">a. 创建内核线程（代码不要求，但后面介绍的基本步骤需要掌握）</p></h2>
+<pre><code>// func 是一个指向线程要运行的过程的指针.
+// arg 是传递给这个过程的参数.
+void thread_create(thread_t *thread, void (*func)(int), int arg) {
+  // Allocate TCB and stack TCB *tcb = new TCB();
+  thread -&gt;tcb = tcb;
+  tcb-&gt;stack_size = INITIAL_STACK_SIZE;
+  tcb-&gt;stack = new Stack(INITIAL_STACK_SIZE);
+  // 初始化寄存器使得当线程继续执行的时候，它从 stub 开始执行。
+  //栈从分配的区域的顶端开始，然后向下增长. tcb-&gt;sp = tcb-&gt;stack + INITIAL_STACK_SIZE; tcb-&gt;pc = stub;
+  // 通过把 stub 的参数压栈来创建一个栈帧
+  *(tcb-&gt;sp) = arg; tcb-&gt;sp--;
+  *(tcb-&gt;sp) = func; tcb-&gt;sp--;
+  // 创建另一个栈帧使得 thread_switch 正确工作. 这个 routine 在本章后面解释. thread_dummySwitchFrame(tcb);
+  tcb-&gt;state = READY;
+  readyList.add(tcb); // 把 TCB 放在就绪队列
+}
+void stub(void (*func)(int), int arg) {
+  (*func)(arg); // 执行函数 func()
+  thread_exit(0); // 如果 func()不调用 exit,在这里调用 exit.
+}
+
+
+</code></pre>
+<p><strong>图 4.13</strong>创建线程的伪代码。对栈的初始化和传参给初始函数是和机器相关的。在 intel x86 架构中，栈从搞地址开始然后向下增长，而参数被传递到栈上。在其他系统，栈能够向上增长，参数是通过寄存器传递。图 4.14 提供了thread_dummySwitchFrame 的伪代码<br>
+图 4.13 展示了创建一个新线程的伪代码。thread_create 的目标是执行一个异步的过程调用给 func，其参数为 arg。当线程运行时，它执行 func(arg)【与父进程并发执行】</p>
+<p><strong>创建一个线程有 3 个步骤</strong></p>
+<ol>
+<li><strong>分配每个线程的状态</strong>. 第一步是为线程的每个线程的状态分配空间：TCB 和栈。正如我们所提到的，TCB 是操作系统用于管理线程的数据结构。</li>
+<li><strong>初始化每个线程的状态</strong>. 为了初始化TCB，需要初始化各个寄存器的值。当该线程被调度时，我们想要我们想要它运行 func(arg)。然而，是先从一个 dummy 函数, stub, 运行，stub 接着调用func。我们需要这个步骤是因为 func 是返回而不是调用 thread_exit。没有这个 stub 的话，func 会返回栈顶的一个随机的位置。，有了 stub，函数 func 返回到stub，然后再由 stub 调用 thread_exit 来完成线程。在伪代码中，我们给 stub 压入两个参数进栈：func 和 arg。当线程开始运行，stub 的代码就会访问它的代码就行一个普通的procedure。</li>
+<li><strong>将TCB 放到就绪队列</strong>. 创建一个线程的最后一步就是将它的状态设置为就绪态，然后把新的 TCB 放到就绪队列， 使得该线程能够被调度。</li>
+</ol>
+<h2 id="p-stylecolorred-b-一个自愿的内核线程切换代码不要求但线程上下文切换的基本步骤需要掌握即保存旧线程的寄存器的值到tcb-中把新线程的tcb-中寄存器的值加载到cpu-的寄存器中p"><p style="color:red"> b. 一个自愿的内核线程切换（代码不要求，但线程上下文切换的基本步骤需要掌握，即：保存旧线程的寄存器的值到TCB 中，把新线程的TCB 中寄存器的值加载到CPU 的寄存器中</p></h2>
+<p>图 4.14 展示了在Intel x86 硬件架构下，thread_yiled 的简单实现的伪代码.一个线程调用 thread_yield 自愿地放弃处理机给另一个线程用. 调用的线程的寄存器被拷贝到它的 TCB 和栈中，便于当调度器再次选择它的时候，可以继续运行.</p>
+<pre><code>//我们以一个旧线程进入，而以新线程返回.
+//以新线程的寄存器和栈返回.
+void thread_switch(oldThreadTCB, newThread TCB) { 
+    pushad; //把通用寄存器的值压入旧的栈中. 
+    oldThreadTCB-&gt;sp = esp; //保存旧线程的栈指针. 
+    esp = newThreadTCB-&gt;sp; // 切 换 到 新 的 栈 . 
+    popad; // 从新的栈弹出寄存器的值.
+    return;
+}
+void thread_yield() {
+  TCB *chosenTCB, *finishedTCB;
+  // 在切换的中间过程中阻止有中断暂停. disableInterrupts();
+  // 从 就 绪 队 列 中 选 择 另 一 个 TCB. chosenTCB = readyList.getNext 线程(); 
+  if (chosenTCB == NULL) {
+    // 没有什么可以运行的，回去运行原始的线程.
+  } else {
+    // 将运行的线程移动到就绪队列. runningThread-&gt;state = ready; readyList.add(runningThread);
+    thread_switch(runningThread, chosenTCB); // 切换到新的线程. runningThread -&gt;state = running;
+  }
+  //删除完成队列上的任意线程.
+  while ((finishedTCB = finishedList-&gt;getNextThread()) != NULL) {
+    delete finishedTCB-&gt;stack;
+    delete finishedTCB;
+  }
+  enableInterrupts();
+}
+//thread_create 必须在它的栈顶放一个 dummy frame:
+// 返回的 PC 和给 pushad 的空间来存储寄存器的备份.
+// 这样的话，当某人切换到一个新创建的线程, thread_switch 的最后两行能正确工作.
+void thread_dummySwitchFrame(new 线程) {
+  *(tcb-&gt;sp) = stub; //返回到 stub 的开头. tcb-&gt;sp--;
+  tcb-&gt;sp -= SizeOfPopad;
+}
+</code></pre>
+<p><strong>图 4.14</strong>: 在 Intel x86 架构上 thread_switch 和 thread_yield 的伪代码。注意， thread_yield 是一个空操作如果没有其他线程可以运行。否则，它保存旧线程的状态并恢复新线程的状态。当旧线程被重新调度，它从thread_switch 返回到正在运行的线程.</p>
+<hr>
+<p>thread_yield 的伪代码首先关闭中断来阻止线程系统试图在同一时间做两个上下文切换. 伪代码接着把下一个线程拉出就绪队列(如果有的话)，然后切换到它. thread_switch 代码也许看上去有点不易理解, 由于它是在旧线程的上下文中被调用，而完成的时候是在新线程的上下文. 为了完成切换，thread_switch 把寄存器的状态保存到栈上，然后把栈指针保存到 TCB 中。接着它切换到新的线程的栈，从新线程的栈来恢复新线程的状态，然后返回到存储在新栈中的程序计数器的位置. 一个比较扭曲的地方是返回的位置可能不是 thread_yield!  返回到了新线程之前被暂停的地方.</p>
+<hr>
+<p><strong>一个 0-线程的内核</strong></p>
+<p>我们不仅可以有一个单线程的内核或者一个多线程的内核，还有可能有一个没有线程的内核——0 线程的内核。实际上，这也是常见的。因为几乎内核中所有事情都是事件驱动的，例如响应一个中断，处理机异常或者系统调用。</p>
+<p>在一个简单的操作系统中，就没有必要创建内核线程或者内核线程控制块来追踪正在进行的计算。而是，当发生一个中断，陷阱或者异常，栈指针就设置为指向中断栈的栈底，指令指针设置为处理程序的地址。接着，处理程序开始执行，要不就立即返回到用户级的进程要不就暂停用户级的进程，然后返回到其他用户级进程。</p>
+<hr>
+<h1 id="p-stylecolorred6-实现多线程的进程p"><p style="color:red">6. 实现多线程的进程</p></h1>
+<p>所有广泛被应用的操作系统既支持内核线程也支持多线程进程。编程语言，例如 Java，和标准库接口例如 POSIX 用操作系统的这种支持来为编程者提供线程的抽象。</p>
+<ul>
+<li><strong>用内核线程实现多线程的进程</strong></li>
+</ul>
+<p>支持多线程进程的最简单的方式是使用内核线程的实现。当一个用户级线程访问线程库要做同样的事情，它用系统调用来请求内核做同样的操作。</p>
+<p>如图 4.12 所示，一个进程的线程有：</p>
+<ul>
+<li>一个用户级的栈用于执行用户代码</li>
+<li>一个内核中断栈：当该线程做系统调用时，或者引发了一次处理机异常，或者被中断</li>
+<li>一个内核TCB：用于保存和恢复每个线程的状态</li>
+</ul>
+<p>为了创建一个线程，<strong>用户线程库</strong>分配一个用户级的栈给新的线程，然后做一个系统调用进入内核。内核分配一个TCB 和内核栈，设置线程的状态使其用用户级栈从被请求的过程的开始处开始执行。内核需要在<strong>进程控制块</strong>（<strong>PCB</strong>） 中保存一个指向该TCB 的指针；如果进程退出，内核必须终止在这个进程内的任意线程。在创建了线程后，内核把新的线程放到就绪队列上，就像其他线程一样可以被调度，然后返回一个唯一的标识符给用户程序，以便于以后想要指定这个新创建的线程的时候使用（例如，for join）。线程的 join, yield,和 exit 用同样的方式实现：<strong>通过系统调用进入内核来执行所请求的函数</strong>。</p>
+<h1 id="p-stylecolorred7-实现用户级线程没有内核支持p"><p style="color:red">7. 实现用户级线程（没有内核支持）</p></h1>
+<p>也可以实现一个完全在用户级的线程（作为库函数），不需要任何操作系统的支持。早期线程库函数采用这种纯用户级方法的原因是：因为极少有操作系统支持多线程的进程。在 JAVA 虚拟机中，也被称为绿线程。</p>
+<p>基本思想比较简单。线程库函数在进程中初始化线程的所有数据结构：TCB，就绪队列，完成队列，等待队列，这些全部在进程的用户地址空间。对线程库函数的调用就是普通的过程调用。</p>
+<p>在操作系统内核看来，一个用户级多线程的应用程序就是一个普通的单线程进程。绿线程的限制是操作系统<strong>内核不知道用户级就绪队列</strong>。如果应用程序的某个线程执行一个系统调用需要等待 I/O，内核不知道还有别的用户级线程可以运行。就会<strong>把整个进程都阻塞</strong>。类似的，在一个多处理机上，内核也不能让一个进程的多个线程在不同的处理机上运行。</p>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li><a href="#p-stylecolorred1-%E7%BA%BF%E7%A8%8B%E6%8A%BD%E8%B1%A1p"><p style="color:red">1. 线程抽象</p></a></li>
+<li><a href="#p-stylecolorred2-%E7%AE%80%E5%8C%96%E7%9A%84%E7%BA%BF%E7%A8%8B-apip"><p style="color:red">2. 简化的线程 API</p></a>
+<ul>
+<li><a href="#1-%E5%A4%9A%E7%BA%BF%E7%A8%8B%E7%9A%84hello-world">1. 多线程的Hello World!</a></li>
+<li><a href="#2-%E5%88%9B%E5%BB%BA%E7%BA%BF%E7%A8%8Bthread_create%E5%92%8C%E7%BA%BF%E7%A8%8B%E7%AD%89%E5%BE%85thread_join%E5%9C%A8%E5%B9%B6%E8%A1%8C%E8%AE%A1%E7%AE%97%E4%B8%AD%E7%9A%84%E5%BA%94%E7%94%A8">2. 创建线程(thread_create)和线程等待(thread_join)在并行计算中的应用</a></li>
+</ul>
+</li>
+<li><a href="#p-stylecolorred3-%E7%BA%BF%E7%A8%8B%E7%9A%84%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84p"><p style="color:red">3. 线程的数据结构</p></a></li>
+<li><a href="#p-stylecolorred4-%E7%BA%BF%E7%A8%8B%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9Fp"><p style="color:red">4. 线程的生命周期</p></a></li>
+<li><a href="#p-stylecolorred5-%E5%AE%9E%E7%8E%B0%E5%86%85%E6%A0%B8%E7%BA%BF%E7%A8%8Bp"><p style="color:red">5. 实现内核线程</p></a>
+<ul>
+<li><a href="#p-stylecolorreda-%E5%88%9B%E5%BB%BA%E5%86%85%E6%A0%B8%E7%BA%BF%E7%A8%8B%E4%BB%A3%E7%A0%81%E4%B8%8D%E8%A6%81%E6%B1%82%E4%BD%86%E5%90%8E%E9%9D%A2%E4%BB%8B%E7%BB%8D%E7%9A%84%E5%9F%BA%E6%9C%AC%E6%AD%A5%E9%AA%A4%E9%9C%80%E8%A6%81%E6%8E%8C%E6%8F%A1p"><p style="color:red">a. 创建内核线程（代码不要求，但后面介绍的基本步骤需要掌握）</p></a></li>
+<li><a href="#p-stylecolorred-b-%E4%B8%80%E4%B8%AA%E8%87%AA%E6%84%BF%E7%9A%84%E5%86%85%E6%A0%B8%E7%BA%BF%E7%A8%8B%E5%88%87%E6%8D%A2%E4%BB%A3%E7%A0%81%E4%B8%8D%E8%A6%81%E6%B1%82%E4%BD%86%E7%BA%BF%E7%A8%8B%E4%B8%8A%E4%B8%8B%E6%96%87%E5%88%87%E6%8D%A2%E7%9A%84%E5%9F%BA%E6%9C%AC%E6%AD%A5%E9%AA%A4%E9%9C%80%E8%A6%81%E6%8E%8C%E6%8F%A1%E5%8D%B3%E4%BF%9D%E5%AD%98%E6%97%A7%E7%BA%BF%E7%A8%8B%E7%9A%84%E5%AF%84%E5%AD%98%E5%99%A8%E7%9A%84%E5%80%BC%E5%88%B0tcb-%E4%B8%AD%E6%8A%8A%E6%96%B0%E7%BA%BF%E7%A8%8B%E7%9A%84tcb-%E4%B8%AD%E5%AF%84%E5%AD%98%E5%99%A8%E7%9A%84%E5%80%BC%E5%8A%A0%E8%BD%BD%E5%88%B0cpu-%E7%9A%84%E5%AF%84%E5%AD%98%E5%99%A8%E4%B8%ADp"><p style="color:red"> b. 一个自愿的内核线程切换（代码不要求，但线程上下文切换的基本步骤需要掌握，即：保存旧线程的寄存器的值到TCB 中，把新线程的TCB 中寄存器的值加载到CPU 的寄存器中</p></a></li>
+</ul>
+</li>
+<li><a href="#p-stylecolorred6-%E5%AE%9E%E7%8E%B0%E5%A4%9A%E7%BA%BF%E7%A8%8B%E7%9A%84%E8%BF%9B%E7%A8%8Bp"><p style="color:red">6. 实现多线程的进程</p></a></li>
+<li><a href="#p-stylecolorred7-%E5%AE%9E%E7%8E%B0%E7%94%A8%E6%88%B7%E7%BA%A7%E7%BA%BF%E7%A8%8B%E6%B2%A1%E6%9C%89%E5%86%85%E6%A0%B8%E6%94%AF%E6%8C%81p"><p style="color:red">7. 实现用户级线程（没有内核支持）</p></a></li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://epitomm.github.io/post/jin-cheng/">
+              <h3 class="post-title">
+                进程
+              </h3>
+            </a>
+          </div>
+        
+
+        
+          
+            <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+<script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+
+<div id="gitalk-container"></div>
+
+<script>
+
+  var gitalk = new Gitalk({
+    clientID: '974bd77fbbd52c2a0647',
+    clientSecret: '6344370ca1314dbd553f45e75a2121a160ef1c44',
+    repo: 'EpitomM.github.io',
+    owner: 'EpitomM',
+    admin: ['EpitomM'],
+    id: (location.pathname).substring(0, 49),      // Ensure uniqueness and length less than 50
+    distractionFreeMode: false  // Facebook-like distraction free mode
+  })
+
+  gitalk.render('gitalk-container')
+
+</script>
+
+          
+
+          
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/EpitomM/EpitomM.github.io" target="_blank">EpitomM</a>
+  <a class="rss" href="https://epitomm.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

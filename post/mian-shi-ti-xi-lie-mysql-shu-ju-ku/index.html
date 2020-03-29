@@ -3,7 +3,7 @@
     <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>面试题系列 —— MySQL 数据库 | SSM</title>
-<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1585293940948">
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1585454430294">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
 <link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
 <link rel="alternate" type="application/atom+xml" title="面试题系列 —— MySQL 数据库 | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
@@ -42,7 +42,7 @@ InnoDB
       <div class="main-content">
         <div class="site-header">
   <a href="https://epitomm.github.io">
-  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1585293940948" alt="">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1585454430294" alt="">
   </a>
   <h1 class="site-title">
     SSM
@@ -449,6 +449,9 @@ InnoDB
 <p>（二）利用磁盘预读特性</p>
 <p>为了减少磁盘 I/O 操作，磁盘往往不是严格按需读取，而是每次都会预读。预读过程中，磁盘进行顺序读取，顺序读取不需要进行磁盘寻道，并且只需要很短的磁盘旋转时间，速度会非常快。</p>
 <p>操作系统一般将内存和磁盘分割成固定大小的块，每一块称为一页，内存与磁盘以页为单位交换数据。数据库系统将索引的一个节点的大小设置为页的大小，使得一次 I/O 就能完全载入一个节点。并且可以利用预读特性，相邻的节点也能够被预先载入。</p>
+<blockquote>
+<p><a href="https://mp.weixin.qq.com/s/IZpRNTKs3EHiXO-vYphk1w">为什么MySQL的索引要使用B+树而不是其它树形结构?比如B树？</a></p>
+</blockquote>
 <h1 id="17mysql-读写分离-主从复制">17.MySQL 读写分离、主从复制</h1>
 <h2 id="读写分离-2">读写分离</h2>
 <figure data-type="image" tabindex="10"><img src="https://epitomm.github.io/post-images/%E8%AF%BB%E5%86%99%E5%88%86%E7%A6%BB.png" alt="图片" loading="lazy"></figure>

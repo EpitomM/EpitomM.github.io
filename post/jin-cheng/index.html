@@ -1,0 +1,406 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>进程 | SSM</title>
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1585454430294">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="进程 | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="1. 为什么引入进程？
+操作系统需要一种统一的方法监视、管理、控制处理器中不同程序的动态执行过程，“进程”的概念被引入！
+2. 进程的定义
+进程没有严格的定义，但可以通过不同的角度去描述：计算机中正在运行的程序的一个实例（Instance。..." />
+    <meta name="keywords" content="操作系统" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://epitomm.github.io">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1585454430294" alt="">
+  </a>
+  <h1 class="site-title">
+    SSM
+  </h1>
+  <p class="site-description">
+    热心善良的老学姐
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              进程
+            </h2>
+            <div class="post-info">
+              <span>
+                2020-03-29
+              </span>
+              <span>
+                14 min read
+              </span>
+              
+                <a href="https://epitomm.github.io/tag/g4QXI5q0H/" class="post-tag">
+                  # 操作系统
+                </a>
+              
+            </div>
+            
+              <img class="post-feature-image" src="https://epitomm.github.io/post-images/jin-cheng.jpg" alt="">
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <h1 id="p-stylecolorred1-为什么引入进程p"><p style="color:red">1. 为什么引入进程？</p></h1>
+<p>操作系统需要一种统一的方法监视、管理、控制处理器中不同程序的动态执行过程，“进程”的概念被引入！</p>
+<h1 id="p-stylecolorred2-进程的定义p"><p style="color:red">2. 进程的定义</p></h1>
+<p>进程没有严格的定义，但可以通过不同的角度去描述：计算机中正在运行的程序的一个实例（Instance。它包含（内存中的）代码段，数据段，堆，栈（用户栈和内核栈）；和当前的执行上下文（PC，SP 和其他寄存器），操作系统通过维护数据结构——进程控制块（PCB）来管理每个进程。</p>
+<p><strong>进程控制块（Process Control Block——PCB</strong>：PCB 是是操作系统用来管理进程的数据结构，是进程存在的唯一标识。每当操作系统创建一个进程，就是由操作系统为该进程设置一个 PCB；进程执行完成时，由系统收回其 PCB， 该进程便消亡了。PCB 的内容包括：</p>
+<ul>
+<li>进程的状态（就绪，执行，等待，完成）</li>
+<li>进程的 ID</li>
+<li>进程的名字</li>
+<li>进程的执行上下文（PC，SP，ELFAGS，其他寄存器）</li>
+<li>调度需要的信息（优先级，调度参数，使用的 CPU 时间，进程开始的时间…）</li>
+<li>内存管理的信息（基址和界限…）</li>
+<li>I/O 状态信息（打开的文件，占用的 I/O 设备…）</li>
+</ul>
+<h1 id="p-stylecolorred3-内核线程和用户进程放到一起p"><p style="color:red">3. 内核线程和用户进程放到一起</p></h1>
+<p>下面两个图展示了包含用户进程（上图是单线程进程，下图是多线程进程）和内核线程的内存空间信息。</p>
+<ul>
+<li>所有<strong>内核线程</strong>都<strong>共享</strong>内核的代码段（Code），全局变量(Globals)，堆(Heap)，和自己<strong>专门</strong>的 TCB 和内核栈。</li>
+<li><strong>单线程的用户进程</strong>在用户空间有自己的代码段，数据段，堆，栈，在内核空间有内核用于管理该进程使用的 PCB和内核栈。</li>
+<li>多线程的用户进程在用户空间有自己的代码段，数据段，堆和多个线程。每个线程有自己的用户栈，和内核空间的内核栈以及内核用于管理该线程的TCB。</li>
+</ul>
+<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/%E5%86%85%E6%A0%B8%E7%BA%BF%E7%A8%8B-%E7%94%A8%E6%88%B7%E7%BA%BF%E7%A8%8B.jpg" alt="图片" loading="lazy"></figure>
+<p><strong>图 4.11</strong>:一个多线程的内核：有 3 个内核线程和两个单线程的用户级进程. 每个内核线程 有它自己的 TCB 和它自己的栈. 每个用户进程有一个用户级的栈用于执行用户的代码和一个内核中断栈用于执行系统调用和中断.</p>
+<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/%E5%A4%9A%E7%BA%BF%E7%A8%8B%E7%9A%84%E5%86%85%E6%A0%B8.jpg" alt="图片" loading="lazy"></figure>
+<p><strong>图 4.12</strong>: 一个多线程的内核：有 3 个内核线程和两个用户级的进程, 每个进程有 2 个线程. 每个用户级线程有一个用户级栈和一个内核中的中断栈用于执行系统调用和中断.</p>
+<h1 id="p-stylecolorred4-进程的状态及其变迁p"><p style="color:red">4. 进程的状态及其变迁</p></h1>
+<h2 id="a-三状态变迁图">a)  三状态变迁图</h2>
+<p><strong>运行中的</strong>进程至少具有以下三种基本状态（如下图所示）：</p>
+<ol>
+<li><strong>就绪状态</strong>– 在某时刻，进程已获得除处理机以外的所有资源，一旦分到了处理机就可以立即执行</li>
+<li><strong>运行状态</strong>– 进程已经获得必要资源，并占有处理机运行</li>
+<li><strong>等待状态</strong>（也叫<strong>阻塞状态</strong>） – 正在执行的进程，由于发生某事件而暂时无法执行下去</li>
+</ol>
+<figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/%E8%BF%9B%E7%A8%8B%E7%8A%B6%E6%80%81%E5%8F%98%E5%8C%96%E5%9B%BE-%E4%B8%89%E7%8A%B6%E6%80%81.png" alt="图片" loading="lazy"></figure>
+<p>例如，下图展示了 3 个进程的状态的变迁。其中调度程序是操作系统内核中用于从就绪队列中选择下一个占用CPU 执行的进程的调度程序。</p>
+<figure data-type="image" tabindex="4"><img src="https://epitomm.github.io/post-images/%E8%BF%9B%E7%A8%8B%E7%8A%B6%E6%80%81%E5%8F%98%E5%8C%96%E5%BA%8F%E5%88%97%E5%9B%BE%E4%B8%BE%E4%BE%8B-%E4%B8%89%E7%8A%B6%E6%80%81.jpg" alt="图片" loading="lazy"></figure>
+<h2 id="b-五状态变迁图">b)  五状态变迁图</h2>
+<p>其状态变迁图如下图所示，比 3 状态图多了两个状态：新建和退出。</p>
+<ul>
+<li><strong>新建状态</strong>– 至少建立PCB，但进程相关的其他内容可能未调入主存</li>
+<li><strong>退出状态</strong>– 进程已经终止，但资源等待父进程或系统回收</li>
+</ul>
+<figure data-type="image" tabindex="5"><img src="https://epitomm.github.io/post-images/%E8%BF%9B%E7%A8%8B%E7%8A%B6%E6%80%81%E5%8F%98%E5%8C%96%E5%9B%BE-%E4%BA%94%E7%8A%B6%E6%80%81.jpg" alt="图片" loading="lazy"></figure>
+<p><strong>触发进程状态变迁的事件</strong>描述如下：</p>
+<ul>
+<li><strong>创建</strong>→<strong>就绪</strong>：(1)系统初始化，(2)用户请求创建一个新进程，(3)进程执行了创建进程的系统调用</li>
+<li><strong>就绪</strong>→<strong>执行</strong>：内核的调度程序(scheduler)选择了一个就绪的进程，让它占用处理机执行</li>
+<li><strong>运行</strong>→<strong>等待</strong>: 需要等待某个事件发生才可以继续执行，例如 I/O 请求或者某个共享数据被锁住不能访问</li>
+<li><strong>运行</strong>→<strong>就绪</strong>（被<strong>抢占</strong>）：高优先级的进程进入就绪态，进程的时间片用完</li>
+<li><strong>等待</strong>→<strong>就绪</strong>(被<strong>唤醒</strong>)：等待的事件发生，例如 I/O 请求完成，共享数据可以访问</li>
+<li><strong>运行</strong>→<strong>结束</strong>：可能是正常退出（调用 exit 系统调用），可能是出错（异常，由操作系统强制终止）</li>
+</ul>
+<h2 id="c-七状态变迁图">c.) 七状态变迁图</h2>
+<p>当内存不够的时候，执行状态的进程，就绪状态的进程和等待状态的进程都有可能因为优先级较低而被从内存移出放到外存，如果是执行态和就绪态的进程被移出到外存，则被称为<strong>就绪挂起</strong>；如果是等待态的进程被移出到外存，则被称为<strong>等待挂起</strong>。</p>
+<ul>
+<li><strong>等待挂起</strong>：进程在外存等待某事件的出现</li>
+<li><strong>就绪挂起</strong>：进程在外存，但只要进入内存就可以运行新加入的<strong>状态变迁</strong>有两类：挂起和激活。</li>
+<li><strong>挂起：把一个进程从内存移到外存</strong>
+<ul>
+<li><strong>等待</strong>→<strong>等待挂起</strong>：没有进程处于就绪状态或者就绪进程要求更多的内存</li>
+<li><strong>就绪</strong>→<strong>就绪挂起</strong>：当有高优先级等待的进程和低优先级的就绪进程</li>
+<li><strong>运行</strong>→<strong>就绪挂起</strong>：当有高优先级等待挂起进程因为等待的事件发生了而进入就绪挂起</li>
+<li><strong>等待挂起</strong>→<strong>就绪挂起</strong>：当有等待挂起的进程所等待的事件发生了</li>
+</ul>
+</li>
+<li><strong>激活：把一个进程从外存移到内存</strong>
+<ul>
+<li><strong>就绪挂起</strong>→<strong>就绪</strong>：没有就绪进程或挂起就绪进程优先级高于就绪进程</li>
+<li><strong>等待挂起</strong>→<strong>等待</strong>：当一个进程释放足够内存，并有高优先级等待挂起进程</li>
+</ul>
+</li>
+</ul>
+<figure data-type="image" tabindex="6"><img src="https://epitomm.github.io/post-images/%E8%BF%9B%E7%A8%8B%E7%8A%B6%E6%80%81%E5%8F%98%E5%8C%96%E5%9B%BE-%E4%B8%83%E7%8A%B6%E6%80%81.jpg" alt="图片" loading="lazy"></figure>
+<h1 id="p-stylecolorred5-进程状态的队列p"><p style="color:red">5. 进程状态的队列</p></h1>
+<p>进程控制块根据不同状态被放到不同的队列中，如下图所示</p>
+<ul>
+<li>就绪队列：状态为就绪的PCB 队列，该队列可以是链表也可以是索引，还可以多个队列</li>
+<li>执行队列：状态为执行的PCB 队列</li>
+<li>等待队列：状态为等待的PCB 队列，不同的等待事件对应不同的等待队列</li>
+</ul>
+<figure data-type="image" tabindex="7"><img src="https://epitomm.github.io/post-images/%E8%BF%9B%E7%A8%8B%E7%8A%B6%E6%80%81%E7%9A%84%E9%98%9F%E5%88%97.jpg" alt="图片" loading="lazy"></figure>
+<h1 id="p-stylecolorred6-进程状态切换的实现p"><p style="color:red">6. 进程状态切换的实现</p></h1>
+<p>我们用下图来说明两个进程之间的切换过程。</p>
+<figure data-type="image" tabindex="8"><img src="https://epitomm.github.io/post-images/%E8%BF%9B%E7%A8%8B%E7%8A%B6%E6%80%81%E7%9A%84%E5%88%87%E6%8D%A2.png" alt="图片" loading="lazy"></figure>
+<p>如上图所示，有两个并发执行的进程，P0 和 P1.首先是 P0 执行，当出现一个中断或系统调用，硬件开始执行相应的处理程序，假设该处理程序调用了 scheduler（调度程序），该调度程序决定让进程 P1 执行，于是需要切换进程的上下文。具体地，(1)先将进程 P0 的进程上下文（PC，SP 和其他寄存器信息）保存到 PCB0，(2)如果是时钟中断，将PCB0 加入就绪队列中等待下一次被 scheduler 调度；如果是一次 I/O 系统调用，则将 PCB0 放入相应的等待队列中， (3)把进程 P1 的 PCB1 从就绪队列中移除，放进执行队列中，(4)将进程上下文从 PCB1 中恢复到寄存器中，此时 PC 指向了进程 P1 要执行的指令，SP 指向了进程 P1 的执行栈，于是 P1 开始执行。当再次出现时钟中断或者系统调用，再用同样的方式保存 P1 的状态到 PCB1 中。不再赘述。</p>
+<h1 id="p-stylecolorred7-windows-的进程管理p"><p style="color:red">7. Windows 的进程管理</p></h1>
+<p>进程管理之一就是增加一个系统调用，用于创建一个进程。这个理论上很简单但实际实现却比较复杂。在Windows 中，有一个程序，称为CreateProcess，它的简化形式如下</p>
+<pre><code>Boolean CreateProcess(char *prog, char *args);
+</code></pre>
+<p>我们称创建进程的进程为<strong>父亲</strong>，而被创建的进程被称为<strong>孩子</strong>。</p>
+<p>CreateProcess 需要执行哪些步骤呢？我们之前已有介绍，内核需要</p>
+<ul>
+<li>创建并初始化内核中的 PCB</li>
+<li>创建和初始化一个新的地址空间</li>
+<li>加载程序prog 进入地址空间</li>
+<li>将参数 args 拷贝到地址空间的内存中</li>
+<li>初始化硬件上下文来从第一条指令开始执行</li>
+<li>通知调度程序有新的进程准备运行了<br>
+不幸的是，实际的实现要复杂的多，CreateProcess 有十个参数需要设置，如下图所示。<br>
+<img src="https://epitomm.github.io/post-images/CreateProcess.png" alt="**Figure 3.3**: 一个如何用 Windows 的系统调用 CreateProcess 的例子. 前两个参数指定程序和它的参数；剩下的关心进程的运行环境." loading="lazy"><br>
+Figure 3.3: 一个如何用 Windows 的系统调用 CreateProcess 的例子. 前两个参数指定程序和它的参数；剩下的关心进程的运行环境.</li>
+</ul>
+<h1 id="p-stylecolorred-8-unix-的进程管理p"><p style="color:red"> 8. UNIX 的进程管理</p></h1>
+<table>
+<thead>
+<tr>
+<th style="text-align:left"><strong>创建和管理进程的 API</strong></th>
+<th style="text-align:left"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">fork()</td>
+<td style="text-align:left">创建一个子进程作为当前进程的一个克隆。fork 调用有两个  返回，一个是返回到父进程，另一个返回到子进程.</td>
+</tr>
+<tr>
+<td style="text-align:left">exec(prog, args)</td>
+<td style="text-align:left">在当前进程中运行应用程序 prog.</td>
+</tr>
+<tr>
+<td style="text-align:left">exit()</td>
+<td style="text-align:left">告诉内核当前的进程完成了，它的数据结构需要被垃圾回收.</td>
+</tr>
+<tr>
+<td style="text-align:left">wait(processID)</td>
+<td style="text-align:left">暂停一直到该子进程结束.</td>
+</tr>
+<tr>
+<td style="text-align:left">signal(processID, type)</td>
+<td style="text-align:left">发送一个特定类型的中断给其他一个进程.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Figure 3.7</strong>: UNIX 中管理和创建进程的 API.</p>
+<p>UNIX 用一种不同的方法来创建进程，这种实现是在理论上复杂，但实现上却比较简单。UNIX 把 CreateProcess 分割成两个阶段，分别称为 fork 和 exec，如下图所示</p>
+<figure data-type="image" tabindex="9"><img src="https://epitomm.github.io/post-images/fork-exec.jpg" alt="图片" loading="lazy"></figure>
+<p><strong>Figure 3.4</strong>: UNIX 的系统调用 fork 和 exec 的操作. UNIX 的 fork 对父进程做了一个拷贝; UNIX 的 exec 将子进程改变成新运行的程序.</p>
+<p><strong>UNIX 的 fork</strong>创建一个和父进程完全一致的拷贝，只有一项例外（我们需要某种方法来区分父进程和孩子）。一旦上下文设置好，子进程就调用 UNIX 的 exec 程序。exec 加载新的可执行镜像进入内存并开始执行。看上去先拷贝父进程，然后又用一个新的可执行镜像覆盖看上去有些没必要。实际上 fork 和 exec 来创建新进程的实现确是非常快速的，其中所使用的技术我们会在后面介绍。</p>
+<p>在这个设计中, UNIX 的 fork 不接受参数，并返回一个整数。UNIX 的 exec 接受两个参数(要运行的程序的名字和传递给该程序的参数的数组). 这里是 CreateProcess 需要 10 个参数. 部分是因为 UNIX 的 fork 和 exec 的简洁性， 这个接口从 70 年代初期被设计出来到现在几乎没有改变.</p>
+<p><strong>UNIX 的 fork</strong>程序包含以下步骤：</p>
+<ul>
+<li>创建和初始化内核中的 PCB</li>
+<li>创建一个新的地址空间</li>
+<li>初始化地址空间，将父进程的地址空间完全拷贝过来</li>
+<li>继承父进程的执行上下文</li>
+<li>通知调度程序有新的进程可以运行</li>
+</ul>
+<p>比较诡异的一点就是 fork 这个系统调用返回会返回两次：一个是返回给父亲进程，一个是返回给子进程。对于父进程，UNIX 返回子进程的 ID，对于子进程，返回 0 来表示成功。显然，当你克隆了你自己，你需要有某种方式来分辨谁是克隆者，谁是你本身。UNIX 就通过 fork 这个系统调用的返回值来区分这两个进程。Fork 的 sample code 如下图所示</p>
+<pre><code>int child_pid = fork();
+if (child_pid == 0) { //我是子进程.
+  printf(&quot;I am process #   d\n&quot;, getpid()); return 0;
+} else { //我是父进程.
+  printf(&quot;I am the parent of process #   d\n&quot;, child_pid); return 0;
+}
+</code></pre>
+<p>可能的输出有两种：<br>
+<strong>I am the parent of process 495 I am process 495</strong></p>
+<p>另一种概率小但仍可能的输出是:</p>
+<p><strong>I am process 456</strong></p>
+<p><strong>I am the parent of process 456</strong></p>
+<p><strong>Figure 3.5</strong>: fork 一个进程的 UNIX 代码, 和运行这个代码的可能的输出。。getpid 是一个系统调用，用来获取当前进程的 ID.</p>
+<p>如果我们运行图 3.5 的程序会发生什么？UNIX fork 返回两次，一次是从子进程返回，结果是 0，一次从父进程返回， 结果是子进程的 ID。然而，我们不知道是父进程还是子进程先运行。父进程已经在运行了，看上去它更可能先打印输出。然而，一个时钟中断(timer interrupt)可能在父进程fork 了进程后出现，因此会出现进程切换。或者，我们在多核系统上运行，父进程和子进程是同时运行。无论哪种情况子进程都可能在父进程之前输出。</p>
+<p><strong>UNIX 的exec 和wait</strong></p>
+<p>UNIX 的系统调用 exec 完成需要运行一个新成效的步骤。一旦子进程从 UNIX fork 返回并设置了新进程的执行环节后，子进程调用 UNIX exec. 在我们下一节讨论UNIX 管道的时候，我们会描述更多这个如何工作的.</p>
+<p>Exec 包含如下步骤：</p>
+<ul>
+<li>加载程序prog 到当前的地址空间</li>
+<li>拷贝参数 args 到地址空间中</li>
+<li>初始化硬件上下文来从开头开始执行  到此为止，exec 就创建了一个新的进程</li>
+</ul>
+<p>另一方面，父进程常常需要暂停直到子进程完成运行为止，例如下一步骤是依赖于上一步骤的输出。所以 UNIX 还有一个系统调用，很自然地被叫做wait，它会暂停父进程知道子进程完成或者崩掉或者终止。由于父进程可能创建了许多的子进程，wait 需要设定子进程的 ID 作为参数，来确定要等待的子进程。然而，这个对wait 的调用在 UNIX 中是可选的。</p>
+<h1 id="p-stylecolorred9-案例实现一个简单的-shellp"><p style="color:red">9. 案例：实现一个简单的 Shell</p></h1>
+<p>图 3.7 列出的UNIX 系统调用已经足以构建一个灵活和强大的命令行 shell，该 shell 完全在用户级运行，不需要特殊权限.</p>
+<pre><code>main() {
+  char *prog = NULL; char **args = NULL;
+  // 一次读取输入的一行，并解析每一行为程序名字和程序参数
+  while (readAndParseCmdLine(&amp;prog, &amp;args)) {
+    // 创建一个子进程来运行命令. int child_pid = fork();
+    if (child_pid == 0) {
+      //我是子进程，用父进程的输入来运行程序exec(prog, args);
+      // 这里不会到达。。
+      } else {
+        // 我是父进程，等待子进程完成. wait(child_pid);
+        return 0;
+    }
+  }
+}
+</code></pre>
+<p><strong>Figure 3.8</strong>: 一个简单的 UNIX shell 的代码.<br>
+图 3.8 展示了一个shell 的基本操作的代码。这个 shell 从输入读取一个命令行, 然后它 fork 一个进程来执行指令.父进程(shell)在读取下一个要执行的命令行之前必须等待子进程完成。</p>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li><a href="#p-stylecolorred1-%E4%B8%BA%E4%BB%80%E4%B9%88%E5%BC%95%E5%85%A5%E8%BF%9B%E7%A8%8Bp"><p style="color:red">1. 为什么引入进程？</p></a></li>
+<li><a href="#p-stylecolorred2-%E8%BF%9B%E7%A8%8B%E7%9A%84%E5%AE%9A%E4%B9%89p"><p style="color:red">2. 进程的定义</p></a></li>
+<li><a href="#p-stylecolorred3-%E5%86%85%E6%A0%B8%E7%BA%BF%E7%A8%8B%E5%92%8C%E7%94%A8%E6%88%B7%E8%BF%9B%E7%A8%8B%E6%94%BE%E5%88%B0%E4%B8%80%E8%B5%B7p"><p style="color:red">3. 内核线程和用户进程放到一起</p></a></li>
+<li><a href="#p-stylecolorred4-%E8%BF%9B%E7%A8%8B%E7%9A%84%E7%8A%B6%E6%80%81%E5%8F%8A%E5%85%B6%E5%8F%98%E8%BF%81p"><p style="color:red">4. 进程的状态及其变迁</p></a>
+<ul>
+<li><a href="#a-%E4%B8%89%E7%8A%B6%E6%80%81%E5%8F%98%E8%BF%81%E5%9B%BE">a)  三状态变迁图</a></li>
+<li><a href="#b-%E4%BA%94%E7%8A%B6%E6%80%81%E5%8F%98%E8%BF%81%E5%9B%BE">b)  五状态变迁图</a></li>
+<li><a href="#c-%E4%B8%83%E7%8A%B6%E6%80%81%E5%8F%98%E8%BF%81%E5%9B%BE">c.) 七状态变迁图</a></li>
+</ul>
+</li>
+<li><a href="#p-stylecolorred5-%E8%BF%9B%E7%A8%8B%E7%8A%B6%E6%80%81%E7%9A%84%E9%98%9F%E5%88%97p"><p style="color:red">5. 进程状态的队列</p></a></li>
+<li><a href="#p-stylecolorred6-%E8%BF%9B%E7%A8%8B%E7%8A%B6%E6%80%81%E5%88%87%E6%8D%A2%E7%9A%84%E5%AE%9E%E7%8E%B0p"><p style="color:red">6. 进程状态切换的实现</p></a></li>
+<li><a href="#p-stylecolorred7-windows-%E7%9A%84%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86p"><p style="color:red">7. Windows 的进程管理</p></a></li>
+<li><a href="#p-stylecolorred-8-unix-%E7%9A%84%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86p"><p style="color:red"> 8. UNIX 的进程管理</p></a></li>
+<li><a href="#p-stylecolorred9-%E6%A1%88%E4%BE%8B%E5%AE%9E%E7%8E%B0%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E7%9A%84-shellp"><p style="color:red">9. 案例：实现一个简单的 Shell</p></a></li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://epitomm.github.io/post/mian-shi-ti-xi-lie-mysql-shu-ju-ku/">
+              <h3 class="post-title">
+                面试题系列 —— MySQL 数据库
+              </h3>
+            </a>
+          </div>
+        
+
+        
+          
+            <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+<script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+
+<div id="gitalk-container"></div>
+
+<script>
+
+  var gitalk = new Gitalk({
+    clientID: '974bd77fbbd52c2a0647',
+    clientSecret: '6344370ca1314dbd553f45e75a2121a160ef1c44',
+    repo: 'EpitomM.github.io',
+    owner: 'EpitomM',
+    admin: ['EpitomM'],
+    id: (location.pathname).substring(0, 49),      // Ensure uniqueness and length less than 50
+    distractionFreeMode: false  // Facebook-like distraction free mode
+  })
+
+  gitalk.render('gitalk-container')
+
+</script>
+
+          
+
+          
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/EpitomM/EpitomM.github.io" target="_blank">EpitomM</a>
+  <a class="rss" href="https://epitomm.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>
