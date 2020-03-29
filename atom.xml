@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://epitomm.github.io</id>
     <title>SSM</title>
-    <updated>2020-03-29T05:48:06.438Z</updated>
+    <updated>2020-03-29T06:21:19.051Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://epitomm.github.io"/>
     <link rel="self" href="https://epitomm.github.io/atom.xml"/>
@@ -1263,7 +1263,7 @@ public static void main(String[] args) {
 <li>增删查效率：</li>
 </ol>
 <ul>
-<li><code>ArrayList</code> 如果添加到<strong>末尾</strong>，时间复杂度** O(1)<strong>；如果添加</strong>中间<strong>到指定 i 位置，需要把 i ~ n 位置的元素统一向后移动，时间复杂度 <strong>O(n-i)</strong>。如果</strong>按下标查找**，时间复杂度<strong>O(1)</strong>。</li>
+<li><code>ArrayList</code> 如果添加到<strong>末尾</strong>，时间复杂度<strong>O(1)</strong>；如果添加<strong>中间</strong>到指定 i 位置，需要把 i ~ n 位置的元素统一向后移动，时间复杂度 <strong>O(n-i)</strong>。如果<strong>按下标查找</strong>，时间复杂度<strong>O(1)</strong>。</li>
 <li><code>LinkedList</code> 如果添加<strong>末尾</strong>，时间复杂度 <strong>O(1)</strong>，如果插入到<strong>中间</strong>第 i 个位置，需要先查找到到 i 个位置的元素，查找效率 <strong>O(n)</strong>，然后执行添加操作，修改指针指向，复杂度** O(1)<strong>。如果</strong>按下标查找**，需要判断下标是否大于当前 <code>size/2</code> ，如果大于则从末尾向中间查找；否则从头向中间查找，时间复杂度** O(n)**。</li>
 </ul>
 <h1 id="3-arraylist-扩容机制">3. ArrayList 扩容机制</h1>
