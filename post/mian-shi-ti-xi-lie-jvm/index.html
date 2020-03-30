@@ -3,7 +3,7 @@
     <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>面试题系列 —— JVM | SSM</title>
-<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1585532879073">
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1585572938713">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
 <link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
 <link rel="alternate" type="application/atom+xml" title="面试题系列 —— JVM | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
@@ -26,7 +26,7 @@ JDK：JVM + 基础类库..." />
       <div class="main-content">
         <div class="site-header">
   <a href="https://epitomm.github.io">
-  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1585532879073" alt="">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1585572938713" alt="">
   </a>
   <h1 class="site-title">
     SSM
@@ -199,7 +199,7 @@ JDK：JVM + 基础类库..." />
 <ul>
 <li>虚拟机栈中局部变量引用的对象</li>
 <li>本地方法栈中 JNI 中引用的对象</li>
-<li>方法去区静态属性引用的对象</li>
+<li>方法区静态属性引用的对象</li>
 <li>方法区中的常量引用的对象</li>
 </ul>
 <h1 id="5-介绍一下-强引用-软引用-弱引用-虚引用">5. 介绍一下 强引用、软引用、弱引用、虚引用</h1>
@@ -210,14 +210,14 @@ JDK：JVM + 基础类库..." />
 </code></pre>
 <h2 id="软引用">软引用</h2>
 <p>仅有软引用指向该对象时，在<strong>垃圾回收后，内存仍不足</strong>就会再次触发垃圾回收，回收<strong>软引用对象</strong>。可配合引用队列回收软引用本身。</p>
-<p>使用** SoftReference** 类来创建软引用。</p>
+<p>使用<code>SoftReference</code> 类来创建软引用。</p>
 <pre><code>Object obj = new Object();
 SoftReference&lt;Ojbect&gt; sf = new SoftReference&lt;Object&gt;(obj);
 obj = null; // 使对象只被软引用关联
 </code></pre>
 <h2 id="弱引用">弱引用</h2>
 <p>当仅有弱引用指向该对象时，在<strong>垃圾回收</strong>时，无论内存是否充足，都会回收弱引用对象。可配合引用队列回收软引用本身。</p>
-<p>使用 **WeakReference **类来创建弱引用。</p>
+<p>使用 <code>WeakReference</code>类来创建弱引用。</p>
 <pre><code>Object obj = new Object();
 WeakReference&lt;Object&gt; wf = new WeakReference&lt;Object&gt;(obj);
 obj = null;
