@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://epitomm.github.io</id>
     <title>SSM</title>
-    <updated>2020-03-30T13:03:40.265Z</updated>
+    <updated>2020-03-31T15:01:31.783Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://epitomm.github.io"/>
     <link rel="self" href="https://epitomm.github.io/atom.xml"/>
@@ -10,6 +10,250 @@
     <logo>https://epitomm.github.io/images/avatar.png</logo>
     <icon>https://epitomm.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, SSM</rights>
+    <entry>
+        <title type="html"><![CDATA[面试题系列 —— Java 并发]]></title>
+        <id>https://epitomm.github.io/post/mian-shi-ti-xi-lie-java-bing-fa/</id>
+        <link href="https://epitomm.github.io/post/mian-shi-ti-xi-lie-java-bing-fa/">
+        </link>
+        <updated>2020-03-31T14:58:28.000Z</updated>
+        <content type="html"><![CDATA[<h1 id="1什么是线程和进程">1.什么是线程和进程？</h1>
+<ul>
+<li>进程是 OS 资源分配的基本单位。进程拥有独立的虚拟地址空间。</li>
+<li>线程是 CPU 调度的基本单位。线程共享进程的堆、方法区资源，但每个线程有自己的程序计数器、虚拟机栈、本地方法栈。</li>
+</ul>
+<h1 id="2并发和并行的区别">2.并发和并行的区别？</h1>
+<ul>
+<li>并发：统一时间段内，多个任务都在执行。</li>
+<li>并行：同一时间内，多个任务同时执行。</li>
+</ul>
+<h1 id="3为什么要使用多线程">3.为什么要使用多线程？</h1>
+<p>先从总体上来说：</p>
+<ul>
+<li>从计算机底层来说：线程可以比作是轻量级的进程，是程序执行的最小单位，**线程间的切换和调度的成本远远小于进程。**另外，多核CPU时代意味着多个线程可以同时运行，这减少了线程上下文切换的开销。</li>
+<li>从当代互联网发展趋势来说：现在的系统动不动就要求百万级甚至千万级的并发量，而多线程并发编程正是开发高并发系统的基础，利用好多线程机制可以大大提高系统整体的并发能力以及性能。</li>
+</ul>
+<p>再深入到计算机底层来探讨：</p>
+<ul>
+<li>单核时代：在单核时代多线程主要是为了提高CPU和IO设备的综合利用率。举个例子：当只有一个线程的时候会导致CPU计算时，IO设备空闲；进行IO操作时，CPU空闲。我们可以简单地说这两者的利用率目前都是50%左右。但是当有两个线程的时候就不一样了，当一个线程执行CPU计算时，另外一个线程可以进行IO操作，这样两个的利用率就可以在理想情况下达到100%了。</li>
+<li>多核时代：多核时代多线程主要是为了<strong>提高CPU利用率</strong>。举个例子：假如我们要计算一个复杂的任务，我们只用一个线程的话，CPU只会一个CPU核心被利用到，而创建多个线程就可以让多个CPU核心被利用到，这样就提高了CPU的利用率。</li>
+</ul>
+<h1 id="4创建线程的方式">4.创建线程的方式</h1>
+<ul>
+<li>实现 Runnable 接口</li>
+</ul>
+<pre><code>// 1. 实现 Runnable 接口
+class MyRunnable implements Runnbale{
+  // 2. 实现 run 方法
+  public void run(){
+    // ...
+  }
+}
+</code></pre>
+<pre><code>public static void main(String[] args){
+  // 3. 使用自定义 runnable 对象创建线程
+  MyRunnable runnable = new MyRunnable();
+  Thread thread = new Thread(runnable);
+  // 4. start() 启动线程
+  thread.start();
+}
+</code></pre>
+<ul>
+<li>实现 Callable 接口</li>
+</ul>
+<p>与 Runnable 相比，Callable 可以有返回值，返回值由 FutureTask 进行封装。</p>
+<pre><code>// 1. 实现 Callable 接口，并声明泛型
+class MyCallable implements Callable&lt;Integer&gt;{
+  // 2. 重写 call 方法
+  public Integer call(){
+    return 123;
+  }
+}
+</code></pre>
+<pre><code>public static void main(String[] args) throws ExecutionException, InterruptedException{
+  MyCallable callable = new MyCallable();
+  // 3. 使用 FutureTask 封装 call 方法的返回值
+  FutureTask&lt;Integer&gt; ft = new FutureTask&lt;&gt;(callable);
+  Thread thread = new Thread(ft);
+  thread.start();
+  System.out.println(ft.get());
+}
+</code></pre>
+<ul>
+<li>继承 Thread 类</li>
+</ul>
+<pre><code>class MyThread extends Thread{
+  public void run(){
+    // ...
+  }
+}
+</code></pre>
+<pre><code>public static void main(String[] args){
+  MyThread thread = new MyThread();
+  thread.start();
+}
+</code></pre>
+<h2 id="继承-vs-实现接口">继承 vs 实现接口</h2>
+<p>实现接口更好一些，因为：</p>
+<ul>
+<li>Java 不支持多重继承，因此继承了 Thread 类就无法集成其它类，但是可以实现多个接口。</li>
+<li>适合多个线程进行资源共享（Runnable 类可以作为多个 Thread 构造方法的参数）</li>
+<li>线程池内只能放入 Runnable 或 Callable 接口的实现类，不能放入继承 Thread 对象的类。</li>
+</ul>
+<h1 id="5runnable-接口和-callable-接口的区别">5.Runnable 接口和 Callable 接口的区别</h1>
+<ul>
+<li>Runnable 接口重写的是 run 方法，Callable 接口重写的是 call 方法</li>
+<li>run 方法执行后不能有返回值，call 方法执行后可以有返回值。</li>
+<li>call()方法可以抛出异常，run()方法不可以</li>
+<li>运行Callable任务可以拿到一个Future对象，表示异步计算的结果 。通过Future对象可以了解任务执行情况，可取消任务的执行，还可获取执行结果。</li>
+</ul>
+<h1 id="6start-方法和-run-方法的区别">6.start() 方法和 run() 方法的区别</h1>
+<p>new 一个 Thread，线程进入了新建状态</p>
+<ul>
+<li>start() 方法可以启动一个线程，将线程由新建状态切换到就绪态。</li>
+<li>run() 方法不会启动一个线程，只会把它当做一个普通方法去执行。</li>
+</ul>
+<h1 id="7sleep-方法和-wait-方法有什么区别">7.sleep 方法和 wait 方法有什么区别？</h1>
+<ul>
+<li>wait() 是 Object 类的方法，而 sleep() 是 Thread 的静态方法。</li>
+<li>sleep 和 wait 方法都可以用来放弃 CPU 一定时间，<strong>暂停线程的执行</strong>。</li>
+<li><strong>是否释放锁</strong>：两者最主要的区别在于：sleep 方法不会释放锁，而 wait 方法会释放锁。</li>
+<li><strong>用途</strong>：wait 通常用于线程间交互 / 通信，sleep 通常被用于暂停执行。</li>
+<li><strong>是否会自动苏醒</strong>：wait 方法被调用后，线程不会自动苏醒，需要别的线程调用同一个对象上的 notify() 或者 notifyAll() 方法。sleep() 方法执行完成后，线程会自动苏醒。或者可以使用 wait(long timeout) 超时后线程会自动苏醒。</li>
+</ul>
+<h1 id="8reentrantlock-和-synchronized-的比较">8.ReentrantLock 和 synchronized 的比较</h1>
+<ul>
+<li>锁的实现</li>
+</ul>
+<p>synchronized 是 JVM 实现的，而 ReentrantLock 是 JDK 实现的。</p>
+<ul>
+<li>性能</li>
+</ul>
+<p>新版本 Java 对 synchronized 进行了很多优化，例如自旋锁等，synchronized 和 ReentrantLock 大致相同。</p>
+<ul>
+<li>等待可中断</li>
+</ul>
+<p>当持有锁的线程长期不释放锁时，正在等待的线程可以选择放弃等待，改为处理其他事情。</p>
+<p>ReentrantLock 可中断，而 synchronized 不行。</p>
+<ul>
+<li>公平锁</li>
+</ul>
+<p>公平锁是指多个线程在等待同一个锁时，必须按照申请锁的时间顺序来依次获得锁。</p>
+<p>synchronized 是不公平锁，而 ReentrantLock 默认情况下也是非公平的，但是可以在构造函数中设置公平还是不公平锁。</p>
+<ul>
+<li>锁绑定多个条件</li>
+</ul>
+<p>一个 ReentrantLock 可以同时绑定多个 Conditino 对象</p>
+<ul>
+<li>使用选择</li>
+</ul>
+<p>除非需要使用 ReentrantLock 的高级功能，否则优先使用 synchronized。这是因为 synchronized 是 JVM 实现的一 种锁机制，JVM 原生地支持它，而 ReentrantLock 不是所有的 JDK 版本都支持。并且使用 synchronized 不用担心没有释放锁而导致死锁问题，因为 JVM 会确保锁的释放。</p>
+<h1 id="9cyclicbarrier和countdownlatch的区别">9.CyclicBarrier和CountDownLatch的区别</h1>
+<h2 id="countdownlatch">CountDownLatch</h2>
+<p>用来控制一个线程等待多个线程。</p>
+<p>维护了一个计数器 cnt，<strong>每次调用 countDown() 方法会让计数器的值减 1，减到 0 的时候，那些因为调用 await() 方法而在等待的线程就会被唤醒</strong>。</p>
+<h2 id="cyclicbarrier">CyclicBarrier</h2>
+<p>用来控制多个线程互相等待，只有当多个线程都到达时，这些线程才会继续执行。</p>
+<p>和 CountdownLatch 相似，都是通过维护计数器来实现的。<strong>线程执行 await() 方法之后计数器会减 1，并进行等待，直到计数器为 0，所有调用 await() 方法而在等待的线程才能继续执行</strong>。</p>
+<p>CyclicBarrier 和 CountdownLatch 的一个区别是，CyclicBarrier 的计数器通过调用 reset() 方法可以循环使用，所以它才叫做<strong>循环屏障</strong>。</p>
+<p>CyclicBarrier 有两个构造函数，其中 parties 指示计数器的初始值，barrierAction 在所有线程都到达屏障的时候会执行一次。</p>
+<h1 id="10semaphore有什么作用">10.Semaphore有什么作用</h1>
+<p>Semaphore就是一个信号量，它的作用是<strong>限制某段代码块的并发数</strong>。Semaphore有一个构造函数，可以传入一个int型整数n，表示某段代码最多只有n个线程可以访问，如果超出了n，那么请等待，等到某个线程执行完毕这段代码块，下一个线程再进入。由此可以看出如果Semaphore构造函数中传入的int型整数n=1，相当于变成了一个synchronized了。</p>
+<h1 id="11volatile关键字的作用">11.volatile关键字的作用</h1>
+<ul>
+<li>保证了可见性，不能保证原子性</li>
+</ul>
+<p>立刻将缓存中的值写到内存；线程通过嗅探总线上传播过来的数据监测自己的缓存是否过期了，如果过期了，就把缓存内的值设置为失效，如果要修改时，就去主存读取新值。</p>
+<ul>
+<li>禁止指令重排</li>
+</ul>
+<h1 id="12使用-blockingqueue-生产者消费者问题">12.使用 BlockingQueue 生产者消费者问题</h1>
+<pre><code>public class ProductConsumer{
+  private static BlockingQueue&lt;String&gt; queue = new BlockingQueue&lt;&gt;();
+  private static class Producer extends Thread{
+    @Override
+    public void run(){
+      try{
+        queue.put(&quot;product&quot;);
+      }catch(InterruptedException e){
+        e.printStackTrace();
+      }
+      System.out.print(&quot;produce...&quot;);
+    }
+  }
+  private static class Consumer extends Thread{
+    @Override
+    public void run(){
+      try{
+        String product = queue.take();
+      }catch(InterruptedException e){
+        e.printStackTrace();
+      }
+      System.out.print(&quot;consume...&quot;)
+    }
+  }
+  public static void main(String[] args) {
+  for (int i = 0; i &lt; 2; i++) {
+    Producer producer = new Producer();
+    producer.start();
+  }
+  for (int i = 0; i &lt; 5; i++) {
+    Consumer consumer = new Consumer();
+    consumer.start();
+  }
+  for (int i = 0; i &lt; 3; i++) {
+    Producer producer = new Producer();
+    producer.start();
+  } 
+}
+</code></pre>
+<p>运行结果：</p>
+<pre><code>produce..produce..consume..consume..produce..consume..produce..consume..produce..consume.. 
+</code></pre>
+<h1 id="13一个线程如果出现了运行时异常会怎么样">13.一个线程如果出现了运行时异常会怎么样</h1>
+<p>如果这个异常没有被捕获的话，这个线程就停止执行了。另外重要的一点是：<strong>如果这个线程持有某个某个对象的监视器，那么这个对象监视器会被立即释放</strong></p>
+<h1 id="14threadlocal有什么用">14.ThreadLocal有什么用</h1>
+<p>线程局部变量，<strong>以空间换时间</strong>，每个线程内都有一个，把数据进行隔离，解决多线程之间共享数据的安全问题。</p>
+<h1 id="15wait方法和notifynotifyall方法在放弃对象监视器时有什么区别">15.wait()方法和notify()/notifyAll()方法在放弃对象监视器时有什么区别</h1>
+<p>wait()方法和notify()/notifyAll()方法在放弃对象监视器的时候的区别在于：<strong>wait()方法立即释放对象监视器，notify()/notifyAll()方法则会等待线程剩余代码执行完毕才会放弃对象监视器</strong>。</p>
+<h1 id="16为什么要使用线程池">16.为什么要使用线程池</h1>
+<p>来一个请求创建一个线程，执行结束再销毁线程，资源耗费太大，使用线程池达到对<strong>线程的复用</strong>。使用线程池还可以灵活地控制并发的数目。</p>
+<h1 id="17怎么检测一个线程是否持有对象监视器">17.怎么检测一个线程是否持有对象监视器</h1>
+<p>我也是在网上看到一道多线程面试题才知道有方法可以判断某个线程是否持有对象监视器：Thread类提供了一个holdsLock(Object obj)方法，当且仅当对象obj的监视器被某条线程持有的时候才会返回true，注意这是一个static方法，这意味着&quot;某条线程&quot;指的是当前线程。</p>
+<h1 id="18concurrenthashmap的并发度是什么">18.ConcurrentHashMap的并发度是什么</h1>
+<p>ConcurrentHashMap的并发度就是segment的大小，默认为16，这意味着最多同时可以有16条线程操作ConcurrentHashMap，这也是ConcurrentHashMap对Hashtable的最大优势，任何情况下，Hashtable能同时有两条线程获取Hashtable中的数据吗？</p>
+<h1 id="19futuretask是什么">19.FutureTask是什么</h1>
+<p>在介绍 Callable 时我们知道它可以有返回值，返回值通过 Future 进行封装。FutureTask 实现了 RunnableFuture 接口，该接口继承自 Runnable 和 Future 接口，这使得 FutureTask 既可以当做一个任务执行，也可以有返回值。</p>
+<pre><code>public class FutureTask&lt;V&gt; implements RunnableFuture&lt;V&gt; 
+public interface RunnableFuture&lt;V&gt; extends Runnable, Future&lt;V&gt; 
+</code></pre>
+<p>FutureTask 可用<strong>于异步获取执行结果</strong>或<strong>取消执行任务的场景</strong>。当一个计算任务需要执行很长时间，那么就可以用 FutureTask 来封装这个任务，主线程在完成自己的任务之后再去获取结果。</p>
+<h1 id="20aqs">20.AQS</h1>
+<ol>
+<li>概念</li>
+</ol>
+<ul>
+<li>AbstractQueuedSynchronizer</li>
+<li>同步发生器</li>
+<li>构建 LOCK</li>
+<li>JUC：java.util.current</li>
+</ul>
+<ol start="2">
+<li>基本思想</li>
+</ol>
+<ul>
+<li>通过内置对象 FIFO 同步队列来完成线程争夺资源的管理工作。</li>
+<li>AQS实际上以双向队列的形式连接所有的Entry，比方说ReentrantLock，所有等待的线程都被放在一个Entry中并连成双向队列，前面一个线程使用ReentrantLock好了，则双向队列实际上的第一个Entry开始运行。</li>
+<li>AQS定义了对双向队列所有的操作，而只开放了tryLock和tryRelease方法给开发者使用，开发者可以根据自己的实现重写tryLock和tryRelease方法，以实现自己的并发功能。</li>
+</ul>
+<ol start="3">
+<li>CLH同步队列</li>
+</ol>
+<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/CLH%E5%90%8C%E6%AD%A5%E9%98%9F%E5%88%97.png" alt="图片" loading="lazy"></figure>
+<h1 id="参考链接">参考链接</h1>
+<p><a href="https://github.com/Snailclimb/JavaGuide/blob/master/docs/java/Multithread/JavaConcurrencyBasicsCommonInterviewQuestionsSummary.md">https://github.com/Snailclimb/JavaGuide/blob/master/docs/java/Multithread/JavaConcurrencyBasicsCommonInterviewQuestionsSummary.md</a></p>
+<p><a href="https://mp.weixin.qq.com/s/SCugxnAV1_f3sq-UhFD7wg">https://mp.weixin.qq.com/s/SCugxnAV1_f3sq-UhFD7wg</a></p>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[记一个面试题 —— Redis 一启动挂了怎么办]]></title>
         <id>https://epitomm.github.io/post/ji-yi-ge-mian-shi-ti-redis-yi-qi-dong-gua-liao-zen-me-ban/</id>
@@ -275,7 +519,7 @@ OK
 <figure data-type="image" tabindex="19"><img src="https://epitomm.github.io/post-images/%E9%87%8D%E6%96%B0%E4%B8%8A%E7%BA%BF%E7%9A%84master%E5%8F%98%E6%88%90slave%E4%BA%86.png" alt="图片" loading="lazy"></figure>
 <p>再次上线的 6379 变成 slave 了</p>
 <h1 id="总结-2">总结</h1>
-<p>**集群 **</p>
+<p><strong>集群</strong></p>
 <ul>
 <li>集群简介</li>
 <li>集群结构</li>
