@@ -3,7 +3,7 @@
     <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>面试题系列 —— Java 并发 | SSM</title>
-<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1585667119424">
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1585707517517">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
 <link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
 <link rel="alternate" type="application/atom+xml" title="面试题系列 —— Java 并发 | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
@@ -11,14 +11,13 @@
 
 
 
-    <meta name="description" content="1.什么是线程和进程？
+    <meta name="description" content="
+Java 并发的东西比较多，今天先总结一部分。
+
+1.什么是线程和进程？
 
 进程是 OS 资源分配的基本单位。进程拥有独立的虚拟地址空间。
-线程是 CPU 调度的基本单位。线程共享进程的堆、方法区资源，但每个线程有自己的程序计数器、虚拟机栈、本地方法栈。
-
-2.并发和并行的区别？
-
-并发：..." />
+线程是 CPU 调度的基本单位。线程共享进程的堆、方法区资源，但每个线程有自己的程序计数器、虚拟机..." />
     <meta name="keywords" content="Java 并发,面试题" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
     <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
@@ -28,7 +27,7 @@
       <div class="main-content">
         <div class="site-header">
   <a href="https://epitomm.github.io">
-  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1585667119424" alt="">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1585707517517" alt="">
   </a>
   <h1 class="site-title">
     SSM
@@ -105,7 +104,10 @@
             
             <div class="post-content-wrapper">
               <div class="post-content">
-                <h1 id="1什么是线程和进程">1.什么是线程和进程？</h1>
+                <blockquote>
+<p>Java 并发的东西比较多，今天先总结一部分。</p>
+</blockquote>
+<h1 id="1什么是线程和进程">1.什么是线程和进程？</h1>
 <ul>
 <li>进程是 OS 资源分配的基本单位。进程拥有独立的虚拟地址空间。</li>
 <li>线程是 CPU 调度的基本单位。线程共享进程的堆、方法区资源，但每个线程有自己的程序计数器、虚拟机栈、本地方法栈。</li>
@@ -118,7 +120,7 @@
 <h1 id="3为什么要使用多线程">3.为什么要使用多线程？</h1>
 <p>先从总体上来说：</p>
 <ul>
-<li>从计算机底层来说：线程可以比作是轻量级的进程，是程序执行的最小单位，**线程间的切换和调度的成本远远小于进程。**另外，多核CPU时代意味着多个线程可以同时运行，这减少了线程上下文切换的开销。</li>
+<li>从计算机底层来说：线程可以比作是轻量级的进程，是程序执行的最小单位，<strong>线程间的切换和调度的成本远远小于进程</strong>另外，多核CPU时代意味着多个线程可以同时运行，这减少了线程上下文切换的开销。</li>
 <li>从当代互联网发展趋势来说：现在的系统动不动就要求百万级甚至千万级的并发量，而多线程并发编程正是开发高并发系统的基础，利用好多线程机制可以大大提高系统整体的并发能力以及性能。</li>
 </ul>
 <p>再深入到计算机底层来探讨：</p>
