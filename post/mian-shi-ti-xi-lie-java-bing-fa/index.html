@@ -3,7 +3,7 @@
     <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>面试题系列 —— Java 并发 | SSM</title>
-<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1585707517517">
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1585757909022">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
 <link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
 <link rel="alternate" type="application/atom+xml" title="面试题系列 —— Java 并发 | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
@@ -27,7 +27,7 @@ Java 并发的东西比较多，今天先总结一部分。
       <div class="main-content">
         <div class="site-header">
   <a href="https://epitomm.github.io">
-  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1585707517517" alt="">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1585757909022" alt="">
   </a>
   <h1 class="site-title">
     SSM
@@ -87,7 +87,7 @@ Java 并发的东西比较多，今天先总结一部分。
                 2020-03-31
               </span>
               <span>
-                12 min read
+                13 min read
               </span>
               
                 <a href="https://epitomm.github.io/tag/oxh4weKge/" class="post-tag">
@@ -332,17 +332,32 @@ public interface RunnableFuture&lt;V&gt; extends Runnable, Future&lt;V&gt;
 <li>基本思想</li>
 </ol>
 <ul>
-<li>通过内置对象 FIFO 同步队列来完成线程争夺资源的管理工作。</li>
-<li>AQS实际上以双向队列的形式连接所有的Entry，比方说ReentrantLock，所有等待的线程都被放在一个Entry中并连成双向队列，前面一个线程使用ReentrantLock好了，则双向队列实际上的第一个Entry开始运行。</li>
-<li>AQS定义了对双向队列所有的操作，而只开放了tryLock和tryRelease方法给开发者使用，开发者可以根据自己的实现重写tryLock和tryRelease方法，以实现自己的并发功能。</li>
+<li>AQS核心思想是，如果被请求的共享资源空闲，则将当前请求资源的线程设置为有效的工作线程，并且将共享资源设置为锁定状态。如果被请求的共享资源被占用，那么就需要一套线程阻塞等待以及被唤醒时锁分配的机制，这个机制AQS是用CLH队列锁实现的，即将暂时获取不到锁的线程加入到队列中。</li>
+<li>CLH(Craig,Landin,and Hagersten)队列是一个虚拟的双向队列（虚拟的双向队列即不存在队列实例，仅存在结点之间的关联关系）。AQS 是将每条请求共享资源的线程封装成一个 CLH 锁队列的一个结点（Node）来实现锁的分配。</li>
 </ul>
-<ol start="3">
-<li>CLH同步队列</li>
-</ol>
+<p>CLH同步队列</p>
 <figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/CLH%E5%90%8C%E6%AD%A5%E9%98%9F%E5%88%97.png" alt="图片" loading="lazy"></figure>
+<p>AQS 使用一个 int 成员变量来表示同步状态，通过内置的 FIFO 队列来完成获取资源线程的排队工作。AQS 使用 CAS 对该同步状态进行原子操作实现对其值的修改。</p>
+<pre><code>private volatile int state;//共享变量，使用volatile修饰保证线程可见性
+</code></pre>
+<p>状态信息通过 protected 类型的getState，setState，compareAndSetState进行操作</p>
+<pre><code>//返回同步状态的当前值
+protected final int getState() {
+        return state;
+}
+ // 设置同步状态的值
+protected final void setState(int newState) {
+        state = newState;
+}
+//原子地（CAS操作）将同步状态值设置为给定值update如果当前同步状态的值等于expect（期望值）
+protected final boolean compareAndSetState(int expect, int update) {
+        return unsafe.compareAndSwapInt(this, stateOffset, expect, update);
+}
+</code></pre>
 <h1 id="参考链接">参考链接</h1>
-<p><a href="https://github.com/Snailclimb/JavaGuide/blob/master/docs/java/Multithread/JavaConcurrencyBasicsCommonInterviewQuestionsSummary.md">https://github.com/Snailclimb/JavaGuide/blob/master/docs/java/Multithread/JavaConcurrencyBasicsCommonInterviewQuestionsSummary.md</a></p>
-<p><a href="https://mp.weixin.qq.com/s/SCugxnAV1_f3sq-UhFD7wg">https://mp.weixin.qq.com/s/SCugxnAV1_f3sq-UhFD7wg</a></p>
+<p><a href="https://github.com/Snailclimb/JavaGuide/blob/master/docs/java/Multithread/JavaConcurrencyBasicsCommonInterviewQuestionsSummary.md">https://github.com/Snailclimb/JavaGuide/blob/master/docs/java/Multithread/JavaConcurrencyBasicsCommonInterviewQuestionsSummary.md</a><br>
+<a href="https://mp.weixin.qq.com/s/SCugxnAV1_f3sq-UhFD7wg">https://mp.weixin.qq.com/s/SCugxnAV1_f3sq-UhFD7wg</a><br>
+<a href="https://github.com/Snailclimb/JavaGuide/blob/master/docs/java/Multithread/AQS.md">https://github.com/Snailclimb/JavaGuide/blob/master/docs/java/Multithread/AQS.md</a></p>
 
               </div>
               <div class="toc-container">

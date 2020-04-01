@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://epitomm.github.io</id>
     <title>SSM</title>
-    <updated>2020-04-01T02:18:53.344Z</updated>
+    <updated>2020-04-01T16:18:31.637Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://epitomm.github.io"/>
     <link rel="self" href="https://epitomm.github.io/atom.xml"/>
@@ -10,6 +10,676 @@
     <logo>https://epitomm.github.io/images/avatar.png</logo>
     <icon>https://epitomm.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, SSM</rights>
+    <entry>
+        <title type="html"><![CDATA[面试题 —— ThreadLocal]]></title>
+        <id>https://epitomm.github.io/post/mian-shi-ti-threadlocal/</id>
+        <link href="https://epitomm.github.io/post/mian-shi-ti-threadlocal/">
+        </link>
+        <updated>2020-04-01T16:09:37.000Z</updated>
+        <content type="html"><![CDATA[<h1 id="一-threadlocal-介绍">一、ThreadLocal 介绍</h1>
+<h2 id="11-官方介绍">1.1 官方介绍</h2>
+<pre><code>/**
+ * This class provides thread-local variables.  These variables differ from
+ * their normal counterparts in that each thread that accesses one (via its
+ * {@code get} or {@code set} method) has its own, independently initialized
+ * copy of the variable.  {@code ThreadLocal} instances are typically private
+ * static fields in classes that wish to associate state with a thread (e.g.,
+ * a user ID or Transaction ID).
+ *
+ * &lt;p&gt;For example, the class below generates unique identifiers local to each
+ * thread.
+ * A thread's id is assigned the first time it invokes {@code ThreadId.get()}
+ * and remains unchanged on subsequent calls.
+ * &lt;pre&gt;
+ * import java.util.concurrent.atomic.AtomicInteger;
+ *
+ * public class ThreadId {
+ *     // Atomic integer containing the next thread ID to be assigned
+ *     private static final AtomicInteger nextId = new AtomicInteger(0);
+ *
+ *     // Thread local variable containing each thread's ID
+ *     private static final ThreadLocal&amp;lt;Integer&amp;gt; threadId =
+ *         new ThreadLocal&amp;lt;Integer&amp;gt;() {
+ *             &amp;#64;Override protected Integer initialValue() {
+ *                 return nextId.getAndIncrement();
+ *         }
+ *     };
+ *
+ *     // Returns the current thread's unique ID, assigning it if necessary
+ *     public static int get() {
+ *         return threadId.get();
+ *     }
+ * }
+ * &lt;/pre&gt;
+ * &lt;p&gt;Each thread holds an implicit reference to its copy of a thread-local
+ * variable as long as the thread is alive and the {@code ThreadLocal}
+ * instance is accessible; after a thread goes away, all of its copies of
+ * thread-local instances are subject to garbage collection (unless other
+ * references to these copies exist).
+ *
+ * @author  Josh Bloch and Doug Lea
+ * @since   1.2
+ */
+</code></pre>
+<p>从 Java 官方文档中的描述：ThreadLocal类用来提供<strong>线程内部的局部变量</strong>。这种变量在多线程环境下访问（通过get和set方法访问）时能保证各个线程的变量相对独立于其他线程内的变量。ThreadLocal实例通常来说都是private static类型的，用于关联线程和线程上下文。<br>
+我们可以得知ThreadLocal的作用是：提供线程内的局部变量，不同的线程之间不会相互干扰，这种变量在线程的生命周期内起作用，减少同一个线程内多个函数或组件之间一些公共变量传递的复杂度。</p>
+<p>总结：</p>
+<ol>
+<li>
+<p>线程并发：在多并发的场景下</p>
+</li>
+<li>
+<p>传递数据：我们可以通过 ThreadLocal 在同一线程，不同组件中传递公共变量</p>
+</li>
+<li>
+<p>线程隔离：每个线程的变量都是独立的，不会互相影响。</p>
+</li>
+</ol>
+<h2 id="12-基本使用">1.2 基本使用</h2>
+<h3 id="121-常用方法">1.2.1 常用方法</h3>
+<p>在使用之前，我们先来认识几个 ThreadLoal 的常用方法</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left"><strong>方法声明</strong></th>
+<th style="text-align:left"><strong>描述</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">ThreadLocal()</td>
+<td style="text-align:left">创建 ThreadLocal 对象</td>
+</tr>
+<tr>
+<td style="text-align:left">public void set(T value)</td>
+<td style="text-align:left">设置当前线程绑定的局部变量</td>
+</tr>
+<tr>
+<td style="text-align:left">public T get()</td>
+<td style="text-align:left">获取当前线程绑定的局部变量</td>
+</tr>
+<tr>
+<td style="text-align:left">public void remove()</td>
+<td style="text-align:left">移除当前线程绑定的局部变量</td>
+</tr>
+</tbody>
+</table>
+<h3 id="122-使用案列">1.2.2 使用案列</h3>
+<pre><code>package com.ssm.threadlocal;
+/**
+ * 需求：线程隔离
+ *  在多线程并发的场景下，每个线程中的变量都是互相独立
+ *      线程 A：设置(变量1)    获取(变量1)
+ *      线程 B：设置(变量2)    获取(变量2)
+ */
+public class MyDemo01 {
+    private String content;
+    private String getContent(){
+        return content;
+    }
+    private void setContent(String content){
+        this.content = content;
+    }
+
+    public static void main(String[] args) {
+        MyDemo01 demo = new MyDemo01();
+        for (int i = 0; i &lt; 5; i++) {
+            Thread thread = new Thread(()-&gt;{
+                /*
+                    每个线程：存一个变量，过一会 取出这个变量
+                 */
+                demo.setContent(Thread.currentThread().getName() + &quot;的数据&quot;);
+                System.out.println(&quot; ---------------- &quot;);
+                System.out.println(Thread.currentThread().getName() + &quot;---&gt;&quot; + demo.getContent());
+            });
+            thread.setName(&quot;线程&quot; + i);
+            thread.start();
+        }
+    }
+}
+</code></pre>
+<p>运行结果：部分线程取出的数据 与 它存入的数据不一样</p>
+<pre><code> ---------------- 
+ ---------------- 
+线程2---&gt;线程3的数据
+ ---------------- 
+线程1---&gt;线程4的数据
+ ---------------- 
+线程4---&gt;线程4的数据
+线程0---&gt;线程2的数据
+ ---------------- 
+线程3---&gt;线程4的数据
+</code></pre>
+<p>使用 ThreadLocal 实现线程隔离：</p>
+<pre><code>package com.ssm.threadlocal;
+
+/**
+ * 需求：线程隔离
+ *  在多线程并发的场景下，每个线程中的变量都是互相独立
+ *      线程 A：设置(变量1)    获取(变量1)
+ *      线程 B：设置(变量2)    获取(变量2)
+ *
+ *      ThreadLocal:
+ *          1.set()：将变量绑定到当前线程中；
+ *          2.get()：获取当前线程绑定的变量
+ */
+public class MyDemo01 {
+    ThreadLocal&lt;String&gt; threadLocal = new ThreadLocal&lt;&gt;();
+    private String getContent(){
+        return threadLocal.get();
+    }
+    private void setContent(String content){
+        // 变量绑定到当前线程中
+        threadLocal.set(content);
+    }
+
+    public static void main(String[] args) {
+        MyDemo01 demo = new MyDemo01();
+        for (int i = 0; i &lt; 5; i++) {
+            Thread thread = new Thread(()-&gt;{
+                /*
+                    每个线程：存一个变量，过一会 取出这个变量
+                 */
+                demo.setContent(Thread.currentThread().getName() + &quot;的数据&quot;);
+                System.out.println(&quot; ---------------- &quot;);
+                System.out.println(Thread.currentThread().getName() + &quot;---&gt;&quot; + demo.getContent());
+            });
+            thread.setName(&quot;线程&quot; + i);
+            thread.start();
+        }
+    }
+}
+</code></pre>
+<p>运行结果：</p>
+<pre><code> ---------------- 
+ ---------------- 
+线程3---&gt;线程3的数据
+ ---------------- 
+线程2---&gt;线程2的数据
+ ---------------- 
+ ---------------- 
+线程4---&gt;线程4的数据
+线程0---&gt;线程0的数据
+线程1---&gt;线程1的数据
+</code></pre>
+<h2 id="13-threadlocal-与-synchronized-关键字">1.3 ThreadLocal 与 synchronized 关键字</h2>
+<h3 id="131-synchronized-同步方式">1.3.1 synchronized 同步方式</h3>
+<p>这里可能有的朋友会觉得在上述例子中我们完全可以通过加锁来实现这个功能。我们首先来看一下用synchronized代码块实现的效果：</p>
+<pre><code>package com.ssm.threadlocal;
+
+/**
+ * 需求：线程隔离
+ *  在多线程并发的场景下，每个线程中的变量都是互相独立
+ *      线程 A：设置(变量1)    获取(变量1)
+ *      线程 B：设置(变量2)    获取(变量2)
+ */
+public class MyDemo02 {
+    private String content;
+    private String getContent(){
+        return content;
+    }
+    private void setContent(String content){
+        this.content = content;
+    }
+
+    public static void main(String[] args) {
+        MyDemo02 demo = new MyDemo02();
+        for (int i = 0; i &lt; 5; i++) {
+            Thread thread = new Thread(()-&gt;{
+                /*
+                    每个线程：存一个变量，过一会 取出这个变量
+                 */
+                synchronized (MyDemo02.class){
+                    demo.setContent(Thread.currentThread().getName() + &quot;的数据&quot;);
+                    System.out.println(&quot; ---------------- &quot;);
+                    System.out.println(Thread.currentThread().getName() + &quot;---&gt;&quot; + demo.getContent());
+                }
+
+            });
+            thread.setName(&quot;线程&quot; + i);
+            thread.start();
+        }
+    }
+}
+</code></pre>
+<p>从结果可以发现，加锁确实可以解决这个问题，但是在这里我们强调的是<strong>线程数据隔离</strong>的问题，并不是<strong>多线程共享数据的</strong>问题，在这个案例中使用synchronized关键字是不合适的。</p>
+<h3 id="132-threadlocal-与-synchronized-关键字的区别">1.3.2 ThreadLocal 与 synchronized 关键字的区别</h3>
+<p>虽然ThreadLocal模式与synchronized关键字都用于处理多线程并发访问变量的问题，不过两者处理问题的角度和思路不同。</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left"></th>
+<th style="text-align:left">synchronized</th>
+<th style="text-align:left">ThreadLocal</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">原理</td>
+<td style="text-align:left">同步机制采用 “<strong>以时间换空间</strong>” 的方式，只提供了一分变量，让不用的线程派对访问</td>
+<td style="text-align:left">ThreadLocal 采用 “<strong>以空间换时间</strong>” 的方式，为每一个线程都提供了一份变量的副本，从而实现同时访问互不干扰</td>
+</tr>
+<tr>
+<td style="text-align:left">侧重点</td>
+<td style="text-align:left">多个线程之间访问资源的同步</td>
+<td style="text-align:left">多线程中让每个线程之间的数据相互隔离</td>
+</tr>
+</tbody>
+</table>
+<p>总结：在刚刚的案例中，虽然使用Thr eadLocal和synchronized都能解决问题，但是使用ThreadLocal更为合适，因为这样可以使程序拥有更高的并发性。</p>
+<h1 id="二-threadlocal的内部结构">二、ThreadLocal的内部结构</h1>
+<p>通过以上的学习，我们对ThreadLocal的作用有了一定的认识。现在我们一起来看一下ThreadLocal的内部结构，探究它能够实现线程数据隔离的原理。</p>
+<h2 id="21常见的误解">2.1常见的误解</h2>
+<p>通常，如果我们不去看源代码的话，我猜 ThreadLocal 是这样子设计的：每个ThreadLocal 类都创建一个 Map，然后用线程作为Map的key，要存储的局部变量作为Map的value，这样就能达到各个线程的局部变量隔离的效果。这是最简单的设计方法，JDK最早期的ThreadLocal就是这样设计的。</p>
+<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/%E6%97%A9%E6%9C%9FThreadLocal.png" alt="图片" loading="lazy"></figure>
+<h2 id="22-现在的设计">2.2 现在的设计</h2>
+<p>但是，JDK后面优化了设计方案，JDK8 中 ThreadLocal的设计是：每个Thread维护一个ThreadLocalMap 哈希表，这个哈希表的key是ThreadLocal实例本身，value才是真正要存储的值object。</p>
+<p>（1）每个Thread线程内部都有一个Map（ThreadLocalMap）</p>
+<p>（2）Map里面存储ThreadLocal对象（key）和线程的变量副本（value）</p>
+<p>（3）Thread内部的Map是由ThreadLocal维护的，由ThreadLocal负责向map获取和设置线程的变量值。</p>
+<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/JDK8ThreadLocal.png" alt="图片" loading="lazy"></figure>
+<h2 id="23-jdk8的设计方案两个好处">2.3 JDK8的设计方案两个好处</h2>
+<ol>
+<li>每个Map存储的Entry数量变少</li>
+</ol>
+<p>[在早期版本内，Map 的 Entry 数量由 Thread 决定；而 JDK8 中，Map 的 Entry 数量由 ThreadLocal 决定，一般情况下 ThreadLocal 数量是比 Thread 少的]</p>
+<ol start="2">
+<li>当Thread销毁的时候，ThreadLocalMap也会随之销毁，减少内存的使用</li>
+</ol>
+<p>[早期版本内，ThreadLocalMap 由 ThreadLocal 维护；而 JDK8 中，ThreadLocalMap 由 Thread 维护，当 Thread 销毁，ThreadLocalMap 也会销毁]</p>
+<h1 id="三-threadlocal-的和核心方法源码">三、ThreadLocal 的和核心方法源码</h1>
+<p>基于ThreadLocal的内部结构，我们继续分析它的核心方法源码，更深入的了解其操作原理。</p>
+<p>除了构造方法之外，ThreadLocal对外暴露的方法有以下4个：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">方法声明</th>
+<th style="text-align:left">描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">protected T initialValue()</td>
+<td style="text-align:left">返回当前线程局部变量的初始值</td>
+</tr>
+<tr>
+<td style="text-align:left">public void set(T value)</td>
+<td style="text-align:left">设置当前线程绑定的局部变量</td>
+</tr>
+<tr>
+<td style="text-align:left">public T get()</td>
+<td style="text-align:left">获取当前线程绑定的局部变量</td>
+</tr>
+<tr>
+<td style="text-align:left">public void remove()</td>
+<td style="text-align:left">移除当前线程绑定的局部变量</td>
+</tr>
+</tbody>
+</table>
+<p>以下是这4个方法的详细源码分析（为了保证思路清晰，ThreadLocalMap部分暂时不展开，下一个知识点详解）</p>
+<h2 id="31-set方法">3.1 set方法</h2>
+<p>（1）源码和对应的中文注释</p>
+<pre><code>/**
+ * 设置当前线程对应的 ThreadLocal 的值
+ * @param value 将要保存在当前线程对应的ThreadLocal的值
+ */
+public void set(T value) {
+    // 获取当前线程对象
+    Thread t = Thread.currentThread();
+    // 获取当前线程对象中维护的 ThreadLocalMap 对象
+    ThreadLocalMap map = getMap(t);
+    // 判断 map 是否存在
+    if (map != null)
+        // 存在则调用 map.set 设置此实体 Entry
+        map.set(this, value);
+    else
+        // 1）当前线程 Thread 不存在 ThreadLocalMap 对象
+        // 2）则调用 createMap 进行 ThreadLocalMap 对象的初始化
+        // 3）并将 t（当前线程）和value（t对应的值）作为第一个 entry 存放至 ThreadLocalMap 中
+        createMap(t, value);
+}
+/**
+ * 获取当前线程 Thread 对应维护的 ThreadLocalMap
+ *
+ * @param  t the current thread 当前线程
+ * @return the map 对应维护的 ThreadLocalMap
+ */
+
+ThreadLocalMap getMap(Thread t) {
+    return t.threadLocals;
+}
+
+/**
+ * 创建当前线程 Thread 对应维护的 ThreadLocalMap
+ *
+ * @param t the current thread 当前线程
+ * @param firstValue value for the initial entry of the map 存放到 map 中第一个 entry 值 
+ */
+void createMap(Thread t, T firstValue) {
+    // 这里的 this 是调用此方法的threadLocal
+    t.threadLocals = new ThreadLocalMap(this, firstValue);
+}
+</code></pre>
+<p>（2）代码执行流程<br>
+A.首先获取当前线，并根据当前线程获取一个Map</p>
+<p>B.如果获取的Map不为空，则将参数设置到Map中（当前ThreadLocal的引用作为key）</p>
+<p>C.如果Map为空，则给该线程创建Map，并设置初始值</p>
+<h2 id="32-get方法">3.2 get方法</h2>
+<p>（1）源码和对应的中文注释</p>
+<pre><code>/**
+ * 返回当前线程中保存 ThreadLocal 的值
+ * 当前线程没有此 ThreadLocal 变量
+ * 则它会通过调用 {@link #initialValue} 方法进行初始化
+ *
+ * @return 返回当前线程对应此 ThreadLocal 的值
+ */
+public T get() {
+    // 获取当前线程对象
+    Thread t = Thread.currentThread();
+    // 获取当前线程中维护的 ThreadLocalMap 对象
+    ThreadLocal.ThreadLocalMap map = getMap(t);
+    // 如果此 map 存在
+    if (map != null) {
+        // 以当前的 ThreadLocal 为 key，调用 getEntry 获取对应的存储实体 e
+        ThreadLocal.ThreadLocalMap.Entry e = map.getEntry(this);
+        // 对 e 进行判空
+        if (e != null) {
+            @SuppressWarnings(&quot;unchecked&quot;)
+            // 获取存储实体 e 对应的 value 值，即为我们想要的当前线程对应此 ThreadLocal 的值
+            T result = (T)e.value;
+            return result;
+        }
+    }
+    /*
+        初始化：有两种情况执行当前代码
+        第一种情况：map 不存在，表示此线程没有维护的 ThreadLocalMap 对象
+        第二种情况：map 存在，但是没有与当前 ThreadLocal 关联的 Entry
+     */
+    return setInitialValue();
+}
+/**
+ * 初始化
+ *
+ * @return the initial value
+ */
+private T setInitialValue() {
+    // 调用 initialValue 获取初始化的值
+    // 此方法可以被子类重写，如果不重写默认返回 null
+    T value = initialValue();
+    // 获取当前线程对象
+    Thread t = Thread.currentThread();
+    // 获取此线程对象中维护的 ThreadLocalMap 对象
+    ThreadLocal.ThreadLocalMap map = getMap(t);
+    // 判断 map 是否存在
+    if (map != null)
+        // 存在则调用 map.set 设置此实体 entry
+        map.set(this, value);
+    else
+        // 1)当前线程 Thread 不存在 ThreadLocalMap 对象
+        // 2)则调用 createMap 进行 ThreadLocalMap 对象的初始化
+        // 3)并将 t(当前线程)和 value(t对应的值)作为第一个 entry 存放至 ThreadLocalMap 中
+        createMap(t, value);
+    // 返回设置的值 value
+    return value;
+}
+</code></pre>
+<p>（2）代码执行流程<br>
+A.首先获取当前线程，根据当前线程获取一个Map</p>
+<p>B.如果获取的Map不为空，则在Map中以ThreadLoca的引用作为key来在Map中获取对应的Entrye，否则转到D</p>
+<p>C.如果e不为null，则返回e.value，否则转到D</p>
+<p>D.Map为空或者e为空，则通过initiaValue函数获取初始值value，然后用ThreadLocal的引用和value作为firstKey和firstValue创建一个新的Map</p>
+<p>总结：<strong>先获取当前线程的ThreadLocalMap变量，如果存在则返回值，不存在则创建并返回初始值</strong>。</p>
+<h2 id="33-remove方法">3.3 remove方法</h2>
+<p>（1）源码和对应的中文注释</p>
+<pre><code>/**
+ * 删除当前线程中保存的 ThreadLocal 对应的实体 entry
+ */
+public void remove() {
+    // 获取当前线程对象中维护的 ThreadLocalMap
+    ThreadLocal.ThreadLocalMap m = getMap(Thread.currentThread());
+    // 如果此 map 存在
+    if (m != null)
+        // 存在则调用 map.remove
+        // 以当前 ThreadLocal 为 key 删除对应的实体 entry
+        m.remove(this);
+}
+</code></pre>
+<p>（2）代码执行流程<br>
+A.首先获取当前线程，并根据当前线程获取一个Map</p>
+<p>B.如果获取的Map不为空，则移除当前ThreadLocal对象对应的entry</p>
+<h2 id="34-initialvalue方法">3.4 initialValue方法</h2>
+<pre><code>/**
+ * 返回当前线程对应的ThreadLocal的初始值
+ * 
+ * 此方法的第一次调用发生在，当线程通过get方法访问此线程的ThreadLocal值时
+ * 除非线程先调用了set方法，在这种情况下，initialvalue 才不会被这个线程调用。
+ * 通常情况下，每个线程最多调用一次这个方法。
+ * &lt;p&gt;这个方法仅仅简单的返回nu11{@code nu11}；
+ * 如果程序员想ThreadLocal线程局部变量有一个除nu11以外的初始值，
+ * 必须通过子类继承{@code ThreadLocal}的方式去重写此方法
+ * 通常，可以通过匿名内部类的方式实现
+ * 
+ * @return 当前 ThreadLocal 的初始值
+ */
+protected T initialValue() {
+    return null;
+}
+</code></pre>
+<p>此方法的作用是返回该线程局部变量的初始值。<br>
+（1）这个方法是一个延迟调用方法，从面的代码我们得知，在set方法还未调用而先调用了get方法时才执行，并且仅执行1次。</p>
+<p>（2）这个方法缺省实现直接返回一个null。</p>
+<p>（3）如果想要一个除null之外的初始值，可以重写此方法。（备注：该方法是一个protected的方法，显然是为了让子类覆盖而设计的）</p>
+<h1 id="四-threadlocalmap源码分析">四、ThreadLocalMap源码分析</h1>
+<p>在分析ThreadLocal方法的时候，我们了解到ThreadLocal的操作实际上是围绕ThreadLocalMap展开的。</p>
+<p>ThreadLocalMap的源码相对比较复杂，我们从以下三个方面进行讨论。</p>
+<h2 id="41基本结构">4.1基本结构</h2>
+<p>ThreadLocalMap是ThreadLocal的内部类，没有实现Map接口，用独立的方式实现了Map的功能，其内部的Entry也是独立实现。</p>
+<figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/ThreadLocal%E7%9A%84UML.png" alt="图片" loading="lazy"></figure>
+<p>（1）成员变量</p>
+<pre><code>/**
+ * 初始容量 - 必须是 2 的整次幂
+ */
+private static final int INITIAL_CAPACITY = 16;
+
+/**
+ * 存放数据的 table，Entry类的定义在下面分析
+ * 同样，数组长度必须是 2 的整次幂。
+ */
+private ThreadLocal.ThreadLocalMap.Entry[] table;
+
+/**
+ * 数组里面 entrys 的个数，可以用于判断 table 当前使用量是否超过阈值
+ */
+private int size = 0;
+
+/**
+ * 进行扩容的阈值，表使用量大于它的时候进行扩容。
+ */
+private int threshold; // Default to 0
+</code></pre>
+<p>跟HashMap类似，INITIAL_CAPACITY代表这个Map的初始容量；table是一个Entry类型的数组，用于存储数据；size代表表中的存储数目；threshold 代表需要扩容时对应 size的阈值。<br>
+（2）存储结构-Entry</p>
+<pre><code>/**
+ * Entry 继承 WeakReference，并且用 ThreadLocal 作为 key
+ * 如果 key 为 null(entry.get() == null)，意味着 key 不再被引用，
+ * 因此这时候 entry 也可以从 table 中清除
+ */
+static class Entry extends WeakReference&lt;ThreadLocal&lt;?&gt;&gt; {
+    /** The value associated with this ThreadLocal. */
+    Object value;
+
+    Entry(ThreadLocal&lt;?&gt; k, Object v) {
+        super(k);
+        value = v;
+    }
+}
+</code></pre>
+<p>在ThreadLocalMap中，也是用Entry来保存K-V结构数据的。不过Entry中的key只能是ThreadLocal对象，这点在构造方法中已经限定死了。<br>
+另外，Entry继承WeakReference，也就是key（ThreadLocal）是弱引用，其目的是将ThreadLocal对象的生命周期和线程生命周期解绑。</p>
+<h2 id="42弱引用和内存泄漏">4.2弱引用和内存泄漏</h2>
+<p>有些程序员在使用ThreadLocal的过程中会发现有内存泄漏的情况发生，就猜测这个内存泄漏跟Entry中使用了弱引用的key有关系。这个理解其实是不对的。</p>
+<p>我们先来回顾这个问题中涉及的几个名词概念，再来分析问题。</p>
+<h3 id="1内存泄漏相关概念">（1）内存泄漏相关概念</h3>
+<ul>
+<li>Memory overflow：内存溢出，没有足够的内存提供申请者使用。</li>
+<li>Memory leak：内存泄漏是指程序中<strong>己动态分配的堆内存由于某种原因程序未释放或无法释放，造成系统内存的浪费</strong>，导致程序运行速度减慢甚至系统溃等严重后果。内存泄漏的堆积终将导致内存溢出。</li>
+</ul>
+<h3 id="2弱引用相关概念">（2）弱引用相关概念</h3>
+<p>Java中的引用有4种类型：强、软、弱、虚。当前这个问题主要涉及到强引用和弱引用：</p>
+<p><strong>强引用</strong>（&quot;Strong”Reference），就是我们最常见的普通对象引用，只要还有强引用指向一个对象，就能表明对象还“活着”，垃圾回收器就不会回收这种对象。</p>
+<p><strong>弱引用</strong>（WeakReference），垃圾回收器一旦发现了只具有弱引用的对象，不管当前内存空间足够与否，都会回收它的内存。</p>
+<h3 id="3如果key使用强引用">（3）如果key使用强引用</h3>
+<p>假设ThreadLocalMap中的key使用了强引用，那么会出现内存泄漏吗？</p>
+<p>此时ThreadLocal的内存图（实线表示强引用）如下：</p>
+<figure data-type="image" tabindex="4"><img src="https://epitomm.github.io/post-images/key%E5%BC%BA%E5%BC%95%E7%94%A8.png" alt="图片" loading="lazy"></figure>
+<p>1.假设在业务代码中使用完ThreadLocal，threadLocal Ref被回收了。</p>
+<p>2.但是因为threadLocalMap的Entry强引用了threadLocal，造成threadLocal无法被回收。</p>
+<p>3.在没有手动删除这个Entry以及CurrentThread依然运行的前提下，始终有强引用链 threadRef-&gt;currentThread-&gt;threadLocalMap-&gt;entry，Entry就不会被回收（Entry中包括了ThreadLocal实例和value），导致Entry内存泄漏。</p>
+<p>也就是说，ThreadLocalMap中的key使用了强引用，是无法完全避免内存泄漏的。</p>
+<h3 id="5如果key使用弱引用">（5）如果key使用弱引用</h3>
+<p>那么ThreadLocalMap中的key使用了弱引用，会出现内存泄漏吗？此时ThreadLocal的内存图（实线表示强引用，虚线表示弱引用）如下：</p>
+<figure data-type="image" tabindex="5"><img src="https://epitomm.github.io/post-images/key%E5%BC%B1%E5%BC%95%E7%94%A8.png" alt="图片" loading="lazy"></figure>
+<p>同样假设在业务代码中使用完ThreadLocal，threadLocal Ref被回收了。</p>
+<p>由于ThreadLocalMap只持有ThreadLocal的弱引用，没有任何强引用指向threadlocal实例，所以threadlocal就可以顺利被gc回收，此时Entry中的key=null。</p>
+<p>但是在没有手动删除这个Entry以及CurrentThread依然运行的前提下，也存在有强引用链 threadRef -&gt;currentThread-&gt;threadLocalMap-&gt;entry-&gt;value，value不会被回收，而这块value永远不会被访问到了，导致value内存泄漏。</p>
+<p>也就是说，ThreadLocalMap中的key使用了弱引用，也有可能内存泄漏。</p>
+<h3 id="6出现内存泄漏的真实原因">（6）出现内存泄漏的真实原因</h3>
+<p>比较以上两种情况，我们就会发现，内存泄漏的发生跟ThreadLocalMap中的key是否使用弱引用是没有关系的。那么内存泄漏的的真正原因是什么呢？</p>
+<p>细心的同学会发现，在以上两种内存泄漏的情况中，都有两个前提：</p>
+<p>1.没有手动删除这个Entry</p>
+<p>2.CurrentThread依然运行</p>
+<p>第一点很好理解，只要在使用完ThreadLocal，调用其remove方法删除对应的Entry，就能避免内存泄漏。第二点稍微复杂一点，由于ThreadLocalMap是Thread的一个属性，被当前线程所引用，所以它的生命周期跟Thread一样长。那么在使用完ThreadLocal的使用，如果当前Thread也随之执行结束，ThreadLocalMap自然也会被gc回收，从根源上避免了内存泄漏。</p>
+<p>综上，ThreadLocal内存泄漏的根源是：由于ThreadLocalMap的生命周期跟Thread一样长，如果没有手动删除对应key就会导致内存泄漏。</p>
+<figure data-type="image" tabindex="6"><img src="https://epitomm.github.io/post-images/ThreadLocal%E5%86%85%E5%AD%98%E6%B3%84%E6%BC%8F%E7%9C%9F%E6%AD%A3%E5%8E%9F%E5%9B%A0.png" alt="图片" loading="lazy"></figure>
+<h3 id="7为什么使用弱引用">（7）为什么使用弱引用</h3>
+<p>根据刚才的分析，我们知道了：无论使用ThreadLocalMap中的key使用哪种类型引用都无法完全避免内存泄漏，跟使用弱引用没有关系。要避免内存泄漏有两种方式：</p>
+<p>1.使用完ThreadLocal，调用其remove方法删除对应的Entry</p>
+<p>2.使用完ThreadLocal，当前Thread也随之运行结束</p>
+<p>相对第一种方式，第二种方式显然更不好控制，特别是使用线程池的时候，线程结束是不会销毁的。</p>
+<p>也就是说，只要记得在使用完ThreadLocal及时的调用remove，无论key是强引用还是弱引用都不会有问题。</p>
+<p><strong>那么为什么key要用弱引用呢？</strong></p>
+<p>事实上，在ThreadLocalMap中的set/getEntry方法中，会对key为nul（也即是ThreadLocal为null）进行判断，如果为null的话，那么是会对value置为nul的。</p>
+<p>这就意味着使用完ThreadLocal，CurrentThread依然运行的前提下，就算忘记调用remove方法，弱引用比强引用可以多一层保障：弱引用的ThreadLocal会被回收，对应的value在下一次ThreadLocalMap调用set，get，remove中的任一方法的时候会被清除，从而避免内存泄漏。</p>
+<h2 id="43hash冲突的解决">4.3hash冲突的解决</h2>
+<p>hash冲突的解决是Map中的一个重要内容。我们以hash冲突的解决为线索，来研究一下ThreadLocalMap的核心源码。</p>
+<h3 id="1首先从threadlocal的set方法入手">（1）首先从ThreadLocal的set(）方法入手</h3>
+<pre><code>public void set(T value) {
+    Thread t = Thread.currentThread();
+    ThreadLocalMap map = getMap(t);
+    if (map != null)
+        map.set(this, value);
+    else
+        createMap(t, value);
+}
+ThreadLocalMap getMap(Thread t) {
+    return t.threadLocals;
+}
+void createMap(Thread t, T firstValue) {
+    t.threadLocals = new ThreadLocalMap(this, firstValue);
+}
+</code></pre>
+<p>这个方法我们刚才分析过，其作用是设置当前线程绑定的局部变量：<br>
+A.首先获取当前线程，并根据当前线程获取一个Map</p>
+<p>B.如果获取的Map不为空，则将参数设置到Map中（当前ThreadLocal的引用作为key）</p>
+<p>（这里调用了ThreadLocalMap的set方法）</p>
+<p>C.如果Map为空，则给该线程创建Map，并设置初始值</p>
+<p>（这里调用了ThreadLocalMap的构造方法）</p>
+<h3 id="2构造方法threadlocalmapthreadlocal-firstkeyobject-firstvalue">（2）构造方法ThreadLocalMap（ThreadLocal-？&gt;firstKey，Object firstValue）</h3>
+<pre><code>/**
+ * @param firstKey 本地 ThreadLocal 实例(this)
+ * @param firstValue 要保存的线程本地变量
+ */
+ThreadLocalMap(ThreadLocal&lt;?&gt; firstKey, Object firstValue) {
+    // 初始化 table
+    table = new ThreadLocal.ThreadLocalMap.Entry[INITIAL_CAPACITY];
+    // 计算索引（重点代码）
+    int i = firstKey.threadLocalHashCode &amp; (INITIAL_CAPACITY - 1);
+    // 设置值
+    table[i] = new ThreadLocal.ThreadLocalMap.Entry(firstKey, firstValue);
+    size = 1;
+    // 设置阈值
+    setThreshold(INITIAL_CAPACITY);
+}
+</code></pre>
+<p>构造函数首先创建一个长度为16的Entry数组，然后计算出firstKey对应的索引，然后存储到table中，并设置size和threshold。<br>
+重点分析：int i = firstKey.threadLocalHashCode &amp; (INITIAL_CAPACITY - 1);</p>
+<p>a.关于firstkey.threadLocalHashcode：</p>
+<pre><code>private final int threadLocalHashCode = nextHashCode();
+private static int nextHashCode() {
+    return nextHashCode.getAndAdd(HASH_INCREMENT);
+}
+// AtomicInteger 是一个提供原子操作的 Integer类，通过线程安全的方式操作加减，适合高并发情况下的使用
+private static AtomicInteger nextHashCode =
+    new AtomicInteger();
+// 特殊的 hash 值
+private static final int HASH_INCREMENT = 0x61c88647;
+</code></pre>
+<p>这里定义了一个Atomiclnteger类型，每次获取当前值并加上HASH_INCREMENT，HASH_INCREMENT=0x61c88647，这个值跟斐波那契数列（黄金分割数）有关，其主要目的就是为了让哈希码能均匀的分布在2的n次方的数组里，也就是Entry]table中，这样做可以尽量避免hash冲突。<br>
+b.关于&amp;（INITIAL_CAPACITY-1）</p>
+<p>计算hash的时候里面采用了hashCode&amp;（size-1）的算法，这相当于取模运算hashCode%size的一个更高效的实现。正是因为这种算法，我们要求size必须是2的整次幂，这也能保证保证在索引不越界的前提下，使得hash发生冲突的次数减小。</p>
+<h3 id="3threadlocalmap中的set方法">（3）ThreadLocalMap中的set方法</h3>
+<pre><code>private void set(ThreadLocal&lt;?&gt; key, Object value) {
+
+    // We don't use a fast path as with get() because it is at
+    // least as common to use set() to create new entries as
+    // it is to replace existing ones, in which case, a fast
+    // path would fail more often than not.
+
+    ThreadLocal.ThreadLocalMap.Entry[] tab = table;
+    int len = tab.length;
+    // 计算索引（重点代码）
+    int i = key.threadLocalHashCode &amp; (len-1);
+
+    /**
+     * 使用线性探测法查找元素（重点代码）
+     */
+    for (ThreadLocal.ThreadLocalMap.Entry e = tab[i];
+         e != null;
+         e = tab[i = nextIndex(i, len)]) {
+        ThreadLocal&lt;?&gt; k = e.get();
+        // ThreadLocal 对应的 key 存在，直接覆盖之前的值
+        if (k == key) {
+            e.value = value;
+            return;
+        }
+
+        // key 为 null，但是值不为 null，说明之前的 ThreadLocal 对象已经被回收了
+        // 当前数组中的 Entry 是一个陈旧（stale）的元素
+        if (k == null) {
+            // 用新元素替换旧元素，这个方法进行了不少的垃圾清理动作，防止内存泄漏
+            replaceStaleEntry(key, value, i);
+            return;
+        }
+    }
+    //ThreadLocal对应的key不存在并且没有找到陈旧的元素，则在空元素的位置创建一个新的Entry。
+    tab[i] = new ThreadLocal.ThreadLocalMap.Entry(key, value);
+    int sz = ++size;
+    /**
+     * cleanSomeslots用于清除那些e.get（）==nu11的元素，
+     * 这种数据key关联的对象已经被回收，所以这个Entry（table[index]）可以被置nu11。
+     * 如果没有清除任何entry，并且当前使用量达到了负载因子所定义（长度的2/3），那么进行
+     * rehash（执行一次全表的扫描清理工作）
+     */
+    if (!cleanSomeSlots(i, sz) &amp;&amp; sz &gt;= threshold)
+        rehash();
+}
+// 获取环形数组的下一个索引
+private static int nextIndex(int i, int len) {
+    return ((i + 1 &lt; len) ? i + 1 : 0);
+}
+</code></pre>
+<p>代码执行流程：<br>
+A.首先还是根据key计算出索引i，然后查找位置上的Entry，B.若是Entry已经存在并且key等于传入的key，那么这时候直接给这个Entry赋新的value值C.若是Entry存在，但是key为null，则调用replaceStaleEntry来更换这个key为空的Entry，D.不断循环检测，直到遇到为null的地方，这时候要是还没在循环过程中return，那么就在这个null的位置新建一个Entry，并且插入，同时size增加1。</p>
+<p>最后调用cleanSomeSlots，清理key为null的Entry，最后返回是否清理了Entry，接下来再判断sz是否&gt;=thresgold达到了rehash的条件，达到的话就会调用rehash函数执行一次全表的扫描清理。</p>
+<p>重点分析：ThreadLocalMap使用线性探测法来解决哈希冲突的。</p>
+<p>该方法一次探测下一个地址，直到有空的地址后插入，若整个空间都找不到空余的地址，则产生溢出。</p>
+<p>举个例子，假设当前table长度为16，也就是说如果计算出来key的hash值为14，如果table[14]上已经有值，并且其key与当前key不一致，那么就发生了hash冲突，这个时候将1401得到15，取table[15]进行判断，这个时候如果还是冲突会回到0，取table[0]，以此类推，直到可以插入。</p>
+<p><strong>重点分析</strong>：ThreadLocalMap使用线性探测法来解决哈希冲突的。</p>
+<p>该方法一次探测下一个地址，直到有空的地址后插入，若整个空间都找不到空余的地址，则产生溢出。</p>
+<p>举个例子，假设当前table长度为16，也就是说如果计算出来key的hash值为14，如果table[14]上已经有值，并且其key与当前key不一致，那么就发生了hash冲突，这个时候将14加1得到15，取table[15]进行判断，这个时候如果还是冲突会回到0，取table[0].以此类推，直到可以插入。</p>
+<p>按照上面的描述，可以把Entry table看成一个环形数组。</p>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[面试题系列 —— Java 并发]]></title>
         <id>https://epitomm.github.io/post/mian-shi-ti-xi-lie-java-bing-fa/</id>
@@ -244,17 +914,32 @@ public interface RunnableFuture&lt;V&gt; extends Runnable, Future&lt;V&gt;
 <li>基本思想</li>
 </ol>
 <ul>
-<li>通过内置对象 FIFO 同步队列来完成线程争夺资源的管理工作。</li>
-<li>AQS实际上以双向队列的形式连接所有的Entry，比方说ReentrantLock，所有等待的线程都被放在一个Entry中并连成双向队列，前面一个线程使用ReentrantLock好了，则双向队列实际上的第一个Entry开始运行。</li>
-<li>AQS定义了对双向队列所有的操作，而只开放了tryLock和tryRelease方法给开发者使用，开发者可以根据自己的实现重写tryLock和tryRelease方法，以实现自己的并发功能。</li>
+<li>AQS核心思想是，如果被请求的共享资源空闲，则将当前请求资源的线程设置为有效的工作线程，并且将共享资源设置为锁定状态。如果被请求的共享资源被占用，那么就需要一套线程阻塞等待以及被唤醒时锁分配的机制，这个机制AQS是用CLH队列锁实现的，即将暂时获取不到锁的线程加入到队列中。</li>
+<li>CLH(Craig,Landin,and Hagersten)队列是一个虚拟的双向队列（虚拟的双向队列即不存在队列实例，仅存在结点之间的关联关系）。AQS 是将每条请求共享资源的线程封装成一个 CLH 锁队列的一个结点（Node）来实现锁的分配。</li>
 </ul>
-<ol start="3">
-<li>CLH同步队列</li>
-</ol>
+<p>CLH同步队列</p>
 <figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/CLH%E5%90%8C%E6%AD%A5%E9%98%9F%E5%88%97.png" alt="图片" loading="lazy"></figure>
+<p>AQS 使用一个 int 成员变量来表示同步状态，通过内置的 FIFO 队列来完成获取资源线程的排队工作。AQS 使用 CAS 对该同步状态进行原子操作实现对其值的修改。</p>
+<pre><code>private volatile int state;//共享变量，使用volatile修饰保证线程可见性
+</code></pre>
+<p>状态信息通过 protected 类型的getState，setState，compareAndSetState进行操作</p>
+<pre><code>//返回同步状态的当前值
+protected final int getState() {
+        return state;
+}
+ // 设置同步状态的值
+protected final void setState(int newState) {
+        state = newState;
+}
+//原子地（CAS操作）将同步状态值设置为给定值update如果当前同步状态的值等于expect（期望值）
+protected final boolean compareAndSetState(int expect, int update) {
+        return unsafe.compareAndSwapInt(this, stateOffset, expect, update);
+}
+</code></pre>
 <h1 id="参考链接">参考链接</h1>
-<p><a href="https://github.com/Snailclimb/JavaGuide/blob/master/docs/java/Multithread/JavaConcurrencyBasicsCommonInterviewQuestionsSummary.md">https://github.com/Snailclimb/JavaGuide/blob/master/docs/java/Multithread/JavaConcurrencyBasicsCommonInterviewQuestionsSummary.md</a></p>
-<p><a href="https://mp.weixin.qq.com/s/SCugxnAV1_f3sq-UhFD7wg">https://mp.weixin.qq.com/s/SCugxnAV1_f3sq-UhFD7wg</a></p>
+<p><a href="https://github.com/Snailclimb/JavaGuide/blob/master/docs/java/Multithread/JavaConcurrencyBasicsCommonInterviewQuestionsSummary.md">https://github.com/Snailclimb/JavaGuide/blob/master/docs/java/Multithread/JavaConcurrencyBasicsCommonInterviewQuestionsSummary.md</a><br>
+<a href="https://mp.weixin.qq.com/s/SCugxnAV1_f3sq-UhFD7wg">https://mp.weixin.qq.com/s/SCugxnAV1_f3sq-UhFD7wg</a><br>
+<a href="https://github.com/Snailclimb/JavaGuide/blob/master/docs/java/Multithread/AQS.md">https://github.com/Snailclimb/JavaGuide/blob/master/docs/java/Multithread/AQS.md</a></p>
 ]]></content>
     </entry>
     <entry>
@@ -2521,128 +3206,6 @@ public static void main(String[] args) {
 <p>所谓<strong>保持独占</strong>，就是所有试图来获取这个锁的客户端，最终只有一个可以成功获得这把锁。通常的做法是把 zk 上的一个 <code>znode</code> 看作是一把锁，通过 <code>create znode</code> 的方式来实现。所有客户端都去创建 <code>/distribute_lock</code> <strong>临时非序列化</strong>节点，最终成功创建的那个客户端也即拥有了这把锁。</p>
 <p><strong>控制时序</strong>，就是所有试图来获取这个锁的客户端，最终都是会被安排执行，只是有个全局时序了。做法和上面基本类似，只是这里<code>/distribute_lock</code> 已经预先存在，客户端在它下面创建<strong>临时有序</strong>节点（这个可以通过节点的属性控制：<code>CreateMode.EPHEMERAL_SEQUENTIAL</code> 来指定）。Zk 的父节点（<code>/distribute_lock</code>）</p>
 <p>维持一份 <code>sequence</code>,保证子节点创建的时序性，从而也形成了每个客户端的全局时序。</p>
-]]></content>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[Gridea 检测远程连接失败]]></title>
-        <id>https://epitomm.github.io/post/gridea-jian-ce-yuan-cheng-lian-jie-shi-bai/</id>
-        <link href="https://epitomm.github.io/post/gridea-jian-ce-yuan-cheng-lian-jie-shi-bai/">
-        </link>
-        <updated>2020-02-18T16:09:50.000Z</updated>
-        <content type="html"><![CDATA[<h1 id="问题一">问题一</h1>
-<h3 id="我的环境">我的环境</h3>
-<table>
-<thead>
-<tr>
-<th>名称</th>
-<th>值</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>操作系统</td>
-<td>Windows10</td>
-</tr>
-<tr>
-<td>软件版本</td>
-<td>0.9.1</td>
-</tr>
-<tr>
-<td>主题名称</td>
-<td>Notes</td>
-</tr>
-</tbody>
-</table>
-<h2 id="问题描述">问题描述</h2>
-<p>根据教程设置好一系列信息，经测试域名可访问，并且确保其他信息均正确</p>
-<p>检查远程连接错误：<strong>远程连接失败,请检查仓库、用户名和 token 设置</strong></p>
-<h2 id="问题分析">问题分析</h2>
-<ol>
-<li>先查看 <code>Gridea</code> 文件存储目录：C:\Users\Only\Documents\Gridea\output.git 下的 config 文件，看是否有 [remote &quot;origin&quot;] 信息，如果没有自行添加</li>
-</ol>
-<pre><code>[remote &quot;origin&quot;]
-	url = https://你的github用户名:Token@github.com/你的github用户/仓库名
-	fetch = +refs/heads/*:refs/remotes/origin/*
-</code></pre>
-<p>附：查看<code>Gridea</code>文件存储目录<br>
-<img src="https://epitomm.github.io/post-images/1582604204611.png" alt="" loading="lazy"></p>
-<ol start="2">
-<li>检查错误信息：<br>
-<img src="https://epitomm.github.io/post-images/1582041933549.png" alt="" loading="lazy"></li>
-</ol>
-<blockquote>
-<p>[<em>&quot;fatal: unable to access 'https://github.com/Epitom…led to connect to github.com port 443: Timed out↵&quot;</em>]</p>
-</blockquote>
-<h2 id="问题解决">问题解决</h2>
-<ol>
-<li>谷歌 433 错误，得知是<strong>没有设置代理服务器</strong>的原因。</li>
-</ol>
-<p>以下为网上一高赞解决方式，可自行尝试，（不过对我的问题无效果）<br>
-参考链接：<a href="https://blog.csdn.net/runningman2012/article/details/54633677">https://blog.csdn.net/runningman2012/article/details/54633677</a></p>
-<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/1582604339501.png" alt="" loading="lazy"></figure>
-<ol start="2">
-<li>再次谷歌 git 如何设置代理服务器</li>
-</ol>
-<pre><code>git config --global http.proxy 'socks5://127.0.0.1:1080'
-
-git config --global https.proxy 'socks5://127.0.0.1:1080'
-</code></pre>
-<p>参考：<a href="https://blog.csdn.net/isea533/article/details/84748009">https://blog.csdn.net/isea533/article/details/84748009</a></p>
-<ol start="3">
-<li>再次尝试检测远程连接成功</li>
-</ol>
-<p>接下来同步查看效果完成后就可以开启开心的写作之旅啦~</p>
-<h1 id="问题二">问题二</h1>
-<h3 id="我的环境-2">我的环境</h3>
-<table>
-<thead>
-<tr>
-<th>名称</th>
-<th>值</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>操作系统</td>
-<td>Windows10</td>
-</tr>
-<tr>
-<td>软件版本</td>
-<td>0.9.2</td>
-</tr>
-<tr>
-<td>主题名称</td>
-<td>Notes</td>
-</tr>
-</tbody>
-</table>
-<h2 id="问题描述-2">问题描述</h2>
-<p>版本更新到 0.9.2 后重新安装了 Gridea ，再次检测远程连接失败</p>
-<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/1582604400732.png" alt="" loading="lazy"></figure>
-<p>错误信息</p>
-<pre><code>connect ETIMEDOUT 140.82.114.4:443
-</code></pre>
-<h2 id="问题分析-2">问题分析</h2>
-<ol>
-<li>cmd 命令行 ping github.com 失败。代理问题</li>
-</ol>
-<h2 id="问题解决-2">问题解决</h2>
-<ol start="2">
-<li>
-<p>使用 ping 检测工具找一个能够 ping 通 github.com 的 IP，检测工具网址如下：</p>
-<p><a href="http://ping.chinaz.com/github.com">http://ping.chinaz.com/github.com</a></p>
-</li>
-</ol>
-<figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/1582041969896.png" alt="" loading="lazy"></figure>
-<ol start="3">
-<li>选择一个响应较快的 IP，添加到 C:\Windows\System32\drivers\etc\host 文件末尾：</li>
-</ol>
-<figure data-type="image" tabindex="4"><img src="https://epitomm.github.io/post-images/1582041983918.png" alt="" loading="lazy"></figure>
-<pre><code>140.82.113.3 github.com
-</code></pre>
-<ol start="4">
-<li>再次检测远程连接，成功。</li>
-</ol>
 ]]></content>
     </entry>
 </feed>
