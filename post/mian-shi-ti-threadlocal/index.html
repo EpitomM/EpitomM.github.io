@@ -3,7 +3,7 @@
     <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>面试题 —— ThreadLocal | SSM</title>
-<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1585757909022">
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1585793144174">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
 <link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
 <link rel="alternate" type="application/atom+xml" title="面试题 —— ThreadLocal | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
@@ -16,7 +16,7 @@
 /**
  * This class provides thread-local variables.  These variables differ from
  * their norma..." />
-    <meta name="keywords" content="" />
+    <meta name="keywords" content="Java 并发,面试题" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
     <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
   </head>
@@ -25,7 +25,7 @@
       <div class="main-content">
         <div class="site-header">
   <a href="https://epitomm.github.io">
-  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1585757909022" alt="">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1585793144174" alt="">
   </a>
   <h1 class="site-title">
     SSM
@@ -85,8 +85,16 @@
                 2020-04-02
               </span>
               <span>
-                27 min read
+                38 min read
               </span>
+              
+                <a href="https://epitomm.github.io/tag/oxh4weKge/" class="post-tag">
+                  # Java 并发
+                </a>
+              
+                <a href="https://epitomm.github.io/tag/1hfOEuf6o1/" class="post-tag">
+                  # 面试题
+                </a>
               
             </div>
             
@@ -226,7 +234,7 @@ public class MyDemo01 {
  ---------------- 
 线程3---&gt;线程4的数据
 </code></pre>
-<p>使用 ThreadLocal 实现线程隔离：</p>
+<p>从结果可以看出多个线程在访问同一个变量的时候出现的异常，线程间的数据没有隔离。下面我们来看下采用 ThreadLocal 的方式来解决这个问题的例子。</p>
 <pre><code>package com.ssm.threadlocal;
 
 /**
@@ -278,6 +286,7 @@ public class MyDemo01 {
 线程0---&gt;线程0的数据
 线程1---&gt;线程1的数据
 </code></pre>
+<p>从结果来看，这样很好的解决了多线程之间数据隔离的问题，十分方便。</p>
 <h2 id="13-threadlocal-与-synchronized-关键字">1.3 ThreadLocal 与 synchronized 关键字</h2>
 <h3 id="131-synchronized-同步方式">1.3.1 synchronized 同步方式</h3>
 <p>这里可能有的朋友会觉得在上述例子中我们完全可以通过加锁来实现这个功能。我们首先来看一下用synchronized代码块实现的效果：</p>
@@ -343,18 +352,490 @@ public class MyDemo02 {
 </tbody>
 </table>
 <p>总结：在刚刚的案例中，虽然使用Thr eadLocal和synchronized都能解决问题，但是使用ThreadLocal更为合适，因为这样可以使程序拥有更高的并发性。</p>
-<h1 id="二-threadlocal的内部结构">二、ThreadLocal的内部结构</h1>
+<h1 id="二-运用场景_事务案例">二、 运用场景_事务案例</h1>
+<p>​通过以上的介绍，我们已经基本了解ThreadLocal的特点。但是它具体是运用在什么场景中呢？ 接下来让我们看一个案例： 事务操作。</p>
+<h2 id="21-转账案例">2.1 转账案例</h2>
+<h3 id="211-场景构建">2.1.1 场景构建</h3>
+<p>​这里我们先构建一个简单的转账场景： 有一个数据表account，里面有两个用户Jack和Rose，用户Jack  给用户Rose 转账。</p>
+<p>案例的实现主要用mysql数据库，JDBC 和 C3P0 框架。以下是详细代码 ：</p>
+<p>（1） 项目结构<br>
+<img src="https://epitomm.github.io/post-images/001.png" alt="图片" loading="lazy"><br>
+（2） 数据准备</p>
+<pre><code class="language-sql">-- 使用数据库
+use test;
+-- 创建一张账户表
+create table account(
+	id int primary key auto_increment,
+	name varchar(20),
+	money double
+);
+-- 初始化数据
+insert into account values(null, 'Jack', 1000);
+insert into account values(null, 'Rose', 0);
+</code></pre>
+<p>（3） C3P0配置文件和工具类</p>
+<pre><code class="language-xml">&lt;c3p0-config&gt;
+  &lt;!-- 使用默认的配置读取连接池对象 --&gt;
+  &lt;default-config&gt;
+  	&lt;!--  连接参数 --&gt;
+    &lt;property name=&quot;driverClass&quot;&gt;com.mysql.jdbc.Driver&lt;/property&gt;
+    &lt;property name=&quot;jdbcUrl&quot;&gt;jdbc:mysql://localhost:3306/test&lt;/property&gt;
+    &lt;property name=&quot;user&quot;&gt;root&lt;/property&gt;
+    &lt;property name=&quot;password&quot;&gt;1234&lt;/property&gt;
+    
+    &lt;!-- 连接池参数 --&gt;
+    &lt;property name=&quot;initialPoolSize&quot;&gt;5&lt;/property&gt;
+    &lt;property name=&quot;maxPoolSize&quot;&gt;10&lt;/property&gt;
+    &lt;property name=&quot;checkoutTimeout&quot;&gt;3000&lt;/property&gt;
+  &lt;/default-config&gt;
+
+&lt;/c3p0-config&gt;
+</code></pre>
+<p>（4） 工具类 ： JdbcUtils</p>
+<pre><code class="language-java">package com.itheima.transfer.utils;
+
+import com.mchange.v2.c3p0.ComboPooledDataSource;
+import java.sql.Connection;
+import java.sql.SQLException;
+
+public class JdbcUtils {
+    // c3p0 数据库连接池对象属性
+    private static final ComboPooledDataSource ds = new ComboPooledDataSource();
+    // 获取连接
+    public static Connection getConnection() throws SQLException {
+        return ds.getConnection();
+    }
+    //释放资源
+    public static void release(AutoCloseable... ios){
+        for (AutoCloseable io : ios) {
+            if(io != null){
+                try {
+                    io.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+    
+    
+    public static void commitAndClose(Connection conn) {
+        try {
+            if(conn != null){
+                //提交事务
+                conn.commit();
+                //释放连接
+                conn.close();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void rollbackAndClose(Connection conn) {
+        try {
+            if(conn != null){
+                //回滚事务
+                conn.rollback();
+                //释放连接
+                conn.close();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+}
+</code></pre>
+<p>（5） dao层代码 ： AccountDao</p>
+<pre><code class="language-java">package com.itheima.transfer.dao;
+
+import com.itheima.transfer.utils.JdbcUtils;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+
+public class AccountDao {
+
+    public void out(String outUser, int money) throws SQLException {
+        String sql = &quot;update account set money = money - ? where name = ?&quot;;
+
+        Connection conn = JdbcUtils.getConnection();
+        PreparedStatement pstm = conn.prepareStatement(sql);
+        pstm.setInt(1,money);
+        pstm.setString(2,outUser);
+        pstm.executeUpdate();
+
+        JdbcUtils.release(pstm,conn);
+    }
+
+    public void in(String inUser, int money) throws SQLException {
+        String sql = &quot;update account set money = money + ? where name = ?&quot;;
+
+        Connection conn = JdbcUtils.getConnection();
+        PreparedStatement pstm = conn.prepareStatement(sql);
+        pstm.setInt(1,money);
+        pstm.setString(2,inUser);
+        pstm.executeUpdate();
+
+        JdbcUtils.release(pstm,conn);
+    }
+}
+</code></pre>
+<p>（6） service层代码 ： AccountService</p>
+<pre><code class="language-java">package com.itheima.transfer.service;
+
+import com.itheima.transfer.dao.AccountDao;
+import java.sql.SQLException;
+
+public class AccountService {
+
+    public boolean transfer(String outUser, String inUser, int money) {
+        AccountDao ad = new AccountDao();
+        try {
+            // 转出
+            ad.out(outUser, money);
+            // 转入
+            ad.in(inUser, money);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
+}
+</code></pre>
+<p>（7） web层代码 ： AccountWeb</p>
+<pre><code class="language-java">package com.itheima.transfer.web;
+
+import com.itheima.transfer.service.AccountService;
+
+public class AccountWeb {
+
+    public static void main(String[] args) {
+        // 模拟数据 : Jack 给 Rose 转账 100
+        String outUser = &quot;Jack&quot;;
+        String inUser = &quot;Rose&quot;;
+        int money = 100;
+
+        AccountService as = new AccountService();
+        boolean result = as.transfer(outUser, inUser, money);
+
+        if (result == false) {
+            System.out.println(&quot;转账失败!&quot;);
+        } else {
+            System.out.println(&quot;转账成功!&quot;);
+        }
+    }
+}
+</code></pre>
+<h3 id="212-引入事务">2.1.2 引入事务</h3>
+<p>​案例中的转账涉及两个DML操作： 一个转出，一个转入。这些操作是需要具备原子性的，不可分割。不然就有可能出现数据修改异常情况。</p>
+<pre><code class="language-java">public class AccountService {
+    public boolean transfer(String outUser, String inUser, int money) {
+        AccountDao ad = new AccountDao();
+        try {
+            // 转出
+            ad.out(outUser, money);
+            // 模拟转账过程中的异常
+            int i = 1/0;
+            // 转入
+            ad.in(inUser, money);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
+}
+</code></pre>
+<p>所以这里就需要操作事务，来保证转出和转入操作具备原子性，要么同时成功，要么同时失败。<br>
+（1） JDBC中关于事务的操作的api</p>
+<table>
+<thead>
+<tr>
+<th>Connection接口的方法</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>void  setAutoCommit(false)</td>
+<td>禁用事务自动提交（改为手动）</td>
+</tr>
+<tr>
+<td>void  commit();</td>
+<td>提交事务</td>
+</tr>
+<tr>
+<td>void rollback();</td>
+<td>回滚事务</td>
+</tr>
+</tbody>
+</table>
+<p>（2） <strong>开启事务的注意点</strong>:</p>
+<ul>
+<li>
+<p>为了保证所有的操作在一个事务中,案例中使用的连接必须是同一个:  service层开启事务的connection需要跟dao层访问数据库的connection保持一致</p>
+</li>
+<li>
+<p>线程并发情况下, 每个线程只能操作各自的 connection</p>
+</li>
+</ul>
+<h2 id="22-常规解决方案">2.2  常规解决方案</h2>
+<h3 id="221-常规方案的实现">2.2.1 常规方案的实现</h3>
+<p>基于上面给出的前提， 大家通常想到的解决方案是 ：</p>
+<ul>
+<li>传参: 从service层将connection对象向dao层传递</li>
+<li>加锁</li>
+</ul>
+<p>以下是代码实现修改的部分：</p>
+<p>（1 ) AccountService 类</p>
+<pre><code class="language-java">package com.itheima.transfer.service;
+
+import com.itheima.transfer.dao.AccountDao;
+import com.itheima.transfer.utils.JdbcUtils;
+import java.sql.Connection;
+
+public class AccountService {
+
+    public boolean transfer(String outUser, String inUser, int money) {
+        AccountDao ad = new AccountDao();
+        //线程并发情况下,为了保证每个线程使用各自的connection,故加锁
+        synchronized (AccountService.class) {
+
+            Connection conn = null;
+            try {
+                conn = JdbcUtils.getConnection();
+                //开启事务
+                conn.setAutoCommit(false);
+                // 转出
+                ad.out(conn, outUser, money);
+                // 模拟转账过程中的异常
+//            int i = 1/0;
+                // 转入
+                ad.in(conn, inUser, money);
+                //事务提交
+                JdbcUtils.commitAndClose(conn);
+            } catch (Exception e) {
+                e.printStackTrace();
+                //事务回滚
+                JdbcUtils.rollbackAndClose(conn);
+                return false;
+            }
+            return true;
+        }
+    }
+}
+</code></pre>
+<p>（2) AccountDao 类 （这里需要注意的是： connection不能在dao层释放，要在service层，不然在dao层释放，service层就无法使用了）</p>
+<pre><code class="language-java">package com.itheima.transfer.dao;
+
+import com.itheima.transfer.utils.JdbcUtils;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+
+public class AccountDao {
+
+    public void out(Connection conn, String outUser, int money) throws SQLException{
+        String sql = &quot;update account set money = money - ? where name = ?&quot;;
+        //注释从连接池获取连接的代码,使用从service中传递过来的connection
+//        Connection conn = JdbcUtils.getConnection();
+        PreparedStatement pstm = conn.prepareStatement(sql);
+        pstm.setInt(1,money);
+        pstm.setString(2,outUser);
+        pstm.executeUpdate();
+        //连接不能在这里释放,service层中还需要使用
+//        JdbcUtils.release(pstm,conn);
+        JdbcUtils.release(pstm);
+    }
+
+    public void in(Connection conn, String inUser, int money) throws SQLException {
+        String sql = &quot;update account set money = money + ? where name = ?&quot;;
+//        Connection conn = JdbcUtils.getConnection();
+        PreparedStatement pstm = conn.prepareStatement(sql);
+        pstm.setInt(1,money);
+        pstm.setString(2,inUser);
+        pstm.executeUpdate();
+//        JdbcUtils.release(pstm,conn);
+        JdbcUtils.release(pstm);
+    }
+}
+</code></pre>
+<h3 id="222-常规方案的弊端">2.2.2 常规方案的弊端</h3>
+<p>上述方式我们看到的确按要求解决了问题，但是仔细观察，会发现这样实现的弊端：</p>
+<ol>
+<li>
+<p>直接从service层传递connection到dao层, 造成代码耦合度提高</p>
+</li>
+<li>
+<p>加锁会造成线程失去并发性，程序性能降低</p>
+</li>
+</ol>
+<h2 id="23-threadlocal解决方案">2.3 ThreadLocal解决方案</h2>
+<h3 id="231-threadlocal方案的实现">2.3.1 ThreadLocal方案的实现</h3>
+<p>像这种需要在项目中进行<strong>数据传递</strong>和<strong>线程隔离</strong>的场景，我们不妨用ThreadLocal来解决：</p>
+<p>（1） 工具类的修改： 加入ThreadLocal</p>
+<pre><code class="language-java">package com.itheima.transfer.utils;
+
+import com.mchange.v2.c3p0.ComboPooledDataSource;
+import java.sql.Connection;
+import java.sql.SQLException;
+
+public class JdbcUtils {
+    //ThreadLocal对象 : 将connection绑定在当前线程中
+    private static final ThreadLocal&lt;Connection&gt; tl = new ThreadLocal();
+
+    // c3p0 数据库连接池对象属性
+    private static final ComboPooledDataSource ds = new ComboPooledDataSource();
+
+    // 获取连接
+    public static Connection getConnection() throws SQLException {
+        //取出当前线程绑定的connection对象
+        Connection conn = tl.get();
+        if (conn == null) {
+            //如果没有，则从连接池中取出
+            conn = ds.getConnection();
+            //再将connection对象绑定到当前线程中
+            tl.set(conn);
+        }
+        return conn;
+    }
+
+    //释放资源
+    public static void release(AutoCloseable... ios) {
+        for (AutoCloseable io : ios) {
+            if (io != null) {
+                try {
+                    io.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    public static void commitAndClose() {
+        try {
+            Connection conn = getConnection();
+            //提交事务
+            conn.commit();
+            //解除绑定
+            tl.remove();
+            //释放连接
+            conn.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void rollbackAndClose() {
+        try {
+            Connection conn = getConnection();
+            //回滚事务
+            conn.rollback();
+            //解除绑定
+            tl.remove();
+            //释放连接
+            conn.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+}
+</code></pre>
+<p>（2） AccountService类的修改：不需要传递connection对象</p>
+<pre><code class="language-java">package com.itheima.transfer.service;
+
+import com.itheima.transfer.dao.AccountDao;
+import com.itheima.transfer.utils.JdbcUtils;
+import java.sql.Connection;
+
+public class AccountService {
+
+    public boolean transfer(String outUser, String inUser, int money) {
+        AccountDao ad = new AccountDao();
+
+        try {
+            Connection conn = JdbcUtils.getConnection();
+            //开启事务
+            conn.setAutoCommit(false);
+            // 转出 ： 这里不需要传参了 ！
+            ad.out(outUser, money);
+            // 模拟转账过程中的异常
+//            int i = 1 / 0;
+            // 转入
+            ad.in(inUser, money);
+            //事务提交
+            JdbcUtils.commitAndClose();
+        } catch (Exception e) {
+            e.printStackTrace();
+            //事务回滚
+           JdbcUtils.rollbackAndClose();
+            return false;
+        }
+        return true;
+    }
+}
+</code></pre>
+<p>（3） AccountDao类的修改：照常使用</p>
+<pre><code class="language-java">package com.itheima.transfer.dao;
+
+import com.itheima.transfer.utils.JdbcUtils;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+
+public class AccountDao {
+
+    public void out(String outUser, int money) throws SQLException {
+        String sql = &quot;update account set money = money - ? where name = ?&quot;;
+        Connection conn = JdbcUtils.getConnection();
+        PreparedStatement pstm = conn.prepareStatement(sql);
+        pstm.setInt(1,money);
+        pstm.setString(2,outUser);
+        pstm.executeUpdate();
+        //照常使用
+//        JdbcUtils.release(pstm,conn);
+        JdbcUtils.release(pstm);
+    }
+
+    public void in(String inUser, int money) throws SQLException {
+        String sql = &quot;update account set money = money + ? where name = ?&quot;;
+        Connection conn = JdbcUtils.getConnection();
+        PreparedStatement pstm = conn.prepareStatement(sql);
+        pstm.setInt(1,money);
+        pstm.setString(2,inUser);
+        pstm.executeUpdate();
+//        JdbcUtils.release(pstm,conn);
+        JdbcUtils.release(pstm);
+    }
+}
+</code></pre>
+<h3 id="232-threadlocal方案的好处">2.3.2 ThreadLocal方案的好处</h3>
+<p>从上述的案例中我们可以看到， 在一些特定场景下，ThreadLocal方案有两个突出的优势：</p>
+<ol>
+<li>
+<p>传递数据 ： 保存每个线程绑定的数据，在需要的地方可以直接获取, 避免参数直接传递带来的代码耦合问题</p>
+</li>
+<li>
+<p>线程隔离 ： 各线程之间的数据相互隔离却又具备并发性，避免同步方式带来的性能损失</p>
+</li>
+</ol>
+<h1 id="三-threadlocal的内部结构">三、ThreadLocal的内部结构</h1>
 <p>通过以上的学习，我们对ThreadLocal的作用有了一定的认识。现在我们一起来看一下ThreadLocal的内部结构，探究它能够实现线程数据隔离的原理。</p>
-<h2 id="21常见的误解">2.1常见的误解</h2>
+<h2 id="31常见的误解">3.1常见的误解</h2>
 <p>通常，如果我们不去看源代码的话，我猜 ThreadLocal 是这样子设计的：每个ThreadLocal 类都创建一个 Map，然后用线程作为Map的key，要存储的局部变量作为Map的value，这样就能达到各个线程的局部变量隔离的效果。这是最简单的设计方法，JDK最早期的ThreadLocal就是这样设计的。</p>
 <figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/%E6%97%A9%E6%9C%9FThreadLocal.png" alt="图片" loading="lazy"></figure>
-<h2 id="22-现在的设计">2.2 现在的设计</h2>
+<h2 id="32-现在的设计">3.2 现在的设计</h2>
 <p>但是，JDK后面优化了设计方案，JDK8 中 ThreadLocal的设计是：每个Thread维护一个ThreadLocalMap 哈希表，这个哈希表的key是ThreadLocal实例本身，value才是真正要存储的值object。</p>
 <p>（1）每个Thread线程内部都有一个Map（ThreadLocalMap）</p>
 <p>（2）Map里面存储ThreadLocal对象（key）和线程的变量副本（value）</p>
 <p>（3）Thread内部的Map是由ThreadLocal维护的，由ThreadLocal负责向map获取和设置线程的变量值。</p>
 <figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/JDK8ThreadLocal.png" alt="图片" loading="lazy"></figure>
-<h2 id="23-jdk8的设计方案两个好处">2.3 JDK8的设计方案两个好处</h2>
+<h2 id="33-jdk8的设计方案两个好处">3.3 JDK8的设计方案两个好处</h2>
 <ol>
 <li>每个Map存储的Entry数量变少</li>
 </ol>
@@ -363,7 +844,7 @@ public class MyDemo02 {
 <li>当Thread销毁的时候，ThreadLocalMap也会随之销毁，减少内存的使用</li>
 </ol>
 <p>[早期版本内，ThreadLocalMap 由 ThreadLocal 维护；而 JDK8 中，ThreadLocalMap 由 Thread 维护，当 Thread 销毁，ThreadLocalMap 也会销毁]</p>
-<h1 id="三-threadlocal-的和核心方法源码">三、ThreadLocal 的和核心方法源码</h1>
+<h1 id="四-threadlocal-的和核心方法源码">四、ThreadLocal 的和核心方法源码</h1>
 <p>基于ThreadLocal的内部结构，我们继续分析它的核心方法源码，更深入的了解其操作原理。</p>
 <p>除了构造方法之外，ThreadLocal对外暴露的方法有以下4个：</p>
 <table>
@@ -393,7 +874,7 @@ public class MyDemo02 {
 </tbody>
 </table>
 <p>以下是这4个方法的详细源码分析（为了保证思路清晰，ThreadLocalMap部分暂时不展开，下一个知识点详解）</p>
-<h2 id="31-set方法">3.1 set方法</h2>
+<h2 id="41-set方法">4.1 set方法</h2>
 <p>（1）源码和对应的中文注释</p>
 <pre><code>/**
  * 设置当前线程对应的 ThreadLocal 的值
@@ -440,7 +921,7 @@ void createMap(Thread t, T firstValue) {
 A.首先获取当前线，并根据当前线程获取一个Map</p>
 <p>B.如果获取的Map不为空，则将参数设置到Map中（当前ThreadLocal的引用作为key）</p>
 <p>C.如果Map为空，则给该线程创建Map，并设置初始值</p>
-<h2 id="32-get方法">3.2 get方法</h2>
+<h2 id="42-get方法">4.2 get方法</h2>
 <p>（1）源码和对应的中文注释</p>
 <pre><code>/**
  * 返回当前线程中保存 ThreadLocal 的值
@@ -505,7 +986,7 @@ A.首先获取当前线程，根据当前线程获取一个Map</p>
 <p>C.如果e不为null，则返回e.value，否则转到D</p>
 <p>D.Map为空或者e为空，则通过initiaValue函数获取初始值value，然后用ThreadLocal的引用和value作为firstKey和firstValue创建一个新的Map</p>
 <p>总结：<strong>先获取当前线程的ThreadLocalMap变量，如果存在则返回值，不存在则创建并返回初始值</strong>。</p>
-<h2 id="33-remove方法">3.3 remove方法</h2>
+<h2 id="43-remove方法">4.3 remove方法</h2>
 <p>（1）源码和对应的中文注释</p>
 <pre><code>/**
  * 删除当前线程中保存的 ThreadLocal 对应的实体 entry
@@ -523,7 +1004,7 @@ public void remove() {
 <p>（2）代码执行流程<br>
 A.首先获取当前线程，并根据当前线程获取一个Map</p>
 <p>B.如果获取的Map不为空，则移除当前ThreadLocal对象对应的entry</p>
-<h2 id="34-initialvalue方法">3.4 initialValue方法</h2>
+<h2 id="44-initialvalue方法">4.4 initialValue方法</h2>
 <pre><code>/**
  * 返回当前线程对应的ThreadLocal的初始值
  * 
@@ -545,10 +1026,10 @@ protected T initialValue() {
 （1）这个方法是一个延迟调用方法，从面的代码我们得知，在set方法还未调用而先调用了get方法时才执行，并且仅执行1次。</p>
 <p>（2）这个方法缺省实现直接返回一个null。</p>
 <p>（3）如果想要一个除null之外的初始值，可以重写此方法。（备注：该方法是一个protected的方法，显然是为了让子类覆盖而设计的）</p>
-<h1 id="四-threadlocalmap源码分析">四、ThreadLocalMap源码分析</h1>
+<h1 id="五-threadlocalmap源码分析">五、ThreadLocalMap源码分析</h1>
 <p>在分析ThreadLocal方法的时候，我们了解到ThreadLocal的操作实际上是围绕ThreadLocalMap展开的。</p>
 <p>ThreadLocalMap的源码相对比较复杂，我们从以下三个方面进行讨论。</p>
-<h2 id="41基本结构">4.1基本结构</h2>
+<h2 id="51基本结构">5.1基本结构</h2>
 <p>ThreadLocalMap是ThreadLocal的内部类，没有实现Map接口，用独立的方式实现了Map的功能，其内部的Entry也是独立实现。</p>
 <figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/ThreadLocal%E7%9A%84UML.png" alt="图片" loading="lazy"></figure>
 <p>（1）成员变量</p>
@@ -592,7 +1073,7 @@ static class Entry extends WeakReference&lt;ThreadLocal&lt;?&gt;&gt; {
 </code></pre>
 <p>在ThreadLocalMap中，也是用Entry来保存K-V结构数据的。不过Entry中的key只能是ThreadLocal对象，这点在构造方法中已经限定死了。<br>
 另外，Entry继承WeakReference，也就是key（ThreadLocal）是弱引用，其目的是将ThreadLocal对象的生命周期和线程生命周期解绑。</p>
-<h2 id="42弱引用和内存泄漏">4.2弱引用和内存泄漏</h2>
+<h2 id="52弱引用和内存泄漏">5.2弱引用和内存泄漏</h2>
 <p>有些程序员在使用ThreadLocal的过程中会发现有内存泄漏的情况发生，就猜测这个内存泄漏跟Entry中使用了弱引用的key有关系。这个理解其实是不对的。</p>
 <p>我们先来回顾这个问题中涉及的几个名词概念，再来分析问题。</p>
 <h3 id="1内存泄漏相关概念">（1）内存泄漏相关概念</h3>
@@ -612,14 +1093,14 @@ static class Entry extends WeakReference&lt;ThreadLocal&lt;?&gt;&gt; {
 <p>2.但是因为threadLocalMap的Entry强引用了threadLocal，造成threadLocal无法被回收。</p>
 <p>3.在没有手动删除这个Entry以及CurrentThread依然运行的前提下，始终有强引用链 threadRef-&gt;currentThread-&gt;threadLocalMap-&gt;entry，Entry就不会被回收（Entry中包括了ThreadLocal实例和value），导致Entry内存泄漏。</p>
 <p>也就是说，ThreadLocalMap中的key使用了强引用，是无法完全避免内存泄漏的。</p>
-<h3 id="5如果key使用弱引用">（5）如果key使用弱引用</h3>
+<h3 id="4如果key使用弱引用">（4）如果key使用弱引用</h3>
 <p>那么ThreadLocalMap中的key使用了弱引用，会出现内存泄漏吗？此时ThreadLocal的内存图（实线表示强引用，虚线表示弱引用）如下：</p>
 <figure data-type="image" tabindex="5"><img src="https://epitomm.github.io/post-images/key%E5%BC%B1%E5%BC%95%E7%94%A8.png" alt="图片" loading="lazy"></figure>
 <p>同样假设在业务代码中使用完ThreadLocal，threadLocal Ref被回收了。</p>
 <p>由于ThreadLocalMap只持有ThreadLocal的弱引用，没有任何强引用指向threadlocal实例，所以threadlocal就可以顺利被gc回收，此时Entry中的key=null。</p>
 <p>但是在没有手动删除这个Entry以及CurrentThread依然运行的前提下，也存在有强引用链 threadRef -&gt;currentThread-&gt;threadLocalMap-&gt;entry-&gt;value，value不会被回收，而这块value永远不会被访问到了，导致value内存泄漏。</p>
 <p>也就是说，ThreadLocalMap中的key使用了弱引用，也有可能内存泄漏。</p>
-<h3 id="6出现内存泄漏的真实原因">（6）出现内存泄漏的真实原因</h3>
+<h3 id="5出现内存泄漏的真实原因">（5）出现内存泄漏的真实原因</h3>
 <p>比较以上两种情况，我们就会发现，内存泄漏的发生跟ThreadLocalMap中的key是否使用弱引用是没有关系的。那么内存泄漏的的真正原因是什么呢？</p>
 <p>细心的同学会发现，在以上两种内存泄漏的情况中，都有两个前提：</p>
 <p>1.没有手动删除这个Entry</p>
@@ -627,7 +1108,7 @@ static class Entry extends WeakReference&lt;ThreadLocal&lt;?&gt;&gt; {
 <p>第一点很好理解，只要在使用完ThreadLocal，调用其remove方法删除对应的Entry，就能避免内存泄漏。第二点稍微复杂一点，由于ThreadLocalMap是Thread的一个属性，被当前线程所引用，所以它的生命周期跟Thread一样长。那么在使用完ThreadLocal的使用，如果当前Thread也随之执行结束，ThreadLocalMap自然也会被gc回收，从根源上避免了内存泄漏。</p>
 <p>综上，ThreadLocal内存泄漏的根源是：由于ThreadLocalMap的生命周期跟Thread一样长，如果没有手动删除对应key就会导致内存泄漏。</p>
 <figure data-type="image" tabindex="6"><img src="https://epitomm.github.io/post-images/ThreadLocal%E5%86%85%E5%AD%98%E6%B3%84%E6%BC%8F%E7%9C%9F%E6%AD%A3%E5%8E%9F%E5%9B%A0.png" alt="图片" loading="lazy"></figure>
-<h3 id="7为什么使用弱引用">（7）为什么使用弱引用</h3>
+<h3 id="6为什么使用弱引用">（6）为什么使用弱引用</h3>
 <p>根据刚才的分析，我们知道了：无论使用ThreadLocalMap中的key使用哪种类型引用都无法完全避免内存泄漏，跟使用弱引用没有关系。要避免内存泄漏有两种方式：</p>
 <p>1.使用完ThreadLocal，调用其remove方法删除对应的Entry</p>
 <p>2.使用完ThreadLocal，当前Thread也随之运行结束</p>
@@ -775,32 +1256,54 @@ A.首先还是根据key计算出索引i，然后查找位置上的Entry，B.若�
 </li>
 </ul>
 </li>
-<li><a href="#%E4%BA%8C-threadlocal%E7%9A%84%E5%86%85%E9%83%A8%E7%BB%93%E6%9E%84">二、ThreadLocal的内部结构</a>
+<li><a href="#%E4%BA%8C-%E8%BF%90%E7%94%A8%E5%9C%BA%E6%99%AF_%E4%BA%8B%E5%8A%A1%E6%A1%88%E4%BE%8B">二、 运用场景_事务案例</a>
 <ul>
-<li><a href="#21%E5%B8%B8%E8%A7%81%E7%9A%84%E8%AF%AF%E8%A7%A3">2.1常见的误解</a></li>
-<li><a href="#22-%E7%8E%B0%E5%9C%A8%E7%9A%84%E8%AE%BE%E8%AE%A1">2.2 现在的设计</a></li>
-<li><a href="#23-jdk8%E7%9A%84%E8%AE%BE%E8%AE%A1%E6%96%B9%E6%A1%88%E4%B8%A4%E4%B8%AA%E5%A5%BD%E5%A4%84">2.3 JDK8的设计方案两个好处</a></li>
+<li><a href="#21-%E8%BD%AC%E8%B4%A6%E6%A1%88%E4%BE%8B">2.1 转账案例</a>
+<ul>
+<li><a href="#211-%E5%9C%BA%E6%99%AF%E6%9E%84%E5%BB%BA">2.1.1 场景构建</a></li>
+<li><a href="#212-%E5%BC%95%E5%85%A5%E4%BA%8B%E5%8A%A1">2.1.2 引入事务</a></li>
 </ul>
 </li>
-<li><a href="#%E4%B8%89-threadlocal-%E7%9A%84%E5%92%8C%E6%A0%B8%E5%BF%83%E6%96%B9%E6%B3%95%E6%BA%90%E7%A0%81">三、ThreadLocal 的和核心方法源码</a>
+<li><a href="#22-%E5%B8%B8%E8%A7%84%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88">2.2  常规解决方案</a>
 <ul>
-<li><a href="#31-set%E6%96%B9%E6%B3%95">3.1 set方法</a></li>
-<li><a href="#32-get%E6%96%B9%E6%B3%95">3.2 get方法</a></li>
-<li><a href="#33-remove%E6%96%B9%E6%B3%95">3.3 remove方法</a></li>
-<li><a href="#34-initialvalue%E6%96%B9%E6%B3%95">3.4 initialValue方法</a></li>
+<li><a href="#221-%E5%B8%B8%E8%A7%84%E6%96%B9%E6%A1%88%E7%9A%84%E5%AE%9E%E7%8E%B0">2.2.1 常规方案的实现</a></li>
+<li><a href="#222-%E5%B8%B8%E8%A7%84%E6%96%B9%E6%A1%88%E7%9A%84%E5%BC%8A%E7%AB%AF">2.2.2 常规方案的弊端</a></li>
 </ul>
 </li>
-<li><a href="#%E5%9B%9B-threadlocalmap%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90">四、ThreadLocalMap源码分析</a>
+<li><a href="#23-threadlocal%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88">2.3 ThreadLocal解决方案</a>
 <ul>
-<li><a href="#41%E5%9F%BA%E6%9C%AC%E7%BB%93%E6%9E%84">4.1基本结构</a></li>
-<li><a href="#42%E5%BC%B1%E5%BC%95%E7%94%A8%E5%92%8C%E5%86%85%E5%AD%98%E6%B3%84%E6%BC%8F">4.2弱引用和内存泄漏</a>
+<li><a href="#231-threadlocal%E6%96%B9%E6%A1%88%E7%9A%84%E5%AE%9E%E7%8E%B0">2.3.1 ThreadLocal方案的实现</a></li>
+<li><a href="#232-threadlocal%E6%96%B9%E6%A1%88%E7%9A%84%E5%A5%BD%E5%A4%84">2.3.2 ThreadLocal方案的好处</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#%E4%B8%89-threadlocal%E7%9A%84%E5%86%85%E9%83%A8%E7%BB%93%E6%9E%84">三、ThreadLocal的内部结构</a>
+<ul>
+<li><a href="#31%E5%B8%B8%E8%A7%81%E7%9A%84%E8%AF%AF%E8%A7%A3">3.1常见的误解</a></li>
+<li><a href="#32-%E7%8E%B0%E5%9C%A8%E7%9A%84%E8%AE%BE%E8%AE%A1">3.2 现在的设计</a></li>
+<li><a href="#33-jdk8%E7%9A%84%E8%AE%BE%E8%AE%A1%E6%96%B9%E6%A1%88%E4%B8%A4%E4%B8%AA%E5%A5%BD%E5%A4%84">3.3 JDK8的设计方案两个好处</a></li>
+</ul>
+</li>
+<li><a href="#%E5%9B%9B-threadlocal-%E7%9A%84%E5%92%8C%E6%A0%B8%E5%BF%83%E6%96%B9%E6%B3%95%E6%BA%90%E7%A0%81">四、ThreadLocal 的和核心方法源码</a>
+<ul>
+<li><a href="#41-set%E6%96%B9%E6%B3%95">4.1 set方法</a></li>
+<li><a href="#42-get%E6%96%B9%E6%B3%95">4.2 get方法</a></li>
+<li><a href="#43-remove%E6%96%B9%E6%B3%95">4.3 remove方法</a></li>
+<li><a href="#44-initialvalue%E6%96%B9%E6%B3%95">4.4 initialValue方法</a></li>
+</ul>
+</li>
+<li><a href="#%E4%BA%94-threadlocalmap%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90">五、ThreadLocalMap源码分析</a>
+<ul>
+<li><a href="#51%E5%9F%BA%E6%9C%AC%E7%BB%93%E6%9E%84">5.1基本结构</a></li>
+<li><a href="#52%E5%BC%B1%E5%BC%95%E7%94%A8%E5%92%8C%E5%86%85%E5%AD%98%E6%B3%84%E6%BC%8F">5.2弱引用和内存泄漏</a>
 <ul>
 <li><a href="#1%E5%86%85%E5%AD%98%E6%B3%84%E6%BC%8F%E7%9B%B8%E5%85%B3%E6%A6%82%E5%BF%B5">（1）内存泄漏相关概念</a></li>
 <li><a href="#2%E5%BC%B1%E5%BC%95%E7%94%A8%E7%9B%B8%E5%85%B3%E6%A6%82%E5%BF%B5">（2）弱引用相关概念</a></li>
 <li><a href="#3%E5%A6%82%E6%9E%9Ckey%E4%BD%BF%E7%94%A8%E5%BC%BA%E5%BC%95%E7%94%A8">（3）如果key使用强引用</a></li>
-<li><a href="#5%E5%A6%82%E6%9E%9Ckey%E4%BD%BF%E7%94%A8%E5%BC%B1%E5%BC%95%E7%94%A8">（5）如果key使用弱引用</a></li>
-<li><a href="#6%E5%87%BA%E7%8E%B0%E5%86%85%E5%AD%98%E6%B3%84%E6%BC%8F%E7%9A%84%E7%9C%9F%E5%AE%9E%E5%8E%9F%E5%9B%A0">（6）出现内存泄漏的真实原因</a></li>
-<li><a href="#7%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BD%BF%E7%94%A8%E5%BC%B1%E5%BC%95%E7%94%A8">（7）为什么使用弱引用</a></li>
+<li><a href="#4%E5%A6%82%E6%9E%9Ckey%E4%BD%BF%E7%94%A8%E5%BC%B1%E5%BC%95%E7%94%A8">（4）如果key使用弱引用</a></li>
+<li><a href="#5%E5%87%BA%E7%8E%B0%E5%86%85%E5%AD%98%E6%B3%84%E6%BC%8F%E7%9A%84%E7%9C%9F%E5%AE%9E%E5%8E%9F%E5%9B%A0">（5）出现内存泄漏的真实原因</a></li>
+<li><a href="#6%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BD%BF%E7%94%A8%E5%BC%B1%E5%BC%95%E7%94%A8">（6）为什么使用弱引用</a></li>
 </ul>
 </li>
 <li><a href="#43hash%E5%86%B2%E7%AA%81%E7%9A%84%E8%A7%A3%E5%86%B3">4.3hash冲突的解决</a>
