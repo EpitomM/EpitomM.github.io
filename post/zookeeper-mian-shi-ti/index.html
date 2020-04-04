@@ -3,7 +3,7 @@
     <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>面试题系列 —— Zookeeper | SSM</title>
-<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1585989188139">
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1585995786460">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
 <link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
 <link rel="alternate" type="application/atom+xml" title="面试题系列 —— Zookeeper | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
@@ -23,7 +23,7 @@ ZooKeeper 本质上是一个分布式的小文件存储系..." />
       <div class="main-content">
         <div class="site-header">
   <a href="https://epitomm.github.io">
-  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1585989188139" alt="">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1585995786460" alt="">
   </a>
   <h1 class="site-title">
     SSM
@@ -105,8 +105,10 @@ ZooKeeper 本质上是一个分布式的小文件存储系..." />
 <p><strong><code>ZooKeeper</code> 本质上是一个分布式的小文件存储系统</strong>。提供基于类似于文件系统的目录树方式的数据存储，并且可以对树中的节点进行有效管理。从而用来维护和监控你存储的数据的状态变化。通过监控这些数据状态的变化，从而可以达到基于数据的集群管理。诸如：统一命名服务、分布式配置管理、分布式消息队列、分布式锁、分布式协调等功能。</p>
 <h1 id="2-zookeeper-特性">2. ZooKeeper 特性</h1>
 <ol>
-<li><strong>全局数据一致</strong>：集群中每个服务器保存一份相同的数据副本，<code>client</code> 无论连接到哪个服务器，展示的数据都是一致的，这是最重要的特征；</li>
-<li><strong>可靠性</strong>：如果消息【<strong>增、删、改、查</strong>】被其中一台服务器接受，那么将被所有的服务器接受。</li>
+<li><strong>全局数据一致</strong>：集群中每个服务器保存一份相同的数据副本，<code>client</code> 无论连接到哪个服务器，展示的数据都是一致的，这是最重要的特征；<br>
+<img src="https://epitomm.github.io/post-images/zk%E5%85%A8%E5%B1%80%E4%B8%80%E8%87%B4%E6%80%A7.png" alt="" loading="lazy"></li>
+<li><strong>可靠性</strong>：如果消息【<strong>增、删、改、查</strong>】被其中一台服务器接受，那么将被所有的服务器接受。<br>
+<img src="https://epitomm.github.io/post-images/zk%E5%8F%AF%E9%9D%A0%E6%80%A7.png" alt="" loading="lazy"></li>
 <li><strong>顺序性</strong>：包括全局有序和偏序两种：全局有序是指如果在一台服务器上消息 a 在消息 b 前发布，则在所有 <code>Server</code> 上消息 a 都将在消息 b 前被发布；偏序是指如果一个消息 b 在消息 a 后被同一个发送者发布，a 必将排在 b 前面。</li>
 <li><strong>数据更新原子性</strong>：一次数据更新要么成功（半数以上节点成功），要么失败，不存在中间状态。</li>
 <li><strong>实时性</strong>：<code>Zookeeper</code> 保证客户端将在一个时间间隔范围内获得服务器的更新信息，或者服务器失效的信息。</li>
