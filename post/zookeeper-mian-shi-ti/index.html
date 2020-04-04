@@ -3,7 +3,7 @@
     <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>面试题系列 —— Zookeeper | SSM</title>
-<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1585995786460">
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1585997988835">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
 <link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
 <link rel="alternate" type="application/atom+xml" title="面试题系列 —— Zookeeper | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
@@ -23,7 +23,7 @@ ZooKeeper 本质上是一个分布式的小文件存储系..." />
       <div class="main-content">
         <div class="site-header">
   <a href="https://epitomm.github.io">
-  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1585995786460" alt="">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1585997988835" alt="">
   </a>
   <h1 class="site-title">
     SSM
@@ -83,7 +83,7 @@ ZooKeeper 本质上是一个分布式的小文件存储系..." />
                 2020-03-14
               </span>
               <span>
-                12 min read
+                13 min read
               </span>
               
                 <a href="https://epitomm.github.io/tag/1hfOEuf6o1/" class="post-tag">
@@ -103,6 +103,22 @@ ZooKeeper 本质上是一个分布式的小文件存储系..." />
                 <h1 id="1-谈谈你对-zookeeper-的认识">1. 谈谈你对 Zookeeper 的认识</h1>
 <p><code>Zookeeper</code> 是一个<strong>分布式协调服务</strong>的开源框架。主要用来解决分布式集群中应用系统的<strong>一致性</strong>问题，例如怎样避免同时操作同一数据造成脏读的问题。</p>
 <p><strong><code>ZooKeeper</code> 本质上是一个分布式的小文件存储系统</strong>。提供基于类似于文件系统的目录树方式的数据存储，并且可以对树中的节点进行有效管理。从而用来维护和监控你存储的数据的状态变化。通过监控这些数据状态的变化，从而可以达到基于数据的集群管理。诸如：统一命名服务、分布式配置管理、分布式消息队列、分布式锁、分布式协调等功能。</p>
+<h2 id="zookeeper-集群角色">Zookeeper 集群角色</h2>
+<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/zk%E9%9B%86%E7%BE%A4%E8%A7%92%E8%89%B2.png" alt="" loading="lazy"></figure>
+<h3 id="leader">Leader:</h3>
+<p>Zookeeper 集群工作的核心</p>
+<p><strong>事务请求</strong>（写操作）的唯一调度和处理者，保证集群事务处理的顺序性；</p>
+<p>集群内部各个服务器的<strong>调度者</strong>。</p>
+<blockquote>
+<p><em>对于 create，setData，delete 等有写操作的请求，则需要统一转发给 leader 处理，leader 需要决定编号、执行操作，这个过程称为一个</em><em><strong>事务</strong></em>*。*</p>
+</blockquote>
+<h3 id="follower">Follower:</h3>
+<p><strong>处理客户端非事务（读操作）请求，转发事务请求给 Leader；</strong></p>
+<p><strong>参与集群 Leader 选举投票。</strong></p>
+<p>此外，针对访问量比较大的 zookeeper 集群，还可新增观察者角色。</p>
+<h3 id="observer">Observer:</h3>
+<p>观察者角色，观察 Zookeeper 集群的最新状态变化并将这些状态同步过来，其对于非事务请求可以进行独立处理，对于事务请求，则会转发给 Leader 服务器进行处理。</p>
+<p><strong>不会参与任何形式的投票</strong>只提供非事务服务，通常用于在不影响集群事务处理能力的前提下提升集群的非事务处理能力。</p>
 <h1 id="2-zookeeper-特性">2. ZooKeeper 特性</h1>
 <ol>
 <li><strong>全局数据一致</strong>：集群中每个服务器保存一份相同的数据副本，<code>client</code> 无论连接到哪个服务器，展示的数据都是一致的，这是最重要的特征；<br>
@@ -135,7 +151,7 @@ ZooKeeper 本质上是一个分布式的小文件存储系..." />
 <p><strong>临时节点</strong>：该节点的生命周期依赖于创建它们的会话。一旦<strong>会话结束，临时节点将被自动删除</strong>，当然可以也可以手动删除。<strong>临时节点不允许拥有子节点</strong>。</p>
 <p><strong>永久节点</strong>：该节点的生命周期不依赖于会话，并且只有在客户端显示执行删除操作的时候，他们才能被删除。</p>
 <p><code>Znode</code> 还有一个<strong>序列化</strong>的特性，如果创建的时候指定的话，该 <code>Znode</code> 的名字后面会<strong>自动追加一个不断增加的序列号</strong>。序列号对于此节点的父节点来说是唯一的，这样便会<strong>记录每个子节点创建的先后顺序</strong>。它的格式为“%10d”(10 位数字，没有数值的数位用 0 补充，例如“0000000001”)。</p>
-<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/1584240804281.jpg" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/1584240804281.jpg" alt="" loading="lazy"></figure>
 <p>这样便会存在四种类型的 <code>Znode</code> 节点，分别对应：</p>
 <ul>
 <li><code>PERSISTENT</code>：永久节点</li>
@@ -182,7 +198,7 @@ ZooKeeper 本质上是一个分布式的小文件存储系..." />
 <p><strong>逻辑时钟</strong></p>
 <p>也叫投票的次数，同一轮投票过程中的逻辑时钟值是相同的。每投完一次票这个数据就会增加，然后与接收到的其它服务器返回的投票信息中的数值相比，根据不同的值做出不同的判断。</p>
 <h2 id="52-全新集群选举">5.2． 全新集群选举</h2>
-<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/1584240883089.png" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/1584240883089.png" alt="" loading="lazy"></figure>
 <p>假设目前有 5 台服务器，<strong>每台服务器均没有数据</strong>，它们的编号分别是1,2,3,4,5,<strong>按编号依次启动</strong>，它们的选择举过程如下：</p>
 <ul>
 <li>服务器 1 启动，给自己投票，然后发投票信息，由于其它机器还没有启动所以它收不到反馈信息，服务器 1 的状态一直属于 <code>Looking</code>。</li>
@@ -202,7 +218,7 @@ ZooKeeper 本质上是一个分布式的小文件存储系..." />
 <p>3、数据 id 相同的情况下，服务器 id 大的胜出；根据这个规则选出 <code>leader</code>。</p>
 <h1 id="6-zookeeper-典型应用">6． ZooKeeper 典型应用</h1>
 <h2 id="61-数据发布与订阅配置中心">6.1． 数据发布与订阅（配置中心）</h2>
-<figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/1584241030128.png" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="4"><img src="https://epitomm.github.io/post-images/1584241030128.png" alt="" loading="lazy"></figure>
 <p>发布与订阅模型，即所谓的配置中心，顾名思义就是<strong>发布者将数据发布到 ZK节点上，供订阅者动态获取数据，实现配置信息的集中式管理和动态更新</strong>。</p>
 <p>应用在启动的时候会主动来获取一次配置，同时，在节点上注册一个 <code>Watcher</code>，这样一来，以后每次配置有更新的时候，都会实时通知到订阅的客户端，从来达到获取最新配置信息的目的。比如：</p>
 <p>分布式搜索服务中，索引的元信息和服务器集群机器的节点状态存放在 ZK 的一些指定节点，供各个客户端订阅使用。</p>
@@ -212,7 +228,7 @@ ZooKeeper 本质上是一个分布式的小文件存储系..." />
 <p>阿里巴巴集团开源的分布式服务框架 <strong>Dubbo 中使用 ZooKeeper 来作为其命名服务</strong>，维护全局的服务地址列表。</p>
 <h2 id="63-分布式锁">6.3． 分布式锁</h2>
 <p>分布式锁，这个主要得益于 <code>ZooKeeper</code> 保证了数据的强一致性。锁服务可以分为两类，一个是<strong>保持独占</strong>，另一个是<strong>控制时序</strong>。</p>
-<figure data-type="image" tabindex="4"><img src="https://epitomm.github.io/post-images/1584241059824.png" alt="" loading="lazy"></figure>
+<figure data-type="image" tabindex="5"><img src="https://epitomm.github.io/post-images/1584241059824.png" alt="" loading="lazy"></figure>
 <p>所谓<strong>保持独占</strong>，就是所有试图来获取这个锁的客户端，最终只有一个可以成功获得这把锁。通常的做法是把 zk 上的一个 <code>znode</code> 看作是一把锁，通过 <code>create znode</code> 的方式来实现。所有客户端都去创建 <code>/distribute_lock</code> <strong>临时非序列化</strong>节点，最终成功创建的那个客户端也即拥有了这把锁。</p>
 <p><strong>控制时序</strong>，就是所有试图来获取这个锁的客户端，最终都是会被安排执行，只是有个全局时序了。做法和上面基本类似，只是这里<code>/distribute_lock</code> 已经预先存在，客户端在它下面创建<strong>临时有序</strong>节点（这个可以通过节点的属性控制：<code>CreateMode.EPHEMERAL_SEQUENTIAL</code> 来指定）。Zk 的父节点（<code>/distribute_lock</code>）</p>
 <p>维持一份 <code>sequence</code>,保证子节点创建的时序性，从而也形成了每个客户端的全局时序。</p>
@@ -220,7 +236,17 @@ ZooKeeper 本质上是一个分布式的小文件存储系..." />
               </div>
               <div class="toc-container">
                 <ul class="markdownIt-TOC">
-<li><a href="#1-%E8%B0%88%E8%B0%88%E4%BD%A0%E5%AF%B9-zookeeper-%E7%9A%84%E8%AE%A4%E8%AF%86">1. 谈谈你对 Zookeeper 的认识</a></li>
+<li><a href="#1-%E8%B0%88%E8%B0%88%E4%BD%A0%E5%AF%B9-zookeeper-%E7%9A%84%E8%AE%A4%E8%AF%86">1. 谈谈你对 Zookeeper 的认识</a>
+<ul>
+<li><a href="#zookeeper-%E9%9B%86%E7%BE%A4%E8%A7%92%E8%89%B2">Zookeeper 集群角色</a>
+<ul>
+<li><a href="#leader">Leader:</a></li>
+<li><a href="#follower">Follower:</a></li>
+<li><a href="#observer">Observer:</a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li><a href="#2-zookeeper-%E7%89%B9%E6%80%A7">2. ZooKeeper 特性</a></li>
 <li><a href="#3-zookeeper-%E6%95%B0%E6%8D%AE%E6%A8%A1%E5%9E%8B">3． ZooKeeper 数据模型</a>
 <ul>
