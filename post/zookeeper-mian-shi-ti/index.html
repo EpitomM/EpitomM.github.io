@@ -3,7 +3,7 @@
     <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>面试题系列 —— Zookeeper | SSM</title>
-<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1585997988835">
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1586000266315">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
 <link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
 <link rel="alternate" type="application/atom+xml" title="面试题系列 —— Zookeeper | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
@@ -23,7 +23,7 @@ ZooKeeper 本质上是一个分布式的小文件存储系..." />
       <div class="main-content">
         <div class="site-header">
   <a href="https://epitomm.github.io">
-  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1585997988835" alt="">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1586000266315" alt="">
   </a>
   <h1 class="site-title">
     SSM
@@ -110,7 +110,7 @@ ZooKeeper 本质上是一个分布式的小文件存储系..." />
 <p><strong>事务请求</strong>（写操作）的唯一调度和处理者，保证集群事务处理的顺序性；</p>
 <p>集群内部各个服务器的<strong>调度者</strong>。</p>
 <blockquote>
-<p><em>对于 create，setData，delete 等有写操作的请求，则需要统一转发给 leader 处理，leader 需要决定编号、执行操作，这个过程称为一个</em><em><strong>事务</strong></em>*。*</p>
+<p>对于 create，setData，delete 等有写操作的请求，则需要统一转发给 leader 处理，leader 需要决定编号、执行操作，这个过程称为一个<strong>事务</strong>。</p>
 </blockquote>
 <h3 id="follower">Follower:</h3>
 <p><strong>处理客户端非事务（读操作）请求，转发事务请求给 Leader；</strong></p>
@@ -224,7 +224,7 @@ ZooKeeper 本质上是一个分布式的小文件存储系..." />
 <p>分布式搜索服务中，索引的元信息和服务器集群机器的节点状态存放在 ZK 的一些指定节点，供各个客户端订阅使用。</p>
 <p>注意：适合<strong>数据量很小的场景</strong>，这样数据更新可能会比较快。</p>
 <h2 id="62-命名服务naming-service">6.2． 命名服务(Naming Service)</h2>
-<p>在分布式系统中，<strong>通过使用命名服务，客户端应用能够根据指定名字来获取资源或服务的地址，提供者等信息</strong>。<strong>被命名的实体通常可以是集群中的机器，提供的服务地址，远程对象等等——这些我们都可以统称他们为名字（Name）</strong>。其中较为常见的就是一些分布式服务框架中的服务地址列表。通过调用 ZK 提供的创建节点的 API，能够很容易创建一个<strong>全局唯一的 path</strong>，这个 path 就可以作为一个名称。</p>
+<p>在分布式系统中，<strong>通过使用命名服务，客户端应用能够根据指定名字来获取资源或服务的地址，提供者等信息</strong>。被命名的实体通常可以是集群中的机器，提供的服务地址，远程对象等等——这些我们都可以统称他们为名字（Name）。其中较为常见的就是一些分布式服务框架中的服务地址列表。通过<strong>调用 ZK 提供的创建节点的 API</strong>，能够很容易创建一个<strong>全局唯一的 path</strong>，这个 path 就可以作为一个名称。</p>
 <p>阿里巴巴集团开源的分布式服务框架 <strong>Dubbo 中使用 ZooKeeper 来作为其命名服务</strong>，维护全局的服务地址列表。</p>
 <h2 id="63-分布式锁">6.3． 分布式锁</h2>
 <p>分布式锁，这个主要得益于 <code>ZooKeeper</code> 保证了数据的强一致性。锁服务可以分为两类，一个是<strong>保持独占</strong>，另一个是<strong>控制时序</strong>。</p>
