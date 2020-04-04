@@ -3,7 +3,7 @@
     <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>面试题系列 —— MySQL 数据库 | SSM</title>
-<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1585985730507">
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1585989188139">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
 <link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
 <link rel="alternate" type="application/atom+xml" title="面试题系列 —— MySQL 数据库 | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
@@ -42,7 +42,7 @@ InnoDB
       <div class="main-content">
         <div class="site-header">
   <a href="https://epitomm.github.io">
-  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1585985730507" alt="">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1585989188139" alt="">
   </a>
   <h1 class="site-title">
     SSM
@@ -338,13 +338,13 @@ InnoDB
 <li>roll_pointer：每次对某条记录进行改动时，这个隐藏列都会存一个指针，可以通过这个指针找到该记录修改前的信息（<strong>回滚指针</strong>）。</li>
 </ul>
 <h2 id="readview">ReadView</h2>
-<p>对于使用READ UNCOMMITTED隔离级别的事务来说，直接读取记录的最新版本就好了，对于使用 SERIALIZABLE隔离级别的事务来说，使用加锁的方式来访问记录。对于使用READ COMMITTED 和 REPEATABLE READ 隔离级别的事务来说，就需要用到我们上边所说的版本链了，核心问题就是：<strong>需要判断一<strong><strong>下</strong></strong>版本链中的哪个版本是<strong><strong>当</strong></strong>前事务可见的</strong>。</p>
+<p>对于使用READ UNCOMMITTED隔离级别的事务来说，直接读取记录的最新版本就好了，对于使用 SERIALIZABLE隔离级别的事务来说，使用加锁的方式来访问记录。对于使用READ COMMITTED 和 REPEATABLE READ 隔离级别的事务来说，就需要用到我们上边所说的版本链了，核心问题就是：<strong>需要判断一下版本链中的哪个版本是当前事务可见的</strong>。</p>
 <p>ReadView 中主要包含4个比较重要的内容：</p>
 <ol>
-<li>m_ids：表示在生成 ReadView 时当前系统中<strong>活****跃的（未提交的）读写事务的事务id列表</strong>。</li>
-<li>min_trx_id：表示在生成 ReadView 时当前系统中<strong>活跃的读写<strong><strong>事</strong></strong>务中最小的事务id</strong>，也就是m_ids 中的最小值。</li>
-<li>max_trx_id：表示生成 ReadView 时系统中应该**分配给下一个事务的 id**** **<strong>值</strong>。</li>
-<li>creator_trx_id：表示<strong>生<strong><strong>成</strong></strong>该 ReadView 的事务的事务id</strong>。</li>
+<li>m_ids：表示在生成 ReadView 时当前系统中<strong>活跃的（未提交的）读写事务的事务id列表</strong>。</li>
+<li>min_trx_id：表示在生成 ReadView 时当前系统中<strong>活跃的读写事务中最小的事务id</strong>，也就是m_ids 中的最小值。</li>
+<li>max_trx_id：表示生成 ReadView 时系统中应该<strong>分配给下一个事务的 id值</strong>。</li>
+<li>creator_trx_id：表示<strong>生成该 ReadView 的事务的事务id</strong>。</li>
 </ol>
 <blockquote>
 <p>注意max_trx_id并不是m_ids中的最大值，事务id是递增分配的。比方说现在有id为1，2，3这三个事务，之后id为3的事务提交了。那么一个新的读事务在生成ReadView时，m_ids就包括1和2，min_trx_id的值就是1，max_trx_id的值就是4。</p>
