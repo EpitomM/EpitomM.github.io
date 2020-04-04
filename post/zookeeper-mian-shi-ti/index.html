@@ -3,7 +3,7 @@
     <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>面试题系列 —— Zookeeper | SSM</title>
-<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1586000266315">
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1586010684002">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
 <link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
 <link rel="alternate" type="application/atom+xml" title="面试题系列 —— Zookeeper | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
@@ -23,7 +23,7 @@ ZooKeeper 本质上是一个分布式的小文件存储系..." />
       <div class="main-content">
         <div class="site-header">
   <a href="https://epitomm.github.io">
-  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1586000266315" alt="">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1586010684002" alt="">
   </a>
   <h1 class="site-title">
     SSM
@@ -83,7 +83,7 @@ ZooKeeper 本质上是一个分布式的小文件存储系..." />
                 2020-03-14
               </span>
               <span>
-                13 min read
+                14 min read
               </span>
               
                 <a href="https://epitomm.github.io/tag/1hfOEuf6o1/" class="post-tag">
@@ -230,8 +230,11 @@ ZooKeeper 本质上是一个分布式的小文件存储系..." />
 <p>分布式锁，这个主要得益于 <code>ZooKeeper</code> 保证了数据的强一致性。锁服务可以分为两类，一个是<strong>保持独占</strong>，另一个是<strong>控制时序</strong>。</p>
 <figure data-type="image" tabindex="5"><img src="https://epitomm.github.io/post-images/1584241059824.png" alt="" loading="lazy"></figure>
 <p>所谓<strong>保持独占</strong>，就是所有试图来获取这个锁的客户端，最终只有一个可以成功获得这把锁。通常的做法是把 zk 上的一个 <code>znode</code> 看作是一把锁，通过 <code>create znode</code> 的方式来实现。所有客户端都去创建 <code>/distribute_lock</code> <strong>临时非序列化</strong>节点，最终成功创建的那个客户端也即拥有了这把锁。</p>
-<p><strong>控制时序</strong>，就是所有试图来获取这个锁的客户端，最终都是会被安排执行，只是有个全局时序了。做法和上面基本类似，只是这里<code>/distribute_lock</code> 已经预先存在，客户端在它下面创建<strong>临时有序</strong>节点（这个可以通过节点的属性控制：<code>CreateMode.EPHEMERAL_SEQUENTIAL</code> 来指定）。Zk 的父节点（<code>/distribute_lock</code>）</p>
-<p>维持一份 <code>sequence</code>,保证子节点创建的时序性，从而也形成了每个客户端的全局时序。</p>
+<p><strong>控制时序</strong>，就是所有试图来获取这个锁的客户端，最终都是会被安排执行，只是有个全局时序了。做法和上面基本类似，只是这里<code>/distribute_lock</code> 已经预先存在，客户端在它下面创建<strong>临时有序</strong>节点（这个可以通过节点的属性控制：<code>CreateMode.EPHEMERAL_SEQUENTIAL</code> 来指定）。Zk 的父节点（<code>/distribute_lock</code>）维持一份 <code>sequence</code>,保证子节点创建的时序性，从而也形成了每个客户端的全局时序。</p>
+<h1 id="7-zab-协议">7． ZAB 协议？</h1>
+<p>ZAB 协议是为分布式协调服务 Zookeeper 专门设计的一种支持崩溃恢复的原子广播协议。<br>
+ZAB 协议包括两种基本的模式：<strong>崩溃恢复</strong>和<strong>消息广播</strong>。<br>
+当整个 zookeeper 集群刚刚启动或者 Leader 服务器宕机、重启或者网络故障导致不存在过半的服务器与 Leader 服务器保持正常通信时，所有进程（服务器）进入崩溃恢复模式，首先选举产生新的 Leader 服务器，然后集群中 Follower 服务器开始与新的 Leader 服务器进行数据同步，当集群中超过半数机器与该 Leader服务器完成数据同步之后，退出恢复模式进入消息广播模式，Leader 服务器开始接收客户端的事务请求生成事物提案来进行事务请求处理。</p>
 
               </div>
               <div class="toc-container">
@@ -280,6 +283,7 @@ ZooKeeper 本质上是一个分布式的小文件存储系..." />
 <li><a href="#63-%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81">6.3． 分布式锁</a></li>
 </ul>
 </li>
+<li><a href="#7-zab-%E5%8D%8F%E8%AE%AE">7． ZAB 协议？</a></li>
 </ul>
 
               </div>
