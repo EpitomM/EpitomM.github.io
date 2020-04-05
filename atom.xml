@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://epitomm.github.io</id>
     <title>SSM</title>
-    <updated>2020-04-05T14:23:26.036Z</updated>
+    <updated>2020-04-05T14:51:24.011Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://epitomm.github.io"/>
     <link rel="self" href="https://epitomm.github.io/atom.xml"/>
@@ -4068,6 +4068,71 @@ public static void main(String[] args) {
 <h1 id="6-hashmap-的-put-方法的具体流程">6. HashMap 的 put 方法的具体流程</h1>
 <pre><code>public V put(K key, V value) {
     return putVal(hash(key), key, value, false, true);
+}
+</code></pre>
+<pre><code>/**
+ * Implements Map.put and related methods
+ *
+ * @param hash hash for key
+ * @param key the key
+ * @param value the value to put
+ * @param onlyIfAbsent if true, don't change existing value
+ * @param evict if false, the table is in creation mode.
+ * @return previous value, or null if none
+ */
+final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
+               boolean evict) {
+    Node&lt;K,V&gt;[] tab; Node&lt;K,V&gt; p; int n, i;
+    // 如果数组是空的
+    if ((tab = table) == null || (n = tab.length) == 0)
+        // 初始化集合
+        n = (tab = resize()).length;
+    // 如果数组中第 i 个位置为空，直接利用key-value创建节点并插入
+    if ((p = tab[i = (n - 1) &amp; hash]) == null)
+        tab[i] = newNode(hash, key, value, null);
+    // 如果数组中第 i 个位置不空
+    else {
+        Node&lt;K,V&gt; e; K k;
+        // 如果存在 key 值相同，则先将此节点记录下来（覆盖 value）
+        if (p.hash == hash &amp;&amp;
+            ((k = p.key) == key || (key != null &amp;&amp; key.equals(k))))
+            e = p;
+        // 如果是红黑树
+        else if (p instanceof TreeNode)
+            e = ((TreeNode&lt;K,V&gt;)p).putTreeVal(this, tab, hash, key, value);
+        // 如果是链表
+        else {
+            for (int binCount = 0; ; ++binCount) {
+                // 不断循环找到链表的最后一个节点，将新节点添加到这个节点后面
+                if ((e = p.next) == null) {
+                    p.next = newNode(hash, key, value, null);
+                    // 如果节点个数 &gt;= 7，转成红黑树
+                    if (binCount &gt;= TREEIFY_THRESHOLD - 1) // -1 for 1st
+                        treeifyBin(tab, hash);
+                    break;
+                }
+                if (e.hash == hash &amp;&amp;
+                    ((k = e.key) == key || (key != null &amp;&amp; key.equals(k))))
+                    break;
+                p = e;
+            }
+        }
+        // 如果 key 值相同，覆盖 value
+        if (e != null) { // existing mapping for key
+            // 暂存旧值
+            V oldValue = e.value;
+            if (!onlyIfAbsent || oldValue == null)
+                e.value = value;
+            afterNodeAccess(e);
+            // 返回旧值
+            return oldValue;
+        }
+    }
+    ++modCount;
+    if (++size &gt; threshold)
+        resize();
+    afterNodeInsertion(evict);
+    return null;
 }
 </code></pre>
 <figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/put.png" alt="图片" loading="lazy"></figure>
