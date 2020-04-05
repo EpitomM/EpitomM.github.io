@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://epitomm.github.io</id>
     <title>SSM</title>
-    <updated>2020-04-05T14:51:24.011Z</updated>
+    <updated>2020-04-05T16:38:38.345Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://epitomm.github.io"/>
     <link rel="self" href="https://epitomm.github.io/atom.xml"/>
@@ -3664,7 +3664,7 @@ mybatis的#{}和<span class='katex-error' title='ParseError: KaTeX parse error: 
 <h1 id="5-介绍一下-强引用-软引用-弱引用-虚引用">5. 介绍一下 强引用、软引用、弱引用、虚引用</h1>
 <h2 id="强引用">强引用</h2>
 <p>只要一个对象还有<strong>强引用</strong>指向它，它就不会被回收。</p>
-<p>使用 **new **一个对象的方式来创建强引用。</p>
+<p>使用 <code>new</code>一个对象的方式来创建强引用。</p>
 <pre><code>Object obj = new Object();
 </code></pre>
 <h2 id="软引用">软引用</h2>
