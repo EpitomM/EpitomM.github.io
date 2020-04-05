@@ -3,7 +3,7 @@
     <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>面试题系列 —— Java 集合 | SSM</title>
-<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1586087963752">
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1586096292189">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
 <link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
 <link rel="alternate" type="application/atom+xml" title="面试题系列 —— Java 集合 | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
@@ -32,7 +32,7 @@ ArrayLis..." />
       <div class="main-content">
         <div class="site-header">
   <a href="https://epitomm.github.io">
-  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1586087963752" alt="">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1586096292189" alt="">
   </a>
   <h1 class="site-title">
     SSM
@@ -92,7 +92,7 @@ ArrayLis..." />
                 2020-03-24
               </span>
               <span>
-                7 min read
+                8 min read
               </span>
               
                 <a href="https://epitomm.github.io/tag/G0-V7bjxQ/" class="post-tag">
@@ -249,8 +249,23 @@ ArrayLis..." />
 <li>线程安全：部分锁定 + CAS。<code>synchronized</code> 只锁定<strong>当前链表或红黑二叉树的首节点</strong>，这样只要 hash 不冲突，就不会产生并发。</li>
 </ul>
 <h1 id="14-concurrenthashmap-和-hashtable-的区别">14. ConcurrentHashMap 和 Hashtable 的区别</h1>
-<p><code>Hashtable</code> 数据结构：数组 + 链表</p>
-<p><code>Hashtable</code> 实现线程安全：会锁住整个数组，某个线程在进行 put 操作时，其他线程只能阻塞。</p>
+<ul>
+<li>
+<p>Hashtable<br>
+数据结构：数组 + 链表<br>
+实现线程安全：会锁住整个数组，某个线程在进行 put 操作时，其他线程只能阻塞。</p>
+</li>
+<li>
+<p>JDK1.7 ConcurrentHashMap<br>
+数据结构：分段数组+链表<br>
+实现线程安全：分段锁</p>
+</li>
+<li>
+<p>JDK1.8 ConcurrentHashMap<br>
+数据结构：散列表 + 链表 / 红黑树<br>
+通过在部分加锁和利用CAS算法来实现同步。</p>
+</li>
+</ul>
 <h1 id="15-如何选用集合">15. 如何选用集合</h1>
 <ul>
 <li>如果存储键值对，选 <code>Map</code> 接口下的集合
