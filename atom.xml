@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://epitomm.github.io</id>
     <title>SSM</title>
-    <updated>2020-04-04T14:32:26.535Z</updated>
+    <updated>2020-04-05T12:00:12.364Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://epitomm.github.io"/>
     <link rel="self" href="https://epitomm.github.io/atom.xml"/>
@@ -2444,7 +2444,7 @@ OK
 </ol>
 <h2 id="问题排查-3">问题排查</h2>
 <ol>
-<li>Redis中**某个key过期，该key访问量巨大 **</li>
+<li>Redis中<strong>某个key过期，该key访问量巨大</strong></li>
 <li>多个数据请求从服务器直接压到Redis后，均未命中</li>
 <li>Redis在短时间内发起了大量对数据库中同一数据的访问</li>
 </ol>
@@ -4078,7 +4078,7 @@ public static void main(String[] args) {
 <li>HashMap 的 resize() 扩容方法</li>
 </ol>
 <h1 id="7-hashmap-的-resize-扩容方法">7. HashMap 的 resize() 扩容方法</h1>
-<p>如果当前容量 &gt; 阈值（容量 * 装填因子），则扩容</p>
+<p>如果当前size &gt; 阈值（容量 * 装填因子），则扩容</p>
 <figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/resize.png" alt="图片" loading="lazy"></figure>
 <h1 id="8-hashmap-容量为什么是-2-的幂次">8. HashMap 容量为什么是 2 的幂次</h1>
 <p>减少 <code>hash</code> 冲突，因为要用 <code>hash &amp; (n-1)</code> 确定元素存在数组中的下标位置，如果 n 是 2 的幂（1000），那么 n-1 得到的结果就全为 1 （10000 - 1 = 1111），这样 <code>(n-1) &amp; hash</code> 的值就是 hash。如果 n-1 中有某位为 0，那么 0 与任何数 &amp; 结果都为0，增加了hash 冲突的概率。</p>

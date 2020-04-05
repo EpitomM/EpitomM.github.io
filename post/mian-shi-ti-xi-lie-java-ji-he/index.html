@@ -3,7 +3,7 @@
     <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>面试题系列 —— Java 集合 | SSM</title>
-<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1586010684002">
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1586087963752">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
 <link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
 <link rel="alternate" type="application/atom+xml" title="面试题系列 —— Java 集合 | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
@@ -32,7 +32,7 @@ ArrayLis..." />
       <div class="main-content">
         <div class="site-header">
   <a href="https://epitomm.github.io">
-  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1586010684002" alt="">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1586087963752" alt="">
   </a>
   <h1 class="site-title">
     SSM
@@ -186,7 +186,7 @@ ArrayLis..." />
 <li>HashMap 的 resize() 扩容方法</li>
 </ol>
 <h1 id="7-hashmap-的-resize-扩容方法">7. HashMap 的 resize() 扩容方法</h1>
-<p>如果当前容量 &gt; 阈值（容量 * 装填因子），则扩容</p>
+<p>如果当前size &gt; 阈值（容量 * 装填因子），则扩容</p>
 <figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/resize.png" alt="图片" loading="lazy"></figure>
 <h1 id="8-hashmap-容量为什么是-2-的幂次">8. HashMap 容量为什么是 2 的幂次</h1>
 <p>减少 <code>hash</code> 冲突，因为要用 <code>hash &amp; (n-1)</code> 确定元素存在数组中的下标位置，如果 n 是 2 的幂（1000），那么 n-1 得到的结果就全为 1 （10000 - 1 = 1111），这样 <code>(n-1) &amp; hash</code> 的值就是 hash。如果 n-1 中有某位为 0，那么 0 与任何数 &amp; 结果都为0，增加了hash 冲突的概率。</p>
