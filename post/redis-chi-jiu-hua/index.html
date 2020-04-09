@@ -1,0 +1,775 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Redis 持久化 | SSM</title>
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1586437450486">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="Redis 持久化 | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="持久化简介
+意外的断电
+
+“自动备份”
+
+什么是持久化
+利用永久性存储介质将数据进行保存，在特定的时间将保存的数据进行恢复的工作机制称为持久化。
+为什么要进行持久化
+防止数据的意外丢失，确保数据安全性
+持久化过程保存什么
+
+将当前数据状态进..." />
+    <meta name="keywords" content="Redis" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://epitomm.github.io">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1586437450486" alt="">
+  </a>
+  <h1 class="site-title">
+    SSM
+  </h1>
+  <p class="site-description">
+    热心善良的老学姐
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              Redis 持久化
+            </h2>
+            <div class="post-info">
+              <span>
+                2020-04-08
+              </span>
+              <span>
+                14 min read
+              </span>
+              
+                <a href="https://epitomm.github.io/tag/XcYOVpIlH/" class="post-tag">
+                  # Redis
+                </a>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <h1 id="持久化简介">持久化简介</h1>
+<h2 id="意外的断电">意外的断电</h2>
+<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/%E6%96%AD%E7%94%B5.png" alt="图片" loading="lazy"></figure>
+<h2 id="自动备份">“自动备份”</h2>
+<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/%E8%87%AA%E5%8A%A8%E5%A4%87%E4%BB%BD.png" alt="图片" loading="lazy"></figure>
+<h2 id="什么是持久化">什么是持久化</h2>
+<p>利用永久性存储介质将数据进行保存，在特定的时间将保存的数据进行恢复的工作机制称为持久化。</p>
+<h2 id="为什么要进行持久化">为什么要进行持久化</h2>
+<p>防止数据的意外丢失，确保数据安全性</p>
+<h2 id="持久化过程保存什么">持久化过程保存什么</h2>
+<ul>
+<li>将当前数据状态进行保存，<strong>快照</strong>形式，存储数据结果，存储格式简单，关注点在<strong>数据</strong></li>
+<li>将数据的操作过程进行保存，<strong>日志</strong>形式，存储操作过程，存储格式复杂，关注点在<strong>数据的操作过程</strong></li>
+</ul>
+<figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/Redis%E6%8C%81%E4%B9%85%E5%8C%96.png" alt="图片" loading="lazy"></figure>
+<h1 id="rdb">RDB</h1>
+<h2 id="rdb启动方式">RDB启动方式</h2>
+<h2 id="谁什么时间干什么事情">谁，什么时间，干什么事情</h2>
+<p>命令执行</p>
+<ul>
+<li>谁：redis操作者（用户）</li>
+<li>什么时间：即时（随时进行）</li>
+<li>干什么事情：保存数据</li>
+</ul>
+<h2 id="rdb启动方式-save指令">RDB启动方式 —— save指令</h2>
+<ul>
+<li>命令</li>
+</ul>
+<pre><code>save 
+</code></pre>
+<ul>
+<li>作用</li>
+</ul>
+<p>手动执行一次保存操作</p>
+<p>redis-cli</p>
+<pre><code>127.0.0.1:6379&gt; set name ssm
+OK
+127.0.0.1:6379&gt; save
+OK
+127.0.0.1:6379&gt; set age 20
+OK
+127.0.0.1:6379&gt; save
+OK
+127.0.0.1:6379&gt; 
+</code></pre>
+<pre><code>[root@iZ2ze4u2bufi0915gyi843Z data]# ll
+total 4
+-rw-r--r-- 1 root root 3918 Feb 25 21:23 6379.log
+[root@iZ2ze4u2bufi0915gyi843Z data]# ll
+total 8
+-rw-r--r-- 1 root root 3969 Feb 25 21:24 6379.log
+-rw-r--r-- 1 root root  107 Feb 25 21:24 dump.rdb
+[root@iZ2ze4u2bufi0915gyi843Z data]# ll
+total 8
+-rw-r--r-- 1 root root 4020 Feb 25 21:24 6379.log
+-rw-r--r-- 1 root root  114 Feb 25 21:24 dump.rdb
+[root@iZ2ze4u2bufi0915gyi843Z data]# cat dump.rdb 
+REDIS0009	redis-ver5.0.7
+redis-bits󿿀򳨭e
+              Uused-memx
+</code></pre>
+<h3 id="rdb启动方式-save指令相关配置">RDB启动方式 —— save指令相关配置</h3>
+<ul>
+<li>dbfilename dump.rdb
+<ul>
+<li>说明：设置本地数据库文件名，默认值为 dump.rdb</li>
+<li>经验：通常设置为**dump-<strong><strong>端口号</strong></strong>.rdb **</li>
+</ul>
+</li>
+<li>dir
+<ul>
+<li>说明：设置存储.rdb文件的路径</li>
+<li>经验：通常设置成存储空间较大的目录中，目录名称**data **</li>
+</ul>
+</li>
+<li>rdbcompression yes
+<ul>
+<li>说明：设置存储至本地数据库时是否<strong>压缩数据</strong>，默认为 yes，采用 LZF 压缩</li>
+<li>经验：通常默认为开启状态，如果设置为no，可以节省 CPU 运行时间，但会使存储的文件变大（巨大）</li>
+</ul>
+</li>
+<li>rdbchecksum yes
+<ul>
+<li>说明：设置是否进行RDB<strong>文件格式校验</strong>，该校验过程在写文件和读文件过程均进行</li>
+<li>经验：通常默认为开启状态，如果设置为no，可以节约读写性过程约10%时间消耗，但是存储一定的数据损坏风险</li>
+</ul>
+</li>
+</ul>
+<h3 id="rdb启动方式-save指令工作原理">RDB启动方式 —— save指令工作原理</h3>
+<p><img src="https://epitomm.github.io/post-images/Redis%E6%8C%87%E4%BB%A4save.png" alt="图片" loading="lazy"><br>
+<img src="https://epitomm.github.io/post-images/Redis%E6%8C%87%E4%BB%A4save2.png" alt="图片" loading="lazy"></p>
+<p><strong>注意：<strong>save指令的执行会</strong>阻塞</strong>当前Redis服务器，直到当前RDB过程完成为止，有可能会造成长时间阻塞，线上环境不建议使用。</p>
+<h2 id="数据量过大单线程执行方式造成效率过低如何处理">数据量过大，单线程执行方式造成效率过低如何处理？</h2>
+<h3 id="后台执行-bgsave">后台执行 （bgsave）</h3>
+<ul>
+<li>谁：redis操作者（用户）发起指令；redis服务器控制指令执行</li>
+<li>什么时间：即时（发起）；合理的时间（执行）</li>
+<li>干什么事情：保存数据</li>
+</ul>
+<h3 id="bgsave指令">bgsave指令</h3>
+<ul>
+<li>命令</li>
+</ul>
+<pre><code>bgsave 
+</code></pre>
+<ul>
+<li>作用</li>
+</ul>
+<p>手动启动后台保存操作，但不是立即执行</p>
+<h3 id="bgsave指令工作原理">bgsave指令工作原理</h3>
+<figure data-type="image" tabindex="4"><img src="https://epitomm.github.io/post-images/bgsave.png" alt="图片" loading="lazy"></figure>
+<p><strong>注意： <strong>bgsave命令是针对save阻塞问题做的优化。Redis内部所有涉及到RDB操作都采用bgsave的方式，save命令可以放弃使用</strong>。</strong></p>
+<h3 id="bgsave指令相关配置">bgsave指令相关配置</h3>
+<ul>
+<li>dbfilename dump.rdb</li>
+<li>dir</li>
+<li>rdbcompression yes</li>
+<li>rdbchecksum yes</li>
+<li>stop-writes-on-bgsave-error yes
+<ul>
+<li>说明：后台存储过程中如果出现错误现象，是否停止保存操作</li>
+<li>经验：通常默认为开启状态</li>
+</ul>
+</li>
+</ul>
+<h2 id="反复执行保存指令忘记了怎么办不知道数据产生了多少变化何时保存">反复执行保存指令，忘记了怎么办？不知道数据产生了多少变化，何时保存？</h2>
+<h3 id="自动执行">自动执行</h3>
+<ul>
+<li>谁：redis服务器发起指令（基于条件）</li>
+<li>什么时间：满足条件</li>
+<li>干什么事情：保存数据</li>
+</ul>
+<h3 id="save配置">save配置</h3>
+<ul>
+<li>redis-6379.conf 内配置</li>
+</ul>
+<pre><code>save second changes 
+</code></pre>
+<ul>
+<li>作用</li>
+</ul>
+<p>满足限定时间范围内key的变化数量达到指定数量即进行持久化</p>
+<ul>
+<li>参数
+<ul>
+<li>second：监控时间范围</li>
+<li>changes：监控key的变化量</li>
+</ul>
+</li>
+<li>位置
+<ul>
+<li>在conf文件中进行配置</li>
+</ul>
+</li>
+<li>范例</li>
+</ul>
+<pre><code>save 900 1 
+save 300 10 
+save 60 10000
+</code></pre>
+<h3 id="save配置原理">save配置原理</h3>
+<figure data-type="image" tabindex="5"><img src="https://epitomm.github.io/post-images/Redis%E6%8C%87%E4%BB%A4save3.png" alt="图片" loading="lazy"></figure>
+<p>注意： save配置要根据实际业务情况进行设置，频度过高或过低都会出现性能问题，结果可能是灾难性的</p>
+<p>save配置中对于second与changes设置通常具有互补对应关系，尽量不要设置成包含性关系</p>
+<ul>
+<li>save配置启动后执行的是bgsave操作</li>
+</ul>
+<h3 id="save配置相关配置">save配置相关配置</h3>
+<ul>
+<li>dbfilename dump.rdb</li>
+<li>dir</li>
+<li>rdbcompression yes</li>
+<li>rdbchecksum yes</li>
+</ul>
+<h2 id="rdb三种启动方式对比">RDB三种启动方式对比</h2>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">方式</th>
+<th style="text-align:left">save指令</th>
+<th style="text-align:left">bgsave指令（save配置）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">读写</td>
+<td style="text-align:left">同步</td>
+<td style="text-align:left">异步</td>
+</tr>
+<tr>
+<td style="text-align:left">阻塞客户端指令</td>
+<td style="text-align:left">是</td>
+<td style="text-align:left">否</td>
+</tr>
+<tr>
+<td style="text-align:left">额外内存消耗</td>
+<td style="text-align:left">否</td>
+<td style="text-align:left">是</td>
+</tr>
+<tr>
+<td style="text-align:left">启动新进程</td>
+<td style="text-align:left">否</td>
+<td style="text-align:left">是</td>
+</tr>
+</tbody>
+</table>
+<h2 id="rdb特殊启动形式">RDB特殊启动形式</h2>
+<ul>
+<li>全量复制</li>
+</ul>
+<p>在主从复制中详细讲解</p>
+<ul>
+<li>服务器运行过程中重启</li>
+</ul>
+<pre><code>debug reload 
+</code></pre>
+<ul>
+<li>关闭服务器时指定保存数据</li>
+</ul>
+<pre><code>shutdown save 
+</code></pre>
+<p>默认情况下执行shutdown命令时，自动执行 bgsave(如果没有开启AOF持久化功能)</p>
+<h2 id="rdb优点">RDB优点</h2>
+<ul>
+<li>RDB是一个紧凑压缩的<strong>二进制</strong>文件，**存储效率较高 **</li>
+<li>RDB内部存储的是redis在某个时间点的数据快照，非常适合用于数据备份，全量复制等场景</li>
+<li>RDB<strong>恢复数据</strong>的<strong>速度</strong>要比AOF<strong>快</strong>很多</li>
+<li>应用：服务器中每X小时执行bgsave备份，并将RDB文件拷贝到远程机器中，用于<strong>灾难恢复</strong>。</li>
+</ul>
+<h2 id="rdb缺点">RDB缺点</h2>
+<ul>
+<li>RDB方式无论是执行指令还是利用配置，无法做到实时持久化，具有较大的可能性<strong>丢失数据</strong>（10点备份一次，11点备份一次，那么10点45的数据就丢失了）</li>
+<li>bgsave指令每次运行要执行fork操作<strong>创建子进程</strong>，要**牺牲掉一些性能 **</li>
+<li>Redis的众多版本中未进行RDB文件格式的版本统一，有可能出现<strong>各版本</strong>服务之间数据格式<strong>无法兼容</strong>现象</li>
+</ul>
+<h1 id="aof">AOF</h1>
+<h2 id="rdb存储的弊端">RDB存储的弊端</h2>
+<ul>
+<li>存储<strong>数据量较大</strong>，效率较低
+<ul>
+<li>基于<strong>快照</strong>思想，每次读写都是<strong>全部</strong>数据，当数据量巨大时，效率非常低</li>
+</ul>
+</li>
+<li>大数据量下的**IO性能较低 **</li>
+<li>基于fork创建<strong>子进程</strong>，<strong>内存</strong>产生额外<strong>消耗</strong></li>
+<li>宕机带来的<strong>数据丢失</strong>风险 （快照是某个时间点的数据）</li>
+</ul>
+<h3 id="解决思路">解决思路</h3>
+<ul>
+<li>不写全数据，仅**记录部分数据 **</li>
+<li>降低区分数据是否改变的难度，改记录数据为**记录操作过程 **</li>
+<li>对所有操作均进行记录，<strong>排除丢失数据的风险</strong></li>
+</ul>
+<h2 id="aof概念">AOF概念</h2>
+<ul>
+<li>AOF(append only file)持久化：以独立日志的方式记录每次写命令，重启时再重新执行AOF文件中命令达到恢复数据的目的。与RDB相比可以简单描述为改记录数据为记录数据产生的过程</li>
+<li>AOF的主要作用是解决了数据持久化的实时性，目前已经是Redis持久化的主流方式</li>
+</ul>
+<h2 id="aof写数据过程">AOF写数据过程</h2>
+<figure data-type="image" tabindex="6"><img src="https://epitomm.github.io/post-images/AOF.png" alt="图片" loading="lazy"></figure>
+<h3 id="aof写数据三种策略appendfsync">AOF写数据三种策略(****appendfsync)</h3>
+<ul>
+<li>always(每次）
+<ul>
+<li>每次写入操作均同步到AOF文件中，<strong>数据零误差</strong>，**性能较低 **，不建议使用。</li>
+</ul>
+</li>
+<li>everysec（每秒）
+<ul>
+<li>每秒将缓冲区中的指令同步到AOF文件中，数据准确性较高，**性能较高 **，建议使用，也是默认配置</li>
+<li>在系统突然宕机的情况下丢失1秒内的数据</li>
+</ul>
+</li>
+<li>no（系统控制）
+<ul>
+<li>由操作系统控制每次同步到AOF文件的周期，整体过程<strong>不可控</strong></li>
+</ul>
+</li>
+</ul>
+<h2 id="aof功能开启">AOF功能开启</h2>
+<ul>
+<li>配置</li>
+</ul>
+<pre><code>appendonly yes|no 
+</code></pre>
+<ul>
+<li>作用
+<ul>
+<li>是否开启AOF持久化功能，默认为不开启状态</li>
+</ul>
+</li>
+<li>配置</li>
+</ul>
+<pre><code>appendfsync always|everysec|no 
+</code></pre>
+<ul>
+<li>作用</li>
+</ul>
+<p>AOF写数据策略</p>
+<h2 id="aof相关配置">AOF相关配置</h2>
+<ul>
+<li>配置</li>
+</ul>
+<pre><code>appendfilename filename 
+</code></pre>
+<ul>
+<li>作用
+<ul>
+<li>AOF持久化文件名，默认文件名为appendonly.aof，建议配置为appendonly-端口号.aof</li>
+</ul>
+</li>
+<li>配置</li>
+</ul>
+<pre><code>dir 
+</code></pre>
+<ul>
+<li>作用
+<ul>
+<li>AOF持久化文件保存路径，与RDB持久化文件保持一致即可</li>
+</ul>
+</li>
+</ul>
+<h2 id="aof写数据遇到的问题">AOF写数据遇到的问题</h2>
+<h3 id="如果连续执行如下指令该如何处理">如果连续执行如下指令该如何处理</h3>
+<figure data-type="image" tabindex="7"><img src="https://epitomm.github.io/post-images/AOF%E4%BE%8B%E5%AD%90.png" alt="图片" loading="lazy"></figure>
+<h3 id="aof重写">AOF重写</h3>
+<p>随着命令不断写入AOF，<strong>文件会越来越大</strong>，为了解决这个问题，Redis引入了AOF重写机制压缩文件体积。AOF文件重写是将Redis进程内的数据转化为写命令同步到新AOF文件的过程。简单说就是<strong>将对同一个数据的若干个条命令执行结果转化成最终结果数据对应的指令</strong>进行记录。</p>
+<h3 id="aof重写作用">AOF重写作用</h3>
+<ul>
+<li>降低磁盘占用量，提高磁盘利用率</li>
+<li>提高持久化效率，降低持久化写时间，提高IO性能</li>
+<li>降低数据恢复用时，提高数据恢复效率</li>
+</ul>
+<h3 id="aof重写规则">AOF重写规则</h3>
+<ul>
+<li>进程内已超时的数据不再写入文件</li>
+<li>忽略无效指令，重写时使用进程内数据直接生成，这样新的AOF文件只保留最终数据的写入命令
+<ul>
+<li>如del key1、 hdel key2、srem key3、set key4 111、set key4 222等</li>
+</ul>
+</li>
+<li>对同一数据的多条写命令合并为一条命令
+<ul>
+<li>如lpush list1 a、lpush list1 b、 lpush list1 c 可以转化为：lpush list1 a b c。</li>
+<li>为防止数据量过大造成客户端缓冲区溢出，对list、set、hash、zset等类型，每条指令最多写入64个元素</li>
+</ul>
+</li>
+</ul>
+<h3 id="aof重写方式">AOF重写方式</h3>
+<ul>
+<li>手动重写</li>
+</ul>
+<pre><code>bgrewriteaof 
+</code></pre>
+<ul>
+<li>自动重写</li>
+</ul>
+<pre><code>auto-aof-rewrite-min-size size 
+auto-aof-rewrite-percentage percentage
+</code></pre>
+<h3 id="aof手动重写-bgrewriteaof指令工作原理">AOF手动重写 —— bgrewriteaof指令工作原理</h3>
+<p><img src="https://epitomm.github.io/post-images/bgsave%E6%8C%87%E4%BB%A4%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86.png" alt="图片" loading="lazy"><br>
+<img src="https://epitomm.github.io/post-images/bgrewriteaof%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86.png" alt="图片" loading="lazy"></p>
+<h3 id="aof自动重写方式">AOF自动重写方式</h3>
+<ul>
+<li>自动重写触发条件设置</li>
+</ul>
+<pre><code>auto-aof-rewrite-min-size size 
+auto-aof-rewrite-percentage percent 
+</code></pre>
+<ul>
+<li>自动重写触发比对参数（ 运行指令info Persistence获取具体信息 ）</li>
+</ul>
+<pre><code>aof_current_size 
+aof_base_size 
+</code></pre>
+<ul>
+<li>自动重写触发条件</li>
+</ul>
+<figure data-type="image" tabindex="8"><img src="https://epitomm.github.io/post-images/%E8%87%AA%E5%8A%A8%E8%A7%A6%E5%8F%91%E9%87%8D%E5%86%99%E6%9D%A1%E4%BB%B6.png" alt="图片" loading="lazy"></figure>
+<h3 id="aof重写流程">AOF重写流程</h3>
+<figure data-type="image" tabindex="9"><img src="https://epitomm.github.io/post-images/AOF%E9%87%8D%E5%86%99%E6%B5%81%E7%A8%8B1.png" alt="图片" loading="lazy"></figure>
+<h3 id="aof重写流程-2">AOF重写流程</h3>
+<figure data-type="image" tabindex="10"><img src="https://epitomm.github.io/post-images/AOF%E9%87%8D%E5%86%99%E6%B5%81%E7%A8%8B2.png" alt="图片" loading="lazy"></figure>
+<p>AOF缓冲区同步文件策略，由参数appendfsync控制</p>
+<p>系统调用write和fsync说明：</p>
+<ul>
+<li>write操作会触发延迟写（delayed write）机制，Linux在内核提供页缓冲区用来提高硬盘IO性能。write操作在写入系统缓冲区后直接返回。同步硬盘操作依赖于系统调度机制，列如：缓冲区页空间写满或达到特定时间周期。同步文件之前，如果此时系统故障宕机，缓冲区内数据将丢失。</li>
+<li>fsync针对单个文件操作（比如AOF文件），做强制硬盘同步，fsync将阻塞知道写入硬盘完成后返回，保证了数据持久化。</li>
+</ul>
+<p>除了write、fsync、Linx还提供了sync、fdatasync操作，具体API说明参见：</p>
+<h1 id="rdb与aof区别">RDB与AOF区别</h1>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">持久化方式</th>
+<th style="text-align:left">RDB</th>
+<th style="text-align:left">AOF</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">占用存储空间</td>
+<td style="text-align:left">小（数据级：压缩）</td>
+<td style="text-align:left">大（指令级：重写）</td>
+</tr>
+<tr>
+<td style="text-align:left">存储速度</td>
+<td style="text-align:left">慢</td>
+<td style="text-align:left">快</td>
+</tr>
+<tr>
+<td style="text-align:left">恢复速度</td>
+<td style="text-align:left">快</td>
+<td style="text-align:left">慢</td>
+</tr>
+<tr>
+<td style="text-align:left">数据安全性</td>
+<td style="text-align:left">会丢失数据</td>
+<td style="text-align:left">依据策略决定</td>
+</tr>
+<tr>
+<td style="text-align:left">资源消耗</td>
+<td style="text-align:left">高 / 重量级</td>
+<td style="text-align:left">低 / 轻量级</td>
+</tr>
+<tr>
+<td style="text-align:left">启动优先级</td>
+<td style="text-align:left">低</td>
+<td style="text-align:left">高</td>
+</tr>
+</tbody>
+</table>
+<h3 id="rdb与aof的选择之惑">RDB与AOF的选择之惑</h3>
+<ul>
+<li>对<strong>数据非常敏感</strong>，建议使用默认的<strong>AOF</strong>持久化方案
+<ul>
+<li>AOF持久化策略使用everysecond，每秒钟fsync一次。该策略redis仍可以保持很好的处理性能，当出现问题时，最多丢失0-1秒内的数据。</li>
+<li>注意：由于AOF文件存储体积较大，且恢复速度较慢</li>
+</ul>
+</li>
+<li>数据呈现<strong>阶段有效性</strong>，建议使用<strong>RDB</strong>持久化方案
+<ul>
+<li>数据可以良好的做到阶段内无丢失（该阶段是开发者或运维人员手工维护的），且恢复速度较快，阶段点数据恢复通常采用RDB方案</li>
+<li>注意：利用RDB实现紧凑的数据持久化会使Redis降的很低</li>
+</ul>
+</li>
+<li>综合比对
+<ul>
+<li>RDB与AOF的选择实际上是在做一种权衡，每种都有利有弊</li>
+<li>如不能承受数分钟以内的数据丢失，对业务数据非常敏感，选用AOF</li>
+<li>如能承受数分钟以内的数据丢失，且追求大数据集的恢复速度，选用RDB</li>
+<li>灾难恢复选用RDB</li>
+<li>双保险策略，同时开启 RDB 和 AOF，重启后，Redis优先使用 AOF 来恢复数据，降低丢失数据的量</li>
+</ul>
+</li>
+</ul>
+<h1 id="持久化应用场景">持久化应用场景</h1>
+<ul>
+<li>Tips 1：<s>redis用于控制</s><strong><s>数据库表主键id</s></strong>~~，为数据库表主键提供生成策略，保障数据库表的主键唯一性 ~~【假如现在计算机停止工作，下一次启动要恢复时，不期望数据是从 redis 读取的。比如 id  如果用到 18 了，下一次恢复的时候从 18 恢复，大概率有问题，中间断的会导致 id 不连续，比如有一秒用了 19，但是 redis 没有记下来，下次从 18 恢复就会 id 重复。解决方案：从数据库读取，找出最大的 id ，然后加一使用。所以数据库主键 id 不建议持久化】</li>
+<li>Tips 3：<s>redis应用于各种结构型和非结构型</s><strong><s>高热度数据访问加速</s></strong>~~ ~~（缓存里的数据要不要数据化？）【缓存中的数据从数据库读取加载来的，从 redis 读取出来和从数据库读出来没什么区别】</li>
+<li>Tips 4：<s>redis 应用于</s><strong><s>购物车</s></strong><s>数据存储设计</s> 【购物车信息数据库内肯定要存，就导致 redis 和数据库内存的一样，所以 redis 就不额外存储】</li>
+<li>Tips 5：redis 应用于<strong>抢购</strong>，限购类、限量发放优惠卷、激活码等业务的数据存储设计 【抢购：速度非常快，几秒钟内完成然后消失掉，如在这个过程中出现问题了，数据库可能没有持久化， 也可能记录了过程。 快速存储、快速消失的数据持久化】</li>
+<li>Tips 6：redis 应用于具有<strong>操作先后顺序</strong>的数据控制 【临时任务，如果消息存储量不大，建议持久化】</li>
+<li>Tips 7：redis 应用于<strong>最新消息展示</strong></li>
+<li>Tips 9：<s>redis 应用于同类信息的</s><strong><s>关联搜索</s></strong>~~，二度关联搜索，深度关联搜索 ~~【关系网庞大，存到数据库】</li>
+<li>Tips 12：redis 应用于基于<strong>黑名单</strong>与<strong>白名单</strong>设定的服务控制 【永久性存到数据库，临时性持久化】</li>
+<li>Tips 13：redis 应用于计数器组合排序功能对应的<strong>排名 【20个主播一起主播，进行排名，主播结束数据就消失了，如果不持久化这个信息，它也不在数据库内存储就没有了。20万人在线观看，如果不持久化记录服务器一宕机就0人在线了，所以需持久化记录快速恢复】</strong></li>
+<li>Tips 15：redis 应用于<strong>即时任务/消息队列</strong>执行管理</li>
+<li>Tips 16：redis 应用于<strong>按次结算的服务控制</strong></li>
+</ul>
+<h1 id="总结">总结</h1>
+<p>Redis持久化</p>
+<ul>
+<li>什么是持久化</li>
+<li>RDB
+<ul>
+<li>save</li>
+<li>bgsave</li>
+<li>配置</li>
+</ul>
+</li>
+<li>AOF
+<ul>
+<li>持久化写策略</li>
+<li>重写</li>
+</ul>
+</li>
+</ul>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li><a href="#%E6%8C%81%E4%B9%85%E5%8C%96%E7%AE%80%E4%BB%8B">持久化简介</a>
+<ul>
+<li><a href="#%E6%84%8F%E5%A4%96%E7%9A%84%E6%96%AD%E7%94%B5">意外的断电</a></li>
+<li><a href="#%E8%87%AA%E5%8A%A8%E5%A4%87%E4%BB%BD">“自动备份”</a></li>
+<li><a href="#%E4%BB%80%E4%B9%88%E6%98%AF%E6%8C%81%E4%B9%85%E5%8C%96">什么是持久化</a></li>
+<li><a href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E8%BF%9B%E8%A1%8C%E6%8C%81%E4%B9%85%E5%8C%96">为什么要进行持久化</a></li>
+<li><a href="#%E6%8C%81%E4%B9%85%E5%8C%96%E8%BF%87%E7%A8%8B%E4%BF%9D%E5%AD%98%E4%BB%80%E4%B9%88">持久化过程保存什么</a></li>
+</ul>
+</li>
+<li><a href="#rdb">RDB</a>
+<ul>
+<li><a href="#rdb%E5%90%AF%E5%8A%A8%E6%96%B9%E5%BC%8F">RDB启动方式</a></li>
+<li><a href="#%E8%B0%81%E4%BB%80%E4%B9%88%E6%97%B6%E9%97%B4%E5%B9%B2%E4%BB%80%E4%B9%88%E4%BA%8B%E6%83%85">谁，什么时间，干什么事情</a></li>
+<li><a href="#rdb%E5%90%AF%E5%8A%A8%E6%96%B9%E5%BC%8F-save%E6%8C%87%E4%BB%A4">RDB启动方式 —— save指令</a>
+<ul>
+<li><a href="#rdb%E5%90%AF%E5%8A%A8%E6%96%B9%E5%BC%8F-save%E6%8C%87%E4%BB%A4%E7%9B%B8%E5%85%B3%E9%85%8D%E7%BD%AE">RDB启动方式 —— save指令相关配置</a></li>
+<li><a href="#rdb%E5%90%AF%E5%8A%A8%E6%96%B9%E5%BC%8F-save%E6%8C%87%E4%BB%A4%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86">RDB启动方式 —— save指令工作原理</a></li>
+</ul>
+</li>
+<li><a href="#%E6%95%B0%E6%8D%AE%E9%87%8F%E8%BF%87%E5%A4%A7%E5%8D%95%E7%BA%BF%E7%A8%8B%E6%89%A7%E8%A1%8C%E6%96%B9%E5%BC%8F%E9%80%A0%E6%88%90%E6%95%88%E7%8E%87%E8%BF%87%E4%BD%8E%E5%A6%82%E4%BD%95%E5%A4%84%E7%90%86">数据量过大，单线程执行方式造成效率过低如何处理？</a>
+<ul>
+<li><a href="#%E5%90%8E%E5%8F%B0%E6%89%A7%E8%A1%8C-bgsave">后台执行 （bgsave）</a></li>
+<li><a href="#bgsave%E6%8C%87%E4%BB%A4">bgsave指令</a></li>
+<li><a href="#bgsave%E6%8C%87%E4%BB%A4%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86">bgsave指令工作原理</a></li>
+<li><a href="#bgsave%E6%8C%87%E4%BB%A4%E7%9B%B8%E5%85%B3%E9%85%8D%E7%BD%AE">bgsave指令相关配置</a></li>
+</ul>
+</li>
+<li><a href="#%E5%8F%8D%E5%A4%8D%E6%89%A7%E8%A1%8C%E4%BF%9D%E5%AD%98%E6%8C%87%E4%BB%A4%E5%BF%98%E8%AE%B0%E4%BA%86%E6%80%8E%E4%B9%88%E5%8A%9E%E4%B8%8D%E7%9F%A5%E9%81%93%E6%95%B0%E6%8D%AE%E4%BA%A7%E7%94%9F%E4%BA%86%E5%A4%9A%E5%B0%91%E5%8F%98%E5%8C%96%E4%BD%95%E6%97%B6%E4%BF%9D%E5%AD%98">反复执行保存指令，忘记了怎么办？不知道数据产生了多少变化，何时保存？</a>
+<ul>
+<li><a href="#%E8%87%AA%E5%8A%A8%E6%89%A7%E8%A1%8C">自动执行</a></li>
+<li><a href="#save%E9%85%8D%E7%BD%AE">save配置</a></li>
+<li><a href="#save%E9%85%8D%E7%BD%AE%E5%8E%9F%E7%90%86">save配置原理</a></li>
+<li><a href="#save%E9%85%8D%E7%BD%AE%E7%9B%B8%E5%85%B3%E9%85%8D%E7%BD%AE">save配置相关配置</a></li>
+</ul>
+</li>
+<li><a href="#rdb%E4%B8%89%E7%A7%8D%E5%90%AF%E5%8A%A8%E6%96%B9%E5%BC%8F%E5%AF%B9%E6%AF%94">RDB三种启动方式对比</a></li>
+<li><a href="#rdb%E7%89%B9%E6%AE%8A%E5%90%AF%E5%8A%A8%E5%BD%A2%E5%BC%8F">RDB特殊启动形式</a></li>
+<li><a href="#rdb%E4%BC%98%E7%82%B9">RDB优点</a></li>
+<li><a href="#rdb%E7%BC%BA%E7%82%B9">RDB缺点</a></li>
+</ul>
+</li>
+<li><a href="#aof">AOF</a>
+<ul>
+<li><a href="#rdb%E5%AD%98%E5%82%A8%E7%9A%84%E5%BC%8A%E7%AB%AF">RDB存储的弊端</a>
+<ul>
+<li><a href="#%E8%A7%A3%E5%86%B3%E6%80%9D%E8%B7%AF">解决思路</a></li>
+</ul>
+</li>
+<li><a href="#aof%E6%A6%82%E5%BF%B5">AOF概念</a></li>
+<li><a href="#aof%E5%86%99%E6%95%B0%E6%8D%AE%E8%BF%87%E7%A8%8B">AOF写数据过程</a>
+<ul>
+<li><a href="#aof%E5%86%99%E6%95%B0%E6%8D%AE%E4%B8%89%E7%A7%8D%E7%AD%96%E7%95%A5appendfsync">AOF写数据三种策略(****appendfsync)</a></li>
+</ul>
+</li>
+<li><a href="#aof%E5%8A%9F%E8%83%BD%E5%BC%80%E5%90%AF">AOF功能开启</a></li>
+<li><a href="#aof%E7%9B%B8%E5%85%B3%E9%85%8D%E7%BD%AE">AOF相关配置</a></li>
+<li><a href="#aof%E5%86%99%E6%95%B0%E6%8D%AE%E9%81%87%E5%88%B0%E7%9A%84%E9%97%AE%E9%A2%98">AOF写数据遇到的问题</a>
+<ul>
+<li><a href="#%E5%A6%82%E6%9E%9C%E8%BF%9E%E7%BB%AD%E6%89%A7%E8%A1%8C%E5%A6%82%E4%B8%8B%E6%8C%87%E4%BB%A4%E8%AF%A5%E5%A6%82%E4%BD%95%E5%A4%84%E7%90%86">如果连续执行如下指令该如何处理</a></li>
+<li><a href="#aof%E9%87%8D%E5%86%99">AOF重写</a></li>
+<li><a href="#aof%E9%87%8D%E5%86%99%E4%BD%9C%E7%94%A8">AOF重写作用</a></li>
+<li><a href="#aof%E9%87%8D%E5%86%99%E8%A7%84%E5%88%99">AOF重写规则</a></li>
+<li><a href="#aof%E9%87%8D%E5%86%99%E6%96%B9%E5%BC%8F">AOF重写方式</a></li>
+<li><a href="#aof%E6%89%8B%E5%8A%A8%E9%87%8D%E5%86%99-bgrewriteaof%E6%8C%87%E4%BB%A4%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86">AOF手动重写 —— bgrewriteaof指令工作原理</a></li>
+<li><a href="#aof%E8%87%AA%E5%8A%A8%E9%87%8D%E5%86%99%E6%96%B9%E5%BC%8F">AOF自动重写方式</a></li>
+<li><a href="#aof%E9%87%8D%E5%86%99%E6%B5%81%E7%A8%8B">AOF重写流程</a></li>
+<li><a href="#aof%E9%87%8D%E5%86%99%E6%B5%81%E7%A8%8B-2">AOF重写流程</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#rdb%E4%B8%8Eaof%E5%8C%BA%E5%88%AB">RDB与AOF区别</a><br>
+*
+<ul>
+<li><a href="#rdb%E4%B8%8Eaof%E7%9A%84%E9%80%89%E6%8B%A9%E4%B9%8B%E6%83%91">RDB与AOF的选择之惑</a></li>
+</ul>
+</li>
+<li><a href="#%E6%8C%81%E4%B9%85%E5%8C%96%E5%BA%94%E7%94%A8%E5%9C%BA%E6%99%AF">持久化应用场景</a></li>
+<li><a href="#%E6%80%BB%E7%BB%93">总结</a></li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://epitomm.github.io/post/42-dao-ji-suan-ji-wang-luo-mian-shi-gao-pin-ti-da-an-mian-shi-guan-xi-huan-de-da-an-du-zai-zhe-li/">
+              <h3 class="post-title">
+                42道计算机网络面试高频题+答案，面试官喜欢的答案都在这里！
+              </h3>
+            </a>
+          </div>
+        
+
+        
+          
+            <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+<script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+
+<div id="gitalk-container"></div>
+
+<script>
+
+  var gitalk = new Gitalk({
+    clientID: '974bd77fbbd52c2a0647',
+    clientSecret: '6344370ca1314dbd553f45e75a2121a160ef1c44',
+    repo: 'EpitomM.github.io',
+    owner: 'EpitomM',
+    admin: ['EpitomM'],
+    id: (location.pathname).substring(0, 49),      // Ensure uniqueness and length less than 50
+    distractionFreeMode: false  // Facebook-like distraction free mode
+  })
+
+  gitalk.render('gitalk-container')
+
+</script>
+
+          
+
+          
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/EpitomM/EpitomM.github.io" target="_blank">EpitomM</a>
+  <a class="rss" href="https://epitomm.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

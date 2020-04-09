@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://epitomm.github.io</id>
     <title>SSM</title>
-    <updated>2020-04-06T06:04:35.961Z</updated>
+    <updated>2020-04-09T13:04:28.162Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://epitomm.github.io"/>
     <link rel="self" href="https://epitomm.github.io/atom.xml"/>
@@ -10,6 +10,503 @@
     <logo>https://epitomm.github.io/images/avatar.png</logo>
     <icon>https://epitomm.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, SSM</rights>
+    <entry>
+        <title type="html"><![CDATA[Redis 持久化]]></title>
+        <id>https://epitomm.github.io/post/redis-chi-jiu-hua/</id>
+        <link href="https://epitomm.github.io/post/redis-chi-jiu-hua/">
+        </link>
+        <updated>2020-04-08T10:03:41.000Z</updated>
+        <content type="html"><![CDATA[<h1 id="持久化简介">持久化简介</h1>
+<h2 id="意外的断电">意外的断电</h2>
+<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/%E6%96%AD%E7%94%B5.png" alt="图片" loading="lazy"></figure>
+<h2 id="自动备份">“自动备份”</h2>
+<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/%E8%87%AA%E5%8A%A8%E5%A4%87%E4%BB%BD.png" alt="图片" loading="lazy"></figure>
+<h2 id="什么是持久化">什么是持久化</h2>
+<p>利用永久性存储介质将数据进行保存，在特定的时间将保存的数据进行恢复的工作机制称为持久化。</p>
+<h2 id="为什么要进行持久化">为什么要进行持久化</h2>
+<p>防止数据的意外丢失，确保数据安全性</p>
+<h2 id="持久化过程保存什么">持久化过程保存什么</h2>
+<ul>
+<li>将当前数据状态进行保存，<strong>快照</strong>形式，存储数据结果，存储格式简单，关注点在<strong>数据</strong></li>
+<li>将数据的操作过程进行保存，<strong>日志</strong>形式，存储操作过程，存储格式复杂，关注点在<strong>数据的操作过程</strong></li>
+</ul>
+<figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/Redis%E6%8C%81%E4%B9%85%E5%8C%96.png" alt="图片" loading="lazy"></figure>
+<h1 id="rdb">RDB</h1>
+<h2 id="rdb启动方式">RDB启动方式</h2>
+<h2 id="谁什么时间干什么事情">谁，什么时间，干什么事情</h2>
+<p>命令执行</p>
+<ul>
+<li>谁：redis操作者（用户）</li>
+<li>什么时间：即时（随时进行）</li>
+<li>干什么事情：保存数据</li>
+</ul>
+<h2 id="rdb启动方式-save指令">RDB启动方式 —— save指令</h2>
+<ul>
+<li>命令</li>
+</ul>
+<pre><code>save 
+</code></pre>
+<ul>
+<li>作用</li>
+</ul>
+<p>手动执行一次保存操作</p>
+<p>redis-cli</p>
+<pre><code>127.0.0.1:6379&gt; set name ssm
+OK
+127.0.0.1:6379&gt; save
+OK
+127.0.0.1:6379&gt; set age 20
+OK
+127.0.0.1:6379&gt; save
+OK
+127.0.0.1:6379&gt; 
+</code></pre>
+<pre><code>[root@iZ2ze4u2bufi0915gyi843Z data]# ll
+total 4
+-rw-r--r-- 1 root root 3918 Feb 25 21:23 6379.log
+[root@iZ2ze4u2bufi0915gyi843Z data]# ll
+total 8
+-rw-r--r-- 1 root root 3969 Feb 25 21:24 6379.log
+-rw-r--r-- 1 root root  107 Feb 25 21:24 dump.rdb
+[root@iZ2ze4u2bufi0915gyi843Z data]# ll
+total 8
+-rw-r--r-- 1 root root 4020 Feb 25 21:24 6379.log
+-rw-r--r-- 1 root root  114 Feb 25 21:24 dump.rdb
+[root@iZ2ze4u2bufi0915gyi843Z data]# cat dump.rdb 
+REDIS0009	redis-ver5.0.7
+redis-bits󿿀򳨭e
+              Uused-memx
+</code></pre>
+<h3 id="rdb启动方式-save指令相关配置">RDB启动方式 —— save指令相关配置</h3>
+<ul>
+<li>dbfilename dump.rdb
+<ul>
+<li>说明：设置本地数据库文件名，默认值为 dump.rdb</li>
+<li>经验：通常设置为**dump-<strong><strong>端口号</strong></strong>.rdb **</li>
+</ul>
+</li>
+<li>dir
+<ul>
+<li>说明：设置存储.rdb文件的路径</li>
+<li>经验：通常设置成存储空间较大的目录中，目录名称**data **</li>
+</ul>
+</li>
+<li>rdbcompression yes
+<ul>
+<li>说明：设置存储至本地数据库时是否<strong>压缩数据</strong>，默认为 yes，采用 LZF 压缩</li>
+<li>经验：通常默认为开启状态，如果设置为no，可以节省 CPU 运行时间，但会使存储的文件变大（巨大）</li>
+</ul>
+</li>
+<li>rdbchecksum yes
+<ul>
+<li>说明：设置是否进行RDB<strong>文件格式校验</strong>，该校验过程在写文件和读文件过程均进行</li>
+<li>经验：通常默认为开启状态，如果设置为no，可以节约读写性过程约10%时间消耗，但是存储一定的数据损坏风险</li>
+</ul>
+</li>
+</ul>
+<h3 id="rdb启动方式-save指令工作原理">RDB启动方式 —— save指令工作原理</h3>
+<p><img src="https://epitomm.github.io/post-images/Redis%E6%8C%87%E4%BB%A4save.png" alt="图片" loading="lazy"><br>
+<img src="https://epitomm.github.io/post-images/Redis%E6%8C%87%E4%BB%A4save2.png" alt="图片" loading="lazy"></p>
+<p><strong>注意：<strong>save指令的执行会</strong>阻塞</strong>当前Redis服务器，直到当前RDB过程完成为止，有可能会造成长时间阻塞，线上环境不建议使用。</p>
+<h2 id="数据量过大单线程执行方式造成效率过低如何处理">数据量过大，单线程执行方式造成效率过低如何处理？</h2>
+<h3 id="后台执行-bgsave">后台执行 （bgsave）</h3>
+<ul>
+<li>谁：redis操作者（用户）发起指令；redis服务器控制指令执行</li>
+<li>什么时间：即时（发起）；合理的时间（执行）</li>
+<li>干什么事情：保存数据</li>
+</ul>
+<h3 id="bgsave指令">bgsave指令</h3>
+<ul>
+<li>命令</li>
+</ul>
+<pre><code>bgsave 
+</code></pre>
+<ul>
+<li>作用</li>
+</ul>
+<p>手动启动后台保存操作，但不是立即执行</p>
+<h3 id="bgsave指令工作原理">bgsave指令工作原理</h3>
+<figure data-type="image" tabindex="4"><img src="https://epitomm.github.io/post-images/bgsave.png" alt="图片" loading="lazy"></figure>
+<p><strong>注意： <strong>bgsave命令是针对save阻塞问题做的优化。Redis内部所有涉及到RDB操作都采用bgsave的方式，save命令可以放弃使用</strong>。</strong></p>
+<h3 id="bgsave指令相关配置">bgsave指令相关配置</h3>
+<ul>
+<li>dbfilename dump.rdb</li>
+<li>dir</li>
+<li>rdbcompression yes</li>
+<li>rdbchecksum yes</li>
+<li>stop-writes-on-bgsave-error yes
+<ul>
+<li>说明：后台存储过程中如果出现错误现象，是否停止保存操作</li>
+<li>经验：通常默认为开启状态</li>
+</ul>
+</li>
+</ul>
+<h2 id="反复执行保存指令忘记了怎么办不知道数据产生了多少变化何时保存">反复执行保存指令，忘记了怎么办？不知道数据产生了多少变化，何时保存？</h2>
+<h3 id="自动执行">自动执行</h3>
+<ul>
+<li>谁：redis服务器发起指令（基于条件）</li>
+<li>什么时间：满足条件</li>
+<li>干什么事情：保存数据</li>
+</ul>
+<h3 id="save配置">save配置</h3>
+<ul>
+<li>redis-6379.conf 内配置</li>
+</ul>
+<pre><code>save second changes 
+</code></pre>
+<ul>
+<li>作用</li>
+</ul>
+<p>满足限定时间范围内key的变化数量达到指定数量即进行持久化</p>
+<ul>
+<li>参数
+<ul>
+<li>second：监控时间范围</li>
+<li>changes：监控key的变化量</li>
+</ul>
+</li>
+<li>位置
+<ul>
+<li>在conf文件中进行配置</li>
+</ul>
+</li>
+<li>范例</li>
+</ul>
+<pre><code>save 900 1 
+save 300 10 
+save 60 10000
+</code></pre>
+<h3 id="save配置原理">save配置原理</h3>
+<figure data-type="image" tabindex="5"><img src="https://epitomm.github.io/post-images/Redis%E6%8C%87%E4%BB%A4save3.png" alt="图片" loading="lazy"></figure>
+<p>注意： save配置要根据实际业务情况进行设置，频度过高或过低都会出现性能问题，结果可能是灾难性的</p>
+<p>save配置中对于second与changes设置通常具有互补对应关系，尽量不要设置成包含性关系</p>
+<ul>
+<li>save配置启动后执行的是bgsave操作</li>
+</ul>
+<h3 id="save配置相关配置">save配置相关配置</h3>
+<ul>
+<li>dbfilename dump.rdb</li>
+<li>dir</li>
+<li>rdbcompression yes</li>
+<li>rdbchecksum yes</li>
+</ul>
+<h2 id="rdb三种启动方式对比">RDB三种启动方式对比</h2>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">方式</th>
+<th style="text-align:left">save指令</th>
+<th style="text-align:left">bgsave指令（save配置）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">读写</td>
+<td style="text-align:left">同步</td>
+<td style="text-align:left">异步</td>
+</tr>
+<tr>
+<td style="text-align:left">阻塞客户端指令</td>
+<td style="text-align:left">是</td>
+<td style="text-align:left">否</td>
+</tr>
+<tr>
+<td style="text-align:left">额外内存消耗</td>
+<td style="text-align:left">否</td>
+<td style="text-align:left">是</td>
+</tr>
+<tr>
+<td style="text-align:left">启动新进程</td>
+<td style="text-align:left">否</td>
+<td style="text-align:left">是</td>
+</tr>
+</tbody>
+</table>
+<h2 id="rdb特殊启动形式">RDB特殊启动形式</h2>
+<ul>
+<li>全量复制</li>
+</ul>
+<p>在主从复制中详细讲解</p>
+<ul>
+<li>服务器运行过程中重启</li>
+</ul>
+<pre><code>debug reload 
+</code></pre>
+<ul>
+<li>关闭服务器时指定保存数据</li>
+</ul>
+<pre><code>shutdown save 
+</code></pre>
+<p>默认情况下执行shutdown命令时，自动执行 bgsave(如果没有开启AOF持久化功能)</p>
+<h2 id="rdb优点">RDB优点</h2>
+<ul>
+<li>RDB是一个紧凑压缩的<strong>二进制</strong>文件，**存储效率较高 **</li>
+<li>RDB内部存储的是redis在某个时间点的数据快照，非常适合用于数据备份，全量复制等场景</li>
+<li>RDB<strong>恢复数据</strong>的<strong>速度</strong>要比AOF<strong>快</strong>很多</li>
+<li>应用：服务器中每X小时执行bgsave备份，并将RDB文件拷贝到远程机器中，用于<strong>灾难恢复</strong>。</li>
+</ul>
+<h2 id="rdb缺点">RDB缺点</h2>
+<ul>
+<li>RDB方式无论是执行指令还是利用配置，无法做到实时持久化，具有较大的可能性<strong>丢失数据</strong>（10点备份一次，11点备份一次，那么10点45的数据就丢失了）</li>
+<li>bgsave指令每次运行要执行fork操作<strong>创建子进程</strong>，要**牺牲掉一些性能 **</li>
+<li>Redis的众多版本中未进行RDB文件格式的版本统一，有可能出现<strong>各版本</strong>服务之间数据格式<strong>无法兼容</strong>现象</li>
+</ul>
+<h1 id="aof">AOF</h1>
+<h2 id="rdb存储的弊端">RDB存储的弊端</h2>
+<ul>
+<li>存储<strong>数据量较大</strong>，效率较低
+<ul>
+<li>基于<strong>快照</strong>思想，每次读写都是<strong>全部</strong>数据，当数据量巨大时，效率非常低</li>
+</ul>
+</li>
+<li>大数据量下的**IO性能较低 **</li>
+<li>基于fork创建<strong>子进程</strong>，<strong>内存</strong>产生额外<strong>消耗</strong></li>
+<li>宕机带来的<strong>数据丢失</strong>风险 （快照是某个时间点的数据）</li>
+</ul>
+<h3 id="解决思路">解决思路</h3>
+<ul>
+<li>不写全数据，仅**记录部分数据 **</li>
+<li>降低区分数据是否改变的难度，改记录数据为**记录操作过程 **</li>
+<li>对所有操作均进行记录，<strong>排除丢失数据的风险</strong></li>
+</ul>
+<h2 id="aof概念">AOF概念</h2>
+<ul>
+<li>AOF(append only file)持久化：以独立日志的方式记录每次写命令，重启时再重新执行AOF文件中命令达到恢复数据的目的。与RDB相比可以简单描述为改记录数据为记录数据产生的过程</li>
+<li>AOF的主要作用是解决了数据持久化的实时性，目前已经是Redis持久化的主流方式</li>
+</ul>
+<h2 id="aof写数据过程">AOF写数据过程</h2>
+<figure data-type="image" tabindex="6"><img src="https://epitomm.github.io/post-images/AOF.png" alt="图片" loading="lazy"></figure>
+<h3 id="aof写数据三种策略appendfsync">AOF写数据三种策略(****appendfsync)</h3>
+<ul>
+<li>always(每次）
+<ul>
+<li>每次写入操作均同步到AOF文件中，<strong>数据零误差</strong>，**性能较低 **，不建议使用。</li>
+</ul>
+</li>
+<li>everysec（每秒）
+<ul>
+<li>每秒将缓冲区中的指令同步到AOF文件中，数据准确性较高，**性能较高 **，建议使用，也是默认配置</li>
+<li>在系统突然宕机的情况下丢失1秒内的数据</li>
+</ul>
+</li>
+<li>no（系统控制）
+<ul>
+<li>由操作系统控制每次同步到AOF文件的周期，整体过程<strong>不可控</strong></li>
+</ul>
+</li>
+</ul>
+<h2 id="aof功能开启">AOF功能开启</h2>
+<ul>
+<li>配置</li>
+</ul>
+<pre><code>appendonly yes|no 
+</code></pre>
+<ul>
+<li>作用
+<ul>
+<li>是否开启AOF持久化功能，默认为不开启状态</li>
+</ul>
+</li>
+<li>配置</li>
+</ul>
+<pre><code>appendfsync always|everysec|no 
+</code></pre>
+<ul>
+<li>作用</li>
+</ul>
+<p>AOF写数据策略</p>
+<h2 id="aof相关配置">AOF相关配置</h2>
+<ul>
+<li>配置</li>
+</ul>
+<pre><code>appendfilename filename 
+</code></pre>
+<ul>
+<li>作用
+<ul>
+<li>AOF持久化文件名，默认文件名为appendonly.aof，建议配置为appendonly-端口号.aof</li>
+</ul>
+</li>
+<li>配置</li>
+</ul>
+<pre><code>dir 
+</code></pre>
+<ul>
+<li>作用
+<ul>
+<li>AOF持久化文件保存路径，与RDB持久化文件保持一致即可</li>
+</ul>
+</li>
+</ul>
+<h2 id="aof写数据遇到的问题">AOF写数据遇到的问题</h2>
+<h3 id="如果连续执行如下指令该如何处理">如果连续执行如下指令该如何处理</h3>
+<figure data-type="image" tabindex="7"><img src="https://epitomm.github.io/post-images/AOF%E4%BE%8B%E5%AD%90.png" alt="图片" loading="lazy"></figure>
+<h3 id="aof重写">AOF重写</h3>
+<p>随着命令不断写入AOF，<strong>文件会越来越大</strong>，为了解决这个问题，Redis引入了AOF重写机制压缩文件体积。AOF文件重写是将Redis进程内的数据转化为写命令同步到新AOF文件的过程。简单说就是<strong>将对同一个数据的若干个条命令执行结果转化成最终结果数据对应的指令</strong>进行记录。</p>
+<h3 id="aof重写作用">AOF重写作用</h3>
+<ul>
+<li>降低磁盘占用量，提高磁盘利用率</li>
+<li>提高持久化效率，降低持久化写时间，提高IO性能</li>
+<li>降低数据恢复用时，提高数据恢复效率</li>
+</ul>
+<h3 id="aof重写规则">AOF重写规则</h3>
+<ul>
+<li>进程内已超时的数据不再写入文件</li>
+<li>忽略无效指令，重写时使用进程内数据直接生成，这样新的AOF文件只保留最终数据的写入命令
+<ul>
+<li>如del key1、 hdel key2、srem key3、set key4 111、set key4 222等</li>
+</ul>
+</li>
+<li>对同一数据的多条写命令合并为一条命令
+<ul>
+<li>如lpush list1 a、lpush list1 b、 lpush list1 c 可以转化为：lpush list1 a b c。</li>
+<li>为防止数据量过大造成客户端缓冲区溢出，对list、set、hash、zset等类型，每条指令最多写入64个元素</li>
+</ul>
+</li>
+</ul>
+<h3 id="aof重写方式">AOF重写方式</h3>
+<ul>
+<li>手动重写</li>
+</ul>
+<pre><code>bgrewriteaof 
+</code></pre>
+<ul>
+<li>自动重写</li>
+</ul>
+<pre><code>auto-aof-rewrite-min-size size 
+auto-aof-rewrite-percentage percentage
+</code></pre>
+<h3 id="aof手动重写-bgrewriteaof指令工作原理">AOF手动重写 —— bgrewriteaof指令工作原理</h3>
+<p><img src="https://epitomm.github.io/post-images/bgsave%E6%8C%87%E4%BB%A4%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86.png" alt="图片" loading="lazy"><br>
+<img src="https://epitomm.github.io/post-images/bgrewriteaof%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86.png" alt="图片" loading="lazy"></p>
+<h3 id="aof自动重写方式">AOF自动重写方式</h3>
+<ul>
+<li>自动重写触发条件设置</li>
+</ul>
+<pre><code>auto-aof-rewrite-min-size size 
+auto-aof-rewrite-percentage percent 
+</code></pre>
+<ul>
+<li>自动重写触发比对参数（ 运行指令info Persistence获取具体信息 ）</li>
+</ul>
+<pre><code>aof_current_size 
+aof_base_size 
+</code></pre>
+<ul>
+<li>自动重写触发条件</li>
+</ul>
+<figure data-type="image" tabindex="8"><img src="https://epitomm.github.io/post-images/%E8%87%AA%E5%8A%A8%E8%A7%A6%E5%8F%91%E9%87%8D%E5%86%99%E6%9D%A1%E4%BB%B6.png" alt="图片" loading="lazy"></figure>
+<h3 id="aof重写流程">AOF重写流程</h3>
+<figure data-type="image" tabindex="9"><img src="https://epitomm.github.io/post-images/AOF%E9%87%8D%E5%86%99%E6%B5%81%E7%A8%8B1.png" alt="图片" loading="lazy"></figure>
+<h3 id="aof重写流程-2">AOF重写流程</h3>
+<figure data-type="image" tabindex="10"><img src="https://epitomm.github.io/post-images/AOF%E9%87%8D%E5%86%99%E6%B5%81%E7%A8%8B2.png" alt="图片" loading="lazy"></figure>
+<p>AOF缓冲区同步文件策略，由参数appendfsync控制</p>
+<p>系统调用write和fsync说明：</p>
+<ul>
+<li>write操作会触发延迟写（delayed write）机制，Linux在内核提供页缓冲区用来提高硬盘IO性能。write操作在写入系统缓冲区后直接返回。同步硬盘操作依赖于系统调度机制，列如：缓冲区页空间写满或达到特定时间周期。同步文件之前，如果此时系统故障宕机，缓冲区内数据将丢失。</li>
+<li>fsync针对单个文件操作（比如AOF文件），做强制硬盘同步，fsync将阻塞知道写入硬盘完成后返回，保证了数据持久化。</li>
+</ul>
+<p>除了write、fsync、Linx还提供了sync、fdatasync操作，具体API说明参见：</p>
+<h1 id="rdb与aof区别">RDB与AOF区别</h1>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">持久化方式</th>
+<th style="text-align:left">RDB</th>
+<th style="text-align:left">AOF</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">占用存储空间</td>
+<td style="text-align:left">小（数据级：压缩）</td>
+<td style="text-align:left">大（指令级：重写）</td>
+</tr>
+<tr>
+<td style="text-align:left">存储速度</td>
+<td style="text-align:left">慢</td>
+<td style="text-align:left">快</td>
+</tr>
+<tr>
+<td style="text-align:left">恢复速度</td>
+<td style="text-align:left">快</td>
+<td style="text-align:left">慢</td>
+</tr>
+<tr>
+<td style="text-align:left">数据安全性</td>
+<td style="text-align:left">会丢失数据</td>
+<td style="text-align:left">依据策略决定</td>
+</tr>
+<tr>
+<td style="text-align:left">资源消耗</td>
+<td style="text-align:left">高 / 重量级</td>
+<td style="text-align:left">低 / 轻量级</td>
+</tr>
+<tr>
+<td style="text-align:left">启动优先级</td>
+<td style="text-align:left">低</td>
+<td style="text-align:left">高</td>
+</tr>
+</tbody>
+</table>
+<h3 id="rdb与aof的选择之惑">RDB与AOF的选择之惑</h3>
+<ul>
+<li>对<strong>数据非常敏感</strong>，建议使用默认的<strong>AOF</strong>持久化方案
+<ul>
+<li>AOF持久化策略使用everysecond，每秒钟fsync一次。该策略redis仍可以保持很好的处理性能，当出现问题时，最多丢失0-1秒内的数据。</li>
+<li>注意：由于AOF文件存储体积较大，且恢复速度较慢</li>
+</ul>
+</li>
+<li>数据呈现<strong>阶段有效性</strong>，建议使用<strong>RDB</strong>持久化方案
+<ul>
+<li>数据可以良好的做到阶段内无丢失（该阶段是开发者或运维人员手工维护的），且恢复速度较快，阶段点数据恢复通常采用RDB方案</li>
+<li>注意：利用RDB实现紧凑的数据持久化会使Redis降的很低</li>
+</ul>
+</li>
+<li>综合比对
+<ul>
+<li>RDB与AOF的选择实际上是在做一种权衡，每种都有利有弊</li>
+<li>如不能承受数分钟以内的数据丢失，对业务数据非常敏感，选用AOF</li>
+<li>如能承受数分钟以内的数据丢失，且追求大数据集的恢复速度，选用RDB</li>
+<li>灾难恢复选用RDB</li>
+<li>双保险策略，同时开启 RDB 和 AOF，重启后，Redis优先使用 AOF 来恢复数据，降低丢失数据的量</li>
+</ul>
+</li>
+</ul>
+<h1 id="持久化应用场景">持久化应用场景</h1>
+<ul>
+<li>Tips 1：<s>redis用于控制</s><strong><s>数据库表主键id</s></strong>~~，为数据库表主键提供生成策略，保障数据库表的主键唯一性 ~~【假如现在计算机停止工作，下一次启动要恢复时，不期望数据是从 redis 读取的。比如 id  如果用到 18 了，下一次恢复的时候从 18 恢复，大概率有问题，中间断的会导致 id 不连续，比如有一秒用了 19，但是 redis 没有记下来，下次从 18 恢复就会 id 重复。解决方案：从数据库读取，找出最大的 id ，然后加一使用。所以数据库主键 id 不建议持久化】</li>
+<li>Tips 3：<s>redis应用于各种结构型和非结构型</s><strong><s>高热度数据访问加速</s></strong>~~ ~~（缓存里的数据要不要数据化？）【缓存中的数据从数据库读取加载来的，从 redis 读取出来和从数据库读出来没什么区别】</li>
+<li>Tips 4：<s>redis 应用于</s><strong><s>购物车</s></strong><s>数据存储设计</s> 【购物车信息数据库内肯定要存，就导致 redis 和数据库内存的一样，所以 redis 就不额外存储】</li>
+<li>Tips 5：redis 应用于<strong>抢购</strong>，限购类、限量发放优惠卷、激活码等业务的数据存储设计 【抢购：速度非常快，几秒钟内完成然后消失掉，如在这个过程中出现问题了，数据库可能没有持久化， 也可能记录了过程。 快速存储、快速消失的数据持久化】</li>
+<li>Tips 6：redis 应用于具有<strong>操作先后顺序</strong>的数据控制 【临时任务，如果消息存储量不大，建议持久化】</li>
+<li>Tips 7：redis 应用于<strong>最新消息展示</strong></li>
+<li>Tips 9：<s>redis 应用于同类信息的</s><strong><s>关联搜索</s></strong>~~，二度关联搜索，深度关联搜索 ~~【关系网庞大，存到数据库】</li>
+<li>Tips 12：redis 应用于基于<strong>黑名单</strong>与<strong>白名单</strong>设定的服务控制 【永久性存到数据库，临时性持久化】</li>
+<li>Tips 13：redis 应用于计数器组合排序功能对应的<strong>排名 【20个主播一起主播，进行排名，主播结束数据就消失了，如果不持久化这个信息，它也不在数据库内存储就没有了。20万人在线观看，如果不持久化记录服务器一宕机就0人在线了，所以需持久化记录快速恢复】</strong></li>
+<li>Tips 15：redis 应用于<strong>即时任务/消息队列</strong>执行管理</li>
+<li>Tips 16：redis 应用于<strong>按次结算的服务控制</strong></li>
+</ul>
+<h1 id="总结">总结</h1>
+<p>Redis持久化</p>
+<ul>
+<li>什么是持久化</li>
+<li>RDB
+<ul>
+<li>save</li>
+<li>bgsave</li>
+<li>配置</li>
+</ul>
+</li>
+<li>AOF
+<ul>
+<li>持久化写策略</li>
+<li>重写</li>
+</ul>
+</li>
+</ul>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[42道计算机网络面试高频题+答案，面试官喜欢的答案都在这里！]]></title>
         <id>https://epitomm.github.io/post/42-dao-ji-suan-ji-wang-luo-mian-shi-gao-pin-ti-da-an-mian-shi-guan-xi-huan-de-da-an-du-zai-zhe-li/</id>
@@ -387,7 +884,7 @@
 <h1 id="28-http-状态码-301-和-302-代表的是什么有什么区别">28、HTTP 状态码 301 和 302 代表的是什么？有什么区别？</h1>
 <p>301，302 都是 HTTP 状态的编码，都代表着某个 URL 发生了转移。</p>
 <ul>
-<li>**区别： **</li>
+<li>**区别 **：</li>
 </ul>
 <p>301 redirect: 301 代表永久性转移（Permanently Moved）</p>
 <p>302 redirect: 302 代表暂时性转移（Temporarily Moved）</p>
@@ -537,11 +1034,15 @@
 </li>
 </ol>
 <ul>
-<li>3.1 验证证书的合法性；</li>
-</ul>
-<p>3.2 果验证通过证书，浏览器会生成一串随机数，并用证书中的公钥进行加密；</p>
-<ul>
-<li>3.3 用约定好的 hash 算法计算握手消息，然后用生成的密钥进行加密，然后一起发送给服务器。</li>
+<li>
+<p>3.1 验证证书的合法性；</p>
+</li>
+<li>
+<p>3.2 如果验证通过证书，浏览器会生成一串随机数，并用证书中的公钥进行加密；</p>
+</li>
+<li>
+<p>3.3 用约定好的 hash 算法计算握手消息，然后用生成的密钥进行加密，然后一起发送给服务器。</p>
+</li>
 </ul>
 <ol start="4">
 <li>服务器接收到客户端传送来的信息，要做下面的事情：</li>
@@ -3786,7 +4287,7 @@ obj = null;
 <ul>
 <li>晋升年龄达到阈值的对象，会晋升到老年代。</li>
 <li>大对象直接进入老年代：避免在 Eden 和 Survior 之间来回进行大量复制。</li>
-<li>Minor GC 后，如果对象太大无法进入 Suirior 区，则直接进入老年代。</li>
+<li>Minor GC 后，如果对象太大无法进入 Survior 区，则直接进入老年代。</li>
 <li>如果在 Survior 区中相同年龄所有对象大小的总和大于 Survivor 空间的一半，年龄大于或等于该年龄对象就可以直接进入老年代，无须等年龄达到晋升阈值。</li>
 </ul>
 <h1 id="11-常见的垃圾收集器有哪些">11. 常见的垃圾收集器有哪些？</h1>
@@ -4013,257 +4514,6 @@ public static void main(String[] args) {
 <p>③ <strong>初始化零值</strong>：内存分配完成后，虚拟机需要将分配到的内存空间都初始化为零值（不包括对象头），这一步操作保证了对象的实例字段在 Java 代码中可以不赋初始值就直接使用，程序能访问到这些字段的数据类型所对应的零值。<br>
 ④ <strong>设置对象头</strong>：初始化零值完成之后，虚拟机要对对象进行必要的设置，例如这个对象是那个类的实例、如何才能找到类的元数据信息、对象的哈希码、对象的 GC 分代年龄等信息。这些信息存放在对象头中。另外，根据虚拟机当前运行状态的不同，如是否启用偏向锁等，对象头会有不同的设置方式。<br>
 ⑤ <strong>执行 init 方法</strong>：在上面工作都完成之后，从虚拟机的视角来看，一个新的对象已经产生了，但从Java程序的视角来看，对象创建才刚开始，&lt; init &gt;方法还没有执行，所有的字段都还为零。所以一般来说，执行new指令之后会接着执行&lt; init &gt;方法，把对象按照程序员的意愿进行初始化，这样一个真正可用的对象才算完全产生出来。</p>
-]]></content>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[面试题系列 —— Java 集合]]></title>
-        <id>https://epitomm.github.io/post/mian-shi-ti-xi-lie-java-ji-he/</id>
-        <link href="https://epitomm.github.io/post/mian-shi-ti-xi-lie-java-ji-he/">
-        </link>
-        <updated>2020-03-24T11:57:19.000Z</updated>
-        <content type="html"><![CDATA[<h1 id="1-说一说-list-set-map-三者的区别">1. 说一说 List、Set、Map 三者的区别</h1>
-<ul>
-<li><code>List</code> 是存储<strong>有序</strong>的集合</li>
-<li><code>Set</code> 集合元素<strong>不可重复</strong></li>
-<li><code>Map</code> 是存储<strong>键值对</strong>的集合</li>
-</ul>
-<h1 id="2-arraylist-与-linkedlist-的区别">2. ArrayList 与 LinkedList 的区别</h1>
-<ol>
-<li>底层存储数据结构：</li>
-</ol>
-<ul>
-<li><code>ArrayList</code> 初始容量时 10，底层是<strong>Object 数组</strong>，所以具有数组的特性，可<strong>随机访问</strong>，并且实现了<code>RandomAccess</code> 接口标识支持随机访问。</li>
-<li><code>LinkedList</code> 底层是<strong>双向链表</strong>，所以具有链表的特性，<strong>增删速度快</strong>，但每个节点都有维护前后两个指针，占用<strong>存储空间较大</strong>。</li>
-</ul>
-<ol start="2">
-<li>增删查效率：</li>
-</ol>
-<ul>
-<li><code>ArrayList</code> 如果添加到<strong>末尾</strong>，时间复杂度<strong>O(1)</strong>；如果添加<strong>中间</strong>到指定 i 位置，需要把 i ~ n 位置的元素统一向后移动，时间复杂度 <strong>O(n-i)</strong>。如果<strong>按下标查找</strong>，时间复杂度<strong>O(1)</strong>。</li>
-<li><code>LinkedList</code> 如果添加<strong>末尾</strong>，时间复杂度 <strong>O(1)</strong>，如果插入到<strong>中间</strong>第 i 个位置，需要先查找到到 i 个位置的元素，查找效率 <strong>O(n)</strong>，然后执行添加操作，修改指针指向，复杂度<strong>O(1)</strong>。如果<strong>按下标查找</strong>，需要判断下标是否大于当前 <code>size/2</code> ，如果大于则从末尾向中间查找；否则从头向中间查找，时间复杂度<strong>O(n)</strong>。</li>
-</ul>
-<h1 id="3-arraylist-扩容机制">3. ArrayList 扩容机制</h1>
-<pre><code>private void grow(int minCapacity) {
-    // overflow-conscious code
-    int oldCapacity = elementData.length;
-    int newCapacity = oldCapacity + (oldCapacity &gt;&gt; 1);
-    if (newCapacity - minCapacity &lt; 0)
-        newCapacity = minCapacity;
-    if (newCapacity - MAX_ARRAY_SIZE &gt; 0)
-        newCapacity = hugeCapacity(minCapacity);
-    // minCapacity is usually close to size, so this is a win:
-    elementData = Arrays.copyOf(elementData, newCapacity);
-}
-</code></pre>
-<blockquote>
-<p>上述代码基于 JDK1.8</p>
-</blockquote>
-<h1 id="4-arraylist-和-vector-的区别">4. ArrayList 和 Vector 的区别</h1>
-<p>线程安全</p>
-<ul>
-<li><code>ArrayList</code> 线程不安全</li>
-<li><code>Vector</code> 方法都使用 <code>synchronized</code> 修饰，所以线程安全，同时效率也低。正因为 <code>Vector</code> 效率低，所以一般不会使用，如果想实现同步，可以使用 <code>Collections.synchronizedList(new ArrayList&lt;&gt;());</code></li>
-</ul>
-<p>扩容机制：</p>
-<ul>
-<li><code>ArrayList</code> 扩容后的容量为原来的 1.5 倍</li>
-<li><code>Vector</code> 扩容后的容量 是原来的 2 倍</li>
-</ul>
-<h1 id="5-hashmap-和-hashtable的区别">5. HashMap 和 Hashtable的区别</h1>
-<p>线程安全：</p>
-<ul>
-<li><code>HashMap</code> 线程不安全</li>
-<li><code>Hashtable</code> 的方法使用 <code>synchronized</code> 修饰，所以线程安全，也是正因为用 <code>synchronized</code> 修饰，所以效率较低。</li>
-</ul>
-<p>初始大小扩容机制：</p>
-<ul>
-<li><code>HashMap</code> 的默认初始容量为 16（2 &lt;&lt; 4）；如果指定了初始容量，会把它扩充为 2 的幂次。扩容后容量为原来的 2n</li>
-<li><code>Hashtable</code> 默认初始容量时 11，如果指定初始容量，使用初始容量。扩容后容量为原来的 2n+1</li>
-</ul>
-<p>是否允许 null 键值</p>
-<ul>
-<li><code>HashMap</code> 允许 null 键值</li>
-<li><code>Hashtable</code> 不允许 null 键值</li>
-</ul>
-<h1 id="6-hashmap-的-put-方法的具体流程">6. HashMap 的 put 方法的具体流程</h1>
-<pre><code>public V put(K key, V value) {
-    return putVal(hash(key), key, value, false, true);
-}
-</code></pre>
-<pre><code>/**
- * Implements Map.put and related methods
- *
- * @param hash hash for key
- * @param key the key
- * @param value the value to put
- * @param onlyIfAbsent if true, don't change existing value
- * @param evict if false, the table is in creation mode.
- * @return previous value, or null if none
- */
-final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
-               boolean evict) {
-    Node&lt;K,V&gt;[] tab; Node&lt;K,V&gt; p; int n, i;
-    // 如果数组是空的
-    if ((tab = table) == null || (n = tab.length) == 0)
-        // 初始化集合
-        n = (tab = resize()).length;
-    // 如果数组中第 i 个位置为空，直接利用key-value创建节点并插入
-    if ((p = tab[i = (n - 1) &amp; hash]) == null)
-        tab[i] = newNode(hash, key, value, null);
-    // 如果数组中第 i 个位置不空
-    else {
-        Node&lt;K,V&gt; e; K k;
-        // 如果存在 key 值相同，则先将此节点记录下来（覆盖 value）
-        if (p.hash == hash &amp;&amp;
-            ((k = p.key) == key || (key != null &amp;&amp; key.equals(k))))
-            e = p;
-        // 如果是红黑树
-        else if (p instanceof TreeNode)
-            e = ((TreeNode&lt;K,V&gt;)p).putTreeVal(this, tab, hash, key, value);
-        // 如果是链表
-        else {
-            for (int binCount = 0; ; ++binCount) {
-                // 不断循环找到链表的最后一个节点，将新节点添加到这个节点后面
-                if ((e = p.next) == null) {
-                    p.next = newNode(hash, key, value, null);
-                    // 如果节点个数 &gt;= 7，转成红黑树
-                    if (binCount &gt;= TREEIFY_THRESHOLD - 1) // -1 for 1st
-                        treeifyBin(tab, hash);
-                    break;
-                }
-                if (e.hash == hash &amp;&amp;
-                    ((k = e.key) == key || (key != null &amp;&amp; key.equals(k))))
-                    break;
-                p = e;
-            }
-        }
-        // 如果 key 值相同，覆盖 value
-        if (e != null) { // existing mapping for key
-            // 暂存旧值
-            V oldValue = e.value;
-            if (!onlyIfAbsent || oldValue == null)
-                e.value = value;
-            afterNodeAccess(e);
-            // 返回旧值
-            return oldValue;
-        }
-    }
-    ++modCount;
-    if (++size &gt; threshold)
-        resize();
-    afterNodeInsertion(evict);
-    return null;
-}
-</code></pre>
-<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/put.png" alt="图片" loading="lazy"></figure>
-<ol>
-<li>如果散列表为 null，<code>resize()</code> 初始化散列表</li>
-<li>没有发生碰撞，直接添加元素到散列表中</li>
-<li>如果发生碰撞，判断时红黑树还是链表，然后调用相应的插入方法</li>
-<li>HashMap 的 resize() 扩容方法</li>
-</ol>
-<h1 id="7-hashmap-的-resize-扩容方法">7. HashMap 的 resize() 扩容方法</h1>
-<p>如果当前size &gt; 阈值（容量 * 装填因子），则扩容</p>
-<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/resize.png" alt="图片" loading="lazy"></figure>
-<h1 id="8-hashmap-容量为什么是-2-的幂次">8. HashMap 容量为什么是 2 的幂次</h1>
-<p>减少 <code>hash</code> 冲突，因为要用 <code>hash &amp; (n-1)</code> 确定元素存在数组中的下标位置，如果 n 是 2 的幂（1000），那么 n-1 得到的结果就全为 1 （10000 - 1 = 1111），这样 <code>(n-1) &amp; hash</code> 的值就是 hash。如果 n-1 中有某位为 0，那么 0 与任何数 &amp; 结果都为0，增加了hash 冲突的概率。</p>
-<h1 id="9-hashmap-17-18-对比">9. HashMap 1.7 1.8 对比</h1>
-<ul>
-<li>JDK1.7</li>
-</ul>
-<p>数据结构：数组+链表</p>
-<p>JDK1.7 hash 方法：9 次扰动（4 次位运算，5 次异或运算）</p>
-<pre><code>static int hash(int h) {
-    // This function ensures that hashCodes that differ only by
-    // constant multiples at each bit position have a bounded
-    // number of collisions (approximately 8 at default load factor).
-    h ^= (h &gt;&gt;&gt; 20) ^ (h &gt;&gt;&gt; 12);
-    return h ^ (h &gt;&gt;&gt; 7) ^ (h &gt;&gt;&gt; 4);
-}
-</code></pre>
-<ul>
-<li>JDK 1.8</li>
-</ul>
-<p>数据结构：数组 + 链表 + 红黑树</p>
-<p>JDK 1.8 hash 方法：2 次扰动（1 次位运算，1 次异或运算）</p>
-<pre><code>static final int hash(Object key) {
-    int h;
-    // key.hashCode()：返回散列值也就是hashcode
-    // ^ ：按位异或
-    // &gt;&gt;&gt;:⽆符号右移，忽略符号位，空位都以0补⻬
-    return (key == null) ? 0 : (h = key.hashCode()) ^ (h &gt;&gt;&gt; 16);
-}
-</code></pre>
-<p>贴一张比较详细的图：<br>
-<img src="https://epitomm.github.io/post-images/hashmap.png" alt="图片" loading="lazy"></p>
-<p>图片来源；<a href="https://mp.weixin.qq.com/s?__biz=MzI4Njg5MDA5NA==&amp;mid=2247485685&amp;idx=2&amp;sn=b393e444487c88e8c204821faddff370&amp;chksm=ebd749f4dca0c0e257e15c656f4504f224456495ad78e8aeb9ea370214ebd4b5c455b15e6045&amp;token=1948873548&amp;lang=zh_CN#rd">https://mp.weixin.qq.com/s?__biz=MzI4Njg5MDA5NA==&amp;mid=2247485685&amp;idx=2&amp;sn=b393e444487c88e8c204821faddff370&amp;chksm=ebd749f4dca0c0e257e15c656f4504f224456495ad78e8aeb9ea370214ebd4b5c455b15e6045&amp;token=1948873548&amp;lang=zh_CN#rd</a></p>
-<h1 id="10-hashmap-是怎么解决哈希冲突的">10. HashMap 是怎么解决哈希冲突的</h1>
-<p>什么是哈希冲突：两个不同的输入值，根据同一散列函数，计算出相同的散列值。</p>
-<ul>
-<li>使用<strong>拉链法</strong>来链接具有相同 hash 值的数据</li>
-<li>使用<strong>两次扰动函数</strong>（hash 函数）来降低哈希冲突的概率，使得<strong>数据分布更均匀</strong></li>
-<li>引入<strong>红黑树</strong>降低查找的时间复杂度</li>
-</ul>
-<h1 id="11-hashmap-17-18多线程操作导致死循环问题">11. HashMap 1.7 1.8多线程操作导致死循环问题</h1>
-<p>参考链接：<a href="https://coolshell.cn/articles/9606.html">https://coolshell.cn/articles/9606.html</a></p>
-<h1 id="12-hashmap-的-key-值要是为类对象则该类需要满足什么条件">12. HashMap 的 key 值要是为类对象则该类需要满⾜什么条件？</h1>
-<p><strong>重写 hashCode() 和 equals() 方法。</strong></p>
-<p><code>Hashmap</code> 中放入相同的 <code>key</code>，会覆盖 <code>value</code> 值，而不是重新添加一个 <code>key-value</code> 对，这就要求我们判断 <code>key</code> 是否相同。</p>
-<p>以下为 <code>HashMap</code> 的 <code>final V putVal(int hash, K key, V value, boolean onlyIfAbsent, boolean evict)</code> 方法：</p>
-<pre><code>if (p.hash == hash &amp;&amp;
-    ((k = p.key) == key || (key != null &amp;&amp; key.equals(k))))
-</code></pre>
-<p>从源码得知判断分为三个步骤：①判断 <code>key</code> 的 <code>hash</code> 值是否相同，这就要求我们重写 <code>hashCode()</code> 方法；② 通过 <code>==</code> 判断 <code>key</code> 对象引用是否相等；③ 使用 <code>equals()</code> 判断对象是否相等，这就要求我们重写 <code>equals()</code> 方法。</p>
-<h1 id="13-concurrenthashmap-的底层实现方式">13. ConcurrentHashMap 的底层实现方式</h1>
-<p>JDK1.7</p>
-<ul>
-<li>数据结构：分段数组（<code>Segment</code> 继承了 <code>ReentrantLock</code>，每个段都有一个锁） + 链表（<code>HashEntry</code>）</li>
-<li>线程安全：对整个桶数组进行了分割分段，每把锁只锁住一<strong>段</strong>，多线程访问其他段的数据时不会产生冲突。</li>
-</ul>
-<p>JDK1.8</p>
-<ul>
-<li>数据结构：数组 + 链表 + 红黑树</li>
-<li>线程安全：部分锁定 + CAS。<code>synchronized</code> 只锁定<strong>当前链表或红黑二叉树的首节点</strong>，这样只要 hash 不冲突，就不会产生并发。</li>
-</ul>
-<h1 id="14-concurrenthashmap-和-hashtable-的区别">14. ConcurrentHashMap 和 Hashtable 的区别</h1>
-<ul>
-<li>
-<p>Hashtable<br>
-数据结构：数组 + 链表<br>
-实现线程安全：会锁住整个数组，某个线程在进行 put 操作时，其他线程只能阻塞。</p>
-</li>
-<li>
-<p>JDK1.7 ConcurrentHashMap<br>
-数据结构：分段数组+链表<br>
-实现线程安全：分段锁</p>
-</li>
-<li>
-<p>JDK1.8 ConcurrentHashMap<br>
-数据结构：数组 + 链表 / 红黑树<br>
-通过在部分加锁和利用CAS算法来实现同步。</p>
-</li>
-</ul>
-<h1 id="15-如何选用集合">15. 如何选用集合</h1>
-<ul>
-<li>如果存储键值对，选 <code>Map</code> 接口下的集合
-<ul>
-<li>如果需要排序，选择 <code>TreeMap</code></li>
-<li>如果不需要排序，优先选择 <code>HashMap</code></li>
-<li>如果需要线程安全，选择 <code>ConcurrentHashMap</code></li>
-</ul>
-</li>
-<li>只需要存放元素值时，选择 <code>Collection</code> 接口下的集合
-<ul>
-<li>如果需要顺序放取，选择 <code>ArrayList</code></li>
-<li>如果需要频繁增删，选择 <code>LinkedList</code></li>
-<li>如果需要元素不重复且排序，选择 <code>TreeSet</code></li>
-<li>如果需要元素不重复但无需排序，优先选择 <code>HashSet</code></li>
-</ul>
-</li>
-</ul>
-<p>参考链接：</p>
-<p><a href="https://github.com/ZhongFuCheng3y/3y">https://github.com/ZhongFuCheng3y/3y</a></p>
-<p><a href="https://github.com/Snailclimb/JavaGuide">https://github.com/Snailclimb/JavaGuide</a></p>
 ]]></content>
     </entry>
 </feed>

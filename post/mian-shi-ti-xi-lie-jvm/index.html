@@ -3,7 +3,7 @@
     <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>面试题系列 —— JVM | SSM</title>
-<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1586153071653">
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1586437450486">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
 <link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
 <link rel="alternate" type="application/atom+xml" title="面试题系列 —— JVM | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
@@ -26,7 +26,7 @@ JDK：JVM + 基础类库..." />
       <div class="main-content">
         <div class="site-header">
   <a href="https://epitomm.github.io">
-  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1586153071653" alt="">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1586437450486" alt="">
   </a>
   <h1 class="site-title">
     SSM
@@ -307,7 +307,7 @@ obj = null;
 <ul>
 <li>晋升年龄达到阈值的对象，会晋升到老年代。</li>
 <li>大对象直接进入老年代：避免在 Eden 和 Survior 之间来回进行大量复制。</li>
-<li>Minor GC 后，如果对象太大无法进入 Suirior 区，则直接进入老年代。</li>
+<li>Minor GC 后，如果对象太大无法进入 Survior 区，则直接进入老年代。</li>
 <li>如果在 Survior 区中相同年龄所有对象大小的总和大于 Survivor 空间的一半，年龄大于或等于该年龄对象就可以直接进入老年代，无须等年龄达到晋升阈值。</li>
 </ul>
 <h1 id="11-常见的垃圾收集器有哪些">11. 常见的垃圾收集器有哪些？</h1>
