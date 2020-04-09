@@ -3,7 +3,7 @@
     <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>面试题系列 —— JVM | SSM</title>
-<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1586437450486">
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1586449394891">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
 <link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
 <link rel="alternate" type="application/atom+xml" title="面试题系列 —— JVM | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
@@ -26,7 +26,7 @@ JDK：JVM + 基础类库..." />
       <div class="main-content">
         <div class="site-header">
   <a href="https://epitomm.github.io">
-  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1586437450486" alt="">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1586449394891" alt="">
   </a>
   <h1 class="site-title">
     SSM
@@ -86,7 +86,7 @@ JDK：JVM + 基础类库..." />
                 2020-03-25
               </span>
               <span>
-                28 min read
+                30 min read
               </span>
               
                 <a href="https://epitomm.github.io/tag/XnUi079pi/" class="post-tag">
@@ -319,10 +319,15 @@ obj = null;
 </ul>
 <h2 id="serial串行单线程收集器">Serial（串行单线程）收集器</h2>
 <ul>
+<li>工作在<strong>新生代</strong>。<strong>复制</strong>算法</li>
 <li><strong>串行</strong>方式执行</li>
 <li><strong>单线程</strong>收集器，只使用一个线程进行垃圾手机工作</li>
-<li><strong>简单高效</strong>，单个 CPU 没有进程切换的开销。</li>
+<li><strong>简单高效</strong>，单个 CPU 没有进程切换的开销。<br>
+<img src="https://epitomm.github.io/post-images/%E4%B8%B2%E8%A1%8C%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E5%99%A8.png" alt="图片" loading="lazy"></li>
 </ul>
+<blockquote>
+<p>四个 CPU 在运行，某时刻堆内存不足，触发垃圾回收。触发垃圾回收时，需要让这些线程到达一个安全点再停下，因为在垃圾回收的过程中，可能对象的地址发生改变，为了保证安全地使用这些对象地址，需要所有正在工作的用户线程到达这个安全点在停下。因为 Serial、SerialOld 都是单线程的垃圾回收器，因此在一个垃圾回收线程运行时，其他的用户线程都要阻塞，等到垃圾回收线程结束后，其他的用户线程再恢复运行。</p>
+</blockquote>
 <p>它是 Client 场景下的默认新生代收集器，因为在该场景下内存一般来说不会很大。它收集一两百兆垃圾的停顿时间可以控制在一百多毫秒以内，只要不是太频繁，这点停顿时间是可以接受的。</p>
 <h2 id="parnew串行多线程-收集器">ParNew（串行多线程） 收集器</h2>
 <ul>
@@ -331,11 +336,13 @@ obj = null;
 </ul>
 <p>它是 Server 场景下默认的新生代收集器，除了性能原因外，主要是因为除了 Serial 收集器，只有它能与 CMS 收集器配合使用。</p>
 <h2 id="parallel-scavenge串行多线程吞吐量-收集器">Parallel Scavenge（串行多线程吞吐量） 收集器</h2>
+<p>JDK 1.8 默认使用 Parallel Scavenge + Parallel Old 垃圾回收器。</p>
 <ul>
 <li><strong>多线程</strong>垃圾收集器</li>
-<li><strong>吞吐量优先</strong>。吞吐量：CPU 用于运行用户程序的时间与总时间的比值。</li>
+<li><strong>吞吐量优先</strong>。吞吐量：CPU 用于运行用户程序的时间与总时间的比值。<br>
+<img src="https://epitomm.github.io/post-images/%E5%90%9E%E5%90%90%E9%87%8F%E4%BC%98%E5%85%88%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E5%99%A8.png" alt="图片" loading="lazy"><br>
+停顿时间越短就越适合需要与用户交互的程序，良好的响应速度能提升用户体验。而高吞吐量则可以高效率地利用 CPU 时间，尽快完成程序的运算任务，适合在后台运算而不需要太多交互的任务。</li>
 </ul>
-<p>停顿时间越短就越适合需要与用户交互的程序，良好的响应速度能提升用户体验。而高吞吐量则可以高效率地利用 CPU 时间，尽快完成程序的运算任务，适合在后台运算而不需要太多交互的任务。</p>
 <p><strong>缩短停顿时间是以牺牲吞吐量和新生代空间来换取的</strong>：新生代空间变小，垃圾回收变得频繁，导致吞吐量下降。</p>
 <p>可以通过一个开关参数打开 GC 自适应的调节策略（GC Ergonomics），就不需要手工指定新生代的大小（-Xmn）、Eden 和 Survivor 区的比例、晋升老年代对象年龄等细节参数了。虚拟机会根据当前系统的运行情况收集性能监控信息，动态调整这些参数以提供最合适的停顿时间或者最大的吞吐量。</p>
 <h2 id="serial-old串行单线程老年代-收集器">Serial Old（串行单线程老年代） 收集器</h2>
@@ -348,20 +355,21 @@ obj = null;
 <p>是 Parallel Scavenge 收集器的老年代版本。</p>
 <p>在注重吞吐量以及 CPU 资源敏感的场合，都可以优先考虑 Parallel Scavenge 加 Parallel Old 收集器。</p>
 <h2 id="cms-收集器">CMS 收集器</h2>
-<p>CMS（Concurrent Mark Sweep），Mark Sweep 指的是标记 - 清除算法。</p>
-<p>分为以下四个流程：</p>
+<p>CMS（Concurrent Mark Sweep），Mark Sweep 指的是标记 - 清除算法。<br>
+<img src="https://epitomm.github.io/post-images/%E5%93%8D%E5%BA%94%E6%97%B6%E9%97%B4%E4%BC%98%E5%85%88%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E5%99%A8.png" alt="图片" loading="lazy"><br>
+分为以下四个流程：</p>
 <ul>
-<li>初始标记：仅仅只是标记一下 GC Roots 能直接关联到的对象，速度很快，需要停顿。</li>
-<li>并发标记：进行 GC Roots Tracing 的过程，它在整个回收过程中耗时最长，不需要停顿。</li>
-<li>重新标记：为了修正并发标记期间因用户程序继续运作而导致标记产生变动的那一部分对象的标记记录，需要停顿。</li>
+<li>初始标记：仅仅只是标记一下 <strong>GC Roots 能直接关联到的对象</strong>，速度很快，需要停顿。</li>
+<li>并发标记：进行 <strong>GC Roots Tracing</strong> 的过程，它在整个回收过程中耗时最长，不需要停顿。</li>
+<li>重新标记：为了修正并发标记期间因用户程序继续运作而导致标记产生<strong>变动</strong>的那一部分对象的标记记录，需要停顿。</li>
 <li>并发清除：不需要停顿。</li>
 </ul>
 <p>在整个过程中耗时最长的并发标记和并发清除过程中，收集器线程都可以与用户线程一起工作，不需要进行停顿。</p>
 <p>具有以下缺点：</p>
 <ul>
-<li>吞吐量低：低停顿时间是以牺牲吞吐量为代价的，导致 CPU 利用率不够高。</li>
-<li>无法处理浮动垃圾，可能出现 Concurrent Mode Failure。浮动垃圾是指并发清除阶段由于用户线程继续运行而产生的垃圾，这部分垃圾只能到下一次 GC 时才能进行回收。由于浮动垃圾的存在，因此需要预留出一部分内存，意味着 CMS 收集不能像其它收集器那样等待老年代快满的时候再回收。如果预留的内存不够存放浮动垃圾，就会出现 Concurrent Mode Failure，这时虚拟机将临时启用 Serial Old 来替代 CMS。</li>
-<li>标记 - 清除算法导致的空间碎片，往往出现老年代空间剩余，但无法找到足够大连续空间来分配当前对象，不得不提前触发一次 Full GC。</li>
+<li><strong>吞吐量低</strong>：低停顿时间是以牺牲吞吐量为代价的，导致 CPU 利用率不够高。</li>
+<li>无法处理<strong>浮动垃圾</strong>，可能出现 Concurrent Mode Failure。浮动垃圾是指<strong>并发清除</strong>阶段由于用户线程继续运行而产生的垃圾，这部分垃圾只能到下一次 GC 时才能进行回收。由于浮动垃圾的存在，因此需要预留出一部分内存，意味着 CMS 收集不能像其它收集器那样等待老年代快满的时候再回收。如果预留的内存不够存放浮动垃圾，就会出现 Concurrent Mode Failure，这时虚拟机将临时启用 Serial Old 来替代 CMS。</li>
+<li><strong>标记 - 清除算法导致的空间碎片</strong>，往往出现老年代空间剩余，但无法找到足够大连续空间来分配当前对象，不得不提前触发一次 Full GC。</li>
 </ul>
 <h2 id="g1-收集器">G1 收集器</h2>
 <p>G1（Garbage-First），它是一款面向服务端应用的垃圾收集器，在多 CPU 和大内存的场景下有很好的性能。 HotSpot 开发团队赋予它的使命是未来可以替换掉 CMS 收集器。</p>
@@ -369,20 +377,28 @@ obj = null;
 <figure data-type="image" tabindex="11"><img src="https://epitomm.github.io/post-images/heap.png" alt="图片" loading="lazy"></figure>
 <p>G1 把堆划分成多个大小相等的独立区域（Region），新生代和老年代不再物理隔离。</p>
 <figure data-type="image" tabindex="12"><img src="https://epitomm.github.io/post-images/G1.png" alt="图片" loading="lazy"></figure>
-<p>通过引入 Region 的概念，从而将原来的一整块内存空间划分成多个的小空间，使得每个小空间可以单独进行垃圾回收。这种划分方法带来了很大的灵活性，使得可预测的停顿时间模型成为可能。通过记录每个 Region 垃圾回收时间以及回收所获得的空间（这两个值是通过过去回收的经验获得），并维护一个优先列表，每次根据允许的收集时间，优先回收价值最大的 Region。</p>
-<p>每个 Region 都有一个 Remembered Set，用来记录该 Region 对象的引用对象所在的 Region。通过使用</p>
-<p>Remembered Set，在做可达性分析的时候就可以避免全堆扫描</p>
+<p>通过引入 Region 的概念，从而将原来的一整块内存空间划分成多个的小空间，使得<strong>每个小空间可以单独进行垃圾回收</strong>。这种划分方法带来了很大的灵活性，使得可预测的停顿时间模型成为可能。通过记录每个 Region 垃圾回收时间以及回收所获得的空间（这两个值是通过过去回收的经验获得），并维护一个优先列表，每次根据允许的收集时间，优先回收价值最大的 Region。</p>
+<p>每个 Region 都有一个 Remembered Set，用来记录该 Region 对象的引用对象所在的 Region。通过使用 Remembered Set，在做可达性分析的时候就可以避免全堆扫描</p>
 <figure data-type="image" tabindex="13"><img src="https://epitomm.github.io/post-images/G1_2.png" alt="图片" loading="lazy"></figure>
+<p><img src="https://epitomm.github.io/post-images/Card.png" alt="图片" loading="lazy"><br>
+新生代垃圾回收：找到根对象，沿着引用链找到存活对象，存活对象进行复制到幸存区。要找新生代对象的根对象，<strong>根对象有一部分来自于老年代</strong>，老年代的存活对象非常多，如果遍历老年代找根对象效率低，因此把<strong>老年代区域再进行细分</strong>，分成一个个 Card，每个 Card 是512KB，如果老年代其中有一个 <strong>Card 中的对象引用了新生代的某一个对象</strong>，就把这个 <strong>Card 标记为脏</strong>，这样以后，做 GC Root 遍历的时候就不用去找整个老年代了，只需要关注那些脏 Card 即可，减少搜索范围，提高扫描根对象的效率。</p>
+<ul>
+<li>卡表与 Remembered Set</li>
+<li>在引用变更时通过 post-write barrier + dirty card queue</li>
+<li>concurrent refinement threads 更新 Remembered Set</li>
+</ul>
+<p><img src="https://epitomm.github.io/post-images/Card2.png" alt="图片" loading="lazy"><br>
+粉色的 Card 都是<strong>脏卡区</strong>，Card 内有对象指向新生代区域的对象，新生代会记录 Remembered Set：从外部对我的引用，将来对新生代 Eden 进行垃圾回收时，就可以先通过 Remembered Set 知道它对应的哪些脏 Card，然后在到这些脏卡区遍历对象找到 GC Root。通过 post-write barrier：写屏障在每次<strong>对象的引用发生变更时，去更新脏 Card</strong>，这个过程是异步操作，不会立刻完成脏卡的更新，会把更新指令放在 dirty card queue 脏卡队列中，将来由一个线程完成脏卡更新的操作。</p>
 <p>如果不计算维护 Remembered Set 的操作，G1 收集器的运作大致可划分为以下几个步骤：</p>
 <ul>
-<li>初始标记</li>
-<li>并发标记</li>
+<li>初始标记：找到那些根对象，标记根对象。</li>
+<li>并发标记：从根对象出发，顺着引用链找到其他非垃圾对象，标记那些其他非垃圾对象。</li>
 <li>最终标记：为了修正在并发标记期间因用户程序继续运作而导致标记产生变动的那一部分标记记录，虚拟机将这段时间对象变化记录在线程的 Remembered Set Logs 里面，最终标记阶段需要把 Remembered Set Logs 的数据合并到 Remembered Set 中。这阶段需要停顿线程，但是可并行执行。</li>
 <li>筛选回收：首先对各个 Region 中的回收价值和成本进行排序，根据用户所期望的 GC 停顿时间来制定回收计划。此阶段其实也可以做到与用户程序一起并发执行，但是因为只回收一部分 Region，时间是用户可控制的，而且停顿用户线程将大幅度提高收集效率。</li>
 </ul>
 <p>具备如下特点：</p>
 <ul>
-<li>空间整合：整体来看是基于“标记 - 整理”算法实现的收集器，从局部（两个 Region 之间）上来看是基于“复 制”算法实现的，这意味着运行期间不会产生内存空间碎片。</li>
+<li>空间整合：整体来看是基于“<strong>标记 - 整理</strong>”算法实现的收集器，从局部（两个 Region 之间）上来看是基于“<strong>复制</strong>”算法实现的，这意味着运行期间不会产生内存空间碎片。</li>
 <li>可预测的停顿：能让使用者明确指定在一个长度为 M 毫秒的时间片段内，消耗在 GC 上的时间不得超过 N 毫秒</li>
 </ul>
 <h1 id="12-类加载的过程">12. 类加载的过程</h1>
