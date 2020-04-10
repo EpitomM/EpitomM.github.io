@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://epitomm.github.io</id>
     <title>SSM</title>
-    <updated>2020-04-10T02:23:12.955Z</updated>
+    <updated>2020-04-10T06:25:42.363Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://epitomm.github.io"/>
     <link rel="self" href="https://epitomm.github.io/atom.xml"/>
@@ -10,6 +10,127 @@
     <logo>https://epitomm.github.io/images/avatar.png</logo>
     <icon>https://epitomm.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, SSM</rights>
+    <entry>
+        <title type="html"><![CDATA[记一个面试题 —— 实现一个读写锁]]></title>
+        <id>https://epitomm.github.io/post/ji-yi-ge-mian-shi-ti-shi-xian-yi-ge-du-xie-suo/</id>
+        <link href="https://epitomm.github.io/post/ji-yi-ge-mian-shi-ti-shi-xian-yi-ge-du-xie-suo/">
+        </link>
+        <updated>2020-04-10T05:57:59.000Z</updated>
+        <content type="html"><![CDATA[<h1 id="用共享对象实现写优先的读者写者锁">用共享对象实现写优先的读者写者锁</h1>
+<p>首先，我们实现一个读者/写者锁。类似于一个普通的互斥锁，一个读者/写者锁(RWLock)保护共享数据。然而，它会做如下的优化。为了最大化性能，一个 RWLock 允许多个“读者”线程同时访问共享数据。任意数量的线程可以在同一时间安全地读共享数据，只要没有线程在修改数据。然而，任意时刻，至多只能有 1 个写者线程可以持有 RWLock（读者线程只能读共享数据，写者线程既可以写也可以读共享数据）。当一个写者线程持有 RWLock，它可以安全地修改数据，因为锁保证了不会有其他的线程同时持有该锁。读者写者锁常常被用于数据库，它们被用于支持对数据库的更快的搜索查询，同时也支持不太频繁的更新。另一个常见的应用是在操作系统内核中，核心的数据结构常常被许多线程读但更新却不太频繁。为了将我们的互斥锁一般化为一个读者/写者锁，我们实现了一个新类型的共享对象，RWLock，来保护对共享数据的访问。RWLock 采用了我们标准化的同步构建模块：互斥锁和条件变量来实现。<br>
+一个线程想要（原子地）读共享数据，其过程如下：</p>
+<pre><code>rwLock-&gt;startRead();
+read shared data
+rwLock-&gt;doneRead();
+</code></pre>
+<p>类似的，一个线程想要（原子地）写共享数据，其过程如下：</p>
+<pre><code>rwLock-&gt;startWrite();
+Read and write shared data
+rwLock-&gt;doneWrite();
+</code></pre>
+<p>为了设计 RWLock 类，我们首先定义它的接口（如上面代码所示），和它的共享状态。这里，对象的行为可以通过正在读和<strong>正在写的线程的数量和等待读和等代写的线程的数量</strong>来刻画。所以，我们需要 4 个整数来追踪这些值。 代码 5.9 展示了 RWLock 类的成员和接口. 接下来，我们通过提出以下的问题来添加同步变量，“什么时候方法需要等待？”首先，我们添加一个互斥锁：保证当有线程在访问 RWLock 的方法的时候，其他访问 RWLock 的方法的线程必须等待。接下来，我们观察到 startRead 或 startWrite 可能需要等待，因此我们为每种情况添加了一个条件变量：readGo 和 writeGo.</p>
+<pre><code>class RWLock{
+    private:
+        //Synchronization variables
+        Lock lock;
+        CV readGo;
+        CV writeGo;
+
+        // State variables
+        int activeReaders;
+        int activeWriters;
+        int waitingReaders;
+        int waitingWriters;
+    public:
+        RWLock();
+        ~RWLock(){};
+        void startRead();
+        void doneRead();
+        void startWrite();
+        void doneWrite();
+    private:
+        bool readShouldWait();
+        bool writeShouldWait();
+} 
+</code></pre>
+<p>代码 5.9：  我们的读者/写者锁的接口和成员变量<br>
+RWLock: doneRead 和 doneWrite 不需要等待（不包括获取互斥锁）。因此，这些方法不需要额外的条件变量。<br>
+现在我们实现 RWLock。<br>
+首先，我们先给每个方法添加上锁的获取和锁的释放。如下图所示：</p>
+<pre><code>void RWLock :: startRead(){
+    lock.acquire();
+
+    lock.release();
+}
+
+void RWLock::doneRead(){
+    lock.acquire();
+
+    lock.release();
+}
+</code></pre>
+<p>RWLock::startWrite 和 RWLock::doneWrite 也类似。</p>
+<p>由于我们知道 startRead 和 startWrite 必须等待，因此我们可以在每个方法的中间写上while(…){wait();}的循环。然后，我们开始思考其中的细节，例如循环等待的判断条件。代码 5.10 展示了完整的解法。</p>
+<pre><code>// Wait until no active or waiting writers,then proceed
+void RWLock::startRead(){
+    lock.acquire();
+    waitingReaders++;
+    while(readShouldWait()){
+        readGo.Wait(&amp;lock);
+    }
+    waitingReaders--;
+    activeReaders++;
+    lock.release();
+}
+
+// Done reading.If no other active readers,a write may proceed.
+void RWLock::doneRead(){
+    lock.acquire();
+    activeReaders--;
+    if(activeReaders == 0 &amp;&amp; waitingWriters &gt; 0){
+        writeGo.signal();
+    }
+    lock.release();
+}
+
+// Read waits if any active or waiting write(&quot;writers preferred&quot;).
+bool RWLock::readShouldWait(){
+    return (activeWriters &gt; 0 || waitingWriters &gt; 0);
+}
+
+// Wait until no active read or write then proceed;
+void RWLock::startWrite(){
+    lock.acquire();
+    waitingWriterw++;
+    while(writeShouldWait()){
+        writeGo.Wait(&amp;lock);
+    }
+    waitingWriters--;
+    activeWriters++;
+    lock.release();
+}
+
+// Done writing. A waiting write or read may proceed.
+void RWLock::doneWrite(){
+    lock.acquire();
+    activeWriters--;
+    assert(activeWriters == 0);
+    if(waitingWriters &gt; 0){
+        writeGo.signal();
+    }else{
+        readGo.broadcast();
+    }
+    lock.release();
+}
+
+// Write waits for active read or write.
+bool RWLock::writeShouldWait(){
+    return(activeWriters &gt; 0 || activeReaders &gt; 0);
+}
+</code></pre>
+<p>代码 5.10：  一个读者写者锁的实现</p>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[Redis 持久化]]></title>
         <id>https://epitomm.github.io/post/redis-chi-jiu-hua/</id>
@@ -4075,461 +4196,6 @@ mybatis的#{}和<span class='katex-error' title='ParseError: KaTeX parse error: 
 </span>{}：是输出变量的值<br>
 简单说，#{}是经过预编译的，是安全的；${}是未经过预编译的，仅仅是取变量的值，是非安全的，存在SQL注入。</p>
 </blockquote>
-]]></content>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[面试题系列 —— JVM]]></title>
-        <id>https://epitomm.github.io/post/mian-shi-ti-xi-lie-jvm/</id>
-        <link href="https://epitomm.github.io/post/mian-shi-ti-xi-lie-jvm/">
-        </link>
-        <updated>2020-03-25T11:36:10.000Z</updated>
-        <content type="html"><![CDATA[<h1 id="1-比较-jvm-jre-jdk">1. 比较 JVM 、JRE、JDK</h1>
-<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/jre-jvm-jdk.png" alt="图片" loading="lazy"></figure>
-<ul>
-<li>JVM：Java Virtual Machine：Java 虚拟机</li>
-<li>JRE：Java Runtime Environment：Java 运行环境（JVM + 基础类库）</li>
-<li>JDK：JVM + 基础类库 + 编译工具（java、javac、javap）</li>
-</ul>
-<h1 id="2-介绍下-java-内存区域-结构运行时数据区">2. 介绍下 Java 内存区域 / 结构（运行时数据区）</h1>
-<h2 id="线程私有的">线程私有的：</h2>
-<h3 id="程序计数器">程序计数器</h3>
-<ul>
-<li>作用：记录正在执行的虚拟机<strong>字节码指令的地址</strong>（如果正在执行的是本地方法则为空）</li>
-<li>唯一一个<strong>不会 OutOfMemory</strong> 的内存区域</li>
-</ul>
-<h3 id="虚拟机栈线程栈">虚拟机栈（线程栈）</h3>
-<ul>
-<li>组成：<strong>栈帧</strong>（每个方法有一个栈帧）
-<ul>
-<li>局部变量表</li>
-<li>操作数栈</li>
-<li>动态链接</li>
-<li>出口信息</li>
-</ul>
-</li>
-</ul>
-<blockquote>
-<p>ps：几个小问题</p>
-</blockquote>
-<ul>
-<li><strong>垃圾回收是否涉及栈内存？</strong>
-<ul>
-<li>栈内存放的是栈帧，每一次方法调用结束后（或抛出异常后）栈帧都会自动弹出栈，所以不需要垃圾回收来管理栈内存。</li>
-</ul>
-</li>
-<li><strong>栈内存分配越大越好吗</strong>？
-<ul>
-<li>不，物理内存的大小是一定的，每个线程都有一个栈，如果栈内存过大，会让线程数变少。</li>
-</ul>
-</li>
-<li><strong>方法内的局部变量是否线程安全</strong>？
-<ul>
-<li>如果方法内局部变量没有逃逸出方法，线程安全</li>
-<li>如果方法内局部变量逃逸出方法的作用范围，
-<ul>
-<li>基本数据类型存在<strong>栈帧</strong>内，其他线程无法访问，线程安全。</li>
-<li>引用数据类型存在于<strong>堆</strong>内，如果逃逸出方法（方法参数、返回值），其他线程拿到对象的引用，就可以通过引用找到堆内存中的对象进行修改，线程不安全。</li>
-</ul>
-</li>
-</ul>
-</li>
-<li><strong>栈内存溢出：</strong>
-<ul>
-<li>栈帧过多：递归调用中没有设置正确的结束条件。</li>
-<li>栈帧过大</li>
-</ul>
-</li>
-</ul>
-<h3 id="本地方法栈">本地方法栈</h3>
-<ul>
-<li>JVM 在调用本地方法（native 修饰的方法）时，需要为本地方法提供的内存空间。</li>
-</ul>
-<h2 id="线程共有的">线程共有的</h2>
-<h3 id="堆">堆</h3>
-<ul>
-<li>通过 <strong>new</strong> 关键字创建出来的对象存放在堆内存中。</li>
-<li>有<strong>垃圾回收</strong>机制。</li>
-</ul>
-<h3 id="方法区方法区内有常量池">方法区（方法区内有常量池）</h3>
-<p>存储类结构相关的信息：成员变量、成员方法和构造器方法的代码部分、包括一些特殊方法。</p>
-<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/%E6%96%B9%E6%B3%95%E5%8C%BA1.6.png" alt="图片" loading="lazy"></figure>
-<blockquote>
-<p>HotSpot 1.6 虚拟机内存结构：<br>
-方法区是一个概念，用一个<strong>永久代</strong>作为方法区的实现。永久代包括：Class 类信息、类加载器、运行时常量池。StringTable 存在于运行时常量池中。<br>
-方法区与永久代：方法区是一种<strong>概念</strong>，永久代是 HotSpot 虚拟机对虚拟机规范中方法区的一种<strong>实现</strong>。</p>
-</blockquote>
-<figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/%E6%96%B9%E6%B3%95%E5%8C%BA.png" alt="图片" loading="lazy"></figure>
-<blockquote>
-<p>HotSpot 1.8 虚拟机内存结构：<br>
-方法区还是一个概念上的东西，方法区的实现使用<strong>元空间</strong>。元空间内包含了：Class 类信息、类加载器、常量池，不过他已经不再占用堆内存了（不是由 JVM 管理它的内存结构），移出到本地内存（<strong>操作系统内存</strong>）中。本地内存中还会放一些其他进程，有一块是元空间。StringTable 串被移动到了堆中。</p>
-</blockquote>
-<h1 id="3-介绍下-java-内存模型">3. 介绍下 Java 内存模型</h1>
-<ul>
-<li>JMM：Java Memory Mmodel</li>
-<li>Java 内存模型定义了一套在<strong>多线程</strong>读写共享数据时，对数据的可见性、有序性和原子性的保障。</li>
-</ul>
-<figure data-type="image" tabindex="4"><img src="https://epitomm.github.io/post-images/jmm.png" alt="图片" loading="lazy"></figure>
-<h1 id="4-如何判断对象是否死亡">4. 如何判断对象是否死亡？</h1>
-<h2 id="引用计数法">引用计数法</h2>
-<p>为每个对象添加一个<strong>引用计数器</strong>，每当有一个引用指向这个对象，就把引用计数器的值 +1，当引用失效，计数器值 -1，直到引用计数器的值为 0，表示不再有引用指向这个对象，就可判定这个对象已死亡。</p>
-<p>因为无法解决对象间<strong>循环引用</strong>的问题，所以主流的 Java 虚拟机中没有采用这种方法来管理内存。</p>
-<h2 id="可达性分析法">可达性分析法</h2>
-<p>以 GC Root 为起点向下搜索，搜索过的路径称为引用链，当一个对象到 GC Root 没有任何引用链相连时，则证明这个对象是不可用的。</p>
-<h3 id="哪些对象可以作为-gc-root">哪些对象可以作为 GC Root？</h3>
-<ul>
-<li>虚拟机栈中局部变量引用的对象</li>
-<li>本地方法栈中 JNI 中引用的对象</li>
-<li>方法区静态属性引用的对象</li>
-<li>方法区中的常量引用的对象</li>
-</ul>
-<h1 id="5-介绍一下-强引用-软引用-弱引用-虚引用">5. 介绍一下 强引用、软引用、弱引用、虚引用</h1>
-<h2 id="强引用">强引用</h2>
-<p>只要一个对象还有<strong>强引用</strong>指向它，它就不会被回收。</p>
-<p>使用 <code>new</code>一个对象的方式来创建强引用。</p>
-<pre><code>Object obj = new Object();
-</code></pre>
-<h2 id="软引用">软引用</h2>
-<p>仅有软引用指向该对象时，在<strong>垃圾回收后，内存仍不足</strong>就会再次触发垃圾回收，回收<strong>软引用对象</strong>。可配合引用队列回收软引用本身。</p>
-<p>使用<code>SoftReference</code> 类来创建软引用。</p>
-<pre><code>Object obj = new Object();
-SoftReference&lt;Ojbect&gt; sf = new SoftReference&lt;Object&gt;(obj);
-obj = null; // 使对象只被软引用关联
-</code></pre>
-<h2 id="弱引用">弱引用</h2>
-<p>当仅有弱引用指向该对象时，在<strong>垃圾回收</strong>时，无论内存是否充足，都会回收弱引用对象。可配合引用队列回收软引用本身。</p>
-<p>使用 <code>WeakReference</code>类来创建弱引用。</p>
-<pre><code>Object obj = new Object();
-WeakReference&lt;Object&gt; wf = new WeakReference&lt;Object&gt;(obj);
-obj = null;
-</code></pre>
-<h2 id="虚引用">虚引用</h2>
-<p>一个对象是否有虚引用的存在，不会对其生存时间造成影响，也<strong>无法通过虚引用得到一个对象</strong>。</p>
-<p>为一个对象设置虚引用的唯一目的就是能<strong>在这个对象被回收时收到一个系统通知</strong>。</p>
-<p>使用 <strong>PhantomReference</strong> 来创建虚引用。</p>
-<pre><code>Object obj = new Object();
-PhantomReference &lt;Object&gt; wf = new PhantomReference &lt;Object&gt;(obj, null);
-obj = null;
-</code></pre>
-<h1 id="6-垃圾收集有哪些算法各自的特点">6. 垃圾收集有哪些算法？各自的特点？</h1>
-<h2 id="标记清除算法">标记清除算法</h2>
-<figure data-type="image" tabindex="5"><img src="https://epitomm.github.io/post-images/%E6%A0%87%E8%AE%B0%E6%B8%85%E9%99%A4.png" alt="图片" loading="lazy"></figure>
-<p>过程：</p>
-<ul>
-<li><strong>标记</strong>：从 GC Root 开始向下找，如果某个对象没有经过任意一条引用链，则把这个对象标记为垃圾对象</li>
-<li><strong>清除</strong>：清除标记为垃圾的对象，并不是把内存中每个字节都清零，只是把这段内存的起始、结束地址放入一个空闲地址列表，下次分配内存时从空闲地址列表选择一块空闲内存进行分配。</li>
-</ul>
-<p>特点：</p>
-<ul>
-<li>速度快</li>
-<li>易造成内碎片</li>
-</ul>
-<h2 id="标记整理算法">标记整理算法</h2>
-<figure data-type="image" tabindex="6"><img src="https://epitomm.github.io/post-images/%E6%A0%87%E8%AE%B0%E6%95%B4%E7%90%86.png" alt="图片" loading="lazy"></figure>
-<p>过程：</p>
-<ul>
-<li><strong>标记</strong>：由 GC Root 向下找，经过的路径称为引用链，如果某个对象没有经过任何一条引用链，将其标记为垃圾对象。</li>
-<li><strong>整理</strong>：清理垃圾的过程中，将非垃圾对象依次向前移动，使内存更加紧凑。</li>
-</ul>
-<p>特点：</p>
-<ul>
-<li>涉及到大量对象的移动，<strong>速度慢</strong>。对象在整理的过程中，如果有其他引用指向这个对象，需要更改这些引用。</li>
-<li>没有内碎片</li>
-</ul>
-<h2 id="复制算法">复制算法</h2>
-<figure data-type="image" tabindex="7"><img src="https://epitomm.github.io/post-images/%E5%A4%8D%E5%88%B61.png" alt="图片" loading="lazy"></figure>
-<figure data-type="image" tabindex="8"><img src="https://epitomm.github.io/post-images/%E5%A4%8D%E5%88%B62.png" alt="图片" loading="lazy"></figure>
-<figure data-type="image" tabindex="9"><img src="https://epitomm.github.io/post-images/%E5%A4%8D%E5%88%B63.png" alt="图片" loading="lazy"></figure>
-<p>过程：</p>
-<ul>
-<li>标记：将不经过引用链的对象标记垃圾对象。</li>
-<li>复制：将非垃圾对象从 FROM 区域复制到 TO 区域，在复制的过程中完成了整理，FROM 区域存在的都是垃圾对象，全部清除，交换 FROM 区域和 TO 区域。</li>
-</ul>
-<p>特点：</p>
-<ul>
-<li>不会有内碎片</li>
-<li>需要占用双倍空间</li>
-</ul>
-<h2 id="分代收集算法">分代收集算法</h2>
-<p>将堆划分为新生代和老年代</p>
-<ul>
-<li>新生代使用：复制算法</li>
-<li>老年代使用：标记-清除 算法 或 标记-整理 算法</li>
-</ul>
-<h1 id="7-hotspot-为什么要分为新生代和老年代">7. HotSpot 为什么要分为新生代和老年代？</h1>
-<p>HotSpot 根据对象存活周期的不同将内存划分为新生代和老年代，<strong>新生代</strong>在垃圾回收后，只有少部分对象会被保留，所以采用<strong>复制算法</strong>；而<strong>老年代则</strong>有大部分对象被保留，使用<strong>标记-清除</strong> 或 <strong>标记-整理</strong> 算法。</p>
-<h1 id="8-方法区的回收">8. 方法区的回收</h1>
-<p>主要是对常量池的回收和类的回收。</p>
-<p>类的回收需要满足三个条件：</p>
-<ul>
-<li>该类的所有实例已经被回收，此时堆中不存在该类的任何实例。</li>
-<li>该类的类加载器已经被回收。</li>
-<li>该类的类对象没有在任何地方被引用，且通过反射也无法获得该类方法。</li>
-</ul>
-<h1 id="9-hotspot-gc-的触发条件">9. HotSpot GC 的触发条件</h1>
-<h2 id="minor-gc">Minor GC</h2>
-<p>新生代中的 Eden 区域内存不足时触发 Minor GC。</p>
-<blockquote>
-<p>Minor GC 会回收新生代，因为新生代对象存活时间较短，因此 Minor GC 会频繁执行，执行的速度一般也会比较快</p>
-</blockquote>
-<h2 id="full-gc">Full GC</h2>
-<ul>
-<li>调用 System.gc() 建议虚拟机执行 Full GC</li>
-<li>老年代空间不足（大对象或长期存活的对象进入老年代导致老年代空间不足）时触发 Full GC</li>
-<li>空间分配担保失败</li>
-<li>JDK1.7 及以前的永久代空间不足</li>
-<li>Concurrent Mode Failure<br>
-执行 CMS GC 的过程中同时有对象要放入老年代，而此时老年代空间不足（可能是 GC 过程中浮动垃圾过多导致暂时性的空间不足），便会报 Concurrent Mode Failure 错误，并触发 Full GC。</li>
-</ul>
-<blockquote>
-<p>Full GC 回收老年代和新生代，老年代对象其存活时间长，因此 Full GC 很少执行，执行速度会比 Minor GC 慢很多。</p>
-</blockquote>
-<h1 id="10-什么情况下新生代对象会晋升到老年代">10. 什么情况下新生代对象会晋升到老年代？</h1>
-<ul>
-<li>晋升年龄达到阈值的对象，会晋升到老年代。</li>
-<li>大对象直接进入老年代：避免在 Eden 和 Survior 之间来回进行大量复制。</li>
-<li>Minor GC 后，如果对象太大无法进入 Survior 区，则直接进入老年代。</li>
-<li>如果在 Survior 区中相同年龄所有对象大小的总和大于 Survivor 空间的一半，年龄大于或等于该年龄对象就可以直接进入老年代，无须等年龄达到晋升阈值。</li>
-</ul>
-<h1 id="11-常见的垃圾收集器有哪些">11. 常见的垃圾收集器有哪些？</h1>
-<figure data-type="image" tabindex="10"><img src="https://epitomm.github.io/post-images/%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8.png" alt="图片" loading="lazy"></figure>
-<p>以上是 HotSpot 虚拟机中的 7 个垃圾收集器，连线表示垃圾收集器可以配合使用。</p>
-<ul>
-<li>单线程与多线程：单线程指的是垃圾收集器只使用一个线程，而多线程使用多个线程。</li>
-<li>串行与并行：串行指的是垃圾收集器工作的时候必须停止用户线程；并行指的是垃圾收集器和用户线程同时工作。除了 CMS 和 G1之外，其他垃圾收集器都是以串行的方式执行的。</li>
-</ul>
-<h2 id="serial串行单线程收集器">Serial（串行单线程）收集器</h2>
-<ul>
-<li>工作在<strong>新生代</strong>。<strong>复制</strong>算法</li>
-<li><strong>串行</strong>方式执行</li>
-<li><strong>单线程</strong>收集器，只使用一个线程进行垃圾手机工作</li>
-<li><strong>简单高效</strong>，单个 CPU 没有进程切换的开销。<br>
-<img src="https://epitomm.github.io/post-images/%E4%B8%B2%E8%A1%8C%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E5%99%A8.png" alt="图片" loading="lazy"></li>
-</ul>
-<blockquote>
-<p>四个 CPU 在运行，某时刻堆内存不足，触发垃圾回收。触发垃圾回收时，需要让这些线程到达一个安全点再停下，因为在垃圾回收的过程中，可能对象的地址发生改变，为了保证安全地使用这些对象地址，需要所有正在工作的用户线程到达这个安全点在停下。因为 Serial、SerialOld 都是单线程的垃圾回收器，因此在一个垃圾回收线程运行时，其他的用户线程都要阻塞，等到垃圾回收线程结束后，其他的用户线程再恢复运行。</p>
-</blockquote>
-<p>它是 Client 场景下的默认新生代收集器，因为在该场景下内存一般来说不会很大。它收集一两百兆垃圾的停顿时间可以控制在一百多毫秒以内，只要不是太频繁，这点停顿时间是可以接受的。</p>
-<h2 id="parnew串行多线程-收集器">ParNew（串行多线程） 收集器</h2>
-<ul>
-<li><strong>串行</strong></li>
-<li><strong>多线程</strong>垃圾收集器</li>
-</ul>
-<p>它是 Server 场景下默认的新生代收集器，除了性能原因外，主要是因为除了 Serial 收集器，只有它能与 CMS 收集器配合使用。</p>
-<h2 id="parallel-scavenge多线程吞吐量-收集器">Parallel Scavenge（多线程吞吐量） 收集器</h2>
-<p>JDK 1.8 默认使用 Parallel Scavenge + Parallel Old 垃圾回收器。</p>
-<ul>
-<li><strong>多线程</strong>垃圾收集器</li>
-<li><strong>吞吐量优先</strong>。吞吐量：CPU 用于运行用户程序的时间与总时间的比值。<br>
-<img src="https://epitomm.github.io/post-images/%E5%90%9E%E5%90%90%E9%87%8F%E4%BC%98%E5%85%88%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E5%99%A8.png" alt="图片" loading="lazy"><br>
-停顿时间越短就越适合需要与用户交互的程序，良好的响应速度能提升用户体验。而高吞吐量则可以高效率地利用 CPU 时间，尽快完成程序的运算任务，适合在后台运算而不需要太多交互的任务。</li>
-</ul>
-<p><strong>缩短停顿时间是以牺牲吞吐量和新生代空间来换取的</strong>：新生代空间变小，垃圾回收变得频繁，导致吞吐量下降。</p>
-<p>可以通过一个开关参数打开 GC 自适应的调节策略（GC Ergonomics），就不需要手工指定新生代的大小（-Xmn）、Eden 和 Survivor 区的比例、晋升老年代对象年龄等细节参数了。虚拟机会根据当前系统的运行情况收集性能监控信息，动态调整这些参数以提供最合适的停顿时间或者最大的吞吐量。</p>
-<h2 id="serial-old串行单线程老年代-收集器">Serial Old（串行单线程老年代） 收集器</h2>
-<p>是 Serial 收集器的老年代版本，也是给 Client 场景下的虚拟机使用。如果用在 Server 场景下，它有两大用途：</p>
-<ul>
-<li>在 JDK 1.5 以及之前版本（Parallel Old 诞生以前）中与 Parallel Scavenge 收集器搭配使用。</li>
-<li>作为 CMS 收集器的后备预案，在并发收集发生 Concurrent Mode Failure 时使用。</li>
-</ul>
-<h2 id="parallel-old多线程吞吐量老年代-收集器">Parallel Old（多线程吞吐量老年代） 收集器</h2>
-<p>是 Parallel Scavenge 收集器的老年代版本。</p>
-<p>在注重吞吐量以及 CPU 资源敏感的场合，都可以优先考虑 Parallel Scavenge 加 Parallel Old 收集器。</p>
-<h2 id="cms-收集器">CMS 收集器</h2>
-<p>CMS（Concurrent Mark Sweep），Mark Sweep 指的是标记 - 清除算法。<br>
-<img src="https://epitomm.github.io/post-images/%E5%93%8D%E5%BA%94%E6%97%B6%E9%97%B4%E4%BC%98%E5%85%88%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E5%99%A8.png" alt="图片" loading="lazy"><br>
-分为以下四个流程：</p>
-<ul>
-<li>初始标记：仅仅只是标记一下 <strong>GC Roots 能直接关联到的对象</strong>，速度很快，需要停顿。</li>
-<li>并发标记：进行 <strong>GC Roots Tracing</strong> 的过程，它在整个回收过程中耗时最长，不需要停顿。</li>
-<li>重新标记：为了修正并发标记期间因用户程序继续运作而导致标记产生<strong>变动</strong>的那一部分对象的标记记录，需要停顿。</li>
-<li>并发清除：不需要停顿。</li>
-</ul>
-<p>在整个过程中耗时最长的并发标记和并发清除过程中，收集器线程都可以与用户线程一起工作，不需要进行停顿。</p>
-<p>具有以下缺点：</p>
-<ul>
-<li><strong>吞吐量低</strong>：低停顿时间是以牺牲吞吐量为代价的，导致 CPU 利用率不够高。</li>
-<li>无法处理<strong>浮动垃圾</strong>，可能出现 Concurrent Mode Failure。浮动垃圾是指<strong>并发清除</strong>阶段由于用户线程继续运行而产生的垃圾，这部分垃圾只能到下一次 GC 时才能进行回收。由于浮动垃圾的存在，因此需要预留出一部分内存，意味着 CMS 收集不能像其它收集器那样等待老年代快满的时候再回收。如果预留的内存不够存放浮动垃圾，就会出现 Concurrent Mode Failure，这时虚拟机将临时启用 Serial Old 来替代 CMS。</li>
-<li><strong>标记 - 清除算法导致的空间碎片</strong>，往往出现老年代空间剩余，但无法找到足够大连续空间来分配当前对象，不得不提前触发一次 Full GC。</li>
-</ul>
-<h2 id="g1-收集器">G1 收集器</h2>
-<p>G1（Garbage-First），它是一款面向服务端应用的垃圾收集器，在多 CPU 和大内存的场景下有很好的性能。 HotSpot 开发团队赋予它的使命是未来可以替换掉 CMS 收集器。</p>
-<p>堆被分为新生代和老年代，其它收集器进行收集的范围都是整个新生代或者老年代，而 G1 可以直接对新生代和老年代一起回收。</p>
-<figure data-type="image" tabindex="11"><img src="https://epitomm.github.io/post-images/heap.png" alt="图片" loading="lazy"></figure>
-<p>G1 把堆划分成多个大小相等的独立区域（Region），新生代和老年代不再物理隔离。</p>
-<figure data-type="image" tabindex="12"><img src="https://epitomm.github.io/post-images/G1.png" alt="图片" loading="lazy"></figure>
-<p>通过引入 Region 的概念，从而将原来的一整块内存空间划分成多个的小空间，使得<strong>每个小空间可以单独进行垃圾回收</strong>。这种划分方法带来了很大的灵活性，使得可预测的停顿时间模型成为可能。通过记录每个 Region 垃圾回收时间以及回收所获得的空间（这两个值是通过过去回收的经验获得），并维护一个优先列表，每次根据允许的收集时间，优先回收价值最大的 Region。</p>
-<p>每个 Region 都有一个 Remembered Set，用来记录该 Region 对象的引用对象所在的 Region。通过使用 Remembered Set，在做可达性分析的时候就可以避免全堆扫描</p>
-<figure data-type="image" tabindex="13"><img src="https://epitomm.github.io/post-images/G1_2.png" alt="图片" loading="lazy"></figure>
-<p><img src="https://epitomm.github.io/post-images/Card.png" alt="图片" loading="lazy"><br>
-新生代垃圾回收：找到根对象，沿着引用链找到存活对象，存活对象进行复制到幸存区。要找新生代对象的根对象，<strong>根对象有一部分来自于老年代</strong>，老年代的存活对象非常多，如果遍历老年代找根对象效率低，因此把<strong>老年代区域再进行细分</strong>，分成一个个 Card，每个 Card 是512KB，如果老年代其中有一个 <strong>Card 中的对象引用了新生代的某一个对象</strong>，就把这个 <strong>Card 标记为脏</strong>，这样以后，做 GC Root 遍历的时候就不用去找整个老年代了，只需要关注那些脏 Card 即可，减少搜索范围，提高扫描根对象的效率。</p>
-<ul>
-<li>卡表与 Remembered Set</li>
-<li>在引用变更时通过 post-write barrier + dirty card queue</li>
-<li>concurrent refinement threads 更新 Remembered Set</li>
-</ul>
-<p><img src="https://epitomm.github.io/post-images/Card2.png" alt="图片" loading="lazy"><br>
-粉色的 Card 都是<strong>脏卡区</strong>，Card 内有对象指向新生代区域的对象，新生代会记录 Remembered Set：从外部对我的引用，将来对新生代 Eden 进行垃圾回收时，就可以先通过 Remembered Set 知道它对应的哪些脏 Card，然后在到这些脏卡区遍历对象找到 GC Root。通过 post-write barrier：写屏障在每次<strong>对象的引用发生变更时，去更新脏 Card</strong>，这个过程是异步操作，不会立刻完成脏卡的更新，会把更新指令放在 dirty card queue 脏卡队列中，将来由一个线程完成脏卡更新的操作。</p>
-<p>如果不计算维护 Remembered Set 的操作，G1 收集器的运作大致可划分为以下几个步骤：</p>
-<ul>
-<li>初始标记：找到那些根对象，标记根对象。</li>
-<li>并发标记：从根对象出发，顺着引用链找到其他非垃圾对象，标记那些其他非垃圾对象。</li>
-<li>最终标记：为了修正在并发标记期间因用户程序继续运作而导致标记产生变动的那一部分标记记录，虚拟机将这段时间对象变化记录在线程的 Remembered Set Logs 里面，最终标记阶段需要把 Remembered Set Logs 的数据合并到 Remembered Set 中。这阶段需要停顿线程，但是可并行执行。</li>
-<li>筛选回收：首先对各个 Region 中的回收价值和成本进行排序，根据用户所期望的 GC 停顿时间来制定回收计划。此阶段其实也可以做到与用户程序一起并发执行，但是因为只回收一部分 Region，时间是用户可控制的，而且停顿用户线程将大幅度提高收集效率。</li>
-</ul>
-<p>具备如下特点：</p>
-<ul>
-<li>空间整合：整体来看是基于“<strong>标记 - 整理</strong>”算法实现的收集器，从局部（两个 Region 之间）上来看是基于“<strong>复制</strong>”算法实现的，这意味着运行期间不会产生内存空间碎片。</li>
-<li>可预测的停顿：能让使用者明确指定在一个长度为 M 毫秒的时间片段内，消耗在 GC 上的时间不得超过 N 毫秒</li>
-</ul>
-<h1 id="12-类加载的过程">12. 类加载的过程</h1>
-<p>包含了加载、验证、准备、解析和初始化这 5 个阶段。</p>
-<p><strong>1. 加载</strong></p>
-<p>加载是类加载的一个阶段，注意不要混淆。</p>
-<p>加载过程完成以下三件事：</p>
-<ul>
-<li>通过类的完全限定名称获取定义该类的二进制字节流。</li>
-<li>将该字节流表示的静态存储结构转换为方法区的运行时存储结构。</li>
-<li>在内存中生成一个代表该类的 Class 对象，作为方法区中该类各种数据的访问入口。</li>
-</ul>
-<p>其中二进制字节流可以从以下方式中获取：</p>
-<ul>
-<li>从 ZIP 包读取，成为 JAR、EAR、WAR 格式的基础。</li>
-<li>从网络中获取，最典型的应用是 Applet。</li>
-<li>运行时计算生成，例如动态代理技术，在 java.lang.reflflect.Proxy 使用 ProxyGenerator.generateProxyClass 的代理类的二进制字节流。</li>
-<li>由其他文件生成，例如由 JSP 文件生成对应的 Class 类。</li>
-</ul>
-<p><strong>2. 验证</strong></p>
-<p>确保 Class 文件的字节流中包含的信息符合当前虚拟机的要求，并且不会危害虚拟机自身的安全。</p>
-<p><strong>3. 准备</strong></p>
-<p>类变量是被 static 修饰的变量，准备阶段为类变量分配内存并设置初始值，使用的是方法区的内存。</p>
-<p>实例变量不会在这阶段分配内存，它会在对象实例化时随着对象一起被分配在堆中。应该注意到，实例化不是类加载的一个过程，类加载发生在所有实例化操作之前，并且类加载只进行一次，实例化可以进行多次。</p>
-<p>初始值一般为 0 值，例如下面的类变量 value 被初始化为 0 而不是 123。</p>
-<pre><code>public static int value = 123; 
-</code></pre>
-<p>如果类变量是常量，那么它将初始化为表达式所定义的值而不是 0。例如下面的常量 value 被初始化为 123 而不是 0。</p>
-<pre><code>public static final int value = 123; 
-</code></pre>
-<p><strong>4. 解析</strong><br>
-将常量池的符号引用替换为直接引用的过程。</p>
-<p>其中解析过程在某些情况下可以在初始化阶段之后再开始，这是为了支持 Java 的动态绑定。</p>
-<p><strong>5. 初始化</strong></p>
-<p>初始化阶段才真正开始执行类中定义的 Java 程序代码。初始化阶段是虚拟机执行类构造器 <clinit>() 方法的过程。在准备阶段，类变量已经赋过一次系统要求的初始值，而在初始化阶段，根据程序员通过程序制定的主观计划去初始化类变量和其它资源。</p>
-<p><clinit>() 是由编译器自动收集类中所有类变量的赋值动作和静态语句块中的语句合并产生的，编译器收集的顺序由语句在源文件中出现的顺序决定。特别注意的是，静态语句块只能访问到定义在它之前的类变量，定义在它之后的类变量只能赋值，不能访问。例如以下代码：</p>
-<pre><code>public class Test { 
-    static { 
-        i = 0; // 给变量赋值可以正常编译通过 
-        System.out.print(i); // 这句编译器会提示“非法向前引用” 
-    }
-    static int i = 1; 
-} 
-</code></pre>
-<p>由于父类的 <clinit>() 方法先执行，也就意味着父类中定义的静态语句块的执行要优先于子类。例如以下代码：</p>
-<pre><code>static class Parent { 
-    public static int A = 1; 
-    static { 
-        A = 2; 
-    } 
-}
-static class Sub extends Parent { 
-    public static int B = A; 
-}
-public static void main(String[] args) { 
-    System.out.println(Sub.B); // 2 
-} 
-</code></pre>
-<p>接口中不可以使用静态语句块，但仍然有类变量初始化的赋值操作，因此接口与类一样都会生成 <clinit>() 方法。但接口与类不同的是，执行接口的 <clinit>() 方法不需要先执行父接口的 <clinit>() 方法。只有当父接口中定义的变量使<br>
-用时，父接口才会初始化。另外，接口的实现类在初始化时也一样不会执行接口的 <clinit>() 方法。</p>
-<p>虚拟机会保证一个类的 <clinit>() 方法在多线程环境下被正确的加锁和同步，如果多个线程同时初始化一个类，只会有一个线程执行这个类的 <clinit>() 方法，其它线程都会阻塞等待，直到活动线程执行 <clinit>() 方法完毕。如果在一 个类的 <clinit>() 方法中有耗时的操作，就可能造成多个线程阻塞，在实际过程中此种阻塞很隐蔽。</p>
-<h1 id="13-类初始化时机">13. 类初始化时机</h1>
-<p><strong>1. 主动引用</strong></p>
-<p>虚拟机规范中并没有强制约束何时进行加载，但是规范严格规定了有且只有下列五种情况必须对类进行初始化（加载、验证、准备都会随之发生）：</p>
-<ul>
-<li>遇到 new、getstatic、putstatic、invokestatic 这四条字节码指令时，如果类没有进行过初始化，则必须先触发其初始化。最常见的生成这 4 条指令的场景是：使用 new 关键字实例化对象的时候；读取或设置一个类的静态字段（被 fifinal 修饰、已在编译期把结果放入常量池的静态字段除外）的时候；以及调用一个类的静态方法的时候。</li>
-<li>使用 java.lang.reflflect 包的方法对类进行反射调用的时候，如果类没有进行初始化，则需要先触发其初始化。</li>
-<li>当初始化一个类的时候，如果发现其父类还没有进行过初始化，则需要先触发其父类的初始化。</li>
-<li>当虚拟机启动时，用户需要指定一个要执行的主类（包含 main() 方法的那个类），虚拟机会先初始化这个主类；</li>
-<li>当使用 JDK 1.7 的动态语言支持时，如果一个 java.lang.invoke.MethodHandle 实例最后的解析结果为 REF_getStatic, REF_putStatic, REF_invokeStatic 的方法句柄，并且这个方法句柄所对应的类没有进行过初始化，则需要先触发其初始化；</li>
-</ul>
-<p><strong>2. 被动引用</strong></p>
-<p>以上 5 种场景中的行为称为对一个类进行主动引用。除此之外，所有引用类的方式都不会触发初始化，称为被动引 用。被动引用的常见例子包括：</p>
-<ul>
-<li>通过子类引用父类的静态字段，不会导致子类初始化。</li>
-</ul>
-<pre><code>System.out.println(SubClass.value); // value 字段在 SuperClass 中定义 
-</code></pre>
-<p>通过数组定义来引用类，不会触发此类的初始化。该过程会对数组类进行初始化，数组类是一个由虚拟机自动生成的、直接继承自 Object 的子类，其中包含了数组的属性和方法。</p>
-<pre><code>SuperClass[] sca = new SuperClass[10]; 
-</code></pre>
-<p>常量在编译阶段会存入调用类的常量池中，本质上并没有直接引用到定义常量的类，因此不会触发定义常量的类的初始化。</p>
-<pre><code>System.out.println(ConstClass.HELLOWORLD);
-</code></pre>
-<h1 id="14-java-虚拟机中有哪些类加载器">14. Java 虚拟机中有哪些类加载器？</h1>
-<table>
-<thead>
-<tr>
-<th style="text-align:left"><strong>名称</strong></th>
-<th style="text-align:left"><strong>加载哪的类</strong></th>
-<th style="text-align:center"><strong>说明</strong></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left">Bootstrap ClassLoader（启动类加载器）</td>
-<td style="text-align:left">JAVA_HOME/jre/lib</td>
-<td style="text-align:center">无法直接访问</td>
-</tr>
-<tr>
-<td style="text-align:left">Extension ClassLoader（扩展类加载器）</td>
-<td style="text-align:left">JAVA_HOME/jre/lib/ext</td>
-<td style="text-align:center">上级为 Bootstrap，显示为 null</td>
-</tr>
-<tr>
-<td style="text-align:left">Application ClassLoader（应用程序类加载器）</td>
-<td style="text-align:left">classpath</td>
-<td style="text-align:center">上级为 Extension</td>
-</tr>
-<tr>
-<td style="text-align:left">自定义类加载器</td>
-<td style="text-align:left">自定义</td>
-<td style="text-align:center">上级为 Application</td>
-</tr>
-</tbody>
-</table>
-<h1 id="15-什么是双亲委派模型">15. 什么是双亲委派模型？</h1>
-<p>如果一个类加载器收到了类加载请求，它首先不会自己去尝试加载这个类，而是把类加载的请求委派给父类加载器去完成，每一层次的类加载器都是如此，因此所有的加载请求最终都会传送到顶层的启动类加载器中，只有当父类无法处理这个加载请求（它的搜索范围中没有找到所需的类）时，子加载器才会尝试自己去加载。</p>
-<h1 id="16-使用双亲委派模型有什么好处">16. 使用双亲委派模型有什么好处？</h1>
-<p>双亲委派模型保证了 Java 程序的稳定运行，可以<strong>避免类的重复加载</strong>（JVM 区分类的方式不仅仅根据类名，相同的类文件被不同的类加载器加载产生的是两个不同的类），也<strong>保证了 Java 的核心 API 不被篡改</strong>。如果没有使用双亲委派模型，而是每个类加载器加载自己的话就会出现一些问题，比如我们编写一个 java.lang.Object 类的话，那么程序运行的时候，系统就会出现多个不同的 Object 类。</p>
-<h1 id="17-内存分配策略">17. 内存分配策略</h1>
-<h2 id="对象优先在-eden-分配">对象优先在 Eden 分配</h2>
-<p>大多数情况下，对象在新生代 Eden 上分配，当 Eden 空间不足时，触发 Minor GC。</p>
-<h2 id="大对象直接进入老年代">大对象直接进入老年代</h2>
-<p>大对象是指需要连续内存空间的对象，最典型的大对象是那种很长的字符串以及数组。<br>
-经常出现大对象会提前触发垃圾收集以获取足够的连续空间分配给大对象。<br>
--XX:PretenureSizeThreshold，大于此值的对象直接在老年代分配，避免在 Eden 和 Survivor 之间的大量内存复制。</p>
-<h2 id="长期存活的对象进入老年代">长期存活的对象进入老年代</h2>
-<p>为对象定义年龄计数器，对象在 Eden 出生并经过 Minor GC 依然存活，将移动到 Survivor 中，年龄就增加 1 岁，增加到一定年龄则移动到老年代中。<br>
--XX:MaxTenuringThreshold 用来定义年龄的阈值。</p>
-<h2 id="动态对象年龄不判定">动态对象年龄不判定</h2>
-<p>虚拟机并不是永远要求对象的年龄必须达到 MaxTenuringThreshold 才能晋升老年代，如果在 Survivor 中相同年龄所有对象大小的总和大于 Survivor 空间的一半，则年龄大于或等于该年龄的对象可以直接进入老年代，无需等到MaxTenuringThreshold 中要求的年龄。</p>
-<h2 id="空间分配担保">空间分配担保</h2>
-<p>在发生 Minor GC 之前，虚拟机先检查老年代最大可用的连续空间是否大于新生代所有对象总空间，如果条件成立的话，那么 Minor GC 可以确认是安全的。<br>
-如果不成立的话虚拟机会查看 HandlePromotionFailure 的值是否允许担保失败，如果允许那么就会继续检查老年代最大可用的连续空间是否大于历次晋升到老年代对象的平均大小，如果大于，将尝试着进行一次 Minor GC；如果小于，或者 HandlePromotionFailure 的值不允许冒险，那么就要进行一次 Full GC。</p>
-<h1 id="18-说一下-java-对象的创建过程">18. 说一下 Java 对象的创建过程</h1>
-<p><img src="https://epitomm.github.io/post-images/java%E5%AF%B9%E8%B1%A1%E7%9A%84%E5%88%9B%E5%BB%BA%E8%BF%87%E7%A8%8B.png" alt="图片" loading="lazy"><br>
-① <strong>类加载检查</strong>：虚拟机遇到一条 new 指令时，首先将去检查这个指令的参数是否能在常量池中定位到这个类的符号引用，并且检查这个符号引用代表的类是否已被加载过、解析和初始化过。如果没有，那必须先执行相应的类加载过程。<br>
-② <strong>分配内存</strong>：在类加载检查通过后，接下来虚拟机将为新生代对象分配内存。对象所需的内存大小在类加载完成后便可确定，为对象分配空间的任务等同于把一块确定大小的内存从 Java 堆中划分出来。分配方式有 “指针碰撞” 和 “空闲列表” 两种，选择哪种方式由 Java 堆是否规整决定，而 Java 堆是否规整又由所采用的垃圾收集器是否带有压缩整理功能决定。</p>
-<blockquote>
-<p>内存分配的两种方式：选择哪种空间分配方式由 Java 堆是否规整决定，而 Java 堆是否规整又由 GC 收集器的算法是 “标记-清除”，还是“标记-整理”/ &quot;复制&quot;。<br>
-<img src="https://epitomm.github.io/post-images/%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E7%9A%84%E4%B8%A4%E7%A7%8D%E6%96%B9%E5%BC%8F.png" alt="图片" loading="lazy"><br>
-内存分配并发问题：在创建对象的时候有一个很重要的问题，就是线程安全，因为在实际开发过程中，创建对象是很频繁的事情，作为虚拟机来说，必须要保证线程是安全的，通常来讲，虚拟机采用两种方式来保证线程安全：</p>
-<ul>
-<li>CAS+失败重试：CAS 是乐观锁的一种实现方式。所谓乐观锁就是，每次不加锁而是假设没有冲突而去完成某项操作，如果因为冲突重试就失败，直到成功为止。虚拟机采用 CAS 配上失败重试的方式来保证更新操作的原子性。</li>
-<li>TLAB：为每个线程预先在 Eden 区分配一块内存，JVM 在给线程中的对象分配内存时，首先在 TLAB 分配，当对象大于 TLAB 中的剩余内存或 TLAB 的内存已用尽时，再采用上述的 CAS 进行内存分配。</li>
-</ul>
-</blockquote>
-<p>③ <strong>初始化零值</strong>：内存分配完成后，虚拟机需要将分配到的内存空间都初始化为零值（不包括对象头），这一步操作保证了对象的实例字段在 Java 代码中可以不赋初始值就直接使用，程序能访问到这些字段的数据类型所对应的零值。<br>
-④ <strong>设置对象头</strong>：初始化零值完成之后，虚拟机要对对象进行必要的设置，例如这个对象是那个类的实例、如何才能找到类的元数据信息、对象的哈希码、对象的 GC 分代年龄等信息。这些信息存放在对象头中。另外，根据虚拟机当前运行状态的不同，如是否启用偏向锁等，对象头会有不同的设置方式。<br>
-⑤ <strong>执行 init 方法</strong>：在上面工作都完成之后，从虚拟机的视角来看，一个新的对象已经产生了，但从Java程序的视角来看，对象创建才刚开始，&lt; init &gt;方法还没有执行，所有的字段都还为零。所以一般来说，执行new指令之后会接着执行&lt; init &gt;方法，把对象按照程序员的意愿进行初始化，这样一个真正可用的对象才算完全产生出来。</p>
 ]]></content>
     </entry>
 </feed>
