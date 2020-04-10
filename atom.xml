@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://epitomm.github.io</id>
     <title>SSM</title>
-    <updated>2020-04-10T06:25:42.363Z</updated>
+    <updated>2020-04-10T14:19:47.678Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://epitomm.github.io"/>
     <link rel="self" href="https://epitomm.github.io/atom.xml"/>
@@ -151,7 +151,7 @@ bool RWLock::writeShouldWait(){
 <li>将当前数据状态进行保存，<strong>快照</strong>形式，存储数据结果，存储格式简单，关注点在<strong>数据</strong></li>
 <li>将数据的操作过程进行保存，<strong>日志</strong>形式，存储操作过程，存储格式复杂，关注点在<strong>数据的操作过程</strong></li>
 </ul>
-<figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/Redis%E6%8C%81%E4%B9%85%E5%8C%96.png" alt="图片" loading="lazy"></figure>
+<figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/redis%E6%8C%81%E4%B9%85%E5%8C%96.png" alt="图片" loading="lazy"></figure>
 <h1 id="rdb">RDB</h1>
 <h2 id="rdb启动方式">RDB启动方式</h2>
 <h2 id="谁什么时间干什么事情">谁，什么时间，干什么事情</h2>
