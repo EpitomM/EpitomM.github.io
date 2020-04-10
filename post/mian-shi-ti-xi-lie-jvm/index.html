@@ -3,7 +3,7 @@
     <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>面试题系列 —— JVM | SSM</title>
-<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1586483012510">
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1586485387506">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
 <link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
 <link rel="alternate" type="application/atom+xml" title="面试题系列 —— JVM | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
@@ -26,7 +26,7 @@ JDK：JVM + 基础类库..." />
       <div class="main-content">
         <div class="site-header">
   <a href="https://epitomm.github.io">
-  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1586483012510" alt="">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1586485387506" alt="">
   </a>
   <h1 class="site-title">
     SSM
@@ -335,7 +335,7 @@ obj = null;
 <li><strong>多线程</strong>垃圾收集器</li>
 </ul>
 <p>它是 Server 场景下默认的新生代收集器，除了性能原因外，主要是因为除了 Serial 收集器，只有它能与 CMS 收集器配合使用。</p>
-<h2 id="parallel-scavenge串行多线程吞吐量-收集器">Parallel Scavenge（串行多线程吞吐量） 收集器</h2>
+<h2 id="parallel-scavenge多线程吞吐量-收集器">Parallel Scavenge（多线程吞吐量） 收集器</h2>
 <p>JDK 1.8 默认使用 Parallel Scavenge + Parallel Old 垃圾回收器。</p>
 <ul>
 <li><strong>多线程</strong>垃圾收集器</li>
@@ -612,7 +612,7 @@ public static void main(String[] args) {
 <ul>
 <li><a href="#serial%E4%B8%B2%E8%A1%8C%E5%8D%95%E7%BA%BF%E7%A8%8B%E6%94%B6%E9%9B%86%E5%99%A8">Serial（串行单线程）收集器</a></li>
 <li><a href="#parnew%E4%B8%B2%E8%A1%8C%E5%A4%9A%E7%BA%BF%E7%A8%8B-%E6%94%B6%E9%9B%86%E5%99%A8">ParNew（串行多线程） 收集器</a></li>
-<li><a href="#parallel-scavenge%E4%B8%B2%E8%A1%8C%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%90%9E%E5%90%90%E9%87%8F-%E6%94%B6%E9%9B%86%E5%99%A8">Parallel Scavenge（串行多线程吞吐量） 收集器</a></li>
+<li><a href="#parallel-scavenge%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%90%9E%E5%90%90%E9%87%8F-%E6%94%B6%E9%9B%86%E5%99%A8">Parallel Scavenge（多线程吞吐量） 收集器</a></li>
 <li><a href="#serial-old%E4%B8%B2%E8%A1%8C%E5%8D%95%E7%BA%BF%E7%A8%8B%E8%80%81%E5%B9%B4%E4%BB%A3-%E6%94%B6%E9%9B%86%E5%99%A8">Serial Old（串行单线程老年代） 收集器</a></li>
 <li><a href="#parallel-old%E5%A4%9A%E7%BA%BF%E7%A8%8B%E5%90%9E%E5%90%90%E9%87%8F%E8%80%81%E5%B9%B4%E4%BB%A3-%E6%94%B6%E9%9B%86%E5%99%A8">Parallel Old（多线程吞吐量老年代） 收集器</a></li>
 <li><a href="#cms-%E6%94%B6%E9%9B%86%E5%99%A8">CMS 收集器</a></li>

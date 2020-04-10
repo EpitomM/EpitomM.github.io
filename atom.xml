@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://epitomm.github.io</id>
     <title>SSM</title>
-    <updated>2020-04-10T01:43:36.795Z</updated>
+    <updated>2020-04-10T02:23:12.955Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://epitomm.github.io"/>
     <link rel="self" href="https://epitomm.github.io/atom.xml"/>
@@ -4315,7 +4315,7 @@ obj = null;
 <li><strong>多线程</strong>垃圾收集器</li>
 </ul>
 <p>它是 Server 场景下默认的新生代收集器，除了性能原因外，主要是因为除了 Serial 收集器，只有它能与 CMS 收集器配合使用。</p>
-<h2 id="parallel-scavenge串行多线程吞吐量-收集器">Parallel Scavenge（串行多线程吞吐量） 收集器</h2>
+<h2 id="parallel-scavenge多线程吞吐量-收集器">Parallel Scavenge（多线程吞吐量） 收集器</h2>
 <p>JDK 1.8 默认使用 Parallel Scavenge + Parallel Old 垃圾回收器。</p>
 <ul>
 <li><strong>多线程</strong>垃圾收集器</li>
