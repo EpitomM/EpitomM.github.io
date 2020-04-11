@@ -3,7 +3,7 @@
     <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>记一个面试题 —— 实现一个读写锁 | SSM</title>
-<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1586531993991">
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1586619209739">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
 <link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
 <link rel="alternate" type="application/atom+xml" title="记一个面试题 —— 实现一个读写锁 | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
@@ -22,7 +22,7 @@
       <div class="main-content">
         <div class="site-header">
   <a href="https://epitomm.github.io">
-  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1586531993991" alt="">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1586619209739" alt="">
   </a>
   <h1 class="site-title">
     SSM
@@ -105,7 +105,8 @@ rwLock-&gt;doneRead();
 Read and write shared data
 rwLock-&gt;doneWrite();
 </code></pre>
-<p>为了设计 RWLock 类，我们首先定义它的接口（如上面代码所示），和它的共享状态。这里，对象的行为可以通过正在读和<strong>正在写的线程的数量和等待读和等代写的线程的数量</strong>来刻画。所以，我们需要 4 个整数来追踪这些值。 代码 5.9 展示了 RWLock 类的成员和接口. 接下来，我们通过提出以下的问题来添加同步变量，“什么时候方法需要等待？”首先，我们添加一个互斥锁：保证当有线程在访问 RWLock 的方法的时候，其他访问 RWLock 的方法的线程必须等待。接下来，我们观察到 startRead 或 startWrite 可能需要等待，因此我们为每种情况添加了一个条件变量：readGo 和 writeGo.</p>
+<p>为了设计 RWLock 类，我们首先定义它的接口（如上面代码所示），和它的共享状态。这里，对象的行为可以通过<strong>正在读和正在写的线程的数量和等待读和等代写的线程的数量</strong>来刻画。所以，我们需要 4 个整数来追踪这些值。 代码 5.9 展示了 RWLock 类的成员和接口. 接下来，我们通过提出以下的问题来添加同步变量，“什么时候方法需要等待？”首先，我们添加一个互斥锁：保证当有线程在访问 RWLock 的方法的时候，其他访问 RWLock 的方法的线程必须等待。接下来，我们观察到 startRead 或 startWrite 可能需要等待，因此我们为每种情况添加了一个条件变量：readGo 和 writeGo.</p>
+<h2 id="读者写者锁的接口和成员变量">读者/写者锁的接口和成员变量</h2>
 <pre><code>class RWLock{
     private:
         //Synchronization variables
@@ -148,6 +149,7 @@ void RWLock::doneRead(){
 </code></pre>
 <p>RWLock::startWrite 和 RWLock::doneWrite 也类似。</p>
 <p>由于我们知道 startRead 和 startWrite 必须等待，因此我们可以在每个方法的中间写上while(…){wait();}的循环。然后，我们开始思考其中的细节，例如循环等待的判断条件。代码 5.10 展示了完整的解法。</p>
+<h2 id="读者写者锁完整代码">读者写者锁完整代码</h2>
 <pre><code>// Wait until no active or waiting writers,then proceed
 void RWLock::startRead(){
     lock.acquire();
@@ -210,7 +212,12 @@ bool RWLock::writeShouldWait(){
               </div>
               <div class="toc-container">
                 <ul class="markdownIt-TOC">
-<li><a href="#%E7%94%A8%E5%85%B1%E4%BA%AB%E5%AF%B9%E8%B1%A1%E5%AE%9E%E7%8E%B0%E5%86%99%E4%BC%98%E5%85%88%E7%9A%84%E8%AF%BB%E8%80%85%E5%86%99%E8%80%85%E9%94%81">用共享对象实现写优先的读者写者锁</a></li>
+<li><a href="#%E7%94%A8%E5%85%B1%E4%BA%AB%E5%AF%B9%E8%B1%A1%E5%AE%9E%E7%8E%B0%E5%86%99%E4%BC%98%E5%85%88%E7%9A%84%E8%AF%BB%E8%80%85%E5%86%99%E8%80%85%E9%94%81">用共享对象实现写优先的读者写者锁</a>
+<ul>
+<li><a href="#%E8%AF%BB%E8%80%85%E5%86%99%E8%80%85%E9%94%81%E7%9A%84%E6%8E%A5%E5%8F%A3%E5%92%8C%E6%88%90%E5%91%98%E5%8F%98%E9%87%8F">读者/写者锁的接口和成员变量</a></li>
+<li><a href="#%E8%AF%BB%E8%80%85%E5%86%99%E8%80%85%E9%94%81%E5%AE%8C%E6%95%B4%E4%BB%A3%E7%A0%81">读者写者锁完整代码</a></li>
+</ul>
+</li>
 </ul>
 
               </div>
