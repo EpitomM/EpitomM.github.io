@@ -1,0 +1,586 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Redis 哨兵 | SSM</title>
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1586754037710">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="Redis 哨兵 | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="哨兵简介
+主机“宕机”
+
+
+master 宕机，需要选取一个 slave 作为 master
+
+
+将宕机的 master 下线
+找一个slave作为master
+通知所有的 slave 连接新的 master
+启动新的master与slav..." />
+    <meta name="keywords" content="Redis" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://epitomm.github.io">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1586754037710" alt="">
+  </a>
+  <h1 class="site-title">
+    SSM
+  </h1>
+  <p class="site-description">
+    热心善良的老学姐
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              Redis 哨兵
+            </h2>
+            <div class="post-info">
+              <span>
+                2020-04-13
+              </span>
+              <span>
+                10 min read
+              </span>
+              
+                <a href="https://epitomm.github.io/tag/XcYOVpIlH/" class="post-tag">
+                  # Redis
+                </a>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <h1 id="哨兵简介">哨兵简介</h1>
+<h2 id="主机宕机">主机“宕机”</h2>
+<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/%E4%B8%BB%E6%9C%BA%E5%AE%95%E6%9C%BA.png" alt="图片" loading="lazy"></figure>
+<blockquote>
+<p>master 宕机，需要选取一个 slave 作为 master</p>
+</blockquote>
+<ul>
+<li>将宕机的 master 下线</li>
+<li>找一个slave作为master</li>
+<li>通知所有的 slave 连接新的 master</li>
+<li>启动新的master与slave</li>
+<li>全量复制<em>N+部分复制</em>N</li>
+</ul>
+<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/%E5%93%A8%E5%85%B5.png" alt="图片" loading="lazy"></figure>
+<ul>
+<li>谁来确认 master 宕机了</li>
+<li>找一个主？怎么找法？</li>
+<li>修改配置后，原始的主恢复了怎么办？</li>
+</ul>
+<h2 id="哨兵">哨兵</h2>
+<p>哨兵(sentinel) 是一个<strong>分布式系统</strong>，用于对主从结构中的每台服务器进行<strong>监控</strong>，当出现故障时通过<strong>投票</strong>机制选择新的 master并将所有slave连接到新的master。</p>
+<figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F%E4%B8%AD%E7%9A%84%E5%93%A8%E5%85%B5.png" alt="图片" loading="lazy"></figure>
+<h2 id="哨兵的作用">哨兵的作用</h2>
+<ul>
+<li>监控
+<ul>
+<li>不断的检查master和slave是否正常运行。</li>
+<li>master存活检测、master与slave运行情况检测</li>
+</ul>
+</li>
+<li>通知（提醒）
+<ul>
+<li>当被监控的服务器出现问题时，向其他（哨兵间，客户端）发送通知。</li>
+</ul>
+</li>
+<li>自动故障转移
+<ul>
+<li>断开master与slave连接，选取一个slave作为master，将其他slave连接到新的master，并告知客户端新的服务器地址</li>
+</ul>
+</li>
+</ul>
+<p>注意：</p>
+<p>哨兵也是一台<strong>redis服务器</strong>，只是不提供数据服务</p>
+<p>通常哨兵配置数量为<strong>单数</strong></p>
+<h1 id="启用哨兵模式">启用哨兵模式</h1>
+<h2 id="配置哨兵">配置哨兵</h2>
+<p>清空 data 下数据</p>
+<pre><code>[root@iZ2ze4u2bufi0915gyi843Z data]# rm -rf *
+</code></pre>
+<ul>
+<li>配置一拖二的主从结构</li>
+</ul>
+<h3 id="1-一个-master">1. 一个 master</h3>
+<p>（1）配置文件</p>
+<pre><code>[root@iZ2ze4u2bufi0915gyi843Z conf]# vim redis-6379.conf 
+port 6379
+daemonize no
+#logfile &quot;6379.log&quot;
+dir /root/redis-5.0.7/data
+dbfilename dump-6379.rdb
+rdbcompression yes 
+rdbchecksum yes 
+appendonly yes
+appendfsync everysec
+appendfilename appendonly-6379.aof
+bind 127.0.0.1
+databases 16
+</code></pre>
+<p>（2）启动master:6379 redis 服务</p>
+<pre><code>[root@iZ2ze4u2bufi0915gyi843Z conf]# redis-server redis-6379.conf
+</code></pre>
+<h3 id="2-两个-slave">2. 两个 slave</h3>
+<p>（1）配置文件</p>
+<pre><code>[root@iZ2ze4u2bufi0915gyi843Z conf]# vim redis-6380.conf 
+port 6380
+daemonize no
+#logfile &quot;6379.log&quot;
+dir &quot;/root/redis-5.0.7/data&quot;
+replicaof 127.0.0.1 6379
+[root@iZ2ze4u2bufi0915gyi843Z conf]# vim redis-6381.conf 
+port 6381
+daemonize no
+#logfile &quot;6379.log&quot;
+dir &quot;/root/redis-5.0.7/data&quot;
+</code></pre>
+<p>（2）启动 slave:6380、slave:6381 服务</p>
+<pre><code>[root@iZ2ze4u2bufi0915gyi843Z conf]# redis-server redis-6380.conf
+</code></pre>
+<pre><code>[root@iZ2ze4u2bufi0915gyi843Z conf]# redis-server redis-6381.conf
+</code></pre>
+<ul>
+<li>配置三个哨兵（配置相同，端口不同）
+<ul>
+<li>参看sentinel.conf</li>
+</ul>
+</li>
+</ul>
+<p>（1）查看 sentinel.conf 配置文件</p>
+<pre><code>[root@iZ2ze4u2bufi0915gyi843Z redis-5.0.7]# cat sentinel.conf | grep -v &quot;#&quot; | grep -v &quot;^$&quot; // 过滤到注释和空行
+port 26379
+daemonize no
+pidfile /var/run/redis-sentinel.pid
+logfile &quot;&quot;
+dir /tmp
+sentinel monitor mymaster 127.0.0.1 6379 2
+sentinel down-after-milliseconds mymaster 30000
+sentinel parallel-syncs mymaster 1
+sentinel failover-timeout mymaster 180000
+sentinel deny-scripts-reconfig yes
+</code></pre>
+<p><img src="https://epitomm.github.io/post-images/sentinel.conf.png" alt="图片" loading="lazy"><br>
+sentinel.conf</p>
+<p>（2）将配置文件 复制到 redis-5.0.7/conf 目录下</p>
+<pre><code>[root@iZ2ze4u2bufi0915gyi843Z redis-5.0.7]#cat sentinel.conf | grep -v &quot;#&quot; | grep -v &quot;^$&quot; &gt; ./conf/sentinel-26379.conf
+</code></pre>
+<p>（3）修改 sentinel-26379.conf 配置文件</p>
+<pre><code>[root@iZ2ze4u2bufi0915gyi843Z conf]# vim sentinel-26379.conf 
+port 26379
+daemonize no
+dir /root/redis-5.0.7/data
+sentinel monitor mymaster 127.0.0.1 6379 2
+sentinel down-after-milliseconds mymaster 30000
+sentinel parallel-syncs mymaster 1
+sentinel failover-timeout mymaster 180000
+sentinel deny-scripts-reconfig yes
+</code></pre>
+<p>（4）复制生成 sentinel-26380.conf、 sentinel-26381.conf 两个配置文件</p>
+<pre><code>[root@iZ2ze4u2bufi0915gyi843Z conf]# sed 's/26379/26380/g' sentinel-26379.conf &gt; sentinel-26380.conf
+[root@iZ2ze4u2bufi0915gyi843Z conf]# sed 's/26379/26381/g' sentinel-26379.conf &gt; sentinel-26381.conf
+</code></pre>
+<h2 id="启动哨兵">启动哨兵</h2>
+<pre><code>redis-sentinel sentinel-端口号.conf
+</code></pre>
+<p>启动三个哨兵：</p>
+<pre><code>redis-sentinel sentinel-26379.conf
+
+redis-sentinel sentinel-26380.conf
+</code></pre>
+<pre><code>redis-sentinel sentinel-26381.conf
+</code></pre>
+<p>当 master:6379 下线后，哨兵投票选举出新的 master:6381</p>
+<figure data-type="image" tabindex="4"><img src="https://epitomm.github.io/post-images/master%E4%B8%8B%E7%BA%BF%E5%90%8E%EF%BC%8C%E5%93%A8%E5%85%B5%E6%8A%95%E7%A5%A8%E9%80%89%E4%B8%BE%E6%96%B0%E7%9A%84master.png" alt="图片" loading="lazy"></figure>
+<p>master 下线后，哨兵投票选举新的 master</p>
+<h2 id="配置哨兵-2">配置哨兵</h2>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">配置项</th>
+<th style="text-align:center">范例</th>
+<th style="text-align:left">说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">sentinel auth-pass    &lt;服务器名称&gt; <password></td>
+<td style="text-align:center">sentinel auth-pass mymaster   itcast</td>
+<td style="text-align:left">连接服务器口令</td>
+</tr>
+<tr>
+<td style="text-align:left">sentinel down-after-milliseconds &lt;自定义服务名称&gt;&lt;主机地址&gt;&lt;端口&gt;&lt;主从服务器总量&gt;</td>
+<td style="text-align:center">sentinel monitor mymaster    192.168.194.131 6381 1</td>
+<td style="text-align:left">设置哨兵监听的主服务器信息，最后的参数决定了最终参与选举的服务器 数量（-1）</td>
+</tr>
+<tr>
+<td style="text-align:left">sentinel down-after-milliseconds    &lt;服务名称&gt;&lt;毫秒数（整数）&gt;</td>
+<td style="text-align:center">sentinel down-after  milliseconds mymaster 3000</td>
+<td style="text-align:left">指定哨兵在监控Redis服务时，判定服务器挂掉的时间周期，默认30秒 （30000），也是主从切换的启动条件之一</td>
+</tr>
+<tr>
+<td style="text-align:left">sentinel parallel-syncs    &lt;服务名称&gt;&lt;服务器数（整数）&gt;</td>
+<td style="text-align:center">sentinel parallel-syncs    mymaster 1</td>
+<td style="text-align:left">指定同时进行主从的slave数量，数值越大，要求网络资源越高，要求越小，同步时间越长</td>
+</tr>
+<tr>
+<td style="text-align:left">sentinel failover-timeout    &lt;服务名称&gt;&lt;毫秒数（整数）&gt;</td>
+<td style="text-align:center">sentinel failover-timeout    mymaster 9000</td>
+<td style="text-align:left">指定出现故障后，故障切换的最大超时时间，超过该值，认定切换失败，默认3分钟</td>
+</tr>
+<tr>
+<td style="text-align:left">sentinel notification-script    &lt;服务名称&gt;&lt;脚本路径&gt;</td>
+<td style="text-align:center"></td>
+<td style="text-align:left">服务器无法正常联通时，设定的执行脚本，通常调试使用。</td>
+</tr>
+</tbody>
+</table>
+<h1 id="哨兵工作原理">哨兵工作原理</h1>
+<h2 id="主从切换">主从切换</h2>
+<ul>
+<li>哨兵在进行主从切换过程中经历三个阶段
+<ul>
+<li>监控</li>
+<li>通知</li>
+<li>故障转移</li>
+</ul>
+</li>
+</ul>
+<h2 id="阶段一监控阶段">阶段一：监控阶段</h2>
+<figure data-type="image" tabindex="5"><img src="https://epitomm.github.io/post-images/%E7%9B%91%E6%8E%A7%E9%98%B6%E6%AE%B5.png" alt="图片" loading="lazy"></figure>
+<ul>
+<li>用于同步各个节点的状态信息
+<ul>
+<li>获取各个sentinel的状态（是否在线）</li>
+<li>获取master的状态
+<ul>
+<li>master属性
+<ul>
+<li>runid</li>
+<li>role：master</li>
+</ul>
+</li>
+<li>各个slave的详细信息</li>
+</ul>
+</li>
+<li>获取所有slave的状态（根据master中的slave信息）
+<ul>
+<li>slave属性
+<ul>
+<li>runid</li>
+<li>role：slave</li>
+<li>master_host、master_port</li>
+<li>offset</li>
+<li>......</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<figure data-type="image" tabindex="6"><img src="https://epitomm.github.io/post-images/%E7%9B%91%E6%8E%A7%E9%98%B6%E6%AE%B52.png" alt="图片" loading="lazy"></figure>
+<blockquote>
+<p>① 第一个哨兵进去的时候，只有 master 和 slave 可以连，哨兵先连接 master，发送 info 指令。<br>
+② 为了方便后期 master 和 slave 命令交换，建立了一个 cmd 连接，专门用于发送命令。<br>
+在这个过程中，保存了所有哨兵状态 SentinelState，在哨兵端把所有信息进行记录；在 master 端记录 redis 实例对应信息：SentinelRedisInstance<br>
+③ sentinel 根据从 master 获取的 slaves 信息去与每一个 slave 进行连接，发送 info 命令。<br>
+④ 下一个 sentinel 进入，发送 info 命令连接 master，发现 master 端的 SentinelRedisInstance 中的 sentinels 有信息，知道了在它之前有对应的 sentinel 与master 建立了连接。<br>
+⑤ sentinel 与 master 建立 cmd 连接。<br>
+在 sentinel 端创建 SentinelState（包含两个 sentinel 节点信息）。<br>
+为了保证两个 sentinel 信息同步，在两个 sentinel 之间建立沟通的桥梁进行发布订阅，向这个通道发送信息大家可以互联，为了保证两个 sentinel 还会互相发送 ping 命令看对方是不是还在<br>
+⑥ sentinel 与 slave 连接</p>
+</blockquote>
+<figure data-type="image" tabindex="7"><img src="https://epitomm.github.io/post-images/%E7%9B%91%E6%8E%A7%E9%98%B6%E6%AE%B53.png" alt="图片" loading="lazy"></figure>
+<blockquote>
+<p>当第三个节点进来时，除了连接 master 和 slaves，还需要与现存的 sentinel 进行连接，此时三个 sentinel 组成了一个小的网络，彼此间交换信息，在这个网络中：哪个哨兵拿到信息，快速扩散给大家，由于每个 sentinel 之间都是信任的，一旦有一个 sentinel 发送信息，其他哨兵接收，发现和自己的信息不一致，就更新掉</p>
+</blockquote>
+<p>监控阶段的信息获取：sentinel 会向 master、slave、其他的 sentinel 要状态，sentinel 之间会组建对应的频道，大家在这列发布、订阅、同步信息</p>
+<h2 id="阶段二通知阶段">阶段二：通知阶段</h2>
+<p>信息的长期维护阶段</p>
+<figure data-type="image" tabindex="8"><img src="https://epitomm.github.io/post-images/%E9%80%9A%E7%9F%A5%E9%98%B6%E6%AE%B5.png" alt="图片" loading="lazy"></figure>
+<blockquote>
+<p>三个 sentinel 组成了一个小群体，它们之间进行信息互通，提供数据的 master 和 slave 正常工作，sentinel 会通过 cmd 连接获取它们对应的工作状态，通过发布 hello 信息来获取，无论是哪个 sentinel 拿到结果，都会在 sentinel 内部网络进行信息互通，告诉其他 sentinel</p>
+</blockquote>
+<h2 id="阶段三故障转移阶段">阶段三：故障转移阶段</h2>
+<figure data-type="image" tabindex="9"><img src="https://epitomm.github.io/post-images/%E6%95%85%E9%9A%9C%E8%BD%AC%E7%A7%BB%E9%98%B6%E6%AE%B5.png" alt="图片" loading="lazy"></figure>
+<blockquote>
+<p>① sentinel 向 master 发送 hello 指令，master 没有回复，sentinel 就不停给 master 发送 hello，发送了到了一定阶段后，sentinel 认为 master 掉线了，给 master 标记为 S_DOWN 状态。<br>
+② sentinel1 把这个信息传递到内网中。如果是某个 sentinel 断了导致无法和 master 建立连接，该 sentinel 把 master 状态标记为 S_DOWN，并把信息发送到内网时，发送失败（此 sentinel 断线了）。<br>
+③ 当内网中的其他 sentinel 接收到 master 挂掉的信息后，于是去围观不停地给 master 发送 hello，仍然没有回复，该 master 果然掉线了。<br>
+④ 于是把它们接收到的结果信息也传送到内网中确认 sentinel1 说的对，master 果然挂了。<br>
+⑤ 此时所有 sentinel 都认为 master 挂了，master 端的状态信息更改为：O_DOWN。事实上，只要半数以上的 sentinel 认为 master 挂了，状态就标记为 O_DOWN，不必要等所有 sentinel 都确认。</p>
+</blockquote>
+<p>主观下线：一个 sentinel 认为 master 挂了。</p>
+<p>客观下线：半数以上 sentinel 认为 master 挂了。</p>
+<h3 id="1-投票选举-sentinel-代表">1. 投票选举 sentinel 代表</h3>
+<p>客观下线后，进入下一环节：开始清理队伍。清理队伍前，需选出一个 sentinel 作为代表去清理。</p>
+<figure data-type="image" tabindex="10"><img src="https://epitomm.github.io/post-images/%E6%8A%95%E7%A5%A8%E9%80%89%E4%B8%BE%E5%93%A8%E5%85%B5%E4%BB%A3%E8%A1%A8.png" alt="图片" loading="lazy"></figure>
+<blockquote>
+<p>所有 sentinel 同时发送指令表示我要作为代表去清理队伍。<br>
+发送的指令中携带以下信息：</p>
+<ol>
+<li>挂的 ip</li>
+<li>挂的端口</li>
+<li>竞选次数（我在这方面处理的经验：参与竞选的次数）</li>
+<li>自己的 runid</li>
+</ol>
+</blockquote>
+<figure data-type="image" tabindex="11"><img src="https://epitomm.github.io/post-images/%E5%93%A8%E5%85%B5%E6%8A%95%E7%A5%A82.png" alt="图片" loading="lazy"></figure>
+<blockquote>
+<p>那么到底应该选哪一个呢？<br>
+投票机制<br>
+每一个 sentinel 作为参选者，同时也是投票者，每人有一票，当 sentinel1 和 sentinel4 同时把信息发送到微信群中时，sentinel2 先接收到谁的就把票投给谁。</p>
+</blockquote>
+<figure data-type="image" tabindex="12"><img src="https://epitomm.github.io/post-images/%E5%93%A8%E5%85%B5%E6%8A%95%E7%A5%A83.png" alt="图片" loading="lazy"></figure>
+<blockquote>
+<p>所有信息沟通完毕会得到一个投票结果，加入有一个 sentinel 获得超过半数以上的票，就当选，如果没有得到这样的一个结果，就重新投一轮，每增加一轮，竞选次数+1.</p>
+</blockquote>
+<h3 id="2-sentinel-代表从备选-slave-中选择一个当-master">2. sentinel 代表从备选 slave 中选择一个当 master</h3>
+<ul>
+<li>服务器列表中挑选备选master
+<ul>
+<li>在线的</li>
+<li>响应慢的</li>
+<li>与原master断开时间久的</li>
+<li>优先原则
+<ul>
+<li>优先级</li>
+<li>offset</li>
+<li>runid</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>发送指令（ sentinel ）
+<ul>
+<li>向新的master发送slaveof no one</li>
+<li>向其他slave发送slaveof 新masterIP端口</li>
+</ul>
+</li>
+</ul>
+<figure data-type="image" tabindex="13"><img src="https://epitomm.github.io/post-images/%E6%95%85%E9%9A%9C%E8%BD%AC%E7%A7%BB%E9%98%B6%E6%AE%B5%E6%80%BB%E7%BB%93.png" alt="图片" loading="lazy"></figure>
+<h3 id="主从切换过程总结">主从切换过程总结</h3>
+<ul>
+<li>监控
+<ul>
+<li>同步信息</li>
+</ul>
+</li>
+<li>通知
+<ul>
+<li>保持联通</li>
+</ul>
+</li>
+<li>故障转移
+<ul>
+<li>发现问题</li>
+<li>竞选负责人</li>
+<li>优选新master</li>
+<li>新master上任，其他slave切换master，原master作为slave故障回复后连接</li>
+</ul>
+</li>
+</ul>
+<figure data-type="image" tabindex="14"><img src="https://epitomm.github.io/post-images/%E4%B8%BB%E4%BB%8E%E5%88%87%E6%8D%A2%E8%BF%87%E7%A8%8B%E6%97%A5%E5%BF%97.png" alt="图片" loading="lazy"></figure>
+<p>主从切换过程日志信息</p>
+<h1 id="总结">总结</h1>
+<p><strong>哨兵模式</strong></p>
+<ul>
+<li>什么是哨兵 （监控整体工作过程）</li>
+<li>哨兵模式搭建</li>
+<li>哨兵工作原理
+<ul>
+<li>监控</li>
+<li>通知</li>
+<li>故障转移</li>
+</ul>
+</li>
+</ul>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li><a href="#%E5%93%A8%E5%85%B5%E7%AE%80%E4%BB%8B">哨兵简介</a>
+<ul>
+<li><a href="#%E4%B8%BB%E6%9C%BA%E5%AE%95%E6%9C%BA">主机“宕机”</a></li>
+<li><a href="#%E5%93%A8%E5%85%B5">哨兵</a></li>
+<li><a href="#%E5%93%A8%E5%85%B5%E7%9A%84%E4%BD%9C%E7%94%A8">哨兵的作用</a></li>
+</ul>
+</li>
+<li><a href="#%E5%90%AF%E7%94%A8%E5%93%A8%E5%85%B5%E6%A8%A1%E5%BC%8F">启用哨兵模式</a>
+<ul>
+<li><a href="#%E9%85%8D%E7%BD%AE%E5%93%A8%E5%85%B5">配置哨兵</a>
+<ul>
+<li><a href="#1-%E4%B8%80%E4%B8%AA-master">1. 一个 master</a></li>
+<li><a href="#2-%E4%B8%A4%E4%B8%AA-slave">2. 两个 slave</a></li>
+</ul>
+</li>
+<li><a href="#%E5%90%AF%E5%8A%A8%E5%93%A8%E5%85%B5">启动哨兵</a></li>
+<li><a href="#%E9%85%8D%E7%BD%AE%E5%93%A8%E5%85%B5-2">配置哨兵</a></li>
+</ul>
+</li>
+<li><a href="#%E5%93%A8%E5%85%B5%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86">哨兵工作原理</a>
+<ul>
+<li><a href="#%E4%B8%BB%E4%BB%8E%E5%88%87%E6%8D%A2">主从切换</a></li>
+<li><a href="#%E9%98%B6%E6%AE%B5%E4%B8%80%E7%9B%91%E6%8E%A7%E9%98%B6%E6%AE%B5">阶段一：监控阶段</a></li>
+<li><a href="#%E9%98%B6%E6%AE%B5%E4%BA%8C%E9%80%9A%E7%9F%A5%E9%98%B6%E6%AE%B5">阶段二：通知阶段</a></li>
+<li><a href="#%E9%98%B6%E6%AE%B5%E4%B8%89%E6%95%85%E9%9A%9C%E8%BD%AC%E7%A7%BB%E9%98%B6%E6%AE%B5">阶段三：故障转移阶段</a>
+<ul>
+<li><a href="#1-%E6%8A%95%E7%A5%A8%E9%80%89%E4%B8%BE-sentinel-%E4%BB%A3%E8%A1%A8">1. 投票选举 sentinel 代表</a></li>
+<li><a href="#2-sentinel-%E4%BB%A3%E8%A1%A8%E4%BB%8E%E5%A4%87%E9%80%89-slave-%E4%B8%AD%E9%80%89%E6%8B%A9%E4%B8%80%E4%B8%AA%E5%BD%93-master">2. sentinel 代表从备选 slave 中选择一个当 master</a></li>
+<li><a href="#%E4%B8%BB%E4%BB%8E%E5%88%87%E6%8D%A2%E8%BF%87%E7%A8%8B%E6%80%BB%E7%BB%93">主从切换过程总结</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#%E6%80%BB%E7%BB%93">总结</a></li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://epitomm.github.io/post/dubbo/">
+              <h3 class="post-title">
+                dubbo
+              </h3>
+            </a>
+          </div>
+        
+
+        
+          
+            <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+<script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+
+<div id="gitalk-container"></div>
+
+<script>
+
+  var gitalk = new Gitalk({
+    clientID: '974bd77fbbd52c2a0647',
+    clientSecret: '6344370ca1314dbd553f45e75a2121a160ef1c44',
+    repo: 'EpitomM.github.io',
+    owner: 'EpitomM',
+    admin: ['EpitomM'],
+    id: (location.pathname).substring(0, 49),      // Ensure uniqueness and length less than 50
+    distractionFreeMode: false  // Facebook-like distraction free mode
+  })
+
+  gitalk.render('gitalk-container')
+
+</script>
+
+          
+
+          
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/EpitomM/EpitomM.github.io" target="_blank">EpitomM</a>
+  <a class="rss" href="https://epitomm.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>
