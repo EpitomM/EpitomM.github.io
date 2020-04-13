@@ -3,7 +3,7 @@
     <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Redis 哨兵 | SSM</title>
-<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1586754037710">
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1586754613535">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
 <link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
 <link rel="alternate" type="application/atom+xml" title="Redis 哨兵 | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
@@ -31,7 +31,7 @@ master 宕机，需要选取一个 slave 作为 master
       <div class="main-content">
         <div class="site-header">
   <a href="https://epitomm.github.io">
-  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1586754037710" alt="">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1586754613535" alt="">
   </a>
   <h1 class="site-title">
     SSM
@@ -192,12 +192,9 @@ dir &quot;/root/redis-5.0.7/data&quot;
 </code></pre>
 <pre><code>[root@iZ2ze4u2bufi0915gyi843Z conf]# redis-server redis-6381.conf
 </code></pre>
-<ul>
-<li>配置三个哨兵（配置相同，端口不同）
+<h3 id="配置三个哨兵配置相同端口不同">配置三个哨兵（配置相同，端口不同）</h3>
 <ul>
 <li>参看sentinel.conf</li>
-</ul>
-</li>
 </ul>
 <p>（1）查看 sentinel.conf 配置文件</p>
 <pre><code>[root@iZ2ze4u2bufi0915gyi843Z redis-5.0.7]# cat sentinel.conf | grep -v &quot;#&quot; | grep -v &quot;^$&quot; // 过滤到注释和空行
@@ -239,8 +236,8 @@ sentinel deny-scripts-reconfig yes
 <pre><code>redis-sentinel sentinel-26379.conf
 
 redis-sentinel sentinel-26380.conf
-</code></pre>
-<pre><code>redis-sentinel sentinel-26381.conf
+
+redis-sentinel sentinel-26381.conf
 </code></pre>
 <p>当 master:6379 下线后，哨兵投票选举出新的 master:6381</p>
 <figure data-type="image" tabindex="4"><img src="https://epitomm.github.io/post-images/master%E4%B8%8B%E7%BA%BF%E5%90%8E%EF%BC%8C%E5%93%A8%E5%85%B5%E6%8A%95%E7%A5%A8%E9%80%89%E4%B8%BE%E6%96%B0%E7%9A%84master.png" alt="图片" loading="lazy"></figure>
@@ -465,6 +462,7 @@ redis-sentinel sentinel-26380.conf
 <ul>
 <li><a href="#1-%E4%B8%80%E4%B8%AA-master">1. 一个 master</a></li>
 <li><a href="#2-%E4%B8%A4%E4%B8%AA-slave">2. 两个 slave</a></li>
+<li><a href="#%E9%85%8D%E7%BD%AE%E4%B8%89%E4%B8%AA%E5%93%A8%E5%85%B5%E9%85%8D%E7%BD%AE%E7%9B%B8%E5%90%8C%E7%AB%AF%E5%8F%A3%E4%B8%8D%E5%90%8C">配置三个哨兵（配置相同，端口不同）</a></li>
 </ul>
 </li>
 <li><a href="#%E5%90%AF%E5%8A%A8%E5%93%A8%E5%85%B5">启动哨兵</a></li>
