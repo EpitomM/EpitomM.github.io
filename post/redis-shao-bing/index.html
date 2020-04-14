@@ -3,7 +3,7 @@
     <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Redis 哨兵 | SSM</title>
-<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1586754613535">
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1586828461545">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
 <link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
 <link rel="alternate" type="application/atom+xml" title="Redis 哨兵 | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
@@ -31,7 +31,7 @@ master 宕机，需要选取一个 slave 作为 master
       <div class="main-content">
         <div class="site-header">
   <a href="https://epitomm.github.io">
-  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1586754613535" alt="">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1586828461545" alt="">
   </a>
   <h1 class="site-title">
     SSM
@@ -330,26 +330,26 @@ redis-sentinel sentinel-26381.conf
 </ul>
 <figure data-type="image" tabindex="6"><img src="https://epitomm.github.io/post-images/%E7%9B%91%E6%8E%A7%E9%98%B6%E6%AE%B52.png" alt="图片" loading="lazy"></figure>
 <blockquote>
-<p>① 第一个哨兵进去的时候，只有 master 和 slave 可以连，哨兵先连接 master，发送 info 指令。<br>
-② 为了方便后期 master 和 slave 命令交换，建立了一个 cmd 连接，专门用于发送命令。<br>
+<p>① 第一个哨兵进去的时候，只有 master 和 slave 可以连，哨兵先<strong>连接 master</strong>，发送 info 指令。<br>
+② 为了方便后期 master 和 sentinel 命令交换，<strong>建立了一个 cmd 连接</strong>，专门用于发送命令。<br>
 在这个过程中，保存了所有哨兵状态 SentinelState，在哨兵端把所有信息进行记录；在 master 端记录 redis 实例对应信息：SentinelRedisInstance<br>
-③ sentinel 根据从 master 获取的 slaves 信息去与每一个 slave 进行连接，发送 info 命令。<br>
-④ 下一个 sentinel 进入，发送 info 命令连接 master，发现 master 端的 SentinelRedisInstance 中的 sentinels 有信息，知道了在它之前有对应的 sentinel 与master 建立了连接。<br>
-⑤ sentinel 与 master 建立 cmd 连接。<br>
+③ sentinel 根据从 master 获取的 slaves 信息<strong>去与每一个 slave 进行连接</strong>，发送 info 命令。<br>
+④ 下一个 sentinel 进入，<strong>发送 info 命令连接 master</strong>，发现 master 端的 SentinelRedisInstance 中的 sentinels 有信息，知道了在它之前有对应的 sentinel 与master 建立了连接。<br>
+⑤ sentinel <strong>与 master 建立 cmd 连接</strong>。<br>
 在 sentinel 端创建 SentinelState（包含两个 sentinel 节点信息）。<br>
-为了保证两个 sentinel 信息同步，在两个 sentinel 之间建立沟通的桥梁进行发布订阅，向这个通道发送信息大家可以互联，为了保证两个 sentinel 还会互相发送 ping 命令看对方是不是还在<br>
+为了保证两个 sentinel 信息同步，在两个 sentinel 之间建立沟通的桥梁进行发布订阅，向这个通道发送信息大家可以互联，为了保证连接，两个 sentinel 还会互相发送 ping 命令看对方是不是还在<br>
 ⑥ sentinel 与 slave 连接</p>
 </blockquote>
 <figure data-type="image" tabindex="7"><img src="https://epitomm.github.io/post-images/%E7%9B%91%E6%8E%A7%E9%98%B6%E6%AE%B53.png" alt="图片" loading="lazy"></figure>
 <blockquote>
-<p>当第三个节点进来时，除了连接 master 和 slaves，还需要与现存的 sentinel 进行连接，此时三个 sentinel 组成了一个小的网络，彼此间交换信息，在这个网络中：哪个哨兵拿到信息，快速扩散给大家，由于每个 sentinel 之间都是信任的，一旦有一个 sentinel 发送信息，其他哨兵接收，发现和自己的信息不一致，就更新掉</p>
+<p>当第三个节点进来时，除了连接 master 和 slaves，还需要与现存的 sentinel 进行连接，此时三个 sentinel 组成了一个小的网络，彼此间交换信息，在这个网络中：哪个哨兵拿到信息，快速扩散给大家，由于每个 sentinel 之间都是信任的，一旦有一个 sentinel 发送信息，其他哨兵接收，发现和自己的信息不一致，就更新掉。</p>
 </blockquote>
-<p>监控阶段的信息获取：sentinel 会向 master、slave、其他的 sentinel 要状态，sentinel 之间会组建对应的频道，大家在这列发布、订阅、同步信息</p>
+<p>监控阶段的信息获取：sentinel 会向 master、slave、其他的 sentinel 要状态，sentinel 之间会组建对应的频道，大家在这里发布、订阅、同步信息。</p>
 <h2 id="阶段二通知阶段">阶段二：通知阶段</h2>
 <p>信息的长期维护阶段</p>
 <figure data-type="image" tabindex="8"><img src="https://epitomm.github.io/post-images/%E9%80%9A%E7%9F%A5%E9%98%B6%E6%AE%B5.png" alt="图片" loading="lazy"></figure>
 <blockquote>
-<p>三个 sentinel 组成了一个小群体，它们之间进行信息互通，提供数据的 master 和 slave 正常工作，sentinel 会通过 cmd 连接获取它们对应的工作状态，通过发布 hello 信息来获取，无论是哪个 sentinel 拿到结果，都会在 sentinel 内部网络进行信息互通，告诉其他 sentinel</p>
+<p>三个 sentinel 组成了一个小群体，它们之间进行信息互通，提供数据的 master 和 slave 正常工作，sentinel 会通过 cmd 连接获取它们对应的工作状态，通过发布 hello 信息来获取，无论是哪个 sentinel 拿到结果，都会在 sentinel 内部网络进行信息互通，告诉其他 sentinel。</p>
 </blockquote>
 <h2 id="阶段三故障转移阶段">阶段三：故障转移阶段</h2>
 <figure data-type="image" tabindex="9"><img src="https://epitomm.github.io/post-images/%E6%95%85%E9%9A%9C%E8%BD%AC%E7%A7%BB%E9%98%B6%E6%AE%B5.png" alt="图片" loading="lazy"></figure>
@@ -383,7 +383,7 @@ redis-sentinel sentinel-26381.conf
 </blockquote>
 <figure data-type="image" tabindex="12"><img src="https://epitomm.github.io/post-images/%E5%93%A8%E5%85%B5%E6%8A%95%E7%A5%A83.png" alt="图片" loading="lazy"></figure>
 <blockquote>
-<p>所有信息沟通完毕会得到一个投票结果，加入有一个 sentinel 获得超过半数以上的票，就当选，如果没有得到这样的一个结果，就重新投一轮，每增加一轮，竞选次数+1.</p>
+<p>所有信息沟通完毕会得到一个投票结果，假如有一个 sentinel 获得超过半数以上的票，就当选，如果没有得到这样的一个结果，就重新投一轮，每增加一轮，竞选次数+1.</p>
 </blockquote>
 <h3 id="2-sentinel-代表从备选-slave-中选择一个当-master">2. sentinel 代表从备选 slave 中选择一个当 master</h3>
 <ul>
@@ -426,7 +426,7 @@ redis-sentinel sentinel-26381.conf
 <li>发现问题</li>
 <li>竞选负责人</li>
 <li>优选新master</li>
-<li>新master上任，其他slave切换master，原master作为slave故障回复后连接</li>
+<li>新master上任，其他slave切换master，原master作为slave故障恢复后连接</li>
 </ul>
 </li>
 </ul>
