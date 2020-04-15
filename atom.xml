@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://epitomm.github.io</id>
     <title>SSM</title>
-    <updated>2020-04-15T04:59:48.315Z</updated>
+    <updated>2020-04-15T11:20:10.801Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://epitomm.github.io"/>
     <link rel="self" href="https://epitomm.github.io/atom.xml"/>
@@ -18,26 +18,23 @@
         <updated>2020-04-15T03:54:50.000Z</updated>
         <content type="html"><![CDATA[<h1 id="第一章并发编程中的三个问题">第一章：并发编程中的三个问题</h1>
 <h2 id="可见性">可见性</h2>
-<h3 id="目标">目标</h3>
-<p>学习什么是可见性问题</p>
-<h3 id="可见性概念">可见性概念</h3>
-<p>可见性（Visibility）：是指一个线程对共享变量进行修改，另一个线程立即得到修改后的最新值。</p>
+<p>可见性（Visibility）：是指<strong>一个线程对共享变量进行修改，另一个线程立即得到修改后的最新值</strong>。</p>
 <h3 id="可见性演示">可见性演示</h3>
-<p>案例演示：一个线程根据boolean类型的标记flag， while循环，另一个线程改变这个flag变量的值，另 一个线程并不会停止循环。</p>
+<p>案例演示：一个线程根据 <code>boolean</code> 类型的标记 <code>flag</code>， <code>while</code> 循环，另一个线程改变这个 <code>flag</code> 变量的值，这个线程并不会停止循环。</p>
 <pre><code>package com.itheima.demo01_concurrent_problem;
 
 /**
  *目标:演示可见性问题
  *     1.创建一个共享变量
- *     2.创建一条线程不断读取共享变量
- *     3.创建一条线程修改共享变量
+ *     2.创建一个线程不断读取共享变量
+ *     3.创建一饿线程修改共享变量
  */
 public class Test01Visibility {
     // 1.创建一个共享变量
     private static boolean flag = true;
 
     public static void main(String[] args) throws InterruptedException {
-        // 2.创建一条线程不断读取共享变量
+        // 2.创建一个线程不断读取共享变量
         new Thread(() -&gt; {
             while (flag) {
 
@@ -46,7 +43,7 @@ public class Test01Visibility {
 
         Thread.sleep(2000);
 
-        // 3.创建一条线程修改共享变量
+        // 3.创建一个线程修改共享变量
         new Thread(() -&gt; {
             flag = false;
             System.out.println(&quot;线程修改了变量的值为false&quot;);
@@ -61,10 +58,7 @@ public class Test01Visibility {
 <h3 id="小结">小结</h3>
 <p>并发编程时，会出现可见性问题，当一个线程对共享变量进行了修改，另外的线程并没有立即看到修改后的最新值。</p>
 <h2 id="原子性">原子性</h2>
-<h3 id="目标-2">目标</h3>
-<p>学习什么是原子性问题</p>
-<h3 id="原子性概念">原子性概念</h3>
-<p>原子性（Atomicity）：在一次或多次操作中，要么所有的操作都执行并且不会受其他因素干扰而中断，要么所有的操作都不执行。</p>
+<p>原子性（Atomicity）：<strong>在一次或多次操作中，要么所有的操作都执行并且不会受其他因素干扰而中断，要么所有的操作都不执行</strong>。</p>
 <h3 id="原子性演示">原子性演示</h3>
 <p>案例演示:5个线程各执行1000次 i++;</p>
 <pre><code>package com.itheima.demo01_concurrent_problem;
@@ -109,29 +103,26 @@ public class Test02Atomicity {
 <p>运行结果：</p>
 <pre><code>number = 4955
 </code></pre>
-<p>使用javap反汇编class文件，得到下面的字节码指令：<br>
+<p>使用<code>javap</code>反汇编<code>class</code>文件，得到下面的字节码指令：<br>
 <img src="https://epitomm.github.io/post-images/%E5%8E%9F%E5%AD%90%E6%80%A7%E6%BC%94%E7%A4%BA.png" alt="图片" loading="lazy"></p>
-<p>其中，对于 number++ 而言（number 为静态变量），实际会产生如下的 JVM 字节码指令：</p>
-<pre><code>9: getstatic #12 // Field number:I
-12: iconst_1
-13: iadd
-14: putstatic #12 // Field number:I 
+<p>其中，对于 <code>number++</code> 而言（number 为静态变量），实际会产生如下的 JVM 字节码指令：</p>
+<pre><code>9: getstatic #12    // 从类信息中加载 12 号 static 变量
+12: iconst_1         // 把 int 类型常量 1 压入操作数栈
+13: iadd               // 将操作数栈顶和次栈顶元素弹出并相加
+14: putstatic #12 // 设置 12 号 static 变量
 </code></pre>
-<p>由此可见number++是由多条语句组成，以上多条指令在一个线程的情况下是不会出问题的，但是在多线程情况下就可能会出现问题。比如一个线程在执行13: iadd时，另一个线程又执行9: getstatic。会导致两次number++，实际上只加了1。</p>
+<p>由此可见<code>number++</code>是由多条语句组成，以上多条指令在一个线程的情况下是不会出问题的，但是在多线程情况下就可能会出现问题。比如一个线程在执行<code>13: iadd</code>时，另一个线程又执行<code>9: getstatic</code>。会导致两次<code>number++</code>，实际上只加了1。</p>
 <h3 id="小结-2">小结</h3>
 <p>并发编程时，会出现原子性问题，当一个线程对共享变量操作到一半时，另外的线程也有可能来操作共享变量，干扰了前一个线程的操作。</p>
 <h2 id="有序性">有序性</h2>
-<h3 id="目标-3">目标</h3>
-<p>学习什么是有序性问题</p>
-<h3 id="有序性概念">有序性概念</h3>
-<p>有序性（Ordering）：是指程序中代码的执行顺序，Java在编译时和运行时会对代码进行优化，会导致程序最终的执行顺序不一定就是我们编写代码时的顺序。</p>
+<p>有序性（Ordering）：是指程序中代码的执行顺序，Java在编译时和运行时会对代码进行优化，会导致<strong>程序最终的执行顺序不一定就是我们编写代码时的顺序</strong>。</p>
 <pre><code>public static void main(String[] args) {
     int a = 10;
     int b = 20;
 }
 </code></pre>
 <h3 id="有序性演示">有序性演示</h3>
-<p>jcstress是java并发压测工具。<a href="https://wiki.openjdk.java.net/display/CodeTools/jcstress">https://wiki.openjdk.java.net/display/CodeTools/jcstress</a></p>
+<p><code>jcstress</code>是<code>Java</code>并发压测工具。<a href="https://wiki.openjdk.java.net/display/CodeTools/jcstress">https://wiki.openjdk.java.net/display/CodeTools/jcstress</a></p>
 <p>修改pom文件，添加依赖：</p>
 <pre><code>&lt;dependency&gt; 
   &lt;groupId&gt;org.openjdk.jcstress&lt;/groupId&gt; 
@@ -168,12 +159,12 @@ public class Test03Orderliness {
 }
 </code></pre>
 <ul>
-<li>I_Result 是一个对象，有一个属性 r1 用来保存结果，在多线程情况下可能出现几种结果？
+<li><code>I_Result</code> 是一个对象，有一个属性 <code>r1</code> 用来保存结果，在多线程情况下可能出现几种结果？
 <ul>
-<li>情况1：线程1先执行actor1，这时ready = false，所以进入else分支结果为1。</li>
-<li>情况2：线程2执行到actor2，执行了num = 2;和ready = true，线程1执行，这回进入 if 分支，结果为 4。</li>
-<li>情况3：线程2先执行actor2，只执行num = 2；但没来得及执行 ready = true，线程1执行，还是进入 else分支，结果为1。</li>
-<li><strong>还有一种结果0</strong>。代码重排序将 actor2 中 num = 2 和 ready = true 反序。先执行 actor2 ready = true，然后执行 actor1 中 if 判断，结果为 0 + 0 = 0。</li>
+<li>情况1：线程1先执行<code>actor1</code>，这时<code>ready = false</code>，所以进入else分支结果为1。</li>
+<li>情况2：线程2执行到<code>actor2</code>，执行了<code>num = 2;</code>和<code>ready = true</code>，线程1执行，这回进入 if 分支，结果为 4。</li>
+<li>情况3：线程2先执行<code>actor2</code>，只执行<code>num = 2</code>；但没来得及执行 <code>ready = true</code>，线程1执行，还是进入 else分支，结果为1。</li>
+<li><strong>还有一种结果0</strong>。代码重排序将 <code>actor2</code> 中 <code>num = 2</code> 和 <code>ready = true</code> 反序。先执行 <code>actor2</code> 中的 <code>ready = true</code>，然后执行 <code>actor1</code> 中 if 判断，结果为 0 + 0 = 0。</li>
 </ul>
 </li>
 </ul>
@@ -182,78 +173,72 @@ public class Test03Orderliness {
 java -jar target/jcstress.jar
 </code></pre>
 <h3 id="小结-3">小结</h3>
-<p>程序代码在执行过程中的先后顺序，由于Java在编译期以及运行期的优化，导致了代码的执行顺序未必就是开发者编写代码时的顺序。</p>
+<p>程序代码在执行过程中的先后顺序，由于<code>Java</code>在编译期以及运行期的优化，导致了代码的执行顺序未必就是开发者编写代码时的顺序。</p>
 <h1 id="第二章java内存模型jmm">第二章：Java内存模型(JMM)</h1>
 <p>在介绍Java内存模型之前，先来看一下到底什么是计算机内存模型。</p>
 <h2 id="计算机结构">计算机结构</h2>
-<h3 id="目标-4">目标</h3>
-<p>学习计算机的主要组成</p>
-<p>学习缓存的作用</p>
 <h3 id="计算机结构简介">计算机结构简介</h3>
-<p>冯诺依曼，提出计算机由五大组成部分，输入设备，输出设备，存储器，控制器，运算器。</p>
-<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/%E8%AE%A1%E7%AE%97%E5%8F%8A%E7%BB%93%E6%9E%84.png" alt="图片" loading="lazy"></figure>
-<p>计算机结构</p>
+<p>冯诺依曼，提出计算机由五大组成部分，<strong>输入设备，输出设备，存储器，控制器，运算器</strong>。</p>
+<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BB%93%E6%9E%84.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center">计算机结构</p>
 <h3 id="cpu">CPU</h3>
 <p>中央处理器，是计算机的<strong>控制和运算</strong>的核心，我们的程序最终都会变成指令让CPU去执行，处理程序中的数据。<br>
 <img src="https://epitomm.github.io/post-images/CPU.png" alt="图片" loading="lazy"></p>
-<p>CPU</p>
+<p style = "text-align:center">CPU</p>
 <h3 id="内存">内存</h3>
-<p>我们的程序都是在内存中运行的，内存会保存程序运行时的数据，供CPU处理。</p>
+<p>我们的程序都是在内存中运行的，<strong>内存会保存程序运行时的数据</strong>，供CPU处理。</p>
 <figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/%E5%86%85%E5%AD%98.png" alt="图片" loading="lazy"></figure>
-<p>内存</p>
+<p style = "text-align:center">内存</p>
 <h3 id="缓存">缓存</h3>
-<p>CPU的运算速度和内存的访问速度相差比较大。这就导致CPU每次操作内存都要耗费很多等待时间。内存的读写速度成为了计算机运行的瓶颈。于是就有了在CPU和主内存之间增加缓存的设计。最靠近CPU 的缓存称为L1，然后依次是 L2，L3和主内存，CPU缓存模型如图下图所示。</p>
+<p><strong>CPU的运算速度和内存的访问速度相差比较大</strong>。这就导致CPU每次操作内存都要耗费很多等待时间。内存的读写速度成为了计算机运行的瓶颈。于是就有了在CPU和主内存之间增加缓存的设计。最靠近CPU 的缓存称为L1，然后依次是 L2，L3和主内存，CPU缓存模型如图下图所示。</p>
 <figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/CPU%E7%BC%93%E5%AD%98%E6%A8%A1%E5%9E%8B.png" alt="图片" loading="lazy"></figure>
-<p>CPU 缓存模型</p>
-<p>CPU Cache分成了三个级别: L1， L2， L3。级别越小越接近CPU，速度也更快，同时也代表着容量越 小。</p>
+<p style = "text-align:center">CPU 缓存模型</p>
+<p>CPU Cache分成了三个级别: L1， L2， L3。级别越小越接近CPU，速度也更快，同时也代表着容量越小。</p>
 <ol>
 <li>L1是最接近CPU的，它容量最小，例如32K，速度最快，每个核上都有一个L1 Cache。</li>
 <li>L2 Cache 更大一些，例如256K，速度要慢一些，一般情况下每个核上都有一个独立的L2 Cache。</li>
 <li>L3 Cache是三级缓存中最大的一级，例如12MB，同时也是缓存中最慢的一级，在同一个CPU插槽之间的核共享一个L3 Cache。<br>
 <img src="https://epitomm.github.io/post-images/CPU%E5%8F%82%E6%95%B0.png" alt="图片" loading="lazy"></li>
 </ol>
-<p>（Latency：延迟）</p>
-<p>Cache的出现是为了解决CPU直接访问内存效率低下问题的，程序在运行的过程中，CPU接收到指令后，它会最先向CPU中的一级缓存（L1 Cache）去寻找相关的数据，如果命中缓存，CPU进行计算时就可以直接对CPU Cache中的数据进行读取和写人，当运算结束之后，再将CPUCache中的最新数据刷新到主内存当中，CPU通过直接访问Cache的方式替代直接访问主存的方式极大地提高了CPU 的吞吐能力。但是由于一级缓存（L1 Cache）容量较小，所以不可能每次都命中。这时CPU会继续向下一级的二级缓存（L2 Cache）寻找，同样的道理，当所需要的数据在二级缓存中也没有的话，会继续转向L3 Cache、内存(主存)和硬盘。</p>
+<blockquote>
+<p>Latency：延迟</p>
+</blockquote>
+<p>Cache的出现是为了解决<strong>CPU直接访问内存效率低下</strong>问题的，程序在运行的过程中，CPU接收到指令后，它会最先向CPU中的一级缓存（L1 Cache）去寻找相关的数据，如果命中缓存，CPU进行计算时就可以直接对CPU Cache中的数据进行读取和写入，当运算结束之后，再将CPU Cache中的最新数据刷新到主内存当中，CPU通过直接访问Cache的方式替代直接访问主存的方式极大地提高了CPU 的吞吐能力。但是由于一级缓存（L1 Cache）容量较小，所以不可能每次都命中。这时CPU会继续向下一级的二级缓存（L2 Cache）寻找，同样的道理，当所需要的数据在二级缓存中也没有的话，会继续转向L3 Cache、内存(主存)和硬盘。</p>
 <h3 id="小结-4">小结</h3>
 <p>计算机的主要组成：CPU，内存，输入设备，输出设备。</p>
 <h2 id="java内存模型">Java内存模型</h2>
-<h3 id="目标-5">目标</h3>
-<p>学习Java内存模型的概念和作用</p>
-<h3 id="java内存模型的概念">Java内存模型的概念</h3>
 <p>Java Memory Molde (Java内存模型/JMM)，千万不要和Java内存结构混淆</p>
 <p>关于“Java内存模型”的权威解释，请参考 <a href="https://download.oracle.com/otn-pub/jcp/memory_model-1.0-pfd-spec-oth-JSpec/memory_model-1_0-pfd-spec.pdf?AuthParam=1581232382_a0e88fb559ae2cdd224df3335e1eb9d3">https://download.oracle.com/otn-pub/jcp/memory_model-1.0-pfd-spec-oth-JSpec/memory_model-1_0-pfd-spec.pdf</a>。</p>
-<p>Java内存模型，是Java虚拟机规范中所定义的一种内存模型，Java内存模型是标准化的，屏蔽掉了底层不同计算机的区别。</p>
+<p>Java 内存模型，是 Java 虚拟机规范中所定义的一种内存模型，Java 内存模型是标准化的，屏蔽掉了底层不同计算机的区别。</p>
 <p>Java内存模型是一套规范，描述了Java程序中各种变量(线程共享变量)的访问规则，以及在JVM中将变量存储到内存和从内存中读取变量这样的底层细节，具体如下。</p>
 <ul>
 <li>主内存</li>
 </ul>
-<p>主内存是所有线程都共享的，都能访问的。所有的共享变量都存储于主内存。</p>
+<p>主内存是<strong>所有线程都共享</strong>的，都能访问的。所有的<strong>共享变量</strong>都存储于主内存。</p>
 <ul>
 <li>工作内存</li>
 </ul>
-<p>每一个线程有自己的工作内存，工作内存只存储该线程对共享变量的副本。线程对变量的所有的操作(读，取)都必须在工作内存中完成，而不能直接读写主内存中的变量，不同线程之间也不能直接访问对方工作内存中的变量。</p>
+<p><strong>每一个线程有自己的工作内存</strong>，工作内存只存储该线程对<strong>共享变量的副本</strong>。线程对变量的所有的操作(读，取)都必须在工作内存中完成，而不能直接读写主内存中的变量，不同线程之间也不能直接访问对方工作内存中的变量。</p>
 <figure data-type="image" tabindex="4"><img src="https://epitomm.github.io/post-images/Java%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B.png" alt="图片" loading="lazy"></figure>
-<p>Java 内存模型</p>
-<h3 id="java内存模型的作用">Java内存模型的作用</h3>
+<p style = "text-align:center"> Java 内存模型</p>
+<h3 id="java-内存模型的作用">Java 内存模型的作用</h3>
 <p>Java内存模型是一套在多线程读写共享数据时，对共享数据的可见性、有序性、和原子性的规则和保障。</p>
 <p>synchronized,volatile</p>
-<h3 id="cpu缓存内存与java内存模型的关系">CPU缓存，内存与Java内存模型的关系</h3>
-<p>通过对前面的CPU硬件内存架构、Java内存模型以及Java多线程的实现原理的了解，我们应该已经意识到，多线程的执行最终都会映射到硬件处理器上进行执行。</p>
-<p>但Java内存模型和硬件内存架构并不完全一致。对于硬件内存来说只有寄存器、缓存内存、主内存的概念，并没有工作内存和主内存之分，也就是说Java内存模型对内存的划分对硬件内存并没有任何影响， 因为JMM只是一种抽象的概念，是一组规则，不管是工作内存的数据还是主内存的数据，对于计算机硬件来说都会存储在计算机主内存中，当然也有可能存储到CPU缓存或者寄存器中，因此总体上来说，Java内存模型和计算机硬件内存架构是一个相互交叉的关系，是一种抽象概念划分与真实物理硬件的交叉。</p>
+<h3 id="cpu缓存内存与-java-内存模型的关系">CPU缓存，内存与 Java 内存模型的关系</h3>
+<p>通过对前面的CPU硬件内存架构、Java内存模型以及Java多线程的实现原理的了解，我们应该已经意识到，<strong>多线程的执行最终都会映射到硬件处理器上进行执行</strong>。</p>
+<p>但 Java 内存模型和硬件内存架构并不完全一致。对于硬件内存来说只有寄存器、缓存内存、主内存的概念，并没有工作内存和主内存之分，也就是说 Java 内存模型对内存的划分对硬件内存并没有任何影响， 因为 JMM 只是一种抽象的概念，是一组规则，不管是工作内存的数据还是主内存的数据，对于计算机硬件来说都会存储在计算机主内存中，当然也有可能存储到CPU缓存或者寄存器中，因此总体上来说，Java内存模型和计算机硬件内存架构是一个相互交叉的关系，是一种<strong>抽象概念划分与真实物理硬件的交叉</strong>。</p>
 <p><strong>JMM内存模型与CPU硬件内存架构的关系：</strong></p>
 <figure data-type="image" tabindex="5"><img src="https://epitomm.github.io/post-images/JMM%E4%B8%8ECPU%E7%A1%AC%E4%BB%B6%E5%86%85%E5%AD%98%E6%9E%B6%E6%9E%84%E7%9A%84%E5%85%B3%E7%B3%BB.png" alt="图片" loading="lazy"></figure>
-<p>**小结 **</p>
-<p>Java内存模型是一套规范，描述了Java程序中各种变量(线程共享变量)的访问规则，以及在JVM中将变量存储到内存和从内存中读取变量这样的底层细节，Java内存模型是对共享数据的可见性、有序性、和原子性的规则和保障。</p>
-<h2 id="主内存与工作内存之间的交互">主内存与工作内存之间的交互</h2>
+<p><strong>小结</strong></p>
+<p>Java 内存模型是一套<strong>规范</strong>，描述了 <strong>Java 程序中各种变量(线程共享变量)的访问规则</strong>，以及在 JVM 中将变量存储到内存和从内存中读取变量这样的底层细节，Java 内存模型是对共享数据的可见性、有序性、和原子性的规则和保障。</p>
+<h2 id="主内存与工作内存之间的数据交互过程">主内存与工作内存之间的数据交互过程</h2>
 <figure data-type="image" tabindex="6"><img src="https://epitomm.github.io/post-images/%E4%B8%BB%E5%AD%98%E4%B8%8E%E5%B7%A5%E4%BD%9C%E5%86%85%E5%AD%98%E7%9A%84%E4%BA%A4%E4%BA%92.png" alt="图片" loading="lazy"></figure>
-<h3 id="目标-6">目标</h3>
-<p>了解主内存与工作内存之间的数据交互过程</p>
 <p>Java内存模型中定义了以下8种操作来完成，主内存与工作内存之间具体的交互协议，即一个变量如何从主内存拷贝到工作内存、如何从工作内存同步回主内存之类的实现细节，虚拟机实现时必须保证下面提及的每一种操作都是原子的、不可再分的。</p>
 <p>对应如下的流程图：</p>
 <figure data-type="image" tabindex="7"><img src="https://epitomm.github.io/post-images/%E4%B8%BB%E5%AD%98%E4%B8%8E%E5%B7%A5%E4%BD%9C%E5%86%85%E5%AD%98%E5%85%B7%E4%BD%93%E7%9A%84%E4%BA%A4%E4%BA%92%E5%8D%8F%E8%AE%AE.png" alt="图片" loading="lazy"></figure>
 <ul>
-<li>read：从主内存读取共享变量（boolean x= ture）</li>
-<li>load：将共享变量（boolean x = true）放入工作内存的变量副本中</li>
+<li>read：从主内存读取共享变量（<code>boolean x= true</code>）</li>
+<li>load：将共享变量（<code>boolean x = tru</code>e）放入工作内存的变量副本中</li>
 <li>use：把工作内存中一个变量的<strong>值</strong>（true）传递给执行引擎</li>
 <li>assign：把一个从执行引擎接收到的值赋给工作内存的变量</li>
 <li>store：把工作内存的一个共享变量传送到主内存中</li>
@@ -264,10 +249,10 @@ java -jar target/jcstress.jar
 <p>注意:</p>
 <ol>
 <li>
-<p>如果对一个变量执行lock操作，将会清空工作内存中此变量的值</p>
+<p>如果对一个变量执行lock操作，将会<strong>清空工作内存中此变量的值</strong></p>
 </li>
 <li>
-<p>对一个变量执行unlock操作之前，必须先把此变量同步到主内存中</p>
+<p>对一个变量执行unlock操作之前，必须先<strong>把此变量同步到主内存中</strong></p>
 </li>
 </ol>
 <h3 id="小结-5">小结</h3>
@@ -277,12 +262,10 @@ java -jar target/jcstress.jar
 <h1 id="第三章synchronized保证三大特性">第三章：synchronized保证三大特性</h1>
 <p>synchronized能够保证在同一时刻最多只有一个线程执行该段代码，以达到保证并发安全的效果。</p>
 <pre><code>synchronized (锁对象) { 
-// 受保护资源; 
+    // 受保护资源; 
 }
 </code></pre>
 <h2 id="synchronized与原子性">synchronized与原子性</h2>
-<h3 id="目标-7">目标</h3>
-<p>学习使用synchronized保证原子性的原理</p>
 <h3 id="使用synchronized保证原子性">使用synchronized保证原子性</h3>
 <p>案例演示:5个线程各执行1000次 i++;</p>
 <pre><code>import java.util.ArrayList;
@@ -318,6 +301,7 @@ public class Test01Atomicity {
 <p>运行结果：</p>
 <pre><code>number = 50000
 </code></pre>
+<p>主要代码：</p>
 <pre><code>for (int i = 0; i &lt; 1000; i++) {
     synchronized (Test01Atomicity.class) {
         number++;
@@ -326,17 +310,50 @@ public class Test01Atomicity {
 </code></pre>
 <h3 id="synchronized保证原子性的原理">synchronized保证原子性的原理</h3>
 <figure data-type="image" tabindex="8"><img src="https://epitomm.github.io/post-images/synchronized%E4%BF%9D%E8%AF%81%E5%8E%9F%E5%AD%90%E6%80%A7%E5%8E%9F%E7%90%86.png" alt="图片" loading="lazy"></figure>
-<p>对number++;增加同步代码块后，保证同一时间只有一个线程操作number++;。就不会出现安全问题。</p>
+<p>对<code>number++</code>;增加同步代码块后，保证同一时间只有一个线程操作<code>number++</code>;。就不会出现安全问题。</p>
 <h3 id="小结-6">小结</h3>
-<p>synchronized保证原子性的原理，synchronized保证只有一个线程拿到锁，能够进入同步代码块。</p>
+<p>synchronized保证原子性的原理：synchronized保证只有一个线程拿到锁，能够进入同步代码块。</p>
 <h2 id="synchronized与可见性">synchronized与可见性</h2>
-<h3 id="目标-8">目标</h3>
-<p>学习使用synchronized保证可见性的原理</p>
-<h3 id="使用-volatile-保证可见性">使用 volatile 保证可见性</h3>
-<pre><code>
-</code></pre>
 <h3 id="使用synchronized保证可见性">使用synchronized保证可见性</h3>
-<p>案例演示：一个线程根据boolean类型的标记flag， while循环，另一个线程改变这个flag变量的值，另一个线程并不会停止循环。</p>
+<p>案例演示：一个线程根据boolean类型的标记flag， while循环，另一个线程改变这个flag变量的值，使用 synchronized 加锁这个线程会停止循环。</p>
+<pre><code>/*
+    目标:演示可见性问题
+        1.创建一个共享变量
+        2.创建一个线程不断读取共享变量
+        3.创建一个线程修改共享变量
+ */
+public class Test01Visibility {
+    // 1.创建一个使用 volatile 修饰的共享变量
+    private static boolean flag = true;
+    private static Object obj = new Object();
+    public static void main(String[] args) throws InterruptedException {
+        // 2.创建一个线程不断读取共享变量
+        new Thread(() -&gt; {
+            while (flag) {
+                synchronized (obj){
+
+                }
+            }
+        }).start();
+
+        Thread.sleep(2000);
+
+        // 3.创建一个线程修改共享变量
+        new Thread(() -&gt; {
+            flag = false;
+            System.out.println(&quot;线程修改了变量的值为false&quot;);
+        }).start();
+    }
+}
+</code></pre>
+<p>运行结果：</p>
+<pre><code>线程修改了变量的值为false
+</code></pre>
+<p>分析：<br>
+synchronized ：当线程 2 将 flag 的值改为 false 后，线程 1 再次执行 while 操作时：读取主内存变量到工作空间前，执行 Lock 操作，使工作内存内的共享变量失效，再次去主内存读取刷新共享变量的值。</p>
+<p><strong>synchronized保证可见性的原理</strong><br>
+<img src="https://epitomm.github.io/post-images/%E4%B8%BB%E5%AD%98%E4%B8%8E%E5%B7%A5%E4%BD%9C%E5%86%85%E5%AD%98%E5%85%B7%E4%BD%93%E7%9A%84%E4%BA%A4%E4%BA%92%E5%8D%8F%E8%AE%AE.png" alt="图片" loading="lazy"></p>
+<p>如果 while 方法内增加输出语句 <code>System.out.println(&quot;run = &quot; + run);</code>，即使不显式使用 <code>synchronized</code> 加锁也能终止死循环。</p>
 <pre><code>/**
  案例演示:
  一个线程根据boolean类型的标记flag， while循环，另一个线程改变这个flag变量的值，
@@ -375,31 +392,30 @@ run = true
 <p>分析：<br>
 使用 sout 输出，程序会停止，而不是一直阻塞，因为 sout 内部使用了 synchronized</p>
 <figure data-type="image" tabindex="9"><img src="https://epitomm.github.io/post-images/sout.png" alt="图片" loading="lazy"></figure>
+<h3 id="使用-volatile-保证可见性">使用 volatile 保证可见性</h3>
 <pre><code>package com.itheima.demo02_concurrent_problem;
 
 /*
     目标:演示可见性问题
         1.创建一个共享变量
-        2.创建一条线程不断读取共享变量
-        3.创建一条线程修改共享变量
+        2.创建一个线程不断读取共享变量
+        3.创建一个线程修改共享变量
  */
 public class Test01Visibility {
-    // 1.创建一个共享变量
+    // 1.创建一个使用 volatile 修饰的共享变量
     private static volatile boolean flag = true;
     private static Object obj = new Object();
     public static void main(String[] args) throws InterruptedException {
-        // 2.创建一条线程不断读取共享变量
+        // 2.创建一个线程不断读取共享变量
         new Thread(() -&gt; {
             while (flag) {
-                synchronized (obj){
 
-                }
             }
         }).start();
 
         Thread.sleep(2000);
 
-        // 3.创建一条线程修改共享变量
+        // 3.创建一个线程修改共享变量
         new Thread(() -&gt; {
             flag = false;
             System.out.println(&quot;线程修改了变量的值为false&quot;);
@@ -410,19 +426,13 @@ public class Test01Visibility {
 <p>运行结果：</p>
 <pre><code>线程修改了变量的值为false
 </code></pre>
-<p>分析：<br>
-synchronized ：当线程 2 将 x 的值改为 false 后，线程 1 再次执行 while 操作时：读取主内存变量到工作空间前，执行 Lock 操作，使 工作内存内的共享变量失效，再次去主内存读取刷新共享变量的值。</p>
-<p><strong>synchronized保证可见性的原理</strong><br>
-<img src="https://epitomm.github.io/post-images/%E4%B8%BB%E5%86%85%E5%AD%98%E4%B8%8E%E5%B7%A5%E4%BD%9C%E5%86%85%E5%AD%98%E5%85%B7%E4%BD%93%E7%9A%84%E4%BA%A4%E4%BA%92%E5%8D%8F%E8%AE%AE.png" alt="图片" loading="lazy"></p>
 <h3 id="小结-7">小结</h3>
 <p>synchronized保证可见性的原理，执行synchronized时，会对应lock原子操作会刷新工作内存中共享变量的值</p>
 <h2 id="synchronized与有序性">synchronized与有序性</h2>
-<h3 id="目标-9">目标</h3>
-<p>学习使用synchronized保证有序性的原理</p>
 <h3 id="为什么要重排序">为什么要重排序</h3>
-<p>为了提高程序的执行效率，编译器和CPU会对程序中代码进行重排序。</p>
+<p>为了<strong>提高程序的执行效率</strong>，编译器和CPU会对程序中代码进行重排序。</p>
 <h3 id="as-if-serial语义">as-if-serial语义</h3>
-<p>as-if-serial语义的意思是：不管编译器和CPU如何重排序，必须保证在单线程情况下程序的结果是正确的。</p>
+<p>as-if-serial语义的意思是：不管编译器和CPU如何重排序，必须保证在<strong>单线程情况下程序的结果是正确</strong>的。</p>
 <p>以下数据有依赖关系，不能重排序。</p>
 <p>写后读：</p>
 <pre><code>int a = 1;
@@ -444,7 +454,7 @@ int c = a + b;
 </code></pre>
 <p>上面3个操作的数据依赖关系如图所示：<br>
 <img src="https://epitomm.github.io/post-images/%E4%B8%89%E4%B8%AA%E6%93%8D%E4%BD%9C%E6%95%B0%E4%BE%9D%E8%B5%96%E5%85%B3%E7%B3%BB.png" alt="图片" loading="lazy"></p>
-<p>如上图所示a和c之间存在数据依赖关系，同时b和c之间也存在数据依赖关系。因此在最终执行的指令序列中，c不能被重排序到a和b的前面。但a和b之间没有数据依赖关系，编译器和处理器可以重排序a和b 之间的执行顺序。下图是该程序的两种执行顺序。</p>
+<p>如上图所示 a 和 c 之间存在数据依赖关系，同时 b 和 c 之间也存在数据依赖关系。因此在最终执行的指令序列中，c 不能被重排序到 a 和 b 的前面。但 a 和 b 之间没有数据依赖关系，编译器和处理器可以重排序 a 和 b 之间的执行顺序。下图是该程序的两种执行顺序。</p>
 <figure data-type="image" tabindex="10"><img src="https://epitomm.github.io/post-images/%E4%B8%89%E4%B8%AA%E6%93%8D%E4%BD%9C%E6%95%B0%E4%BE%9D%E8%B5%96%E5%85%B3%E7%B3%BB2.png" alt="图片" loading="lazy"></figure>
 <pre><code>可以这样：
 int a = 1;
@@ -456,8 +466,7 @@ int b = 2;
 int a = 1;
 int c = a + b; 
 </code></pre>
-<h3 id="使用synchronized保证有序性">使用synchronized保证有序性</h3>
-<p>Test03Ordering.java</p>
+<h3 id="使用-synchronized-保证有序性">使用 synchronized 保证有序性</h3>
 <pre><code>package com.itheima.demo02_concurrent_problem;
 
 import org.openjdk.jcstress.annotations.*;
@@ -494,20 +503,16 @@ public class Test03Ordering {
 </code></pre>
 <p>运行结果只有 1 和 4，没有 0。</p>
 <h3 id="synchronized保证有序性的原理">synchronized保证有序性的原理</h3>
-<p>synchronized后，虽然进行了重排序，保证只有一个线程会进入同步代码块，也能保证有序性。</p>
+<p>synchronized后，虽然进行了重排序，保证<strong>只有一个线程会进入同步代码块</strong>，也能保证有序性。</p>
 <h3 id="小结-8">小结</h3>
-<p>synchronized保证有序性的原理，我们加synchronized后，依然会发生重排序，只不过，我们有同步代码块，可以保证只有一个线程执行同步代码中的代码。保证有序性</p>
+<p>synchronized 保证有序性的原理，我们加 synchronized 后，依然会发生重排序，只不过，我们有同步代码块，可以保证只有一个线程执行同步代码中的代码，保证有序性。</p>
 <h1 id="第四章synchronized的特性">第四章：synchronized的特性</h1>
 <h2 id="可重入特性">可重入特性</h2>
-<h3 id="目标-10">目标</h3>
-<p>了解什么是可重入</p>
-<p>了解可重入的原理</p>
-<h3 id="什么是可重入">什么是可重入</h3>
-<p>一个线程可以多次执行synchronized,重复获取同一把锁。</p>
+<p>一个线程可以多次执行 synchronized, 重复获取同一把锁。</p>
 <pre><code>package com.itheima.demo03_synchronized_nature;
 
 /**
- * 目标:演示synchronized可重入
+ * 目标:演示 synchronized 可重入
  *     1.自定义一个线程类
  *     2.在线程类的run方法中使用嵌套的同步代码块
  *     3.使用两个线程来执行
@@ -543,40 +548,36 @@ Thread-1进入了同步代码块1
 Thread-1进入了同步代码块2
 </code></pre>
 <h3 id="可重入原理">可重入原理</h3>
-<p>synchronized的锁对象中有一个计数器（recursions变量）会记录线程获得几次锁.</p>
+<p>synchronized 的锁对象中有一个计数器（recursions变量）会<strong>记录线程获得几次锁</strong>。</p>
 <h3 id="可重入的好处">可重入的好处</h3>
 <ol>
 <li>可以避免死锁</li>
 <li>可以让我们更好的来封装代码</li>
 </ol>
 <h3 id="小结-9">小结</h3>
-<p>synchronized是可重入锁，内部锁对象中会有一个计数器记录线程获取几次锁了，在执行完同步代码块时，计数器的数量会-1，直到计数器的数量为0，就释放这个锁。</p>
+<p>synchronized 是可重入锁，内部锁对象中会有一个计数器记录线程获取几次锁了，在执行完同步代码块时，计数器的数量会-1，直到计数器的数量为0，就释放这个锁。</p>
 <h2 id="不可中断特性">不可中断特性</h2>
-<h3 id="目标-11">目标</h3>
-<p>学习synchronized不可中断特性</p>
-<p>学习Lock的可中断特性</p>
-<h3 id="什么是不可中断">什么是不可中断</h3>
-<p>一个线程获得锁后，另一个线程想要获得锁，必须处于阻塞或等待状态，如果第一个线程不释放锁，第二个线程会一直阻塞或等待，不可被中断。</p>
+<p>一个线程获得锁后，另一个线程想要获得锁，必须处于阻塞或等待状态，如果第一个线程不释放锁，第二个线程会一直<strong>阻塞或等待，不可被中断</strong>。</p>
 <h3 id="synchronized不可中断演示">synchronized不可中断演示</h3>
-<p>synchronized是不可中断，处于阻塞状态的线程会一直等待锁。</p>
+<p>synchronized 是不可中断，处于阻塞状态的线程会一直等待锁。</p>
 <pre><code>/*
-目标:演示synchronized不可中断
-1.定义一个Runnable
-2.在Runnable定义同步代码块
-3.先开启一个线程来执行同步代码块,保证不退出同步代码块
-4.后开启一个线程来执行同步代码块(阻塞状态)
-5.停止第二个线程
+    目标:演示synchronized不可中断
+    1.定义一个Runnable
+    2.在Runnable定义同步代码块
+    3.先开启一个线程来执行同步代码块,保证不退出同步代码块
+    4.后开启一个线程来执行同步代码块(阻塞状态)
+    5.停止第二个线程
 */
 public class Demo02_Uninterruptible {
     private static Object obj = new Object();
     public static void main(String[] args) throws InterruptedException {
-// 1.定义一个Runnable
+        // 1.定义一个Runnable
         Runnable run = () -&gt; {
-// 2.在Runnable定义同步代码块
+            // 2.在Runnable定义同步代码块
             synchronized (obj) {
                 String name = Thread.currentThread().getName();
                 System.out.println(name + &quot;进入同步代码块&quot;);
-// 保证不退出同步代码块
+                // 保证不退出同步代码块
                 try {
                     Thread.sleep(888888);
                 } catch (InterruptedException e) {
@@ -584,14 +585,14 @@ public class Demo02_Uninterruptible {
                 }
             }
         };
-// 3.先开启一个线程来执行同步代码块
+        // 3.先开启一个线程来执行同步代码块
         Thread t1 = new Thread(run);
         t1.start();
         Thread.sleep(1000);
-// 4.后开启一个线程来执行同步代码块(阻塞状态)
+        // 4.后开启一个线程来执行同步代码块(阻塞状态)
         Thread t2 = new Thread(run);
         t2.start();
-// 5.停止第二个线程
+        // 5.停止第二个线程
         System.out.println(&quot;停止线程前&quot;);
         t2.interrupt();
         System.out.println(&quot;停止线程后&quot;);
@@ -720,7 +721,7 @@ Thread-0释放锁
 <p>Lock的tryLock方法是可中断的</p>
 <h1 id="第五章synchronized原理">第五章：synchronized原理</h1>
 <h2 id="javap-反汇编">javap 反汇编</h2>
-<h3 id="目标-12">目标</h3>
+<h3 id="目标">目标</h3>
 <p>通过javap反汇编学习synchronized的原理</p>
 <p>我们编写一个简单的synchronized代码，如下：</p>
 <pre><code>public class Demo01 {
@@ -876,7 +877,7 @@ monitor are allowed to attempt to do so.</p>
 <li>synchronized是非公平锁，ReentrantLock可以控制是否是公平锁。</li>
 </ol>
 <h2 id="深入jvm源码">深入JVM源码</h2>
-<h3 id="目标-13">目标</h3>
+<h3 id="目标-2">目标</h3>
 <p>通过JVM源码分析synchronized的原理</p>
 <h3 id="jvm源码下载">JVM源码下载</h3>
 <p><a href="http://openjdk.java.net/">http://openjdk.java.net/</a> --&gt; Mercurial --&gt; jdk8 --&gt; hotspot --&gt; zip</p>
@@ -1321,7 +1322,7 @@ if (TryLock(Self) &gt; 0) break ;
 <p>由此可见用户态切换至内核态需要传递许多变量，同时内核还需要保护好用户态在切换时的一些寄存器值、变量等，以备内核态切换回用户态。<strong>这种切换就带来了大量的系统资源消耗</strong>，这就是在synchronized未优化之前，效率低的原因。</p>
 <h1 id="第六章jdk6-synchronized优化">第六章：JDK6 synchronized优化</h1>
 <h2 id="cas">CAS</h2>
-<h3 id="目标-14">目标</h3>
+<h3 id="目标-3">目标</h3>
 <p>学习CAS的作用</p>
 <p>学习CAS的原理</p>
 <h3 id="cas概述和作用">CAS概述和作用</h3>
@@ -1409,7 +1410,7 @@ public class Demo01 {
 <p>高效并发是从JDK 5到JDK 6的一个重要改进，HotSpot虛拟机开发团队在这个版本上花费了大量的精力去实现各种锁优化技术，包括偏向锁( Biased Locking )、轻量级锁( Lightweight Locking )和如适应性自旋(Adaptive Spinning)、锁消除( Lock Elimination)、锁粗化( Lock Coarsening )等，这些技术都是为了在线程之间更高效地共享数据，以及解决竞争问题，从而提高程序的执行效率。</p>
 <p>无锁 --&gt; 偏向锁 --&gt; 轻量级锁 –&gt; 重量级锁</p>
 <h2 id="java对象的布局">Java对象的布局</h2>
-<h3 id="目标-15">目标</h3>
+<h3 id="目标-4">目标</h3>
 <p>学习Java对象的布局</p>
 <p>术语参考: <a href="http://openjdk.java.net/groups/hotspot/docs/HotSpotGlossary.html">http://openjdk.java.net/groups/hotspot/docs/HotSpotGlossary.html</a></p>
 <p>在JVM中，对象在内存中的布局分为三块区域：对象头、实例数据和对齐填充。如下图所示：</p>
@@ -1553,7 +1554,7 @@ public class Demo01 {
 <p>Java对象由3部分组成，对象头，实例数据，对齐数据</p>
 <p>对象头分成两部分：Mark World + Klass pointer</p>
 <h2 id="偏向锁">偏向锁</h2>
-<h3 id="目标-16">目标</h3>
+<h3 id="目标-5">目标</h3>
 <p>学习偏向锁的原理和好处</p>
 <h3 id="什么是偏向锁">什么是偏向锁</h3>
 <p>偏向锁是JDK6 中的重要引进，因为HotSpot作者经过研究实践发现，在大多数情况下，<strong>锁不仅不存在多线程竞争，而且总是由同一线程多次获得</strong>，为了让线程获得锁的代价更低，引进了偏向锁。</p>
@@ -1591,7 +1592,7 @@ public class Demo01 {
 </ul>
 <p>偏向锁是在只有一个线程执行同步块时进一步提高性能，适用于<strong>一个线程反复获得同一锁</strong>的情况。偏向锁可以提高带有同步但无竞争的程序性能。</p>
 <h2 id="轻量级锁">轻量级锁</h2>
-<h3 id="目标-17">目标</h3>
+<h3 id="目标-6">目标</h3>
 <p>学习轻量级锁的原理和好处</p>
 <h3 id="什么是轻量级锁">什么是轻量级锁</h3>
 <p>轻量级锁是JDK6 之中加入的新型锁机制，它名字中的“轻量级”是相对于使用monitor的传统锁而言的，因此传统的锁机制就称为“重量级”锁。首先需要强调一点的是，轻量级锁并不是用来代替重量级锁的。</p>
@@ -1626,7 +1627,7 @@ public class Demo01 {
 </ul>
 <p>在多线程交替执行同步块的情况下，可以避免重量级锁引起的性能消耗。</p>
 <h2 id="自旋锁">自旋锁</h2>
-<h3 id="目标-18">目标</h3>
+<h3 id="目标-7">目标</h3>
 <p>学习自旋锁原理</p>
 <h3 id="自旋锁原理">自旋锁原理</h3>
 <pre><code>synchronized (Demo01.class) {
@@ -1672,7 +1673,7 @@ public class Demo01 {
 }
 </code></pre>
 <h2 id="锁消除">锁消除</h2>
-<h3 id="目标-19">目标</h3>
+<h3 id="目标-8">目标</h3>
 <p>学习如何进行锁消除</p>
 <p>锁消除是指虚拟机即时编译器（JIT）在运行时，对<strong>一些代码上要求同步，但是被检测到不可能存在共享数据竞争的锁</strong>进行消除。锁消除的主要判定依据来源于逃逸分析的数据支持，如果判断在一段代码中，**堆上的所有数据都不会逃逸出去从而被其他线程访问到，那就可以把它们当做栈上数据对待，认为它们是线程私有的，同步加锁自然就无须进行。**变量是否逃逸，对于虚拟机来说需要使用数据流分析来确定，但是程序员自己应该是很清楚的，怎么会在明知道不存在数据争用的情况下要求同步呢?实际上有许多同步措施并不是程序员自己加入的，同步的代码在Java程序中的普遍程度也许超过了大部分读者的想象。下面这段非常简单的代码仅仅是输出3个字符串相加的结果，无论是源码字面上还是程序语义上都没有同步。</p>
 <pre><code>public class Demo01 {
@@ -1693,7 +1694,7 @@ public synchronized StringBuffer append(String str) {
 </code></pre>
 <p>StringBuffffer的append ( ) 是一个同步方法，锁就是this也就是(new StringBuilder())。虚拟机发现它的动态作用域被限制在concatString( )方法内部。也就是说, new StringBuilder()对象的引用永远不会“逃逸”到concatString ( )方法之外，其他线程无法访问到它，因此，虽然这里有锁，但是可以被安全地消除掉，在即时编译之后，这段代码就会忽略掉所有的同步而直接执行了。</p>
 <h2 id="锁粗化">锁粗化</h2>
-<h3 id="目标-20">目标</h3>
+<h3 id="目标-9">目标</h3>
 <p>学习锁粗化的原理</p>
 <p>原则上，我们在编写代码的时候，总是推荐将同步块的作用范围限制得尽量小，只在共享数据的实际作用域中才进行同步，这样是为了使得需要同步的操作数量尽可能变小，如果存在锁竞争，那等待锁的线程也能尽快拿到锁。大部分情况下，上面的原则都是正确的，但是如果一系列的连续操作都对同一个对象反复加锁和解锁，甚至加锁操作是出现在循环体中的，那即使没有线程竞争，频繁地进行互斥同步操作也会导致不必要的性能损耗。</p>
 <pre><code>public class Demo01 {
