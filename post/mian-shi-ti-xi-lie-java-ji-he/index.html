@@ -3,7 +3,7 @@
     <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>面试题系列 —— Java 集合 | SSM</title>
-<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1586914385882">
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1586926783551">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
 <link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
 <link rel="alternate" type="application/atom+xml" title="面试题系列 —— Java 集合 | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
@@ -32,7 +32,7 @@ ArrayLis..." />
       <div class="main-content">
         <div class="site-header">
   <a href="https://epitomm.github.io">
-  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1586914385882" alt="">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1586926783551" alt="">
   </a>
   <h1 class="site-title">
     SSM
@@ -92,7 +92,7 @@ ArrayLis..." />
                 2020-03-24
               </span>
               <span>
-                10 min read
+                11 min read
               </span>
               
                 <a href="https://epitomm.github.io/tag/G0-V7bjxQ/" class="post-tag">
@@ -128,9 +128,62 @@ ArrayLis..." />
 </ol>
 <ul>
 <li><code>ArrayList</code> 如果添加到<strong>末尾</strong>，时间复杂度<strong>O(1)</strong>；如果添加<strong>中间</strong>到指定 i 位置，需要把 i ~ n 位置的元素统一向后移动，时间复杂度 <strong>O(n-i)</strong>。如果<strong>按下标查找</strong>，时间复杂度<strong>O(1)</strong>。</li>
-<li><code>LinkedList</code> 如果添加<strong>末尾</strong>，时间复杂度 <strong>O(1)</strong>，如果插入到<strong>中间</strong>第 i 个位置，需要先查找到到 i 个位置的元素，查找效率 <strong>O(n)</strong>，然后执行添加操作，修改指针指向，复杂度<strong>O(1)</strong>。如果<strong>按下标查找</strong>，需要判断下标是否大于当前 <code>size/2</code> ，如果大于则从末尾向中间查找；否则从头向中间查找，时间复杂度<strong>O(n)</strong>。</li>
+<li><code>LinkedList</code> 如果添加<strong>末尾</strong>，时间复杂度 <strong>O(1)</strong>，如果插入到<strong>中间</strong>第 i 个位置，需要先查找到到 i 个位置的元素，查找效率 <strong>O(n)</strong>，然后执行添加操作，修改指针指向，复杂度<strong>O(1)</strong>。如果<strong>按下标查找</strong>，需要判断下标是否小于当前 <code>size/2</code> ，如果小于则从头向中间查找；否则从末尾向中间查找，时间复杂度<strong>O(n)</strong>。</li>
 </ul>
+<blockquote>
+<p>LinkedList 向第 index 位置插入元素 element</p>
+</blockquote>
+<pre><code>public void add(int index, E element) {
+    // 检查 index 是否合理
+    checkPositionIndex(index);
+    // 插入到链表尾
+    if (index == size)
+        linkLast(element);
+    // 插入到链表中间
+    else
+        linkBefore(element, node(index));
+}
+</code></pre>
+<pre><code>Node&lt;E&gt; node(int index) {
+    // assert isElementIndex(index);
+    // 如果插入位置下标 index &lt; 整个链表长度的一半
+    if (index &lt; (size &gt;&gt; 1)) {
+        // 从链表头向中间遍历，直到找到第 index 个位置
+        Node&lt;E&gt; x = first;
+        for (int i = 0; i &lt; index; i++)
+            x = x.next;
+        return x;
+    } else {
+        // 从链表尾向中间遍历
+        Node&lt;E&gt; x = last;
+        // 直到找到第 index 个元素
+        for (int i = size - 1; i &gt; index; i--)
+            x = x.prev;
+        return x;
+    }
+}
+</code></pre>
 <h1 id="3-arraylist-扩容机制">3. ArrayList 扩容机制</h1>
+<pre><code>public boolean add(E e) {
+    // 确保数组容量能容纳下当前数组内实际的元素个数+1
+    ensureCapacityInternal(size + 1);  // Increments modCount!!
+    elementData[size++] = e;
+    return true;
+}
+
+private void ensureCapacityInternal(int minCapacity) {
+    ensureExplicitCapacity(calculateCapacity(elementData, minCapacity));
+}
+
+private void ensureExplicitCapacity(int minCapacity) {
+    modCount++;
+
+    // overflow-conscious code
+    // 如果当前数组需要的最小容量 &gt; 数组的长度，则需要扩容
+    if (minCapacity - elementData.length &gt; 0)
+        grow(minCapacity);
+}
+</code></pre>
 <pre><code>private void grow(int minCapacity) {
     // overflow-conscious code
     int oldCapacity = elementData.length;
