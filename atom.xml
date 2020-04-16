@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://epitomm.github.io</id>
     <title>SSM</title>
-    <updated>2020-04-16T13:54:59.649Z</updated>
+    <updated>2020-04-16T14:33:47.202Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://epitomm.github.io"/>
     <link rel="self" href="https://epitomm.github.io/atom.xml"/>
@@ -10,6 +10,108 @@
     <logo>https://epitomm.github.io/images/avatar.png</logo>
     <icon>https://epitomm.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, SSM</rights>
+    <entry>
+        <title type="html"><![CDATA[leetcode53. 最大子序和]]></title>
+        <id>https://epitomm.github.io/post/leetcode53-zui-da-zi-xu-he/</id>
+        <link href="https://epitomm.github.io/post/leetcode53-zui-da-zi-xu-he/">
+        </link>
+        <updated>2020-04-16T14:01:03.000Z</updated>
+        <content type="html"><![CDATA[<h2 id="问题描述">问题描述</h2>
+<p>给定一个整数数组 nums ，找到一个具有最大和的连续子数组（子数组最少包含一个元素），返回其最大和。</p>
+<h2 id="示例">示例:</h2>
+<p>输入: [-2,1,-3,4,-1,2,1,-5,4],<br>
+输出: 6</p>
+<p>解释: 连续子数组 [4,-1,2,1] 的和最大，为 6。</p>
+<p>进阶:<br>
+如果你已经实现复杂度为 O(n) 的解法，尝试使用更为精妙的分治法求解。</p>
+<h2 id="分析">分析</h2>
+<table>
+<thead>
+<tr>
+<th style="text-align:center"><strong>当前数字</strong></th>
+<th style="text-align:center"><strong>连续子序列最大和 maxSum</strong></th>
+<th style="text-align:center"><strong>子序列当前累加和 cur</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">2</td>
+<td style="text-align:center">2</td>
+<td style="text-align:center">2</td>
+</tr>
+<tr>
+<td style="text-align:center">-8</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">-6</td>
+</tr>
+<tr>
+<td style="text-align:center">3</td>
+<td style="text-align:center">3</td>
+<td style="text-align:center">-3 &lt; 0, 更新 cur = 3</td>
+</tr>
+<tr>
+<td style="text-align:center">-2</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">1</td>
+</tr>
+<tr>
+<td style="text-align:center">4</td>
+<td style="text-align:center">5</td>
+<td style="text-align:center">5</td>
+</tr>
+<tr>
+<td style="text-align:center">-10</td>
+<td style="text-align:center"></td>
+<td style="text-align:center">-5</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>第一个数：2。连续子序列最大和 <code>maxSum = 2</code>；子序列当前累加和 <code>cur=2</code>；</li>
+<li>第二个数：-8。<code>2 - 8 = -6 &lt; maxSum</code>，不更新 maxSum</li>
+<li>第三个数：3。<code>-6 + 3 = -3 &lt; maxSum</code>，不更新 maxSum
+<ul>
+<li>如果不加 -6，而是让 3 自成一个子序列，<code>3 &gt; maxSum</code></li>
+<li>maxSum = 3；cur = 3</li>
+<li>如果前面累加的和为负数或零，对后面的求和不会有正向贡献，因此可以舍弃前面这段子序列的和，重新开始一个新的子序列。当前连续子序列的和记为 cur</li>
+<li><code>if ( cur&lt;= 0 )</code>，就从当前元素重新开始一个新的子序列，当前和 cur 更新为当前的元素值 <code>cur = a[i];</code> 否则子序列就继续向前相加 <code>cur = cur + a[i]</code> 。每次子序列的和更新后，都要和最大值 maxSum 对比，以此更新最大值 <code>maxSum = max(maxSum, cur)</code>，这样遍历完数组，就能找到连续子序列的最大和</li>
+</ul>
+</li>
+<li>第四个数：-2。<code>3 - 2 = 1</code>，<code>cur=1 &gt; 0</code>，于是保留 <code>cur=1</code>。<code>cur=1 &lt; maxSum=3</code>，不更新 maxSum</li>
+<li>第五个数：4。<code>1+4=5 &gt; maxSum</code>，保留 <code>cur=5</code>，更新 maxSum=5</li>
+<li>第六个数：-10。<code>5-10=-5 &lt; 5</code>，不更新 maxSum</li>
+</ul>
+<h3 id="复杂度分析">复杂度分析</h3>
+<ul>
+<li>T = O(n)<br>
+遍历数组一遍，时间复杂度为 O(n)。</li>
+<li>S = O(1)<br>
+没有使用额外的存储空间，空间复杂度为 O(1)</li>
+</ul>
+<h2 id="代码">代码</h2>
+<pre><code>class Solution {
+
+  // Time: O(n), Space: O(1)
+  public int maxSubArray(int[] nums) {
+      // 初始化子序列最大和 max 和 子序列当前累加和
+      int max = Integer.MIN_VALUE, cur = 0;
+    // for 循环遍历数组
+    for (int i = 0; i &lt; nums.length; ++i) {
+      // 累加和 &lt;= 0，则用当前元素值 nums[i] 更新累加和，表示开始一个新的子序列；否则继续累加当前元素的值
+      cur = cur &lt;= 0 ? nums[i] : (cur + nums[i]);
+      // 更新当前子序列的最大值
+      max = Math.max(max, cur);
+    }
+    return max;
+  }
+
+}
+</code></pre>
+<h2 id="来源">来源</h2>
+<p>来源：力扣（LeetCode）<br>
+链接：https://leetcode-cn.com/problems/maximum-subarray</p>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[深入学习并发编程中的synchronized]]></title>
         <id>https://epitomm.github.io/post/shen-ru-xue-xi-bing-fa-bian-cheng-zhong-de-synchronized/</id>
@@ -1797,9 +1899,9 @@ n &amp; n-1 = 1010
 k 表示整数二进制表示中 1 的个数</li>
 <li>S：O(1)</li>
 </ul>
+<h2 id="来源">来源</h2>
 <p>来源：力扣（LeetCode）<br>
-链接：https://leetcode-cn.com/problems/number-of-1-bits<br>
-著作权归领扣网络所有。商业转载请联系官方授权，非商业转载请注明出处。</p>
+链接：https://leetcode-cn.com/problems/number-of-1-bits</p>
 ]]></content>
     </entry>
     <entry>
@@ -6065,279 +6167,6 @@ protected final boolean compareAndSetState(int expect, int update) {
 <p><a href="https://github.com/Snailclimb/JavaGuide/blob/master/docs/java/Multithread/JavaConcurrencyBasicsCommonInterviewQuestionsSummary.md">https://github.com/Snailclimb/JavaGuide/blob/master/docs/java/Multithread/JavaConcurrencyBasicsCommonInterviewQuestionsSummary.md</a><br>
 <a href="https://mp.weixin.qq.com/s/SCugxnAV1_f3sq-UhFD7wg">https://mp.weixin.qq.com/s/SCugxnAV1_f3sq-UhFD7wg</a><br>
 <a href="https://github.com/Snailclimb/JavaGuide/blob/master/docs/java/Multithread/AQS.md">https://github.com/Snailclimb/JavaGuide/blob/master/docs/java/Multithread/AQS.md</a></p>
-]]></content>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[记一个面试题 —— Redis 一启动挂了怎么办]]></title>
-        <id>https://epitomm.github.io/post/ji-yi-ge-mian-shi-ti-redis-yi-qi-dong-gua-liao-zen-me-ban/</id>
-        <link href="https://epitomm.github.io/post/ji-yi-ge-mian-shi-ti-redis-yi-qi-dong-gua-liao-zen-me-ban/">
-        </link>
-        <updated>2020-03-30T08:43:04.000Z</updated>
-        <content type="html"><![CDATA[<blockquote>
-<p>面试官：Redis 一启动就挂了怎么办？<br>
-答：添加 Redis 集群</p>
-</blockquote>
-<h1 id="集群简介">集群简介</h1>
-<h2 id="现状问题">现状问题</h2>
-<h3 id="业务发展过程中遇到的峰值瓶颈">业务发展过程中遇到的峰值瓶颈</h3>
-<ul>
-<li>redis提供的服务OPS可以达到10万/秒，当前业务OPS已经达到20万/秒</li>
-<li>内存单机容量达到256G，当前业务需求内存容量1T</li>
-<li>使用集群的方式可以快速解决上述问题</li>
-</ul>
-<h2 id="集群架构">集群架构</h2>
-<ul>
-<li>集群就是使用网络将若干台计算机联通起来，并提供统一的管理方式，使其对外呈现单机的服务效果</li>
-</ul>
-<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/Redis%E9%9B%86%E7%BE%A4%E6%9E%B6%E6%9E%84.png" alt="图片" loading="lazy"></figure>
-<h2 id="集群作用">集群作用</h2>
-<ul>
-<li>分散单台服务器的访问压力，实现负载均衡</li>
-<li>分散单台服务器的存储压力，实现可扩展性</li>
-<li>降低单台服务器宕机带来的业务灾难</li>
-</ul>
-<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/Redis%E9%9B%86%E7%BE%A4%E4%BD%9C%E7%94%A8.png" alt="图片" loading="lazy"></figure>
-<h1 id="redis集群结构设计">Redis集群结构设计</h1>
-<h2 id="数据存储设计"><strong>数据存储设计</strong></h2>
-<figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/%E6%95%B0%E6%8D%AE%E5%AD%98%E5%82%A8%E8%AE%BE%E8%AE%A1.png" alt="图片" loading="lazy"></figure>
-<blockquote>
-<p>一个 key 放在 Redis 存储空间：单机方案。<br>
-一个 key 对应多个存储空间，变成多台计算机了，应该怎样存储呢？</p>
-</blockquote>
-<figure data-type="image" tabindex="4"><img src="https://epitomm.github.io/post-images/Redis%E6%95%B0%E6%8D%AE%E5%AD%98%E5%82%A82.png" alt="图片" loading="lazy"></figure>
-<ul>
-<li>通过算法设计，计算出key应该保存的位置</li>
-<li>将所有的存储空间计划切割成16384份，每台主机保存一部分
-<ul>
-<li>每份代表的是一个存储空间，不是一个key的保存空间</li>
-</ul>
-</li>
-<li>将key按照计算出的结果放到对应的存储空间</li>
-</ul>
-<figure data-type="image" tabindex="5"><img src="https://epitomm.github.io/post-images/Redis%E6%95%B0%E6%8D%AE%E5%AD%98%E5%82%A83.png" alt="图片" loading="lazy"></figure>
-<blockquote>
-<p>假定现在有三个存储空间，突然又增加了一个存储空间。把原来的三个 Redis 存储空间都进行优化，每个存储空间拿出一部分给新的存储空间</p>
-</blockquote>
-<ul>
-<li>增强可扩展性</li>
-</ul>
-<figure data-type="image" tabindex="6"><img src="https://epitomm.github.io/post-images/Redis%E6%95%B0%E6%8D%AE%E5%AD%98%E5%82%A85.png" alt="图片" loading="lazy"></figure>
-<blockquote>
-<p>旧的存储空间给新的存储空间 的 这一小块空间（也就是前面标记的37）叫做槽，用来放数据的空间区域。所谓的增加、删除 Redis 存储空间就是：改变槽所存储的位置不同。<br>
-槽更换位置后，如何知道它被换到哪里了呢？<br>
-内部通讯设计</p>
-</blockquote>
-<h2 id="集群内部通讯设计"><strong>集群内部通讯设计</strong></h2>
-<ul>
-<li>各个数据库相互通信，保存各个库中槽的编号数据</li>
-<li>一次命中，直接返回</li>
-<li>一次未命中，告知具体位置</li>
-</ul>
-<figure data-type="image" tabindex="7"><img src="https://epitomm.github.io/post-images/Redis%E9%9B%86%E7%BE%A4%E5%86%85%E9%83%A8%E9%80%9A%E8%AE%AF%E8%AE%BE%E8%AE%A1.png" alt="图片" loading="lazy"></figure>
-<blockquote>
-<p>假定现在有 A、B、C 三个机器互联，三个机器存储好了以后，会进行互联，互联的目的：谁那有什么样的东西一清二楚。每一台计算机都有一个账本，存储各个计算机里对应的存储空间的槽是几到几。</p>
-</blockquote>
-<figure data-type="image" tabindex="8"><img src="https://epitomm.github.io/post-images/Redis%E9%9B%86%E7%BE%A4%E5%86%85%E9%83%A8%E9%80%9A%E8%AE%AF%E8%AE%BE%E8%AE%A12.png" alt="图片" loading="lazy"></figure>
-<blockquote>
-<p>假定现在来了一台计算机，发出一个 key 要访问 Redis，key 通过两个算法计算后得到 key 对应的存储槽在哪里，假定它访问的就是 A，一次命中，直接返回。假设它没有命中，会根据这个 key 对应的槽位置在 A 的小本子里面找，发现这个东西在 B 里面，于是就让这个 key 去 B 里面找，不是 A 去 B 里面找，而是这个连接请求客户端直接去 B 里面找。</p>
-</blockquote>
-<p>key 加密就是为了确定存储位置，保证最多两次命中</p>
-<h2 id="总结">总结</h2>
-<p>集群内存存储结构设计：</p>
-<p>1.槽用来区分数据存储空间</p>
-<p>2.key 加密后确定存储的位置</p>
-<p>3.一次命中或两次命中就可以找到数据</p>
-<h1 id="cluster集群结构搭建">cluster集群结构搭建</h1>
-<h2 id="搭建方式">搭建方式</h2>
-<ul>
-<li>原生安装（单条命令）
-<ul>
-<li>配置服务器（3主3从）</li>
-<li>建立通信（Meet）</li>
-<li>分槽（Slot）</li>
-<li>搭建主从（master-slave）</li>
-</ul>
-</li>
-<li>工具安装（批处理）</li>
-</ul>
-<h2 id="cluster节点操作命令">Cluster节点操作命令</h2>
-<ul>
-<li>查看集群节点信息</li>
-</ul>
-<pre><code>cluster nodes 
-</code></pre>
-<ul>
-<li>进入一个从节点 redis，切换其主节点</li>
-</ul>
-<pre><code>cluster replicate &lt;master-id&gt; 
-</code></pre>
-<ul>
-<li>发现一个新节点，新增主节点</li>
-</ul>
-<pre><code>cluster meet ip:port 
-</code></pre>
-<ul>
-<li>忽略一个没有solt的节点</li>
-</ul>
-<pre><code>cluster forget &lt;id&gt; 
-</code></pre>
-<ul>
-<li>手动故障转移</li>
-</ul>
-<pre><code>cluster failover
-</code></pre>
-<h2 id="redis-trib命令">redis-trib命令</h2>
-<ul>
-<li>添加节点</li>
-</ul>
-<pre><code>redis-trib.rb add-node 
-</code></pre>
-<ul>
-<li>删除节点</li>
-</ul>
-<pre><code>redis-trib.rb del-node 
-</code></pre>
-<ul>
-<li>重新分片</li>
-</ul>
-<pre><code>redis-trib.rb reshard
-</code></pre>
-<h2 id="cluster配置">Cluster配置</h2>
-<ul>
-<li>添加节点</li>
-</ul>
-<pre><code>cluster-enabled yes|no 
-</code></pre>
-<ul>
-<li>cluster配置文件名，该文件属于自动生成，仅用于快速查找文件并查询文件内容</li>
-</ul>
-<pre><code>cluster-config-file &lt;filename&gt; 
-</code></pre>
-<ul>
-<li>节点服务响应超时时间，用于判定该节点是否下线或切换为从节点</li>
-</ul>
-<pre><code>cluster-node-timeout &lt;milliseconds&gt; 
-</code></pre>
-<ul>
-<li>master连接的slave最小数量</li>
-</ul>
-<pre><code> cluster-migration-barrier &lt;count&gt;
-</code></pre>
-<ol>
-<li>修改 redis.conf 配置文件</li>
-</ol>
-<pre><code>[root@iZ2ze4u2bufi0915gyi843Z conf]# vim redis-6379.conf 
-port 6379
-daemonize no
-#logfile &quot;6379.log&quot;
-dir &quot;/root/redis-5.0.7/data&quot;
-dbfilename &quot;dump-6379.rdb&quot;
-rdbcompression yes
-rdbchecksum yes
-appendonly yes
-appendfsync everysec
-appendfilename &quot;appendonly-6379.aof&quot;
-bind 127.0.0.1
-databases 16
-
-cluster-enabled yes
-cluster-config-file nodes-6379.conf
-cluster-node-timeout 10000
-</code></pre>
-<pre><code>[root@iZ2ze4u2bufi0915gyi843Z conf]# sed &quot;s/6379/6380/g&quot; redis-6379.conf &gt; redis-6380.conf 
-[root@iZ2ze4u2bufi0915gyi843Z conf]# sed &quot;s/6379/6381/g&quot; redis-6379.conf &gt; redis-6381.conf 
-[root@iZ2ze4u2bufi0915gyi843Z conf]# sed &quot;s/6379/6382/g&quot; redis-6379.conf &gt; redis-6382.conf 
-[root@iZ2ze4u2bufi0915gyi843Z conf]# sed &quot;s/6379/6383/g&quot; redis-6379.conf &gt; redis-6383.conf 
-[root@iZ2ze4u2bufi0915gyi843Z conf]# sed &quot;s/6379/6384/g&quot; redis-6379.conf &gt; redis-6384.conf 
-[root@iZ2ze4u2bufi0915gyi843Z conf]# sed &quot;s/6379/6385/g&quot; redis-6379.conf &gt; redis-6385.conf 
-</code></pre>
-<ol>
-<li>启动 redis 客户端</li>
-</ol>
-<pre><code>[root@iZ2ze4u2bufi0915gyi843Z conf]# redis-server redis-6379.conf 
-[root@iZ2ze4u2bufi0915gyi843Z conf]# redis-server redis-6380.conf 
-[root@iZ2ze4u2bufi0915gyi843Z conf]# redis-server redis-6381.conf 
-[root@iZ2ze4u2bufi0915gyi843Z conf]# redis-server redis-6382.conf 
-[root@iZ2ze4u2bufi0915gyi843Z conf]# redis-server redis-6383.conf 
-[root@iZ2ze4u2bufi0915gyi843Z conf]# redis-server redis-6384.conf 
-</code></pre>
-<ol>
-<li>每个 reids 服务都以 cluster 节点呈现</li>
-</ol>
-<pre><code>[root@iZ2ze4u2bufi0915gyi843Z conf]# ps -ef | grep redis-
-root      9015  8373  0 18:44 pts/1    00:00:00 redis-server 127.0.0.1:6379 [cluster]
-root      9019  8430  0 18:44 pts/5    00:00:00 redis-server 127.0.0.1:6380 [cluster]
-root      9023  8411  0 18:45 pts/4    00:00:00 redis-server 127.0.0.1:6381 [cluster]
-root      9028  8469  0 18:45 pts/6    00:00:00 redis-server 127.0.0.1:6382 [cluster]
-root      9033  8488  0 18:45 pts/7    00:00:00 redis-server 127.0.0.1:6383 [cluster]
-root      9037  8507  0 18:46 pts/8    00:00:00 redis-server 127.0.0.1:6384 [cluster]
-root      9045  8545  0 18:46 pts/10   00:00:00 grep --color=auto redis-
-</code></pre>
-<ol>
-<li>把这些  cluster 节点 连接在一起</li>
-</ol>
-<p>redis5.0之前的版本需要部署 ruby 和 gem：<a href="https://blog.51cto.com/wujianwei/2460638">部署ruby环境遇到的坑</a></p>
-<p>redis5.0以上的版本可以使用redis-cli命令</p>
-<p><a href="https://juejin.im/post/5d16206b518825597909b5f9">https://juejin.im/post/5d16206b518825597909b5f9</a></p>
-<pre><code>[root@iZ2ze4u2bufi0915gyi843Z redis-5.0.7]# src/redis-cli --cluster create 127.0.0.1:6379 127.0.0.1:6380 127.0.0.1:6381 127.0.0.1:6382 127.0.0.1:6383 127.0.0.1:6384 --cluster-replicas 1
-// --cluster-replicas 1：一个 master 连接一个 slave；2：一个 master 连接两个 slave
-</code></pre>
-<figure data-type="image" tabindex="9"><img src="https://epitomm.github.io/post-images/%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA%E8%BF%90%E8%A1%8C%E7%BB%93%E6%9E%9C.png" alt="图片" loading="lazy"></figure>
-<p>输入 yes 重写配置文件后：</p>
-<figure data-type="image" tabindex="10"><img src="https://epitomm.github.io/post-images/%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA%E8%BF%90%E8%A1%8C%E7%BB%93%E6%9E%9C2.png" alt="图片" loading="lazy"></figure>
-<h2 id="解析-master-和-slave-日志信息">解析 master 和 slave 日志信息</h2>
-<figure data-type="image" tabindex="11"><img src="https://epitomm.github.io/post-images/%E9%9B%86%E7%BE%A4master%E6%97%A5%E5%BF%97.png" alt="图片" loading="lazy"></figure>
-<p>master：6379 日志</p>
-<figure data-type="image" tabindex="12"><img src="https://epitomm.github.io/post-images/%E9%9B%86%E7%BE%A4slave%E6%97%A5%E5%BF%97.png" alt="图片" loading="lazy"></figure>
-<p>slave：6382 日志</p>
-<h2 id="设置与获取数据">设置与获取数据</h2>
-<pre><code>[root@iZ2ze4u2bufi0915gyi843Z ~]# redis-cli
-127.0.0.1:6379&gt; set name itheima   // 把 name 对应的 key 进行转化后，对应的槽在 6380，不能在 6379 set
-(error) MOVED 5798 127.0.0.1:6380 
-127.0 .0.1:6379&gt; set lll sss      //  lll 对应的 key 进行转化后，对应的槽在 6379，所以此处 set 成功
-OK
-
-[root@iZ2ze4u2bufi0915gyi843Z ~]# redis-cli -c   // -c 专门用来操作 cluster 集群的
-127.0.0.1:6379&gt; set name itheima
--&gt; Redirected to slot [5798] located at 127.0.0.1:6380  // 重定向到 5798 这个槽，这个槽在 6380 下
-OK
-127.0.0.1:6380&gt; get name
-&quot;itheima&quot;
-[root@iZ2ze4u2bufi0915gyi843Z ~]# redis-cli -c -p 6382
-127.0.0.1:6382&gt; get name
--&gt; Redirected to slot [5798] located at 127.0.0.1:6380
-&quot;itheima&quot;
-127.0.0.1:6380&gt; 
-</code></pre>
-<h2 id="主从下线与主从切换">主从下线与主从切换</h2>
-<h3 id="slave6382-下线">slave:6382 下线</h3>
-<figure data-type="image" tabindex="13"><img src="https://epitomm.github.io/post-images/slave%E4%B8%8B%E7%BA%BF%E4%B8%BB%E8%8A%82%E7%82%B9%E6%97%A5%E5%BF%97.png" alt="图片" loading="lazy"></figure>
-<p>master:6381（slave:6382 的 master） 日志打印</p>
-<figure data-type="image" tabindex="14"><img src="https://epitomm.github.io/post-images/slave%E4%B8%8B%E7%BA%BFmaster%E6%97%A5%E5%BF%97.png" alt="图片" loading="lazy"></figure>
-<p>master:6379 日志打印</p>
-<h3 id="slave6382-重新上线">slave:6382 重新上线</h3>
-<figure data-type="image" tabindex="15"><img src="https://epitomm.github.io/post-images/slave%E9%87%8D%E6%96%B0%E4%B8%8A%E7%BA%BFmaster%E6%97%A5%E5%BF%97.png" alt="图片" loading="lazy"></figure>
-<p>master:6381（slave:6382 的 master） 日志打印<br>
-<img src="https://epitomm.github.io/post-images/%E9%87%8D%E6%96%B0%E4%B8%8A%E7%BA%BF%E7%9A%84master%E5%8F%98%E6%88%90slave%E4%BA%86.png" alt="图片" loading="lazy"></p>
-<p>master:6379 日志打印</p>
-<h3 id="master6379-下线">master:6379 下线</h3>
-<figure data-type="image" tabindex="16"><img src="https://epitomm.github.io/post-images/master%E4%B8%8B%E7%BA%BFslave%E6%97%A5%E5%BF%97.png" alt="图片" loading="lazy"></figure>
-<p>slave:6383（master:6379 的 slave）日志打印</p>
-<p>查看 cluster 信息：</p>
-<figure data-type="image" tabindex="17"><img src="https://epitomm.github.io/post-images/master%E4%B8%8B%E7%BA%BFcluster%E6%97%A5%E5%BF%97.png" alt="图片" loading="lazy"></figure>
-<p>slave:6383 自己当 master</p>
-<h3 id="master6379-重新上线">master:6379 重新上线</h3>
-<figure data-type="image" tabindex="18"><img src="https://epitomm.github.io/post-images/master%E9%87%8D%E6%96%B0%E4%B8%8A%E7%BA%BFmaster%E6%97%A5%E5%BF%97.png" alt="图片" loading="lazy"></figure>
-<p><strong>master:6383</strong>（slave:6379 的 master） 日志信息</p>
-<figure data-type="image" tabindex="19"><img src="https://epitomm.github.io/post-images/%E9%87%8D%E6%96%B0%E4%B8%8A%E7%BA%BF%E7%9A%84master%E5%8F%98%E6%88%90slave%E4%BA%86.png" alt="图片" loading="lazy"></figure>
-<p>再次上线的 6379 变成 slave 了</p>
-<h1 id="总结-2">总结</h1>
-<p><strong>集群</strong></p>
-<ul>
-<li>集群简介</li>
-<li>集群结构</li>
-<li>cluster集群结构搭建</li>
-</ul>
 ]]></content>
     </entry>
 </feed>
