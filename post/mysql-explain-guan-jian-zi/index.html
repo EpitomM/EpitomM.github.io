@@ -3,7 +3,7 @@
     <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>MySQL —— Explain 关键字 | SSM</title>
-<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1587223133798">
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1587224486023">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
 <link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
 <link rel="alternate" type="application/atom+xml" title="MySQL —— Explain 关键字 | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
@@ -44,7 +44,7 @@ partitions
       <div class="main-content">
         <div class="site-header">
   <a href="https://epitomm.github.io">
-  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1587223133798" alt="">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1587224486023" alt="">
   </a>
   <h1 class="site-title">
     SSM
@@ -142,11 +142,11 @@ partitions
 </tr>
 <tr>
 <td style="text-align:left"><strong>type</strong></td>
-<td style="text-align:left">**针对单表的访问方法 **</td>
+<td style="text-align:left"><strong>针对单表的访问方法</strong></td>
 </tr>
 <tr>
-<td style="text-align:left">**possible_keys **</td>
-<td style="text-align:left">**可能用到的索引 **</td>
+<td style="text-align:left"><strong>possible_keys</strong></td>
+<td style="text-align:left"><strong>可能用到的索引</strong></td>
 </tr>
 <tr>
 <td style="text-align:left"><strong>key</strong></td>
@@ -154,7 +154,7 @@ partitions
 </tr>
 <tr>
 <td style="text-align:left"><strong>key_len</strong></td>
-<td style="text-align:left">**实际使用到的索引长度 **</td>
+<td style="text-align:left"><strong>实际使用到的索引长度</strong></td>
 </tr>
 <tr>
 <td style="text-align:left">ref</td>
@@ -170,7 +170,7 @@ partitions
 </tr>
 <tr>
 <td style="text-align:left"><strong>Extra</strong></td>
-<td style="text-align:left">**一些额外的信息 **</td>
+<td style="text-align:left"><strong>一些额外的信息</strong></td>
 </tr>
 </tbody>
 </table>
@@ -323,14 +323,14 @@ Query OK, 1 row affected (0.01 sec)
 </code></pre>
 <figure data-type="image" tabindex="18"><img src="https://uploader.shimo.im/f/vnqaboSdAFUUxBIi.png!thumbnail" alt="图片" loading="lazy"></figure>
 <p>当通过普通的二级索引列与常量进行等值匹配时来查询某个表 type = ref</p>
-<h3 id="ref_of_null">**ref_of_null **</h3>
+<h3 id="ref_of_null"><strong>ref_of_null</strong></h3>
 <p>当对<strong>普通二级索引进行等值匹配查询</strong>，<strong>该索引列的值也可以是NULL值</strong>时，那么对该表的访问方法就可能是 ref_or_null</p>
 <pre><code>mysql&gt; explain select * from t1 where b = 1 or b is null; 
 </code></pre>
 <figure data-type="image" tabindex="19"><img src="https://uploader.shimo.im/f/83a7XXdOk082latx.png!thumbnail" alt="图片" loading="lazy"></figure>
 <p>对普通二级索引进行等值匹配查询，该索引列的值也可以是NULL值 type = ref_of_null</p>
 <h3 id="index_merge">index_merge</h3>
-<p>**索引合并 **</p>
+<p><strong>索引合并</strong></p>
 <pre><code>mysql&gt; explain select * from t1 where a = 1 or b = 1; 
 </code></pre>
 <figure data-type="image" tabindex="20"><img src="https://uploader.shimo.im/f/KfnBGOTlSd4cnKRL.png!thumbnail" alt="图片" loading="lazy"></figure>
@@ -597,7 +597,7 @@ luban.t1.a | 1 | 100.00 | NULL |
 <li><a href="#const"><strong>const</strong></a></li>
 <li><a href="#eq_ref"><strong>eq_ref</strong></a></li>
 <li><a href="#ref">ref</a></li>
-<li><a href="#ref_of_null">**ref_of_null **</a></li>
+<li><a href="#ref_of_null"><strong>ref_of_null</strong></a></li>
 <li><a href="#index_merge">index_merge</a></li>
 <li><a href="#unique_subquery"><strong>unique_subquery</strong></a></li>
 <li><a href="#index_subquery"><strong>index_subquery</strong></a></li>
