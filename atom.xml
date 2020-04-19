@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://epitomm.github.io</id>
     <title>SSM</title>
-    <updated>2020-04-19T03:48:36.235Z</updated>
+    <updated>2020-04-19T07:07:34.297Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://epitomm.github.io"/>
     <link rel="self" href="https://epitomm.github.io/atom.xml"/>
@@ -10,6 +10,349 @@
     <logo>https://epitomm.github.io/images/avatar.png</logo>
     <icon>https://epitomm.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, SSM</rights>
+    <entry>
+        <title type="html"><![CDATA[一篇文章彻底搞定 NIO]]></title>
+        <id>https://epitomm.github.io/post/yi-pian-wen-zhang-che-di-gao-ding-nio/</id>
+        <link href="https://epitomm.github.io/post/yi-pian-wen-zhang-che-di-gao-ding-nio/">
+        </link>
+        <updated>2020-04-19T06:58:10.000Z</updated>
+        <content type="html"><![CDATA[<h1 id="用发展的眼光看看-bio">用发展的眼光看看 BIO</h1>
+<h2 id="jdk14">JDK1.4</h2>
+<ul>
+<li>java.io包  XXX 类</li>
+<li>BIO：Blocking IO：同步阻塞的 IO</li>
+<li>Socket 应用程序：
+<ul>
+<li>监听端口：ServerSocket(9999);</li>
+<li>获取客户端的 Socket：serverSocket.accept();</li>
+<li>获取 IO 流对象，进行服务端和客户端的数据交互：socket.getInputStream()、getOutputStream()</li>
+</ul>
+</li>
+</ul>
+<h2 id="jdk14-之后">JDK1.4 之后</h2>
+<ul>
+<li>NIO：Non-Blocking IO 同步非阻塞</li>
+<li>java.nio 包</li>
+<li>对 NIO 做一个封装：netty</li>
+</ul>
+<h1 id="图解与代码展现bio及问题所在">图解与代码展现BIO及问题所在</h1>
+<h2 id="单线程-bio">单线程 BIO</h2>
+<h3 id="代码">代码</h3>
+<pre><code>package com.gupao;
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
+public class BIOServer {
+    public static void main(String[] args) {
+        byte [] bs = new byte[1024];
+        List&lt;Socket&gt; list = new ArrayList&lt;&gt;();
+        try(ServerSocket serverSocket = new ServerSocket(9999)) {
+            System.out.println(&quot;BIOServer has started, listening on port:&quot; + serverSocket.getLocalSocketAddress());
+            while (true){
+                Socket clientSocket = serverSocket.accept();
+                System.out.println(&quot;Connection from &quot; + clientSocket.getRemoteSocketAddress());
+                // 业务处理的代码   
+                try(Scanner input = new Scanner(clientSocket.getInputStream())) {
+                    while (true){
+                        String request = input.nextLine();
+                        if(&quot;quit&quot;.equals(request)){
+                            break;
+                        }
+                        System.out.println(String.format(&quot;From %s : %s&quot;, clientSocket.getRemoteSocketAddress(), request));
+                        String response = &quot;From BIOServer Hello &quot; + request + &quot;.\n&quot;;
+                        clientSocket.getOutputStream().write(response.getBytes());
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
+</code></pre>
+<h3 id="运行结果">运行结果</h3>
+<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/%E5%8D%95%E7%BA%BF%E7%A8%8BBIO%E8%BF%90%E8%A1%8C%E7%BB%93%E6%9E%9C.png" alt="图片" loading="lazy"></figure>
+<h3 id="分析">分析</h3>
+<ul>
+<li>第一个 Server 启动， 阻塞在 accept() 方法上，等待第二个 Server 的连接；</li>
+<li>第二个 Server 连接上后，第一个 Server 不再阻塞在 accept() 上，继续向下运行，阻塞在 Scanner 的 nextLine() 方法上，等待第二个 Server 发送数据；</li>
+<li>第二个 Server 数据准备好后，给第一个 Server 发送数据，第一个 Server 的 nextLine() 方法不再阻塞，继续向下运行，再次进行 while 循环，重新阻塞在 “等待数据准备好” 的方法上。</li>
+<li>第三个 Server 进行连接，第一个 Server 无法接收到第三个 Server 连接成功请求，第三个 Server 也无法向第一个 Server 发送数据。
+<ul>
+<li>只有第二个 Server 通过 &quot;quit&quot; 与第一个 Server 断开连接后，第三个 Server 才能与第一个 Server 进行交互</li>
+</ul>
+</li>
+</ul>
+<p><strong>总结：不能使用两个客户端同时连接一个 Server 进行操作</strong></p>
+<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/%E5%8D%95%E7%BA%BF%E7%A8%8BBIO%E5%88%86%E6%9E%90.png" alt="图片" loading="lazy"></figure>
+<h1 id="仔细想想bio的核心问题及解决方案">仔细想想BIO的核心问题及解决方案</h1>
+<h2 id="多线程">多线程</h2>
+<p><strong>那么如何同时处理多个客户端数据交互请求呢？</strong></p>
+<figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/%E5%A4%9A%E7%BA%BF%E7%A8%8BBIO.png" alt="图片" loading="lazy"></figure>
+<h2 id="线程池">线程池</h2>
+<p>Client 越来越多， Server 端的线程就会越来越多，但是 Server 端的线程受 Server 端资源、CPU 影响，不能无限增大。就需要有效地<strong>控制线程的数量</strong>。</p>
+<figure data-type="image" tabindex="4"><img src="https://epitomm.github.io/post-images/%E7%BA%BF%E7%A8%8B%E6%B1%A0BIO.png" alt="图片" loading="lazy"></figure>
+<h2 id="线程池-bio">线程池 BIO</h2>
+<h3 id="代码-2">代码</h3>
+<pre><code>package com.gupao;
+
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+public class ServerThreadPool {
+    public static void main(String[] args) {
+        // 线程池
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+
+        RequestHandler requestHandler = new RequestHandler();
+        // 监听
+        try(ServerSocket serverSocket = new ServerSocket(9999)) {
+            System.out.println(&quot;NIOServer has started, listening on port:&quot; + serverSocket.getLocalSocketAddress());
+            while (true){
+                Socket clientSocket = serverSocket.accept();
+                System.out.println(&quot;Connection from &quot; + clientSocket.getRemoteSocketAddress());
+                // 有客户端连接上来了，交给线程池处理
+                executor.submit(new ClientHandler(clientSocket,requestHandler));
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+package com.gupao;
+
+import java.io.IOException;
+import java.net.Socket;
+import java.util.Scanner;
+
+/**
+ * 每个 Clinet 连接上来后，给它分配一个线程去执行对应的 Ruunable 任务
+ */
+public class ClientHandler implements Runnable {
+
+    private final Socket clientSocket;
+    private final RequestHandler requestHandler;
+
+    public ClientHandler(Socket clientSocket, RequestHandler requestHandler) {
+        this.clientSocket = clientSocket;
+        this.requestHandler = requestHandler;
+    }
+
+    @Override
+    public void run() {
+        try(Scanner input = new Scanner(clientSocket.getInputStream())) {
+            while (true){
+                String request = input.nextLine();
+                if(&quot;quit&quot;.equals(request)){
+                    break;
+                }
+                System.out.println(String.format(&quot;From %s : %s&quot;, clientSocket.getRemoteSocketAddress(), request));
+                // 真正的业务处理
+                String response = requestHandler.handler(request);
+                clientSocket.getOutputStream().write(response.getBytes());
+            }
+        } catch (IOException e) {
+            System.out.println(&quot;Caught exception: &quot; + e);
+            throw new RuntimeException(e);
+        }
+    }
+}
+
+package com.gupao;
+
+/**
+ * 业务处理代码
+ */
+public class RequestHandler {
+    public String handler(String request){
+        return &quot;From Server Hello &quot; + request + &quot;.\n&quot;;
+    }
+}
+</code></pre>
+<h3 id="运行结果-2">运行结果</h3>
+<figure data-type="image" tabindex="5"><img src="https://epitomm.github.io/post-images/%E7%BA%BF%E7%A8%8B%E6%B1%A0BIO%E8%BF%90%E8%A1%8C%E7%BB%93%E6%9E%9C.png" alt="图片" loading="lazy"></figure>
+<figure data-type="image" tabindex="6"><img src="https://epitomm.github.io/post-images/%E7%BA%BF%E7%A8%8B%E6%B1%A0BIO%E7%BC%BA%E9%99%B7.png" alt="图片" loading="lazy"></figure>
+<h1 id="顺其自带推导出nio的原理和代码实现">顺其自带推导出NIO的原理和代码实现</h1>
+<h2 id="选择器-selector">选择器 Selector</h2>
+<p>如果线程池的大小为 60，来了 60 个请求，Server 端正常应该可以同时处理这 60个请求。但是线程要想被执行的话， 一定要去抢到 CPU 的执行权，CPU 进行这 60 个线程的切换，<strong>频繁的线程上下文切换</strong>消耗 CPU 资源过多，利用率太低。多线程的情况下，线程的数量会影响 CPU 的性能，这就需要控制线程数量。</p>
+<p><strong>线程创建的时机</strong></p>
+<p>每来一个 Client 请求连接 accept()，就为它创建一个线程，这个线程会一直等待客户端的数据:input.nextLine();（<strong>阻塞</strong>）。</p>
+<p><strong>有没有办法不阻塞</strong>？</p>
+<p><strong>延迟线程创建的时机</strong>，<strong>等数据准备好以后，才去创建线程</strong>。线程的数量就会得到有效控制（有的 Client 只是连接，并不进行 IO）-&gt; CPU 用于上下文切换的时间减少 -&gt; CPU 利用率提升。</p>
+<figure data-type="image" tabindex="7"><img src="https://epitomm.github.io/post-images/NIO%E9%80%89%E6%8B%A9%E5%99%A8.png" alt="图片" loading="lazy"></figure>
+<p>注意看下面两段代码的注释：</p>
+<pre><code>package com.gupao;
+
+import java.io.IOException;
+import java.net.Socket;
+import java.util.Scanner;
+
+/**
+ * 每个 Clinet 连接上来后，给它分配一个线程去执行对应的 Ruunable 任务
+ */
+public class ClientHandler implements Runnable {
+
+    private final Socket clientSocket;
+    private final RequestHandler requestHandler;
+
+    public ClientHandler(Socket clientSocket, RequestHandler requestHandler) {
+        this.clientSocket = clientSocket;
+        this.requestHandler = requestHandler;
+    }
+
+    @Override
+    public void run() {
+        // 说明线程已经创建了，
+        try(Scanner input = new Scanner(clientSocket.getInputStream())) {
+            while (true){
+                // 等待客户端的输入数据 —— 阻塞的（当前虽然创建了一个线程，但它没有被用到，就浪费了。能不能等到真正处理 IO 的时候才去创建线程）
+                String request = input.nextLine();
+                if(&quot;quit&quot;.equals(request)){
+                    break;
+                }
+                System.out.println(String.format(&quot;From %s : %s&quot;, clientSocket.getRemoteSocketAddress(), request));
+                // 响应客户端
+                String response = requestHandler.handler(request);
+                clientSocket.getOutputStream().write(response.getBytes());
+            }
+        } catch (IOException e) {
+            System.out.println(&quot;Caught exception: &quot; + e);
+            throw new RuntimeException(e);
+        }
+    }
+}
+</code></pre>
+<pre><code>package com.gupao;
+
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+public class ServerThreadPool {
+    public static void main(String[] args) {
+        // 线程池
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+
+        RequestHandler requestHandler = new RequestHandler();
+        // 监听
+        try(ServerSocket serverSocket = new ServerSocket(9999)) {
+            System.out.println(&quot;NIOServer has started, listening on port:&quot; + serverSocket.getLocalSocketAddress());
+            while (true){
+                Socket clientSocket = serverSocket.accept();
+                System.out.println(&quot;Connection from &quot; + clientSocket.getRemoteSocketAddress());
+                // 线程创建的时机——每个客户端来了就为它创建一个线程
+
+//                map.put(clientSocket,&quot;Accepted&quot;);   // 不创建线程
+//                什么时候创建线程 —— clientSocket 真正进行 IO 时，采取创建线程
+
+                executor.submit(new ClientHandler(clientSocket,requestHandler));
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
+</code></pre>
+<h2 id="通道-channel">通道 Channel</h2>
+<p>Client 与 Server 连接进行数据交互，然后数据再返回给 Client。</p>
+<p>而在这个过程中，每次数据交互结束后，连接就会断开，</p>
+<p>而建立连接需要三次握手很耗时，连接是很宝贵的，优化连接的方式：建立一条条<strong>通道</strong>。</p>
+<p>连接和数据传输就在通道中进行，通道可以复用。</p>
+<figure data-type="image" tabindex="8"><img src="https://epitomm.github.io/post-images/NIO%E9%80%9A%E9%81%93.png" alt="图片" loading="lazy"></figure>
+<h2 id="缓存-buffer">缓存 Buffer</h2>
+<p>阻塞/非阻塞 IO：实际上是针对的应用程序和 OS 数据之间交互的这样一种方式。</p>
+<p>非阻塞 IO：OS 没有把所有数据全部传输完成，应用程序不会一直等待操作数据，应用程序允许 OS 一会传输一段数据。应用程序把每次接受到的一小段数据放到<strong>缓存</strong>内。</p>
+<figure data-type="image" tabindex="9"><img src="https://epitomm.github.io/post-images/NIO%E7%BC%93%E5%AD%98.png" alt="图片" loading="lazy"></figure>
+<p>很多情况下会发现，处理数据的时候，的确用的是多线程，但这个多线程不是为了解决 IO 阻塞问题。</p>
+<figure data-type="image" tabindex="10"><img src="https://epitomm.github.io/post-images/NIO%E5%A4%9A%E7%BA%BF%E7%A8%8B.png" alt="图片" loading="lazy"></figure>
+<h2 id="nio-代码">NIO 代码</h2>
+<pre><code>package com.gupao;
+
+import java.awt.image.DataBufferByte;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.*;
+import java.util.Iterator;
+import java.util.Set;
+
+public class NIOServer {
+    public static void main(String[] args) throws IOException {
+        // 1.Channel 通道
+        // 服务端 Channel
+        ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
+        // 服务端 Channel 设置为非阻塞
+        serverSocketChannel.configureBlocking(false);
+        // Channel 绑定端口
+        serverSocketChannel.bind(new InetSocketAddress(9999));
+        System.out.println(&quot;NIOServer has started, listening on port: &quot; + serverSocketChannel.getLocalAddress());
+
+        // 2.Selector 选择器：注册和选择哪个 Channel 进行读/写
+        Selector selector = Selector.open();
+        // 将连接上来的 Channel 注册到 Selector 选择器上，并且将默认状态设置为 “Accepted”
+        serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
+
+        // 3.缓冲区 Buffer
+        ByteBuffer buffer = ByteBuffer.allocate(1024);
+        RequestHandler requestHandler = new RequestHandler();
+        // Selector 不断轮询监听有多少个客户端 Channel已经连接上了
+        while (true){
+            // 从 Selector 中拿到一个个客户端的 Channel
+            int select = selector.select();
+            if(select == 0){
+                continue;
+            }
+            // Set 集合维护了 客户端-服务端 的 Channel（SelectionKey）
+            Set&lt;SelectionKey&gt; selectionKeys = selector.selectedKeys();
+            // 迭代 set 集合，
+            Iterator&lt;SelectionKey&gt; iterator = selectionKeys.iterator();
+            while (iterator.hasNext()){
+                // 拿到一个 SelectionKey，SelectionKey 里面有：服务端的 ServerSocketChannel；客户端的 SocketChannel
+                SelectionKey key = iterator.next();
+                // 如果有一个客户端的 Channel 连接上来了（状态为“Accepted”），需要进行读/写操作
+                if(key.isAcceptable()){
+                    // 根据 SelectionKey 获得 ServerSocketChannel
+                    ServerSocketChannel channel = (ServerSocketChannel) key.channel();
+                    // 根据 ServerSocketChannel 获得 SocketChannel
+                    SocketChannel clientChannel = channel.accept();
+                    System.out.println(&quot;Connection from &quot; + clientChannel.getRemoteAddress());
+                    // 客户端 Channel 设置为非阻塞
+                    clientChannel.configureBlocking(false);
+                    // 将 Channel 的状态改变为 READ，说明该 Channel 要读数据了
+                    clientChannel.register(selector, SelectionKey.OP_READ);
+                }
+
+                // 如果 Channel 的状态为 Read，可以进行 读操作了。
+                // 处理读操作：还是放在 main 线程中，而不是为这个 Client 请求创建一个新的线程
+                if(key.isReadable()){
+                    // 获取到 客户端 Channel
+                    SocketChannel channel = (SocketChannel) key.channel();
+                    // 数据放到 Buffer 中
+                    channel.read(buffer);
+                    String request = new String(buffer.array()).trim();
+                    buffer.clear();
+                    System.out.println(String.format(&quot;From %s : %s&quot;, channel.getRemoteAddress(),request));
+                    // 给客户端一个响应
+                    String response = requestHandler.handler(request);
+                    channel.write(ByteBuffer.wrap(response.getBytes()));
+                }
+                iterator.remove();
+            }
+        }
+    }
+}
+</code></pre>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[MySQL —— Explain 关键字]]></title>
         <id>https://epitomm.github.io/post/mysql-explain-guan-jian-zi/</id>
@@ -5206,1169 +5549,6 @@ aof_base_size
 <img src="https://epitomm.github.io/post-images/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C.png" alt="图片" loading="lazy"></p>
 <h1 id="参考链接">参考链接</h1>
 <p><a href="https://mp.weixin.qq.com/s/Gy4ElItSvBoeQnN4YbMPGQ">https://mp.weixin.qq.com/s/Gy4ElItSvBoeQnN4YbMPGQ</a></p>
-]]></content>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[面试题 —— 由浅入深全面解析 ThreadLocal]]></title>
-        <id>https://epitomm.github.io/post/mian-shi-ti-threadlocal/</id>
-        <link href="https://epitomm.github.io/post/mian-shi-ti-threadlocal/">
-        </link>
-        <updated>2020-04-01T16:09:37.000Z</updated>
-        <content type="html"><![CDATA[<h1 id="一-threadlocal-介绍">一、ThreadLocal 介绍</h1>
-<h2 id="11-官方介绍">1.1 官方介绍</h2>
-<pre><code>/**
- * This class provides thread-local variables.  These variables differ from
- * their normal counterparts in that each thread that accesses one (via its
- * {@code get} or {@code set} method) has its own, independently initialized
- * copy of the variable.  {@code ThreadLocal} instances are typically private
- * static fields in classes that wish to associate state with a thread (e.g.,
- * a user ID or Transaction ID).
- *
- * &lt;p&gt;For example, the class below generates unique identifiers local to each
- * thread.
- * A thread's id is assigned the first time it invokes {@code ThreadId.get()}
- * and remains unchanged on subsequent calls.
- * &lt;pre&gt;
- * import java.util.concurrent.atomic.AtomicInteger;
- *
- * public class ThreadId {
- *     // Atomic integer containing the next thread ID to be assigned
- *     private static final AtomicInteger nextId = new AtomicInteger(0);
- *
- *     // Thread local variable containing each thread's ID
- *     private static final ThreadLocal&amp;lt;Integer&amp;gt; threadId =
- *         new ThreadLocal&amp;lt;Integer&amp;gt;() {
- *             &amp;#64;Override protected Integer initialValue() {
- *                 return nextId.getAndIncrement();
- *         }
- *     };
- *
- *     // Returns the current thread's unique ID, assigning it if necessary
- *     public static int get() {
- *         return threadId.get();
- *     }
- * }
- * &lt;/pre&gt;
- * &lt;p&gt;Each thread holds an implicit reference to its copy of a thread-local
- * variable as long as the thread is alive and the {@code ThreadLocal}
- * instance is accessible; after a thread goes away, all of its copies of
- * thread-local instances are subject to garbage collection (unless other
- * references to these copies exist).
- *
- * @author  Josh Bloch and Doug Lea
- * @since   1.2
- */
-</code></pre>
-<p>从 Java 官方文档中的描述：<code>ThreadLocal</code>类用来提供<strong>线程内部的局部变量</strong>。这种变量在多线程环境下访问（通过<code>get</code>和<code>set</code>方法访问）时能保证各个线程的变量相对独立于其他线程内的变量。<code>ThreadLocal</code>实例通常来说都是<code>private static</code>类型的，用于关联线程和线程上下文。<br>
-我们可以得知<code>ThreadLocal</code>的作用是：提供线程内的局部变量，不同的线程之间不会相互干扰，这种变量在线程的生命周期内起作用，减少同一个线程内多个函数或组件之间一些公共变量传递的复杂度。</p>
-<p>总结：</p>
-<ol>
-<li>
-<p>线程并发：在多并发的场景下</p>
-</li>
-<li>
-<p>传递数据：我们可以通过 <code>ThreadLocal</code> 在同一线程，不同组件中传递公共变量</p>
-</li>
-<li>
-<p>线程隔离：每个线程的变量都是独立的，不会互相影响。</p>
-</li>
-</ol>
-<h2 id="12-基本使用">1.2 基本使用</h2>
-<h3 id="121-常用方法">1.2.1 常用方法</h3>
-<p>在使用之前，我们先来认识几个 <code>ThreadLoal</code> 的常用方法</p>
-<table>
-<thead>
-<tr>
-<th style="text-align:left"><strong>方法声明</strong></th>
-<th style="text-align:left"><strong>描述</strong></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left">ThreadLocal()</td>
-<td style="text-align:left">创建 ThreadLocal 对象</td>
-</tr>
-<tr>
-<td style="text-align:left">public void set(T value)</td>
-<td style="text-align:left">设置当前线程绑定的局部变量</td>
-</tr>
-<tr>
-<td style="text-align:left">public T get()</td>
-<td style="text-align:left">获取当前线程绑定的局部变量</td>
-</tr>
-<tr>
-<td style="text-align:left">public void remove()</td>
-<td style="text-align:left">移除当前线程绑定的局部变量</td>
-</tr>
-</tbody>
-</table>
-<h3 id="122-使用案列">1.2.2 使用案列</h3>
-<pre><code>package com.ssm.threadlocal;
-/**
- * 需求：线程隔离
- *  在多线程并发的场景下，每个线程中的变量都是互相独立
- *      线程 A：设置(变量1)    获取(变量1)
- *      线程 B：设置(变量2)    获取(变量2)
- */
-public class MyDemo01 {
-    private String content;
-    private String getContent(){
-        return content;
-    }
-    private void setContent(String content){
-        this.content = content;
-    }
-
-    public static void main(String[] args) {
-        MyDemo01 demo = new MyDemo01();
-        for (int i = 0; i &lt; 5; i++) {
-            Thread thread = new Thread(()-&gt;{
-                /*
-                    每个线程：存一个变量，过一会 取出这个变量
-                 */
-                demo.setContent(Thread.currentThread().getName() + &quot;的数据&quot;);
-                System.out.println(&quot; ---------------- &quot;);
-                System.out.println(Thread.currentThread().getName() + &quot;---&gt;&quot; + demo.getContent());
-            });
-            thread.setName(&quot;线程&quot; + i);
-            thread.start();
-        }
-    }
-}
-</code></pre>
-<p>运行结果：部分线程取出的数据 与 它存入的数据不一样</p>
-<pre><code> ---------------- 
- ---------------- 
-线程2---&gt;线程3的数据
- ---------------- 
-线程1---&gt;线程4的数据
- ---------------- 
-线程4---&gt;线程4的数据
-线程0---&gt;线程2的数据
- ---------------- 
-线程3---&gt;线程4的数据
-</code></pre>
-<p>从结果可以看出多个线程在访问同一个变量的时候出现的异常，线程间的数据没有隔离。下面我们来看下采用 ThreadLocal 的方式来解决这个问题的例子。</p>
-<pre><code>package com.ssm.threadlocal;
-
-/**
- * 需求：线程隔离
- *  在多线程并发的场景下，每个线程中的变量都是互相独立
- *      线程 A：设置(变量1)    获取(变量1)
- *      线程 B：设置(变量2)    获取(变量2)
- *
- *      ThreadLocal:
- *          1.set()：将变量绑定到当前线程中；
- *          2.get()：获取当前线程绑定的变量
- */
-public class MyDemo01 {
-    ThreadLocal&lt;String&gt; threadLocal = new ThreadLocal&lt;&gt;();
-    private String getContent(){
-        return threadLocal.get();
-    }
-    private void setContent(String content){
-        // 变量绑定到当前线程中
-        threadLocal.set(content);
-    }
-
-    public static void main(String[] args) {
-        MyDemo01 demo = new MyDemo01();
-        for (int i = 0; i &lt; 5; i++) {
-            Thread thread = new Thread(()-&gt;{
-                /*
-                    每个线程：存一个变量，过一会 取出这个变量
-                 */
-                demo.setContent(Thread.currentThread().getName() + &quot;的数据&quot;);
-                System.out.println(&quot; ---------------- &quot;);
-                System.out.println(Thread.currentThread().getName() + &quot;---&gt;&quot; + demo.getContent());
-            });
-            thread.setName(&quot;线程&quot; + i);
-            thread.start();
-        }
-    }
-}
-</code></pre>
-<p>运行结果：</p>
-<pre><code> ---------------- 
- ---------------- 
-线程3---&gt;线程3的数据
- ---------------- 
-线程2---&gt;线程2的数据
- ---------------- 
- ---------------- 
-线程4---&gt;线程4的数据
-线程0---&gt;线程0的数据
-线程1---&gt;线程1的数据
-</code></pre>
-<p>从结果来看，这样很好的解决了多线程之间数据隔离的问题，十分方便。</p>
-<h2 id="13-threadlocal-与-synchronized-关键字">1.3 ThreadLocal 与 synchronized 关键字</h2>
-<h3 id="131-synchronized-同步方式">1.3.1 synchronized 同步方式</h3>
-<p>这里可能有的朋友会觉得在上述例子中我们完全可以通过加锁来实现这个功能。我们首先来看一下用synchronized代码块实现的效果：</p>
-<pre><code>package com.ssm.threadlocal;
-
-/**
- * 需求：线程隔离
- *  在多线程并发的场景下，每个线程中的变量都是互相独立
- *      线程 A：设置(变量1)    获取(变量1)
- *      线程 B：设置(变量2)    获取(变量2)
- */
-public class MyDemo02 {
-    private String content;
-    private String getContent(){
-        return content;
-    }
-    private void setContent(String content){
-        this.content = content;
-    }
-
-    public static void main(String[] args) {
-        MyDemo02 demo = new MyDemo02();
-        for (int i = 0; i &lt; 5; i++) {
-            Thread thread = new Thread(()-&gt;{
-                /*
-                    每个线程：存一个变量，过一会 取出这个变量
-                 */
-                synchronized (MyDemo02.class){
-                    demo.setContent(Thread.currentThread().getName() + &quot;的数据&quot;);
-                    System.out.println(&quot; ---------------- &quot;);
-                    System.out.println(Thread.currentThread().getName() + &quot;---&gt;&quot; + demo.getContent());
-                }
-
-            });
-            thread.setName(&quot;线程&quot; + i);
-            thread.start();
-        }
-    }
-}
-</code></pre>
-<p>从结果可以发现，加锁确实可以解决这个问题，但是在这里我们强调的是<strong>线程数据隔离</strong>的问题，并不是<strong>多线程共享数据的</strong>问题，在这个案例中使用<code>synchronized</code>关键字是不合适的。</p>
-<h3 id="132-threadlocal-与-synchronized-关键字的区别">1.3.2 ThreadLocal 与 synchronized 关键字的区别</h3>
-<p>虽然T<code>hreadLocal</code>模式与<code>synchronized</code>关键字都用于处理多线程并发访问变量的问题，不过两者处理问题的角度和思路不同。</p>
-<table>
-<thead>
-<tr>
-<th style="text-align:left"></th>
-<th style="text-align:left">synchronized</th>
-<th style="text-align:left">ThreadLocal</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left">原理</td>
-<td style="text-align:left">同步机制采用 “<strong>以时间换空间</strong>” 的方式，只提供了一分变量，让不用的线程派对访问</td>
-<td style="text-align:left">ThreadLocal 采用 “<strong>以空间换时间</strong>” 的方式，为每一个线程都提供了一份变量的副本，从而实现同时访问互不干扰</td>
-</tr>
-<tr>
-<td style="text-align:left">侧重点</td>
-<td style="text-align:left">多个线程之间访问资源的同步</td>
-<td style="text-align:left">多线程中让每个线程之间的数据相互隔离</td>
-</tr>
-</tbody>
-</table>
-<p>总结：在刚刚的案例中，虽然使用<code>ThreadLocal</code>和<code>synchronized</code>都能解决问题，但是使用<code>ThreadLocal</code>更为合适，因为这样可以使程序拥有更高的并发性。</p>
-<h1 id="二-运用场景_事务案例">二、 运用场景_事务案例</h1>
-<p>​通过以上的介绍，我们已经基本了解<code>ThreadLocal</code>的特点。但是它具体是运用在什么场景中呢？ 接下来让我们看一个案例： 事务操作。</p>
-<h2 id="21-转账案例">2.1 转账案例</h2>
-<h3 id="211-场景构建">2.1.1 场景构建</h3>
-<p>​这里我们先构建一个简单的转账场景： 有一个数据表<code>account</code>，里面有两个用户<code>Jack</code>和<code>Rose</code>，用户<code>Jack</code>  给用户<code>Rose</code> 转账。</p>
-<p>案例的实现主要用<code>mysql</code>数据库，<code>JDBC</code> 和 <code>C3P0</code> 框架。以下是详细代码 ：</p>
-<p>（1） 项目结构<br>
-<img src="https://epitomm.github.io/post-images/001.png" alt="图片" loading="lazy"><br>
-（2） 数据准备</p>
-<pre><code class="language-sql">-- 使用数据库
-use test;
--- 创建一张账户表
-create table account(
-	id int primary key auto_increment,
-	name varchar(20),
-	money double
-);
--- 初始化数据
-insert into account values(null, 'Jack', 1000);
-insert into account values(null, 'Rose', 0);
-</code></pre>
-<p>（3） C3P0配置文件和工具类</p>
-<pre><code class="language-xml">&lt;c3p0-config&gt;
-  &lt;!-- 使用默认的配置读取连接池对象 --&gt;
-  &lt;default-config&gt;
-  	&lt;!--  连接参数 --&gt;
-    &lt;property name=&quot;driverClass&quot;&gt;com.mysql.jdbc.Driver&lt;/property&gt;
-    &lt;property name=&quot;jdbcUrl&quot;&gt;jdbc:mysql://localhost:3306/test&lt;/property&gt;
-    &lt;property name=&quot;user&quot;&gt;root&lt;/property&gt;
-    &lt;property name=&quot;password&quot;&gt;1234&lt;/property&gt;
-    
-    &lt;!-- 连接池参数 --&gt;
-    &lt;property name=&quot;initialPoolSize&quot;&gt;5&lt;/property&gt;
-    &lt;property name=&quot;maxPoolSize&quot;&gt;10&lt;/property&gt;
-    &lt;property name=&quot;checkoutTimeout&quot;&gt;3000&lt;/property&gt;
-  &lt;/default-config&gt;
-
-&lt;/c3p0-config&gt;
-</code></pre>
-<p>（4） 工具类 ： JdbcUtils</p>
-<pre><code class="language-java">package com.itheima.transfer.utils;
-
-import com.mchange.v2.c3p0.ComboPooledDataSource;
-import java.sql.Connection;
-import java.sql.SQLException;
-
-public class JdbcUtils {
-    // c3p0 数据库连接池对象属性
-    private static final ComboPooledDataSource ds = new ComboPooledDataSource();
-    // 获取连接
-    public static Connection getConnection() throws SQLException {
-        return ds.getConnection();
-    }
-    //释放资源
-    public static void release(AutoCloseable... ios){
-        for (AutoCloseable io : ios) {
-            if(io != null){
-                try {
-                    io.close();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
-    
-    
-    public static void commitAndClose(Connection conn) {
-        try {
-            if(conn != null){
-                //提交事务
-                conn.commit();
-                //释放连接
-                conn.close();
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public static void rollbackAndClose(Connection conn) {
-        try {
-            if(conn != null){
-                //回滚事务
-                conn.rollback();
-                //释放连接
-                conn.close();
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-}
-</code></pre>
-<p>（5） dao层代码 ： AccountDao</p>
-<pre><code class="language-java">package com.itheima.transfer.dao;
-
-import com.itheima.transfer.utils.JdbcUtils;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-
-public class AccountDao {
-
-    public void out(String outUser, int money) throws SQLException {
-        String sql = &quot;update account set money = money - ? where name = ?&quot;;
-
-        Connection conn = JdbcUtils.getConnection();
-        PreparedStatement pstm = conn.prepareStatement(sql);
-        pstm.setInt(1,money);
-        pstm.setString(2,outUser);
-        pstm.executeUpdate();
-
-        JdbcUtils.release(pstm,conn);
-    }
-
-    public void in(String inUser, int money) throws SQLException {
-        String sql = &quot;update account set money = money + ? where name = ?&quot;;
-
-        Connection conn = JdbcUtils.getConnection();
-        PreparedStatement pstm = conn.prepareStatement(sql);
-        pstm.setInt(1,money);
-        pstm.setString(2,inUser);
-        pstm.executeUpdate();
-
-        JdbcUtils.release(pstm,conn);
-    }
-}
-</code></pre>
-<p>（6） service层代码 ： AccountService</p>
-<pre><code class="language-java">package com.itheima.transfer.service;
-
-import com.itheima.transfer.dao.AccountDao;
-import java.sql.SQLException;
-
-public class AccountService {
-
-    public boolean transfer(String outUser, String inUser, int money) {
-        AccountDao ad = new AccountDao();
-        try {
-            // 转出
-            ad.out(outUser, money);
-            // 转入
-            ad.in(inUser, money);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
-        return true;
-    }
-}
-</code></pre>
-<p>（7） web层代码 ： AccountWeb</p>
-<pre><code class="language-java">package com.itheima.transfer.web;
-
-import com.itheima.transfer.service.AccountService;
-
-public class AccountWeb {
-
-    public static void main(String[] args) {
-        // 模拟数据 : Jack 给 Rose 转账 100
-        String outUser = &quot;Jack&quot;;
-        String inUser = &quot;Rose&quot;;
-        int money = 100;
-
-        AccountService as = new AccountService();
-        boolean result = as.transfer(outUser, inUser, money);
-
-        if (result == false) {
-            System.out.println(&quot;转账失败!&quot;);
-        } else {
-            System.out.println(&quot;转账成功!&quot;);
-        }
-    }
-}
-</code></pre>
-<h3 id="212-引入事务">2.1.2 引入事务</h3>
-<p>​案例中的转账涉及两个DML操作： 一个转出，一个转入。这些操作是需要具备原子性的，不可分割。不然就有可能出现数据修改异常情况。</p>
-<pre><code class="language-java">public class AccountService {
-    public boolean transfer(String outUser, String inUser, int money) {
-        AccountDao ad = new AccountDao();
-        try {
-            // 转出
-            ad.out(outUser, money);
-            // 模拟转账过程中的异常
-            int i = 1/0;
-            // 转入
-            ad.in(inUser, money);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
-        return true;
-    }
-}
-</code></pre>
-<p>所以这里就需要操作事务，来保证转出和转入操作具备原子性，要么同时成功，要么同时失败。<br>
-（1） JDBC中关于事务的操作的api</p>
-<table>
-<thead>
-<tr>
-<th>Connection接口的方法</th>
-<th>作用</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>void  setAutoCommit(false)</td>
-<td>禁用事务自动提交（改为手动）</td>
-</tr>
-<tr>
-<td>void  commit();</td>
-<td>提交事务</td>
-</tr>
-<tr>
-<td>void rollback();</td>
-<td>回滚事务</td>
-</tr>
-</tbody>
-</table>
-<p>（2） <strong>开启事务的注意点</strong>:</p>
-<ul>
-<li>
-<p>为了保证所有的操作在一个事务中,案例中使用的连接必须是同一个:  <code>service</code>层开启事务的<code>connection</code>需要跟<code>dao</code>层访问数据库的<code>connection</code>保持一致</p>
-</li>
-<li>
-<p>线程并发情况下, 每个线程只能操作各自的 <code>connection</code></p>
-</li>
-</ul>
-<h2 id="22-常规解决方案">2.2  常规解决方案</h2>
-<h3 id="221-常规方案的实现">2.2.1 常规方案的实现</h3>
-<p>基于上面给出的前提， 大家通常想到的解决方案是 ：</p>
-<ul>
-<li>传参: 从<code>service</code>层将<code>connection</code>对象向<code>dao</code>层传递</li>
-<li>加锁</li>
-</ul>
-<p>以下是代码实现修改的部分：</p>
-<p>（1 ) AccountService 类</p>
-<pre><code class="language-java">package com.itheima.transfer.service;
-
-import com.itheima.transfer.dao.AccountDao;
-import com.itheima.transfer.utils.JdbcUtils;
-import java.sql.Connection;
-
-public class AccountService {
-
-    public boolean transfer(String outUser, String inUser, int money) {
-        AccountDao ad = new AccountDao();
-        //线程并发情况下,为了保证每个线程使用各自的connection,故加锁
-        synchronized (AccountService.class) {
-
-            Connection conn = null;
-            try {
-                conn = JdbcUtils.getConnection();
-                //开启事务
-                conn.setAutoCommit(false);
-                // 转出
-                ad.out(conn, outUser, money);
-                // 模拟转账过程中的异常
-//            int i = 1/0;
-                // 转入
-                ad.in(conn, inUser, money);
-                //事务提交
-                JdbcUtils.commitAndClose(conn);
-            } catch (Exception e) {
-                e.printStackTrace();
-                //事务回滚
-                JdbcUtils.rollbackAndClose(conn);
-                return false;
-            }
-            return true;
-        }
-    }
-}
-</code></pre>
-<p>（2) AccountDao 类 （这里需要注意的是： connection不能在dao层释放，要在service层，不然在dao层释放，service层就无法使用了）</p>
-<pre><code class="language-java">package com.itheima.transfer.dao;
-
-import com.itheima.transfer.utils.JdbcUtils;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-
-public class AccountDao {
-
-    public void out(Connection conn, String outUser, int money) throws SQLException{
-        String sql = &quot;update account set money = money - ? where name = ?&quot;;
-        //注释从连接池获取连接的代码,使用从service中传递过来的connection
-//        Connection conn = JdbcUtils.getConnection();
-        PreparedStatement pstm = conn.prepareStatement(sql);
-        pstm.setInt(1,money);
-        pstm.setString(2,outUser);
-        pstm.executeUpdate();
-        //连接不能在这里释放,service层中还需要使用
-//        JdbcUtils.release(pstm,conn);
-        JdbcUtils.release(pstm);
-    }
-
-    public void in(Connection conn, String inUser, int money) throws SQLException {
-        String sql = &quot;update account set money = money + ? where name = ?&quot;;
-//        Connection conn = JdbcUtils.getConnection();
-        PreparedStatement pstm = conn.prepareStatement(sql);
-        pstm.setInt(1,money);
-        pstm.setString(2,inUser);
-        pstm.executeUpdate();
-//        JdbcUtils.release(pstm,conn);
-        JdbcUtils.release(pstm);
-    }
-}
-</code></pre>
-<h3 id="222-常规方案的弊端">2.2.2 常规方案的弊端</h3>
-<p>上述方式我们看到的确按要求解决了问题，但是仔细观察，会发现这样实现的弊端：</p>
-<ol>
-<li>
-<p>直接从<code>service</code>层传递<code>connection</code>到<code>dao</code>层, 造成代码耦合度提高</p>
-</li>
-<li>
-<p>加锁会造成线程失去并发性，程序性能降低</p>
-</li>
-</ol>
-<h2 id="23-threadlocal解决方案">2.3 ThreadLocal解决方案</h2>
-<h3 id="231-threadlocal方案的实现">2.3.1 ThreadLocal方案的实现</h3>
-<p>像这种需要在项目中进行<strong>数据传递</strong>和<strong>线程隔离</strong>的场景，我们不妨用<code>ThreadLocal</code>来解决：</p>
-<p>（1） 工具类的修改： 加入ThreadLocal</p>
-<pre><code class="language-java">package com.itheima.transfer.utils;
-
-import com.mchange.v2.c3p0.ComboPooledDataSource;
-import java.sql.Connection;
-import java.sql.SQLException;
-
-public class JdbcUtils {
-    //ThreadLocal对象 : 将connection绑定在当前线程中
-    private static final ThreadLocal&lt;Connection&gt; tl = new ThreadLocal();
-
-    // c3p0 数据库连接池对象属性
-    private static final ComboPooledDataSource ds = new ComboPooledDataSource();
-
-    // 获取连接
-    public static Connection getConnection() throws SQLException {
-        //取出当前线程绑定的connection对象
-        Connection conn = tl.get();
-        if (conn == null) {
-            //如果没有，则从连接池中取出
-            conn = ds.getConnection();
-            //再将connection对象绑定到当前线程中
-            tl.set(conn);
-        }
-        return conn;
-    }
-
-    //释放资源
-    public static void release(AutoCloseable... ios) {
-        for (AutoCloseable io : ios) {
-            if (io != null) {
-                try {
-                    io.close();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
-
-    public static void commitAndClose() {
-        try {
-            Connection conn = getConnection();
-            //提交事务
-            conn.commit();
-            //解除绑定
-            tl.remove();
-            //释放连接
-            conn.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public static void rollbackAndClose() {
-        try {
-            Connection conn = getConnection();
-            //回滚事务
-            conn.rollback();
-            //解除绑定
-            tl.remove();
-            //释放连接
-            conn.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-}
-</code></pre>
-<p>（2） AccountService类的修改：不需要传递connection对象</p>
-<pre><code class="language-java">package com.itheima.transfer.service;
-
-import com.itheima.transfer.dao.AccountDao;
-import com.itheima.transfer.utils.JdbcUtils;
-import java.sql.Connection;
-
-public class AccountService {
-
-    public boolean transfer(String outUser, String inUser, int money) {
-        AccountDao ad = new AccountDao();
-
-        try {
-            Connection conn = JdbcUtils.getConnection();
-            //开启事务
-            conn.setAutoCommit(false);
-            // 转出 ： 这里不需要传参了 ！
-            ad.out(outUser, money);
-            // 模拟转账过程中的异常
-//            int i = 1 / 0;
-            // 转入
-            ad.in(inUser, money);
-            //事务提交
-            JdbcUtils.commitAndClose();
-        } catch (Exception e) {
-            e.printStackTrace();
-            //事务回滚
-           JdbcUtils.rollbackAndClose();
-            return false;
-        }
-        return true;
-    }
-}
-</code></pre>
-<p>（3） AccountDao类的修改：照常使用</p>
-<pre><code class="language-java">package com.itheima.transfer.dao;
-
-import com.itheima.transfer.utils.JdbcUtils;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-
-public class AccountDao {
-
-    public void out(String outUser, int money) throws SQLException {
-        String sql = &quot;update account set money = money - ? where name = ?&quot;;
-        Connection conn = JdbcUtils.getConnection();
-        PreparedStatement pstm = conn.prepareStatement(sql);
-        pstm.setInt(1,money);
-        pstm.setString(2,outUser);
-        pstm.executeUpdate();
-        //照常使用
-//        JdbcUtils.release(pstm,conn);
-        JdbcUtils.release(pstm);
-    }
-
-    public void in(String inUser, int money) throws SQLException {
-        String sql = &quot;update account set money = money + ? where name = ?&quot;;
-        Connection conn = JdbcUtils.getConnection();
-        PreparedStatement pstm = conn.prepareStatement(sql);
-        pstm.setInt(1,money);
-        pstm.setString(2,inUser);
-        pstm.executeUpdate();
-//        JdbcUtils.release(pstm,conn);
-        JdbcUtils.release(pstm);
-    }
-}
-</code></pre>
-<h3 id="232-threadlocal方案的好处">2.3.2 ThreadLocal方案的好处</h3>
-<p>从上述的案例中我们可以看到， 在一些特定场景下，<code>ThreadLocal</code>方案有两个突出的优势：</p>
-<ol>
-<li>
-<p>传递数据 ： 保存每个线程绑定的数据，在需要的地方可以直接获取, 避免参数直接传递带来的代码耦合问题</p>
-</li>
-<li>
-<p>线程隔离 ： 各线程之间的数据相互隔离却又具备并发性，避免同步方式带来的性能损失</p>
-</li>
-</ol>
-<h1 id="三-threadlocal的内部结构">三、ThreadLocal的内部结构</h1>
-<p>通过以上的学习，我们对<code>ThreadLocal</code>的作用有了一定的认识。现在我们一起来看一下<code>ThreadLocal</code>的内部结构，探究它能够实现线程数据隔离的原理。</p>
-<h2 id="31常见的误解">3.1常见的误解</h2>
-<p>通常，如果我们不去看源代码的话，我猜 <code>ThreadLocal</code> 是这样子设计的：每个<code>ThreadLocal</code> 类都创建一个 <code>Map</code>，然后用线程作为<code>Map</code>的<code>key</code>，要存储的局部变量作为<code>Map</code>的<code>value</code>，这样就能达到各个线程的局部变量隔离的效果。这是最简单的设计方法，<code>JDK</code>最早期的<code>ThreadLocal</code>就是这样设计的。</p>
-<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/%E6%97%A9%E6%9C%9FThreadLocal.png" alt="图片" loading="lazy"></figure>
-<h2 id="32-现在的设计">3.2 现在的设计</h2>
-<p>但是，<code>JDK</code>后面优化了设计方案，<code>JDK8</code> 中 <code>ThreadLocal</code>的设计是：每个<code>Thread</code>维护一个<code>ThreadLocalMap</code> 哈希表，这个哈希表的<code>key</code>是<code>ThreadLocal</code>实例本身，<code>value</code>才是真正要存储的值<code>object</code>。</p>
-<p>（1）每个<code>Thread</code>线程内部都有一个<code>Map（ThreadLocalMap）</code></p>
-<p>（2）<code>Map</code>里面存储<code>ThreadLocal</code>对象（<code>key</code>）和线程的变量副本（<code>value</code>）</p>
-<p>（3）<code>Thread</code>内部的<code>Map</code>是由<code>ThreadLocal</code>维护的，由ThreadLocal负责向map获取和设置线程的变量值。</p>
-<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/JDK8ThreadLocal.png" alt="图片" loading="lazy"></figure>
-<h2 id="33-jdk8的设计方案两个好处">3.3 JDK8的设计方案两个好处</h2>
-<ol>
-<li>每个<code>Map</code>存储的<code>Entry</code>数量变少</li>
-</ol>
-<p>[在早期版本内，Map 的 Entry 数量由 Thread 决定；而 JDK8 中，Map 的 Entry 数量由 ThreadLocal 决定，一般情况下 ThreadLocal 数量是比 Thread 少的]</p>
-<ol start="2">
-<li>当<code>Thread</code>销毁的时候，<code>ThreadLocalMap</code>也会随之销毁，减少内存的使用</li>
-</ol>
-<p>[早期版本内，ThreadLocalMap 由 ThreadLocal 维护；而 JDK8 中，ThreadLocalMap 由 Thread 维护，当 Thread 销毁，ThreadLocalMap 也会销毁]</p>
-<h1 id="四-threadlocal-的和核心方法源码">四、ThreadLocal 的和核心方法源码</h1>
-<p>基于<code>ThreadLocal</code>的内部结构，我们继续分析它的核心方法源码，更深入的了解其操作原理。</p>
-<p>除了构造方法之外，<code>ThreadLocal</code>对外暴露的方法有以下4个：</p>
-<table>
-<thead>
-<tr>
-<th style="text-align:left">方法声明</th>
-<th style="text-align:left">描述</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left">protected T initialValue()</td>
-<td style="text-align:left">返回当前线程局部变量的初始值</td>
-</tr>
-<tr>
-<td style="text-align:left">public void set(T value)</td>
-<td style="text-align:left">设置当前线程绑定的局部变量</td>
-</tr>
-<tr>
-<td style="text-align:left">public T get()</td>
-<td style="text-align:left">获取当前线程绑定的局部变量</td>
-</tr>
-<tr>
-<td style="text-align:left">public void remove()</td>
-<td style="text-align:left">移除当前线程绑定的局部变量</td>
-</tr>
-</tbody>
-</table>
-<p>以下是这4个方法的详细源码分析（为了保证思路清晰，<code>ThreadLocalMap</code>部分暂时不展开，下一个知识点详解）</p>
-<h2 id="41-set方法">4.1 set方法</h2>
-<p>（1）源码和对应的中文注释</p>
-<pre><code>/**
- * 设置当前线程对应的 ThreadLocal 的值
- * @param value 将要保存在当前线程对应的ThreadLocal的值
- */
-public void set(T value) {
-    // 获取当前线程对象
-    Thread t = Thread.currentThread();
-    // 获取当前线程对象中维护的 ThreadLocalMap 对象
-    ThreadLocalMap map = getMap(t);
-    // 判断 map 是否存在
-    if (map != null)
-        // 存在则调用 map.set 设置此实体 Entry
-        map.set(this, value);
-    else
-        // 1）当前线程 Thread 不存在 ThreadLocalMap 对象
-        // 2）则调用 createMap 进行 ThreadLocalMap 对象的初始化
-        // 3）并将 t（当前线程）和value（t对应的值）作为第一个 entry 存放至 ThreadLocalMap 中
-        createMap(t, value);
-}
-/**
- * 获取当前线程 Thread 对应维护的 ThreadLocalMap
- *
- * @param  t the current thread 当前线程
- * @return the map 对应维护的 ThreadLocalMap
- */
-
-ThreadLocalMap getMap(Thread t) {
-    return t.threadLocals;
-}
-
-/**
- * 创建当前线程 Thread 对应维护的 ThreadLocalMap
- *
- * @param t the current thread 当前线程
- * @param firstValue value for the initial entry of the map 存放到 map 中第一个 entry 值 
- */
-void createMap(Thread t, T firstValue) {
-    // 这里的 this 是调用此方法的threadLocal
-    t.threadLocals = new ThreadLocalMap(this, firstValue);
-}
-</code></pre>
-<p>（2）代码执行流程<br>
-A.首先获取当前线，并根据当前线程获取一个<code>Map</code></p>
-<p>B.如果获取的<code>Map</code>不为空，则将参数设置到<code>Map</code>中（当前<code>ThreadLocal</code>的引用作为<code>key</code>）</p>
-<p>C.如果<code>Map</code>为空，则给该线程创建<code>Map</code>，并设置初始值</p>
-<h2 id="42-get方法">4.2 get方法</h2>
-<p>（1）源码和对应的中文注释</p>
-<pre><code>/**
- * 返回当前线程中保存 ThreadLocal 的值
- * 当前线程没有此 ThreadLocal 变量
- * 则它会通过调用 {@link #initialValue} 方法进行初始化
- *
- * @return 返回当前线程对应此 ThreadLocal 的值
- */
-public T get() {
-    // 获取当前线程对象
-    Thread t = Thread.currentThread();
-    // 获取当前线程中维护的 ThreadLocalMap 对象
-    ThreadLocal.ThreadLocalMap map = getMap(t);
-    // 如果此 map 存在
-    if (map != null) {
-        // 以当前的 ThreadLocal 为 key，调用 getEntry 获取对应的存储实体 e
-        ThreadLocal.ThreadLocalMap.Entry e = map.getEntry(this);
-        // 对 e 进行判空
-        if (e != null) {
-            @SuppressWarnings(&quot;unchecked&quot;)
-            // 获取存储实体 e 对应的 value 值，即为我们想要的当前线程对应此 ThreadLocal 的值
-            T result = (T)e.value;
-            return result;
-        }
-    }
-    /*
-        初始化：有两种情况执行当前代码
-        第一种情况：map 不存在，表示此线程没有维护的 ThreadLocalMap 对象
-        第二种情况：map 存在，但是没有与当前 ThreadLocal 关联的 Entry
-     */
-    return setInitialValue();
-}
-/**
- * 初始化
- *
- * @return the initial value
- */
-private T setInitialValue() {
-    // 调用 initialValue 获取初始化的值
-    // 此方法可以被子类重写，如果不重写默认返回 null
-    T value = initialValue();
-    // 获取当前线程对象
-    Thread t = Thread.currentThread();
-    // 获取此线程对象中维护的 ThreadLocalMap 对象
-    ThreadLocal.ThreadLocalMap map = getMap(t);
-    // 判断 map 是否存在
-    if (map != null)
-        // 存在则调用 map.set 设置此实体 entry
-        map.set(this, value);
-    else
-        // 1)当前线程 Thread 不存在 ThreadLocalMap 对象
-        // 2)则调用 createMap 进行 ThreadLocalMap 对象的初始化
-        // 3)并将 t(当前线程)和 value(t对应的值)作为第一个 entry 存放至 ThreadLocalMap 中
-        createMap(t, value);
-    // 返回设置的值 value
-    return value;
-}
-</code></pre>
-<p>（2）代码执行流程<br>
-A.首先获取当前线程，根据当前线程获取一个<code>Map</code></p>
-<p>B.如果获取的<code>Map</code>不为空，则在<code>Map</code>中以<code>ThreadLocal</code>的引用作为<code>key</code>来在<code>Map</code>中获取对应的<code>Entry</code>，否则转到D</p>
-<p>C.如果<code>e</code>不为<code>null</code>，则返回<code>e.value</code>，否则转到D</p>
-<p>D.<code>Map</code>为空或者<code>e</code>为空，则通过<code>initiaValue</code>函数获取初始值<code>value</code>，然后用<code>ThreadLocal</code>的引用和<code>value</code>作为<code>firstKey</code>和<code>firstValue</code>创建一个新的<code>Map</code></p>
-<p>总结：<strong>先获取当前线程的ThreadLocalMap变量，如果存在则返回值，不存在则创建并返回初始值</strong>。</p>
-<h2 id="43-remove方法">4.3 remove方法</h2>
-<p>（1）源码和对应的中文注释</p>
-<pre><code>/**
- * 删除当前线程中保存的 ThreadLocal 对应的实体 entry
- */
-public void remove() {
-    // 获取当前线程对象中维护的 ThreadLocalMap
-    ThreadLocal.ThreadLocalMap m = getMap(Thread.currentThread());
-    // 如果此 map 存在
-    if (m != null)
-        // 存在则调用 map.remove
-        // 以当前 ThreadLocal 为 key 删除对应的实体 entry
-        m.remove(this);
-}
-
-        /**
-         * 移除 key 为给定值的 Entry 节点
-         */
-        private void remove(ThreadLocal&lt;?&gt; key) {
-            // 暂存 Entry 数组
-            Entry[] tab = table;
-            int len = tab.length;
-            // 获取当前 key 对应的 Entry 在数组中的位置
-            int i = key.threadLocalHashCode &amp; (len-1);
-            for (Entry e = tab[i];
-                 e != null;
-                 e = tab[i = nextIndex(i, len)]) {
-                if (e.get() == key) {
-                    e.clear();
-                    expungeStaleEntry(i);
-                    return;
-                }
-            }
-        }
-</code></pre>
-<p>（2）代码执行流程<br>
-A.首先获取当前线程，并根据当前线程获取一个<code>Map</code></p>
-<p>B.如果获取的<code>Map</code>不为空，则移除当前<code>ThreadLocal</code>对象对应的<code>Entry</code></p>
-<h2 id="44-initialvalue方法">4.4 initialValue方法</h2>
-<pre><code>/**
- * 返回当前线程对应的ThreadLocal的初始值
- * 
- * 此方法的第一次调用发生在，当线程通过get方法访问此线程的ThreadLocal值时
- * 除非线程先调用了set方法，在这种情况下，initialvalue 才不会被这个线程调用。
- * 通常情况下，每个线程最多调用一次这个方法。
- * &lt;p&gt;这个方法仅仅简单的返回nu11{@code nu11}；
- * 如果程序员想ThreadLocal线程局部变量有一个除nu11以外的初始值，
- * 必须通过子类继承{@code ThreadLocal}的方式去重写此方法
- * 通常，可以通过匿名内部类的方式实现
- * 
- * @return 当前 ThreadLocal 的初始值
- */
-protected T initialValue() {
-    return null;
-}
-</code></pre>
-<p>此方法的作用是返回该线程局部变量的初始值。<br>
-（1）这个方法是一个延迟调用方法，从面的代码我们得知，在<code>set</code>方法还未调用而先调用了<code>get</code>方法时才执行，并且仅执行1次。</p>
-<p>（2）这个方法缺省实现直接返回一个<code>null</code>。</p>
-<p>（3）如果想要一个除<code>null</code>之外的初始值，可以重写此方法。（备注：该方法是一个<code>protected</code>的方法，显然是为了让子类覆盖而设计的）</p>
-<h1 id="五-threadlocalmap源码分析">五、ThreadLocalMap源码分析</h1>
-<p>在分析<code>ThreadLocal</code>方法的时候，我们了解到<code>ThreadLocal</code>的操作实际上是围绕<code>ThreadLocalMap</code>展开的。</p>
-<p><code>ThreadLocalMap</code>的源码相对比较复杂，我们从以下三个方面进行讨论。</p>
-<h2 id="51基本结构">5.1基本结构</h2>
-<p><code>ThreadLocalMap</code>是<code>ThreadLocal</code>的内部类，没有实现<code>Map</code>接口，用独立的方式实现了<code>Map</code>的功能，其内部的<code>Entry</code>也是独立实现。</p>
-<figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/ThreadLocal%E7%9A%84UML.png" alt="图片" loading="lazy"></figure>
-<p>（1）成员变量</p>
-<pre><code>/**
- * 初始容量 - 必须是 2 的整次幂
- */
-private static final int INITIAL_CAPACITY = 16;
-
-/**
- * 存放数据的 table，Entry类的定义在下面分析
- * 同样，数组长度必须是 2 的整次幂。
- */
-private ThreadLocal.ThreadLocalMap.Entry[] table;
-
-/**
- * 数组里面 entrys 的个数，可以用于判断 table 当前使用量是否超过阈值
- */
-private int size = 0;
-
-/**
- * 进行扩容的阈值，表使用量大于它的时候进行扩容。
- */
-private int threshold; // Default to 0
-</code></pre>
-<p>跟HashMap类似，<code>INITIAL_CAPACITY</code>代表这个<code>Map</code>的初始容量；<code>table</code>是一个<code>Entry</code>类型的数组，用于存储数据；<code>size</code>代表表中的存储数目；<code>threshold</code> 代表需要扩容时对应 <code>size</code>的阈值。<br>
-（2）存储结构-Entry</p>
-<pre><code>/**
- * Entry 继承 WeakReference，并且用 ThreadLocal 作为 key
- * 如果 key 为 null(entry.get() == null)，意味着 key 不再被引用，
- * 因此这时候 entry 也可以从 table 中清除
- */
-static class Entry extends WeakReference&lt;ThreadLocal&lt;?&gt;&gt; {
-    /** The value associated with this ThreadLocal. */
-    Object value;
-
-    Entry(ThreadLocal&lt;?&gt; k, Object v) {
-        super(k);
-        value = v;
-    }
-}
-</code></pre>
-<p>在<code>ThreadLocalMa</code>p中，也是用<code>Entry</code>来保存<code>K-V</code>结构数据的。不过<code>Entry</code>中的<code>key</code>只能是<code>ThreadLocal</code>对象，这点在构造方法中已经限定死了。<br>
-另外，<code>Entry</code>继承<code>WeakReference</code>，也就是<code>key（ThreadLocal）</code>是弱引用，其目的是将<code>ThreadLocal</code>对象的生命周期和线程生命周期解绑。</p>
-<h2 id="52弱引用和内存泄漏">5.2弱引用和内存泄漏</h2>
-<p>有些程序员在使用<code>ThreadLocal</code>的过程中会发现有内存泄漏的情况发生，就猜测这个内存泄漏跟<code>Entry</code>中使用了<strong>弱引用</strong>的<code>key</code>有关系。这个理解其实是不对的。</p>
-<p>我们先来回顾这个问题中涉及的几个名词概念，再来分析问题。</p>
-<h3 id="1内存泄漏相关概念">（1）内存泄漏相关概念</h3>
-<ul>
-<li>Memory overflow：内存溢出，没有足够的内存提供申请者使用。</li>
-<li>Memory leak：内存泄漏是指程序中<strong>己动态分配的堆内存由于某种原因程序未释放或无法释放，造成系统内存的浪费</strong>，导致程序运行速度减慢甚至系统溃等严重后果。内存泄漏的堆积终将导致内存溢出。</li>
-</ul>
-<h3 id="2弱引用相关概念">（2）弱引用相关概念</h3>
-<p>Java中的引用有4种类型：强、软、弱、虚。当前这个问题主要涉及到强引用和弱引用：</p>
-<p><strong>强引用</strong>（&quot;Strong”Reference），就是我们最常见的普通对象引用，只要还有强引用指向一个对象，就能表明对象还“活着”，垃圾回收器就不会回收这种对象。</p>
-<p><strong>弱引用</strong>（WeakReference），垃圾回收器一旦发现了只具有弱引用的对象，不管当前内存空间足够与否，都会回收它的内存。</p>
-<h3 id="3如果key使用强引用">（3）如果key使用强引用</h3>
-<p>假设<code>ThreadLocalMap</code>中的<code>key</code>使用了强引用，那么会出现内存泄漏吗？</p>
-<p>此时<code>ThreadLocal</code>的内存图（实线表示强引用）如下：</p>
-<figure data-type="image" tabindex="4"><img src="https://epitomm.github.io/post-images/key%E5%BC%BA%E5%BC%95%E7%94%A8.png" alt="图片" loading="lazy"></figure>
-<p>1.假设在业务代码中使用完<code>ThreadLocal</code>，<code>ThreadLocal Ref</code>被回收了。</p>
-<p>2.但是因为<code>ThreadLocalMap</code>的<code>Entry</code>强引用了<code>ThreadLocal</code>，造成<code>ThreadLocal</code>无法被回收。</p>
-<p>3.在没有手动删除这个<code>Entry</code>以及<code>CurrentThread</code>依然运行的前提下，始终有强引用链<code>TthreadRef-&gt;CurrentThread-&gt;ThreadLocalMap-&gt;Entry</code>，<code>Entry</code>就不会被回收（<code>Entry</code>中包括了<code>ThreadLocal</code>实例和<code>value</code>），<strong>导致<code>Entry</code>内存泄漏</strong>。</p>
-<p>也就是说，<code>ThreadLocalMap</code>中的<code>key</code>使用了强引用，是无法完全避免内存泄漏的。</p>
-<h3 id="4如果key使用弱引用">（4）如果key使用弱引用</h3>
-<p>那么<code>ThreadLocalMap</code>中的<code>key</code>使用了弱引用，会出现内存泄漏吗？此时<code>ThreadLocal</code>的内存图（实线表示强引用，虚线表示弱引用）如下：</p>
-<figure data-type="image" tabindex="5"><img src="https://epitomm.github.io/post-images/key%E5%BC%B1%E5%BC%95%E7%94%A8.png" alt="图片" loading="lazy"></figure>
-<p>同样假设在业务代码中使用完<code>ThreadLocal</code>，<code>ThreadLocal Ref</code>被回收了。</p>
-<p>由于<code>ThreadLocalMap</code>只持有<code>ThreadLocal</code>的弱引用，没有任何强引用指向<code>Threadlocal</code>实例，所以<code>Threadlocal</code>就可以顺利被<code>gc</code>回收，此时<code>Entry</code>中的<code>key=null</code>。</p>
-<p>但是在没有手动删除这个<code>Entry</code>以及<code>CurrentThread</code>依然运行的前提下，也存在有强引用链 <code>ThreadRef -&gt;CurrentThread-&gt;ThreadLocalMap-&gt;Entry-&gt;value</code>，<code>value</code>不会被回收，而这块<code>value</code>永远不会被访问到了，<strong>导致<code>value</code>内存泄漏</strong>。</p>
-<p>也就是说，<code>ThreadLocalMap</code>中的<code>key</code>使用了弱引用，也有可能内存泄漏。</p>
-<h3 id="5出现内存泄漏的真实原因">（5）出现内存泄漏的真实原因</h3>
-<figure data-type="image" tabindex="6"><img src="https://epitomm.github.io/post-images/ThreadLocal%E5%86%85%E5%AD%98%E6%B3%84%E6%BC%8F%E7%9C%9F%E6%AD%A3%E5%8E%9F%E5%9B%A0.png" alt="图片" loading="lazy"></figure>
-<p>比较以上两种情况，我们就会发现，内存泄漏的发生跟<code>ThreadLocalMap</code>中的<code>key</code>是否使用弱引用是没有关系的。那么内存泄漏的的真正原因是什么呢？</p>
-<p>细心的同学会发现，在以上两种内存泄漏的情况中，都有两个前提：</p>
-<p>1.没有手动删除这个<code>Entry</code></p>
-<p>2.<code>CurrentThread</code>依然运行</p>
-<p>第一点很好理解，只要在使用完<code>ThreadLocal</code>，调用其<code>remove</code>方法删除对应的<code>Entry</code>，就能避免内存泄漏。第二点稍微复杂一点，由于<code>ThreadLocalMap</code>是<code>Thread</code>的一个属性，被当前线程所引用，所以它的生命周期跟<code>Thread</code>一样长。那么在使用完<code>ThreadLocal</code>的使用，如果当前<code>Thread</code>也随之执行结束，<code>ThreadLocalMap</code>自然也会被<code>gc</code>回收，从根源上避免了内存泄漏。</p>
-<p>综上，<code>ThreadLocal</code>内存泄漏的根源是：由于<code>ThreadLocalMap</code>的生命周期跟<code>Thread</code>一样长，如果没有手动删除对应<code>key</code>就会导致内存泄漏。</p>
-<h3 id="6为什么使用弱引用">（6）为什么使用弱引用</h3>
-<p>根据刚才的分析，我们知道了：无论使用<code>ThreadLocalMap</code>中的<code>key</code>使用哪种类型引用都无法完全避免内存泄漏，跟使用弱引用没有关系。要避免内存泄漏有两种方式：</p>
-<p>1.使用完<code>ThreadLocal</code>，调用其<code>remove</code>方法删除对应的<code>Entry</code></p>
-<p>2.使用完<code>ThreadLocal</code>，当前<code>Thread</code>也随之运行结束</p>
-<p>相对第一种方式，第二种方式显然更不好控制，特别是使用线程池的时候，线程结束是不会销毁的。</p>
-<p>也就是说，只要记得在使用完<code>ThreadLocal</code>及时的调用<code>remove</code>，无论<code>key</code>是强引用还是弱引用都不会有问题。</p>
-<p><strong>那么为什么key要用弱引用呢？</strong></p>
-<p>事实上，在<code>ThreadLocalMap</code>中的<code>set/getEntry</code>方法中，会对<code>key</code>为<code>nul</code>（也即是<code>ThreadLocal</code>为<code>null</code>）进行判断，如果为<code>null</code>的话，那么是会对<code>value</code>置为<code>null</code>的。</p>
-<p>这就意味着使用完<code>ThreadLocal</code>，<code>CurrentThread</code>依然运行的前提下，就算忘记调用<code>remove</code>方法，弱引用比强引用可以多一层保障：弱引用的<code>ThreadLocal</code>会被回收，对应的<code>value</code>在下一次<code>ThreadLocalMap</code>调用<code>set</code>，<code>get</code>，<code>remove</code>中的任一方法的时候会被清除，从而避免内存泄漏。</p>
-<h2 id="43hash冲突的解决">4.3hash冲突的解决</h2>
-<p><code>hash</code>冲突的解决是<code>Map</code>中的一个重要内容。我们以<code>hash</code>冲突的解决为线索，来研究一下<code>ThreadLocalMap</code>的核心源码。</p>
-<h3 id="1首先从threadlocal的set方法入手">（1）首先从ThreadLocal的set(）方法入手</h3>
-<pre><code>public void set(T value) {
-    Thread t = Thread.currentThread();
-    ThreadLocalMap map = getMap(t);
-    if (map != null)
-        map.set(this, value);
-    else
-        createMap(t, value);
-}
-ThreadLocalMap getMap(Thread t) {
-    return t.threadLocals;
-}
-void createMap(Thread t, T firstValue) {
-    t.threadLocals = new ThreadLocalMap(this, firstValue);
-}
-</code></pre>
-<p>这个方法我们刚才分析过，其作用是设置当前线程绑定的局部变量：<br>
-A.首先获取当前线程，并根据当前线程获取一个<code>Map</code></p>
-<p>B.如果获取的<code>Map</code>不为空，则将参数设置到<code>Map</code>中（当前<code>ThreadLocal</code>的引用作为<code>key</code>）</p>
-<p>（这里调用了<code>ThreadLocalMap</code>的<code>set</code>方法）</p>
-<p>C.如果<code>Map</code>为空，则给该线程创建<code>Map</code>，并设置初始值</p>
-<p>（这里调用了<code>ThreadLocalMap</code>的构造方法）</p>
-<h3 id="2构造方法threadlocalmapthreadlocal-firstkey-object-firstvalue">（2）构造方法ThreadLocalMap(ThreadLocal&lt;?&gt; firstKey, Object firstValue)</h3>
-<pre><code>/**
- * @param firstKey 本地 ThreadLocal 实例(this)
- * @param firstValue 要保存的线程本地变量
- */
-ThreadLocalMap(ThreadLocal&lt;?&gt; firstKey, Object firstValue) {
-    // 初始化 table
-    table = new ThreadLocal.ThreadLocalMap.Entry[INITIAL_CAPACITY];
-    // 计算索引（重点代码）
-    int i = firstKey.threadLocalHashCode &amp; (INITIAL_CAPACITY - 1);
-    // 设置值
-    table[i] = new ThreadLocal.ThreadLocalMap.Entry(firstKey, firstValue);
-    size = 1;
-    // 设置阈值
-    setThreshold(INITIAL_CAPACITY);
-}
-</code></pre>
-<p>构造函数首先创建一个长度为16的<code>Entry</code>数组，然后计算出<code>firstKey</code>对应的索引，然后存储到<code>table</code>中，并设置<code>size</code>和<code>threshold</code>。<br>
-重点分析：<code>int i = firstKey.threadLocalHashCode &amp; (INITIAL_CAPACITY - 1);</code></p>
-<p>a.关于<code>firstkey.threadLocalHashcode</code>：</p>
-<pre><code>private final int threadLocalHashCode = nextHashCode();
-private static int nextHashCode() {
-    return nextHashCode.getAndAdd(HASH_INCREMENT);
-}
-// AtomicInteger 是一个提供原子操作的 Integer类，通过线程安全的方式操作加减，适合高并发情况下的使用
-private static AtomicInteger nextHashCode =
-    new AtomicInteger();
-// 特殊的 hash 值
-private static final int HASH_INCREMENT = 0x61c88647;
-</code></pre>
-<p>这里定义了一个<code>Atomiclnteger</code>类型，每次获取当前值并加上<code>HASH_INCREMENT</code>，<code>HASH_INCREMENT=0x61c88647</code>，这个值跟斐波那契数列（黄金分割数）有关，其主要目的就是为了让哈希码能均匀的分布在2的n次方的数组里，也就是<code>Entry[]]table</code>中，这样做可以尽量避免<code>hash</code>冲突。</p>
-<p>b.关于<code>&amp;（INITIAL_CAPACITY-1）</code></p>
-<p>计算<code>hash</code>的时候里面采用了<code>hashCode&amp;(size-1)</code>的算法，这相当于取模运算<code>hashCode%size</code>的一个更高效的实现。正是因为这种算法，我们要求<code>size</code>必须是2的整次幂，这也能保证保证在索引不越界的前提下，使得<code>hash</code>发生冲突的次数减小。</p>
-<h3 id="3threadlocalmap中的set方法">（3）ThreadLocalMap中的set方法</h3>
-<pre><code>private void set(ThreadLocal&lt;?&gt; key, Object value) {
-
-    // We don't use a fast path as with get() because it is at
-    // least as common to use set() to create new entries as
-    // it is to replace existing ones, in which case, a fast
-    // path would fail more often than not.
-
-    ThreadLocal.ThreadLocalMap.Entry[] tab = table;
-    int len = tab.length;
-    // 计算索引（重点代码）
-    int i = key.threadLocalHashCode &amp; (len-1);
-
-    /**
-     * 使用线性探测法查找元素（重点代码）
-     */
-    for (ThreadLocal.ThreadLocalMap.Entry e = tab[i];
-         e != null;
-         e = tab[i = nextIndex(i, len)]) {
-        ThreadLocal&lt;?&gt; k = e.get();
-        // ThreadLocal 对应的 key 存在，直接覆盖之前的值
-        if (k == key) {
-            e.value = value;
-            return;
-        }
-
-        // key 为 null，但是值不为 null，说明之前的 ThreadLocal 对象已经被回收了
-        // 当前数组中的 Entry 是一个陈旧（stale）的元素
-        if (k == null) {
-            // 用新元素替换旧元素，这个方法进行了不少的垃圾清理动作，防止内存泄漏
-            replaceStaleEntry(key, value, i);
-            return;
-        }
-    }
-    //ThreadLocal对应的key不存在并且没有找到陈旧的元素，则在空元素的位置创建一个新的Entry。
-    tab[i] = new ThreadLocal.ThreadLocalMap.Entry(key, value);
-    int sz = ++size;
-    /**
-     * cleanSomeslots用于清除那些e.get()==nu11的元素，
-     * 这种数据key关联的对象已经被回收，所以这个Entry（table[index]）可以被置nu11。
-     * 如果没有清除任何entry，并且当前使用量达到了负载因子所定义（长度的2/3），那么进行
-     * rehash（执行一次全表的扫描清理工作）
-     */
-    if (!cleanSomeSlots(i, sz) &amp;&amp; sz &gt;= threshold)
-        rehash();
-}
-// 获取环形数组的下一个索引
-private static int nextIndex(int i, int len) {
-    return ((i + 1 &lt; len) ? i + 1 : 0);
-}
-</code></pre>
-<p>代码执行流程：<br>
-A.首先还是根据<code>key</code>计算出索引i，然后查找位置上的<code>Entry</code>，<br>
-B.若是<code>Entry</code>已经存在并且<code>key</code>等于传入的<code>key</code>，那么这时候直接给这个<code>Entry</code>赋新的<code>value</code>值<br>
-C.若是<code>Entry</code>存在，但是<code>key</code>为<code>null</code>，则调用<code>replaceStaleEntry</code>来更换这个<code>key</code>为空的<code>Entry</code>，<br>
-D.不断循环检测，直到遇到为<code>null</code>的地方，这时候要是还没在循环过程中<code>return</code>，那么就在这个<code>null</code>的位置新建一个<code>Entry</code>，并且插入，同时<code>size</code>增加1。</p>
-<p>最后调用<code>cleanSomeSlots</code>，清理<code>key</code>为<code>null</code>的<code>Entry</code>，最后返回是否清理了<code>Entry</code>，接下来再判断<code>size</code>是否<code>&gt;=thresgold</code>达到了<code>rehash</code>的条件，达到的话就会调用<code>rehash</code>函数执行一次全表的扫描清理。</p>
-<p><strong>重点分析</strong>：<code>ThreadLocalMap</code>使用<strong>线性探测法</strong>来解决哈希冲突的。</p>
-<p>该方法一次探测下一个地址，直到有空的地址后插入，若整个空间都找不到空余的地址，则产生溢出。</p>
-<p>举个例子，假设当前<code>table</code>长度为16，也就是说如果计算出来<code>key</code>的<code>hash</code>值为14，如果<code>table</code>[14]上已经有值，并且其<code>key</code>与当前<code>key</code>不一致，那么就发生了<code>hash</code>冲突，这个时候将14+1得到15，取table[15]进行判断，这个时候如果还是冲突会回到0，取table[0]，以此类推，直到可以插入。</p>
-<p>按照上面的描述，可以把<code>Entry[]table</code>看成一个环形数组。</p>
 ]]></content>
     </entry>
 </feed>

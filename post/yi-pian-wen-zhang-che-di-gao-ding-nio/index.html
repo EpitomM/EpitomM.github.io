@@ -1,0 +1,576 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>一篇文章彻底搞定 NIO | SSM</title>
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1587280044737">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="一篇文章彻底搞定 NIO | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="用发展的眼光看看 BIO
+JDK1.4
+
+java.io包  XXX 类
+BIO：Blocking IO：同步阻塞的 IO
+Socket 应用程序：
+
+监听端口：ServerSocket(9999);
+获取客户端的 Socket：serve..." />
+    <meta name="keywords" content="NIO" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://epitomm.github.io">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1587280044737" alt="">
+  </a>
+  <h1 class="site-title">
+    SSM
+  </h1>
+  <p class="site-description">
+    热心善良的老学姐
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              一篇文章彻底搞定 NIO
+            </h2>
+            <div class="post-info">
+              <span>
+                2020-04-19
+              </span>
+              <span>
+                10 min read
+              </span>
+              
+                <a href="https://epitomm.github.io/tag/TQcWK_MS2/" class="post-tag">
+                  # NIO
+                </a>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <h1 id="用发展的眼光看看-bio">用发展的眼光看看 BIO</h1>
+<h2 id="jdk14">JDK1.4</h2>
+<ul>
+<li>java.io包  XXX 类</li>
+<li>BIO：Blocking IO：同步阻塞的 IO</li>
+<li>Socket 应用程序：
+<ul>
+<li>监听端口：ServerSocket(9999);</li>
+<li>获取客户端的 Socket：serverSocket.accept();</li>
+<li>获取 IO 流对象，进行服务端和客户端的数据交互：socket.getInputStream()、getOutputStream()</li>
+</ul>
+</li>
+</ul>
+<h2 id="jdk14-之后">JDK1.4 之后</h2>
+<ul>
+<li>NIO：Non-Blocking IO 同步非阻塞</li>
+<li>java.nio 包</li>
+<li>对 NIO 做一个封装：netty</li>
+</ul>
+<h1 id="图解与代码展现bio及问题所在">图解与代码展现BIO及问题所在</h1>
+<h2 id="单线程-bio">单线程 BIO</h2>
+<h3 id="代码">代码</h3>
+<pre><code>package com.gupao;
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
+public class BIOServer {
+    public static void main(String[] args) {
+        byte [] bs = new byte[1024];
+        List&lt;Socket&gt; list = new ArrayList&lt;&gt;();
+        try(ServerSocket serverSocket = new ServerSocket(9999)) {
+            System.out.println(&quot;BIOServer has started, listening on port:&quot; + serverSocket.getLocalSocketAddress());
+            while (true){
+                Socket clientSocket = serverSocket.accept();
+                System.out.println(&quot;Connection from &quot; + clientSocket.getRemoteSocketAddress());
+                // 业务处理的代码   
+                try(Scanner input = new Scanner(clientSocket.getInputStream())) {
+                    while (true){
+                        String request = input.nextLine();
+                        if(&quot;quit&quot;.equals(request)){
+                            break;
+                        }
+                        System.out.println(String.format(&quot;From %s : %s&quot;, clientSocket.getRemoteSocketAddress(), request));
+                        String response = &quot;From BIOServer Hello &quot; + request + &quot;.\n&quot;;
+                        clientSocket.getOutputStream().write(response.getBytes());
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
+</code></pre>
+<h3 id="运行结果">运行结果</h3>
+<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/%E5%8D%95%E7%BA%BF%E7%A8%8BBIO%E8%BF%90%E8%A1%8C%E7%BB%93%E6%9E%9C.png" alt="图片" loading="lazy"></figure>
+<h3 id="分析">分析</h3>
+<ul>
+<li>第一个 Server 启动， 阻塞在 accept() 方法上，等待第二个 Server 的连接；</li>
+<li>第二个 Server 连接上后，第一个 Server 不再阻塞在 accept() 上，继续向下运行，阻塞在 Scanner 的 nextLine() 方法上，等待第二个 Server 发送数据；</li>
+<li>第二个 Server 数据准备好后，给第一个 Server 发送数据，第一个 Server 的 nextLine() 方法不再阻塞，继续向下运行，再次进行 while 循环，重新阻塞在 “等待数据准备好” 的方法上。</li>
+<li>第三个 Server 进行连接，第一个 Server 无法接收到第三个 Server 连接成功请求，第三个 Server 也无法向第一个 Server 发送数据。
+<ul>
+<li>只有第二个 Server 通过 &quot;quit&quot; 与第一个 Server 断开连接后，第三个 Server 才能与第一个 Server 进行交互</li>
+</ul>
+</li>
+</ul>
+<p><strong>总结：不能使用两个客户端同时连接一个 Server 进行操作</strong></p>
+<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/%E5%8D%95%E7%BA%BF%E7%A8%8BBIO%E5%88%86%E6%9E%90.png" alt="图片" loading="lazy"></figure>
+<h1 id="仔细想想bio的核心问题及解决方案">仔细想想BIO的核心问题及解决方案</h1>
+<h2 id="多线程">多线程</h2>
+<p><strong>那么如何同时处理多个客户端数据交互请求呢？</strong></p>
+<figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/%E5%A4%9A%E7%BA%BF%E7%A8%8BBIO.png" alt="图片" loading="lazy"></figure>
+<h2 id="线程池">线程池</h2>
+<p>Client 越来越多， Server 端的线程就会越来越多，但是 Server 端的线程受 Server 端资源、CPU 影响，不能无限增大。就需要有效地<strong>控制线程的数量</strong>。</p>
+<figure data-type="image" tabindex="4"><img src="https://epitomm.github.io/post-images/%E7%BA%BF%E7%A8%8B%E6%B1%A0BIO.png" alt="图片" loading="lazy"></figure>
+<h2 id="线程池-bio">线程池 BIO</h2>
+<h3 id="代码-2">代码</h3>
+<pre><code>package com.gupao;
+
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+public class ServerThreadPool {
+    public static void main(String[] args) {
+        // 线程池
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+
+        RequestHandler requestHandler = new RequestHandler();
+        // 监听
+        try(ServerSocket serverSocket = new ServerSocket(9999)) {
+            System.out.println(&quot;NIOServer has started, listening on port:&quot; + serverSocket.getLocalSocketAddress());
+            while (true){
+                Socket clientSocket = serverSocket.accept();
+                System.out.println(&quot;Connection from &quot; + clientSocket.getRemoteSocketAddress());
+                // 有客户端连接上来了，交给线程池处理
+                executor.submit(new ClientHandler(clientSocket,requestHandler));
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+package com.gupao;
+
+import java.io.IOException;
+import java.net.Socket;
+import java.util.Scanner;
+
+/**
+ * 每个 Clinet 连接上来后，给它分配一个线程去执行对应的 Ruunable 任务
+ */
+public class ClientHandler implements Runnable {
+
+    private final Socket clientSocket;
+    private final RequestHandler requestHandler;
+
+    public ClientHandler(Socket clientSocket, RequestHandler requestHandler) {
+        this.clientSocket = clientSocket;
+        this.requestHandler = requestHandler;
+    }
+
+    @Override
+    public void run() {
+        try(Scanner input = new Scanner(clientSocket.getInputStream())) {
+            while (true){
+                String request = input.nextLine();
+                if(&quot;quit&quot;.equals(request)){
+                    break;
+                }
+                System.out.println(String.format(&quot;From %s : %s&quot;, clientSocket.getRemoteSocketAddress(), request));
+                // 真正的业务处理
+                String response = requestHandler.handler(request);
+                clientSocket.getOutputStream().write(response.getBytes());
+            }
+        } catch (IOException e) {
+            System.out.println(&quot;Caught exception: &quot; + e);
+            throw new RuntimeException(e);
+        }
+    }
+}
+
+package com.gupao;
+
+/**
+ * 业务处理代码
+ */
+public class RequestHandler {
+    public String handler(String request){
+        return &quot;From Server Hello &quot; + request + &quot;.\n&quot;;
+    }
+}
+</code></pre>
+<h3 id="运行结果-2">运行结果</h3>
+<figure data-type="image" tabindex="5"><img src="https://epitomm.github.io/post-images/%E7%BA%BF%E7%A8%8B%E6%B1%A0BIO%E8%BF%90%E8%A1%8C%E7%BB%93%E6%9E%9C.png" alt="图片" loading="lazy"></figure>
+<figure data-type="image" tabindex="6"><img src="https://epitomm.github.io/post-images/%E7%BA%BF%E7%A8%8B%E6%B1%A0BIO%E7%BC%BA%E9%99%B7.png" alt="图片" loading="lazy"></figure>
+<h1 id="顺其自带推导出nio的原理和代码实现">顺其自带推导出NIO的原理和代码实现</h1>
+<h2 id="选择器-selector">选择器 Selector</h2>
+<p>如果线程池的大小为 60，来了 60 个请求，Server 端正常应该可以同时处理这 60个请求。但是线程要想被执行的话， 一定要去抢到 CPU 的执行权，CPU 进行这 60 个线程的切换，<strong>频繁的线程上下文切换</strong>消耗 CPU 资源过多，利用率太低。多线程的情况下，线程的数量会影响 CPU 的性能，这就需要控制线程数量。</p>
+<p><strong>线程创建的时机</strong></p>
+<p>每来一个 Client 请求连接 accept()，就为它创建一个线程，这个线程会一直等待客户端的数据:input.nextLine();（<strong>阻塞</strong>）。</p>
+<p><strong>有没有办法不阻塞</strong>？</p>
+<p><strong>延迟线程创建的时机</strong>，<strong>等数据准备好以后，才去创建线程</strong>。线程的数量就会得到有效控制（有的 Client 只是连接，并不进行 IO）-&gt; CPU 用于上下文切换的时间减少 -&gt; CPU 利用率提升。</p>
+<figure data-type="image" tabindex="7"><img src="https://epitomm.github.io/post-images/NIO%E9%80%89%E6%8B%A9%E5%99%A8.png" alt="图片" loading="lazy"></figure>
+<p>注意看下面两段代码的注释：</p>
+<pre><code>package com.gupao;
+
+import java.io.IOException;
+import java.net.Socket;
+import java.util.Scanner;
+
+/**
+ * 每个 Clinet 连接上来后，给它分配一个线程去执行对应的 Ruunable 任务
+ */
+public class ClientHandler implements Runnable {
+
+    private final Socket clientSocket;
+    private final RequestHandler requestHandler;
+
+    public ClientHandler(Socket clientSocket, RequestHandler requestHandler) {
+        this.clientSocket = clientSocket;
+        this.requestHandler = requestHandler;
+    }
+
+    @Override
+    public void run() {
+        // 说明线程已经创建了，
+        try(Scanner input = new Scanner(clientSocket.getInputStream())) {
+            while (true){
+                // 等待客户端的输入数据 —— 阻塞的（当前虽然创建了一个线程，但它没有被用到，就浪费了。能不能等到真正处理 IO 的时候才去创建线程）
+                String request = input.nextLine();
+                if(&quot;quit&quot;.equals(request)){
+                    break;
+                }
+                System.out.println(String.format(&quot;From %s : %s&quot;, clientSocket.getRemoteSocketAddress(), request));
+                // 响应客户端
+                String response = requestHandler.handler(request);
+                clientSocket.getOutputStream().write(response.getBytes());
+            }
+        } catch (IOException e) {
+            System.out.println(&quot;Caught exception: &quot; + e);
+            throw new RuntimeException(e);
+        }
+    }
+}
+</code></pre>
+<pre><code>package com.gupao;
+
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+public class ServerThreadPool {
+    public static void main(String[] args) {
+        // 线程池
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+
+        RequestHandler requestHandler = new RequestHandler();
+        // 监听
+        try(ServerSocket serverSocket = new ServerSocket(9999)) {
+            System.out.println(&quot;NIOServer has started, listening on port:&quot; + serverSocket.getLocalSocketAddress());
+            while (true){
+                Socket clientSocket = serverSocket.accept();
+                System.out.println(&quot;Connection from &quot; + clientSocket.getRemoteSocketAddress());
+                // 线程创建的时机——每个客户端来了就为它创建一个线程
+
+//                map.put(clientSocket,&quot;Accepted&quot;);   // 不创建线程
+//                什么时候创建线程 —— clientSocket 真正进行 IO 时，采取创建线程
+
+                executor.submit(new ClientHandler(clientSocket,requestHandler));
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
+</code></pre>
+<h2 id="通道-channel">通道 Channel</h2>
+<p>Client 与 Server 连接进行数据交互，然后数据再返回给 Client。</p>
+<p>而在这个过程中，每次数据交互结束后，连接就会断开，</p>
+<p>而建立连接需要三次握手很耗时，连接是很宝贵的，优化连接的方式：建立一条条<strong>通道</strong>。</p>
+<p>连接和数据传输就在通道中进行，通道可以复用。</p>
+<figure data-type="image" tabindex="8"><img src="https://epitomm.github.io/post-images/NIO%E9%80%9A%E9%81%93.png" alt="图片" loading="lazy"></figure>
+<h2 id="缓存-buffer">缓存 Buffer</h2>
+<p>阻塞/非阻塞 IO：实际上是针对的应用程序和 OS 数据之间交互的这样一种方式。</p>
+<p>非阻塞 IO：OS 没有把所有数据全部传输完成，应用程序不会一直等待操作数据，应用程序允许 OS 一会传输一段数据。应用程序把每次接受到的一小段数据放到<strong>缓存</strong>内。</p>
+<figure data-type="image" tabindex="9"><img src="https://epitomm.github.io/post-images/NIO%E7%BC%93%E5%AD%98.png" alt="图片" loading="lazy"></figure>
+<p>很多情况下会发现，处理数据的时候，的确用的是多线程，但这个多线程不是为了解决 IO 阻塞问题。</p>
+<figure data-type="image" tabindex="10"><img src="https://epitomm.github.io/post-images/NIO%E5%A4%9A%E7%BA%BF%E7%A8%8B.png" alt="图片" loading="lazy"></figure>
+<h2 id="nio-代码">NIO 代码</h2>
+<pre><code>package com.gupao;
+
+import java.awt.image.DataBufferByte;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.*;
+import java.util.Iterator;
+import java.util.Set;
+
+public class NIOServer {
+    public static void main(String[] args) throws IOException {
+        // 1.Channel 通道
+        // 服务端 Channel
+        ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
+        // 服务端 Channel 设置为非阻塞
+        serverSocketChannel.configureBlocking(false);
+        // Channel 绑定端口
+        serverSocketChannel.bind(new InetSocketAddress(9999));
+        System.out.println(&quot;NIOServer has started, listening on port: &quot; + serverSocketChannel.getLocalAddress());
+
+        // 2.Selector 选择器：注册和选择哪个 Channel 进行读/写
+        Selector selector = Selector.open();
+        // 将连接上来的 Channel 注册到 Selector 选择器上，并且将默认状态设置为 “Accepted”
+        serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
+
+        // 3.缓冲区 Buffer
+        ByteBuffer buffer = ByteBuffer.allocate(1024);
+        RequestHandler requestHandler = new RequestHandler();
+        // Selector 不断轮询监听有多少个客户端 Channel已经连接上了
+        while (true){
+            // 从 Selector 中拿到一个个客户端的 Channel
+            int select = selector.select();
+            if(select == 0){
+                continue;
+            }
+            // Set 集合维护了 客户端-服务端 的 Channel（SelectionKey）
+            Set&lt;SelectionKey&gt; selectionKeys = selector.selectedKeys();
+            // 迭代 set 集合，
+            Iterator&lt;SelectionKey&gt; iterator = selectionKeys.iterator();
+            while (iterator.hasNext()){
+                // 拿到一个 SelectionKey，SelectionKey 里面有：服务端的 ServerSocketChannel；客户端的 SocketChannel
+                SelectionKey key = iterator.next();
+                // 如果有一个客户端的 Channel 连接上来了（状态为“Accepted”），需要进行读/写操作
+                if(key.isAcceptable()){
+                    // 根据 SelectionKey 获得 ServerSocketChannel
+                    ServerSocketChannel channel = (ServerSocketChannel) key.channel();
+                    // 根据 ServerSocketChannel 获得 SocketChannel
+                    SocketChannel clientChannel = channel.accept();
+                    System.out.println(&quot;Connection from &quot; + clientChannel.getRemoteAddress());
+                    // 客户端 Channel 设置为非阻塞
+                    clientChannel.configureBlocking(false);
+                    // 将 Channel 的状态改变为 READ，说明该 Channel 要读数据了
+                    clientChannel.register(selector, SelectionKey.OP_READ);
+                }
+
+                // 如果 Channel 的状态为 Read，可以进行 读操作了。
+                // 处理读操作：还是放在 main 线程中，而不是为这个 Client 请求创建一个新的线程
+                if(key.isReadable()){
+                    // 获取到 客户端 Channel
+                    SocketChannel channel = (SocketChannel) key.channel();
+                    // 数据放到 Buffer 中
+                    channel.read(buffer);
+                    String request = new String(buffer.array()).trim();
+                    buffer.clear();
+                    System.out.println(String.format(&quot;From %s : %s&quot;, channel.getRemoteAddress(),request));
+                    // 给客户端一个响应
+                    String response = requestHandler.handler(request);
+                    channel.write(ByteBuffer.wrap(response.getBytes()));
+                }
+                iterator.remove();
+            }
+        }
+    }
+}
+</code></pre>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li><a href="#%E7%94%A8%E5%8F%91%E5%B1%95%E7%9A%84%E7%9C%BC%E5%85%89%E7%9C%8B%E7%9C%8B-bio">用发展的眼光看看 BIO</a>
+<ul>
+<li><a href="#jdk14">JDK1.4</a></li>
+<li><a href="#jdk14-%E4%B9%8B%E5%90%8E">JDK1.4 之后</a></li>
+</ul>
+</li>
+<li><a href="#%E5%9B%BE%E8%A7%A3%E4%B8%8E%E4%BB%A3%E7%A0%81%E5%B1%95%E7%8E%B0bio%E5%8F%8A%E9%97%AE%E9%A2%98%E6%89%80%E5%9C%A8">图解与代码展现BIO及问题所在</a>
+<ul>
+<li><a href="#%E5%8D%95%E7%BA%BF%E7%A8%8B-bio">单线程 BIO</a>
+<ul>
+<li><a href="#%E4%BB%A3%E7%A0%81">代码</a></li>
+<li><a href="#%E8%BF%90%E8%A1%8C%E7%BB%93%E6%9E%9C">运行结果</a></li>
+<li><a href="#%E5%88%86%E6%9E%90">分析</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#%E4%BB%94%E7%BB%86%E6%83%B3%E6%83%B3bio%E7%9A%84%E6%A0%B8%E5%BF%83%E9%97%AE%E9%A2%98%E5%8F%8A%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88">仔细想想BIO的核心问题及解决方案</a>
+<ul>
+<li><a href="#%E5%A4%9A%E7%BA%BF%E7%A8%8B">多线程</a></li>
+<li><a href="#%E7%BA%BF%E7%A8%8B%E6%B1%A0">线程池</a></li>
+<li><a href="#%E7%BA%BF%E7%A8%8B%E6%B1%A0-bio">线程池 BIO</a>
+<ul>
+<li><a href="#%E4%BB%A3%E7%A0%81-2">代码</a></li>
+<li><a href="#%E8%BF%90%E8%A1%8C%E7%BB%93%E6%9E%9C-2">运行结果</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#%E9%A1%BA%E5%85%B6%E8%87%AA%E5%B8%A6%E6%8E%A8%E5%AF%BC%E5%87%BAnio%E7%9A%84%E5%8E%9F%E7%90%86%E5%92%8C%E4%BB%A3%E7%A0%81%E5%AE%9E%E7%8E%B0">顺其自带推导出NIO的原理和代码实现</a>
+<ul>
+<li><a href="#%E9%80%89%E6%8B%A9%E5%99%A8-selector">选择器 Selector</a></li>
+<li><a href="#%E9%80%9A%E9%81%93-channel">通道 Channel</a></li>
+<li><a href="#%E7%BC%93%E5%AD%98-buffer">缓存 Buffer</a></li>
+<li><a href="#nio-%E4%BB%A3%E7%A0%81">NIO 代码</a></li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://epitomm.github.io/post/mysql-explain-guan-jian-zi/">
+              <h3 class="post-title">
+                MySQL —— Explain 关键字
+              </h3>
+            </a>
+          </div>
+        
+
+        
+          
+            <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+<script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+
+<div id="gitalk-container"></div>
+
+<script>
+
+  var gitalk = new Gitalk({
+    clientID: '974bd77fbbd52c2a0647',
+    clientSecret: '6344370ca1314dbd553f45e75a2121a160ef1c44',
+    repo: 'EpitomM.github.io',
+    owner: 'EpitomM',
+    admin: ['EpitomM'],
+    id: (location.pathname).substring(0, 49),      // Ensure uniqueness and length less than 50
+    distractionFreeMode: false  // Facebook-like distraction free mode
+  })
+
+  gitalk.render('gitalk-container')
+
+</script>
+
+          
+
+          
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/EpitomM/EpitomM.github.io" target="_blank">EpitomM</a>
+  <a class="rss" href="https://epitomm.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>
