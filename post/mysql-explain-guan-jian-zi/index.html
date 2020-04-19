@@ -3,7 +3,7 @@
     <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>MySQL —— Explain 关键字 | SSM</title>
-<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1587224486023">
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1587267098513">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
 <link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
 <link rel="alternate" type="application/atom+xml" title="MySQL —— Explain 关键字 | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
@@ -44,7 +44,7 @@ partitions
       <div class="main-content">
         <div class="site-header">
   <a href="https://epitomm.github.io">
-  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1587224486023" alt="">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1587267098513" alt="">
   </a>
   <h1 class="site-title">
     SSM
@@ -178,8 +178,8 @@ partitions
 <p>表名</p>
 <pre><code>mysql&gt; explain select * from t1 join t2; 
 </code></pre>
-<figure data-type="image" tabindex="1"><img src="https://uploader.shimo.im/f/GY8CrhGEMKUWacsF.png!thumbnail" alt="图片" loading="lazy"></figure>
-<p>explain select * from t1 join t2;</p>
+<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/table.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">explain select * from t1 join t2; </p>
 <h2 id="id">id</h2>
 <p>我们写的查询语句一般都以SELECT关键字开头，比较简单的查询语句里只有一个SELECT关键字，但是下边两种情况下在一条查询语句中会出现多个SELECT关键字：</p>
 <ul>
@@ -189,27 +189,27 @@ partitions
 <p>查询语句中每出现<strong>一个SELECT关键字</strong>，MySQL就会为它分配<strong>一个唯一的id值</strong>。这个id值就是EXPLAIN语句的第一个列。对于连接查询来说，一个SELECT关键字后边的<strong>FROM子句中可以跟随多个表</strong>，所以在连接查询的执行计划中，<strong>每个表都会对应一条记录，但是这些记录的id值都是相同的。</strong></p>
 <pre><code>mysql&gt; explain select * from t1 join t2; 
 </code></pre>
-<figure data-type="image" tabindex="2"><img src="https://uploader.shimo.im/f/ekTzyYadm9Uy0myp.png!thumbnail" alt="图片" loading="lazy"></figure>
-<p>一个 select关键字，两条记录 id 值相同</p>
+<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/id1.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">一个 select 关键字，两条记录 id 值相同</p>
 <blockquote>
 <p>在连接查询的执行计划中，每个表都会对应一条记录，这些记录的id列的值是相同的，出现在前边的表是驱动表，出现在后边的表是被驱动表</p>
 </blockquote>
 <p>对于<strong>包含子查询的</strong>查询语句来说，就可能涉及<strong>多个SELECT</strong>关键字，所以在包含子查询的查询语句的执行计划中，<strong>每个SELECT关键字都会对应一个唯一的id值</strong>，比如这样：</p>
 <pre><code>mysql&gt; explain select * from t1 where a in (select a from t2) or c = 'c'; 
 </code></pre>
-<figure data-type="image" tabindex="3"><img src="https://uploader.shimo.im/f/TkPRjcs0QQYgSXBc.png!thumbnail" alt="图片" loading="lazy"></figure>
-<p>两个 select 关键字，两个不同的 id  值</p>
+<figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/id2.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体"> 两个 select 关键字，两个不同的 id  值</p>
 <p>但是这里大家需要特别注意，<strong>查询优化器可能对涉及子查询的查询语句进行重写，从而转换为连接查询</strong>。所以如果我们想知道查询优化器对某个包含子查询的语句是否进行了重写，直接查看执行计划就好了，比如说：</p>
 <pre><code>mysql&gt; explain select * from t1 where a in (select a from t2); 
 </code></pre>
-<figure data-type="image" tabindex="4"><img src="https://uploader.shimo.im/f/5tFThlD3hvowpA5v.png!thumbnail" alt="图片" loading="lazy"></figure>
-<p>查询优化器将子查询优化为连接查询</p>
+<figure data-type="image" tabindex="4"><img src="https://epitomm.github.io/post-images/%E6%9F%A5%E8%AF%A2%E4%BC%98%E5%8C%96%E5%99%A8%E5%B0%86%E5%AD%90%E6%9F%A5%E8%AF%A2%E4%BC%98%E5%8C%96%E4%B8%BA%E8%BF%9E%E6%8E%A5%E6%9F%A5%E8%AF%A2.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">查询优化器将子查询优化为连接查询</p>
 <p>可以看到，虽然我们的查询语句是一个子查询，但是执行计划中t1和t2表对应的记录的id值全部是1，这就表明了<strong>查询优化器将子查询转换为了连接查询</strong>。</p>
 <p>对<strong>于包含UNION子句的查询语句来说，每个SELECT关键字对应一个id值</strong>也是没错的，不过还是有点儿特别的东西，比方说下边这个查询：</p>
 <pre><code>mysql&gt; explain select * from t1 union select * from t2; 
 </code></pre>
-<figure data-type="image" tabindex="5"><img src="https://uploader.shimo.im/f/ZjXHsToqfmwGE6vY.png!thumbnail" alt="图片" loading="lazy"></figure>
-<p>union 去重</p>
+<figure data-type="image" tabindex="5"><img src="https://epitomm.github.io/post-images/UNION%E5%8E%BB%E9%87%8D.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">union 去重</p>
 <p>这个语句的执行计划的第三条记录是什么？为什么id值是NULL？UNION会把多个查询的结果集合并起来并对结果集中的记录进行去重，怎么去重呢？MySQL使用的是内部的临时表。正如上边的查询计划中所示，<strong>UNION子句是为了把id为1的查询和id为2的查询的结果集合并起来并去重，所以在内部创建了一个名为的临时表</strong>（就是执行计划第三条记录的table列的名称），id为NULL表明这个临时表是为了合并两个查询的结果集而创建的。</p>
 <p>跟UNION对比起来，<strong>UNION ALL就不需要为最终的结果集进行去重</strong>，它只是单纯的把多个查询的结果集中的记录合并成一个并返回给用户，所以也就不需要使用临时表。所以在包含UNION ALL子句的查询的执行计划中，就没有那个id为NULL的记录，如下所示：</p>
 <pre><code>mysql&gt; explain select * from t1 union all select * from t2; 
@@ -233,53 +233,54 @@ partitions
 <p>查询语句中<strong>不包含UNION或者子查询的查询</strong>都算作是SIMPLE类型。</p>
 <pre><code>mysql&gt; explain select * from t1; 
 </code></pre>
-<figure data-type="image" tabindex="6"><img src="https://uploader.shimo.im/f/1ShjwcRKITg9DGyz.png!thumbnail" alt="图片" loading="lazy"></figure>
-<p>简单查询 select_type = SIMPLE</p>
+<figure data-type="image" tabindex="6"><img src="https://epitomm.github.io/post-images/%E7%AE%80%E5%8D%95%E6%9F%A5%E8%AF%A2SIMPLE.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">简单查询 select_type = SIMPLE</p>
 <p>连接查询也算是SIMPLE类型</p>
 <pre><code>mysql&gt; explain select * from t1 join t2; 
 </code></pre>
-<figure data-type="image" tabindex="7"><img src="https://uploader.shimo.im/f/8xAsuH028XQNrdHF.png!thumbnail" alt="图片" loading="lazy"></figure>
-<p>连接查询 select_type = SIMPLE</p>
+<figure data-type="image" tabindex="7"><img src="https://epitomm.github.io/post-images/%E8%BF%9E%E6%8E%A5%E6%9F%A5%E8%AF%A2SIMPLE.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">连接查询 select_type = SIMPLE</p>
 <h3 id="primary">PRIMARY</h3>
 <p>对于包含UNION、UNION ALL或者子查询的大查询来说，它是由几个小查询组成的，其中最左边的那个查询的 select_type值就是PRIMARY，比方说：</p>
 <pre><code>mysql&gt; explain select * from t1 where a in (select a from t2) or c = 'c'; 
 </code></pre>
-<figure data-type="image" tabindex="8"><img src="https://uploader.shimo.im/f/X5jV5MK4zTMxHbgG.png!thumbnail" alt="图片" loading="lazy"></figure>
-<p>主查询的 select_type = PRIMARY；子查询的 select_type = SUBQUERY</p>
+<figure data-type="image" tabindex="8"><img src="https://epitomm.github.io/post-images/PRIMARY.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">主查询的 select_type = PRIMARY；子查询的 select_type = SUBQUERY</p>
 <p>从结果中可以看到，最左边的小查询select * from t1对应的是执行计划中的第一条记录，它的select_type值就是 PRIMARY。</p>
 <h3 id="union">UNION</h3>
 <p>对于包含UNION或者UNION ALL的大查询来说，它是由几个小查询组成的，其中除了最左边的那个小查询以外， 其余的小查询的select_type值就是UNION。</p>
 <pre><code>mysql&gt; explain select * from t1 union select * from t2; 
 </code></pre>
-<p><img src="https://uploader.shimo.im/f/gEMG4w5jtu4RY87g.png!thumbnail" alt="图片" loading="lazy">UNION 查询的最左边查询 select_type = RIMARY，其余小查询的 select_type = UNION</p>
+<figure data-type="image" tabindex="9"><img src="https://epitomm.github.io/post-images/UNION.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">UNION 查询的最左边查询 select_type = RIMARY，其余小查询的 select_type = UNION</p>
 <h3 id="union-result">UNION RESULT</h3>
 <p>MySQL选择使用临时表来完成UNION查询的去重工作，针对该临时表的查询的select_type就是UNION RESULT，例子上边有。</p>
-<figure data-type="image" tabindex="9"><img src="https://uploader.shimo.im/f/PxVuMYgY1mg9MAN5.png!thumbnail" alt="图片" loading="lazy"></figure>
-<p>union 查询中临时表的 select_type = UNION RESULT</p>
+<figure data-type="image" tabindex="10"><img src="https://epitomm.github.io/post-images/UNION_RESULT.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">union 查询中临时表的 select_type = UNION RESULT</p>
 <h3 id="subquery">SUBQUERY</h3>
 <p><strong>非相关子查询</strong>，由于 select_type 为 SUBQUERY 的子查询由于会被物化，所以<strong>只需要执行一遍。</strong></p>
 <pre><code>mysql&gt; explain select * from t1 where a in (select a from t2) or c = 'c'; 
 </code></pre>
-<figure data-type="image" tabindex="10"><img src="https://uploader.shimo.im/f/dkJ2QEo4TFkQvgr9.png!thumbnail" alt="图片" loading="lazy"></figure>
-<p>非相关子查询 select_type = SUBQUERY</p>
+<figure data-type="image" tabindex="11"><img src="https://epitomm.github.io/post-images/SUBQUERY.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">非相关子查询 select_type = SUBQUERY</p>
 <h3 id="dependent-subqurey">DEPENDENT SUBQUREY</h3>
 <p><strong>相关子查询</strong>，select_type 为 DEPENDENT SUBQUERY 的查询可能<strong>会被执行多次</strong></p>
 <pre><code>mysql&gt; explain select * from t1 where a in (select a from t2 where t1.a = t2.a) or c = 'c'; 
 </code></pre>
-<figure data-type="image" tabindex="11"><img src="https://uploader.shimo.im/f/gpXITzgRkcgM7z68.png!thumbnail" alt="图片" loading="lazy"></figure>
-<p>相关子查询 select_type = DEPENDENT SUBQUERY</p>
+<figure data-type="image" tabindex="12"><img src="https://epitomm.github.io/post-images/DEPENDENT_SUBQUREY.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">相关子查询 select_type = DEPENDENT SUBQUERY</p>
 <h3 id="derived">DERIVED</h3>
 <pre><code>mysql&gt; explain select * from (select a, count(*) from t2 group by a ) as deliver1; 
 </code></pre>
-<figure data-type="image" tabindex="12"><img src="https://uploader.shimo.im/f/hclk7QAdJLUqDgb1.png!thumbnail" alt="图片" loading="lazy"></figure>
-<p>派生表 select_type = DRIVED</p>
+<figure data-type="image" tabindex="13"><img src="https://epitomm.github.io/post-images/DERIVED.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">派生表 select_type = DRIVED </p>
 <p>从执行计划中可以看出，id为2的记录就代表子查询的执行方式，它的select_type是DERIVED，说明该子查询是以物化的方式执行的。id为1的记录代表外层查询，大家注意看它的table列显示的是<derived2>，表示该查询是针对将派生表物化之后的表进行查询的。</p>
 <h3 id="materialized">MATERIALIZED</h3>
 <p>当查询优化器在执行包含子查询的语句时，选择将子查询物化之后与外层查询进行连接查询时，该子查询对应的 select_type属性就是MATERIALIZED。</p>
 <pre><code>mysql&gt; explain select * from t1 where a in (select c from t2 where e = 1);
 </code></pre>
-<figure data-type="image" tabindex="13"><img src="https://uploader.shimo.im/f/lk0ZYb6DIQcCBG4B.png!thumbnail" alt="图片" loading="lazy"></figure>
-<p>物化表 select_type = MATERIALIZED</p>
+<figure data-type="image" tabindex="14"><img src="https://epitomm.github.io/post-images/MATERIALIZED.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">物化表 select_type = MATERIALIZED </p>
 <blockquote>
 <p>将子查询出来的结果集放到一个物化表内，再将物化表与外层查询进行连接查询。</p>
 </blockquote>
@@ -298,43 +299,43 @@ Query OK, 1 row affected (0.01 sec)
 <p>执行 explain 语句</p>
 <pre><code>mysql&gt; explain select * from t; 
 </code></pre>
-<figure data-type="image" tabindex="14"><img src="https://uploader.shimo.im/f/xBOBTgS0I1g2N48m.png!thumbnail" alt="图片" loading="lazy"></figure>
-<p>表中只有一条数据、存储引擎精确统计 type = system</p>
+<figure data-type="image" tabindex="15"><img src="https://epitomm.github.io/post-images/system.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">表中只有一条数据、存储引擎精确统计 type = system</p>
 <h3 id="const"><strong>const</strong></h3>
 <p>当我们根据<strong>主键</strong>或者<strong>唯一二级索引列</strong>与<strong>常数</strong>进行<strong>等值匹配时</strong>，对单表的访问方法就是const。</p>
 <pre><code>mysql&gt; explain select * from t1 where a = 1; 
 </code></pre>
-<figure data-type="image" tabindex="15"><img src="https://uploader.shimo.im/f/9IuGLQ7EqqcI7WIH.png!thumbnail" alt="图片" loading="lazy"></figure>
-<p>根据主键与常数进行等职匹配 type = const</p>
+<figure data-type="image" tabindex="16"><img src="https://epitomm.github.io/post-images/const.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">根据主键与常数进行等职匹配 type = const</p>
 <h3 id="eq_ref"><strong>eq_ref</strong></h3>
 <p>在连接查询时，如果<strong>被驱动表是通过主键或者唯一二级索引列等值匹配的方式进行访问的</strong>（如果该主键或者唯一二级索引是联合索引的话，所有的索引列都必须进行等值比较），则对该被驱动表的访问方法就是eq_ref</p>
 <pre><code>mysql&gt; explain select * from t1 join t2 on t1.a = t2.a; 
 </code></pre>
-<figure data-type="image" tabindex="16"><img src="https://uploader.shimo.im/f/Db2x38RfYr4VVuzE.png!thumbnail" alt="图片" loading="lazy"></figure>
-<p>被驱动表通过主键等值匹配的方式访问，被驱动表的 type = eq_ref</p>
+<figure data-type="image" tabindex="17"><img src="https://epitomm.github.io/post-images/eq_ref.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">被驱动表通过主键等值匹配的方式访问，被驱动表的 type = eq_ref</p>
 <h3 id="ref">ref</h3>
 <p>当通过<strong>普通的二级索引列</strong>与<strong>常量</strong>进行<strong>等值匹配</strong>时来查询某个表，那么对该表的访问方法就可能是ref。</p>
 <p>查看所有索引：</p>
 <pre><code>show keys for t1;
 </code></pre>
-<figure data-type="image" tabindex="17"><img src="https://uploader.shimo.im/f/j72cjKwPMGY5lKdT.png!thumbnail" alt="图片" loading="lazy"></figure>
-<p>查看所有索引</p>
+<figure data-type="image" tabindex="18"><img src="https://epitomm.github.io/post-images/%E6%9F%A5%E7%9C%8B%E6%89%80%E6%9C%89%E7%B4%A2%E5%BC%95.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">查看所有索引</p>
 <pre><code>mysql&gt; explain select * from t1 where b = 1; 
 </code></pre>
-<figure data-type="image" tabindex="18"><img src="https://uploader.shimo.im/f/vnqaboSdAFUUxBIi.png!thumbnail" alt="图片" loading="lazy"></figure>
-<p>当通过普通的二级索引列与常量进行等值匹配时来查询某个表 type = ref</p>
+<figure data-type="image" tabindex="19"><img src="https://epitomm.github.io/post-images/ref.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">当通过普通的二级索引列与常量进行等值匹配时来查询某个表 type = ref</p>
 <h3 id="ref_of_null"><strong>ref_of_null</strong></h3>
 <p>当对<strong>普通二级索引进行等值匹配查询</strong>，<strong>该索引列的值也可以是NULL值</strong>时，那么对该表的访问方法就可能是 ref_or_null</p>
 <pre><code>mysql&gt; explain select * from t1 where b = 1 or b is null; 
 </code></pre>
-<figure data-type="image" tabindex="19"><img src="https://uploader.shimo.im/f/83a7XXdOk082latx.png!thumbnail" alt="图片" loading="lazy"></figure>
-<p>对普通二级索引进行等值匹配查询，该索引列的值也可以是NULL值 type = ref_of_null</p>
+<figure data-type="image" tabindex="20"><img src="https://epitomm.github.io/post-images/ref_of_null.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">对普通二级索引进行等值匹配查询，该索引列的值也可以是NULL值 type = ref_of_null</p>
 <h3 id="index_merge">index_merge</h3>
 <p><strong>索引合并</strong></p>
 <pre><code>mysql&gt; explain select * from t1 where a = 1 or b = 1; 
 </code></pre>
-<figure data-type="image" tabindex="20"><img src="https://uploader.shimo.im/f/KfnBGOTlSd4cnKRL.png!thumbnail" alt="图片" loading="lazy"></figure>
-<p>索引合并 type = index_merge</p>
+<figure data-type="image" tabindex="21"><img src="https://epitomm.github.io/post-images/index_merge.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">索引合并 type = index_merge</p>
 <h3 id="unique_subquery"><strong>unique_subquery</strong></h3>
 <p>如果<strong>查询优化器决定将IN子查询转换为EXISTS子查询，<strong>而且</strong>子查询可以使用到主键进行等值匹配</strong>的话，那么该子查询执行计划的type列的值就是unique_subquery。</p>
 <pre><code>mysql&gt; explain select * from t1 where c in (select a from t2 where t1.e = t2.e) or a = 1;
@@ -342,8 +343,8 @@ Query OK, 1 row affected (0.01 sec)
 <p>以上查询可以优化为 EXISTS 子查询：</p>
 <pre><code>mysql&gt; explain select * from t1 where exists(select a from t2 where t1.e = t2.e and t1.c = t2.a) or a = 1
 </code></pre>
-<figure data-type="image" tabindex="21"><img src="https://uploader.shimo.im/f/g5qx2FBIABwPj26x.png!thumbnail" alt="图片" loading="lazy"></figure>
-<p>查询优化器将IN子查询转换为EXISTS子查询，而且子查询可以使用到主键进行等值匹配</p>
+<figure data-type="image" tabindex="22"><img src="https://epitomm.github.io/post-images/unique_subquery.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">查询优化器将IN子查询转换为EXISTS子查询，而且子查询可以使用到主键进行等值匹配 </p>
 <p>type = unique_subquery</p>
 <h3 id="index_subquery"><strong>index_subquery</strong></h3>
 <p>index_subquery与unique_subquery类似，只不过访问子查询中的表时使用的是普通的索引。</p>
@@ -366,30 +367,30 @@ idx_t2_b_c_d | 5 | func | 1 | 12.50 | Using where |
 <p>范围查询</p>
 <pre><code>mysql&gt; explain select * from t1 where a &gt; 1; 
 </code></pre>
-<figure data-type="image" tabindex="22"><img src="https://uploader.shimo.im/f/euIlkCvnPac0zxT8.png!thumbnail" alt="图片" loading="lazy"></figure>
-<p>a &gt; 1 type = range</p>
+<figure data-type="image" tabindex="23"><img src="https://epitomm.github.io/post-images/%E5%A4%A7%E4%BA%8E_range.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">a > 1 type = range</p>
 <pre><code>mysql&gt; explain select * from t1 where a in (1);
 </code></pre>
-<figure data-type="image" tabindex="23"><img src="https://uploader.shimo.im/f/PgOATmL12kQ7OFhR.png!thumbnail" alt="图片" loading="lazy"></figure>
-<p>a in (1) type = const</p>
+<figure data-type="image" tabindex="24"><img src="https://epitomm.github.io/post-images/in_range.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">a in (1) type = const</p>
 <pre><code>mysql&gt; explain select * from t1 where a in (1,2);
 </code></pre>
-<h3 id=""><img src="https://uploader.shimo.im/f/hL19nj7W68IPqU7d.png!thumbnail" alt="图片" loading="lazy"></h3>
-<p>a in (1,2) type = range</p>
+<figure data-type="image" tabindex="25"><img src="https://epitomm.github.io/post-images/in_range2.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">a in (1,2) type = range</p>
 <h3 id="index"><strong>index</strong></h3>
 <p>当我们可以使用覆盖索引，但<strong>需要扫描全部的索引记录</strong>时，该表的访问方法就是index。</p>
 <p>遍历索引上的所有叶子节点，因为B+树所有数据都存储在叶子节点上，而非叶子结点是用来过滤筛选条件的。</p>
 <pre><code>mysql&gt; explain select a from t1; 
 </code></pre>
-<figure data-type="image" tabindex="24"><img src="https://uploader.shimo.im/f/KvrxFp04gggciF4t.png!thumbnail" alt="图片" loading="lazy"></figure>
+<figure data-type="image" tabindex="26"><img src="https://epitomm.github.io/post-images/index_1.png" alt="图片" loading="lazy"></figure>
 <p>使用辅助索引没有使用主键索引的原因：辅助索引体积较小，辅助索引只存储字段b、c、d和主键a字段；而主索引存储所有字段值。</p>
 <pre><code>mysql&gt; explain select b from t1;
 </code></pre>
-<figure data-type="image" tabindex="25"><img src="https://uploader.shimo.im/f/v3X8pK0rhX8sOqDz.png!thumbnail" alt="图片" loading="lazy"></figure>
+<figure data-type="image" tabindex="27"><img src="https://epitomm.github.io/post-images/index_2.png" alt="图片" loading="lazy"></figure>
 <pre><code>mysql&gt; ecplain select e from t1;
 </code></pre>
-<figure data-type="image" tabindex="26"><img src="https://uploader.shimo.im/f/pxT0o4rZCdMXloVv.png!thumbnail" alt="图片" loading="lazy"></figure>
-<p>e 字段没有索引，所以 type = ALL</p>
+<figure data-type="image" tabindex="28"><img src="https://epitomm.github.io/post-images/index_3.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">e 字段没有索引，所以 type = ALL</p>
 <h3 id="all"><strong>ALL</strong></h3>
 <p>全表扫描</p>
 <h2 id="possible_keys-和-key">possible_keys 和 key</h2>
@@ -405,15 +406,15 @@ idx_t2_b_c_d | 5 | func | 1 | 12.50 | Using where |
 <li>如果该索引列可以存储NULL值，则key_len比不可以存储NULL值时多1个字节。</li>
 <li>对于变长字段来说，都会有2个字节的空间来存储该变长列的实际长度。</li>
 </ul>
-<figure data-type="image" tabindex="27"><img src="https://uploader.shimo.im/f/NEatdTmcYZ8vKIRC.png!thumbnail" alt="图片" loading="lazy"></figure>
+<figure data-type="image" tabindex="29"><img src="https://epitomm.github.io/post-images/key_len.png" alt="图片" loading="lazy"></figure>
 <h2 id="ref-2"><strong>ref</strong></h2>
 <p>当使用索引列等值匹配的条件去执行查询时，也就是在访问方法是const、eq_ref、ref、ref_or_null、 unique_subquery、index_subquery其中之一时，ref列展示的就是与索引列作等值匹配的东西是什么，比如只是一个常数或者是某个列。</p>
 <pre><code>mysql&gt; explain select b from t1 where b = 1; 
 </code></pre>
-<figure data-type="image" tabindex="28"><img src="https://uploader.shimo.im/f/MXof7ALc4YstVXeu.png!thumbnail" alt="图片" loading="lazy"></figure>
+<figure data-type="image" tabindex="30"><img src="https://epitomm.github.io/post-images/ref_1.png" alt="图片" loading="lazy"></figure>
 <pre><code>mysql&gt; explain select * from t1 where a in (select a from t2); 
 </code></pre>
-<figure data-type="image" tabindex="29"><img src="https://uploader.shimo.im/f/wkVaKS4YaW0uSZ0P.png!thumbnail" alt="图片" loading="lazy"></figure>
+<figure data-type="image" tabindex="31"><img src="https://epitomm.github.io/post-images/ref_2.png" alt="图片" loading="lazy"></figure>
 <h2 id="rows"><strong>rows</strong></h2>
 <p>如果查询优化器决定使用全表扫描的方式对某个表执行查询时，执行计划的rows列就代表预计需要扫描的行数， 如果使用索引来执行查询时，执行计划的rows列就代表预计扫描的索引记录行数。</p>
 <h2 id="filtered">filtered</h2>
@@ -455,90 +456,89 @@ luban.t1.a | 1 | 100.00 | NULL |
 <p>当<strong>查询语句的没有FROM子句</strong>时将会提示该额外信息。</p>
 <pre><code>mysql&gt; explain select 1; 
 </code></pre>
-<figure data-type="image" tabindex="30"><img src="https://uploader.shimo.im/f/emtSXYE7KhMOePCe.png!thumbnail" alt="图片" loading="lazy"></figure>
-<p>查询语句没有 FROM 子句时：Extra = No tables used</p>
+<figure data-type="image" tabindex="32"><img src="https://epitomm.github.io/post-images/Notablesused.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">查询语句没有 FROM 子句时：Extra = No tables used</p>
 <h3 id="impossible-where">Impossible WHERE</h3>
 <p><strong>查询语句的WHERE子句永远为FALSE</strong>时将会提示该额外信息。</p>
 <pre><code>mysql&gt; explain select b from t1 where 1=0; 
 </code></pre>
-<figure data-type="image" tabindex="31"><img src="https://uploader.shimo.im/f/1Ph0unBD8lQPSKny.png!thumbnail" alt="图片" loading="lazy"></figure>
-<p>WHERE 子句永远为 FALSE时：Extra = Impossible WHERE</p>
+<figure data-type="image" tabindex="33"><img src="https://epitomm.github.io/post-images/ImpossibleWHERE.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">WHERE 子句永远为 FALSE时：Extra = Impossible WHERE</p>
 <h3 id="no-matching-minmax-row">No matching min/max row</h3>
 <p>当<strong>查询列表处有MIN或者MAX聚集函数，但是并没有符合WHERE子句中的搜索条件的记录</strong>时，将会提示该额外信息。</p>
 <pre><code>mysql&gt; explain select max(a) from t1 where a=100; 
 </code></pre>
-<figure data-type="image" tabindex="32"><img src="https://uploader.shimo.im/f/flKhEzQSQS0CW0Gf.png!thumbnail" alt="图片" loading="lazy"></figure>
-<p>查询列表处有MIN或者MAX聚集函数，但是并没有符合WHERE子句中的搜索条件的记录时：Extra = No matching min/max row</p>
+<figure data-type="image" tabindex="34"><img src="https://epitomm.github.io/post-images/No_matching_minmax_row.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">查询列表处有MIN或者MAX聚集函数，但是并没有符合WHERE子句中的搜索条件的记录时：Extra = No matching min/max row</p>
 <h3 id="using-index">Using index</h3>
 <p>当我们的<strong>查询列表以及搜索条件中只包含属于某个索引的列</strong>，也就是在<strong>可以使用索引覆盖</strong>的情况下，在Extra列将会提示该额外信息。</p>
 <p>辅助索引包含 b、c、d 字段，根据查询条件 b=1 找到字段 d 的值，无需回表。</p>
 <pre><code>mysql&gt; explain select d from t1 where b =1; 
 </code></pre>
-<figure data-type="image" tabindex="33"><img src="https://uploader.shimo.im/f/zNsPnfM6kikqbdh9.png!thumbnail" alt="图片" loading="lazy"></figure>
-<p>覆盖索引 Extra = Using index</p>
+<figure data-type="image" tabindex="35"><img src="https://epitomm.github.io/post-images/UsingIndex.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">覆盖索引 Extra = Using index</p>
 <h3 id="using-index-condition"><strong>Using index condition</strong></h3>
 <p>有些<strong>搜索条件中虽然出现了索引列，但却不能使用到索引</strong>（在MySQL 5.6版本后加入的新特性）</p>
-<figure data-type="image" tabindex="34"><img src="https://uploader.shimo.im/f/gFsOBTQTXiwH6hai.png!thumbnail" alt="图片" loading="lazy"></figure>
+<figure data-type="image" tabindex="36"><img src="https://epitomm.github.io/post-images/Using_index_condition.png" alt="图片" loading="lazy"></figure>
 <pre><code>mysql&gt; explain select * from t1 where b =1 and c like '%1'; 
 </code></pre>
-<figure data-type="image" tabindex="35"><img src="https://uploader.shimo.im/f/7B6dbFe9p9ct8o1q.png!thumbnail" alt="图片" loading="lazy"></figure>
-<p>搜索条件中虽然出现了索引列，但却不能使用到索引 Extra = Using index condition</p>
+<figure data-type="image" tabindex="37"><img src="https://epitomm.github.io/post-images/Using_index_condition2.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">搜索条件中虽然出现了索引列，但却不能使用到索引 Extra = Using index condition</p>
 <h3 id="using-where"><strong>Using where</strong></h3>
 <p>当我们使用<strong>全表扫描来执行对某个表的查询，并且该语句的WHERE子句中有针对该表的搜索条件时</strong>，在Extra列中会提示上述额外信息。</p>
 <pre><code>mysql&gt; explain select * from t1 where e = 1; 
 </code></pre>
-<figure data-type="image" tabindex="36"><img src="https://uploader.shimo.im/f/kZKrxrTU3cMEkFVp.png!thumbnail" alt="图片" loading="lazy"></figure>
-<p>全表扫描来执行对某个表的查询，并且该语句的WHERE子句中有针对该表的搜索条件时：</p>
-<p>Extra = Using where</p>
+<figure data-type="image" tabindex="38"><img src="https://epitomm.github.io/post-images/UsingWhere.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">全表扫描来执行对某个表的查询，并且该语句的WHERE子句中有针对该表的搜索条件时：Extra = Using where</p>
 <h3 id="using-joinbufferblock-nested-loop"><strong>Using joinbuffer(Block Nested Loop)</strong></h3>
-<p>在<strong>连接查询</strong>执行过程中，当被驱动表<strong>不能</strong>有效的<strong>利用索引</strong>加快访问速度，MySQL一般会为其分配一块名叫join buffer 的内存块来加快查询速度。</p>
+<p>在<strong>连接查询</strong>执行过程中，当被驱动表<strong>不能有效的利用索引</strong>加快访问速度，MySQL一般会为其分配一块名叫join buffer 的内存块来加快查询速度。</p>
 <pre><code>mysql&gt; explain select * from t1 join t2 on t1.e = t2.e; 
 </code></pre>
-<figure data-type="image" tabindex="37"><img src="https://uploader.shimo.im/f/fCAgv9HmV9EuBKGg.png!thumbnail" alt="图片" loading="lazy"></figure>
-<p>连接查询不能用到索引，分配 join buffer 内存块：Extra = Using join buffer</p>
+<figure data-type="image" tabindex="39"><img src="https://epitomm.github.io/post-images/Using_joinbuffer.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">连接查询不能用到索引，分配 join buffer 内存块：Extra = Using join buffer</p>
 <p>可以在对t2表的执行计划的Extra列显示了两个提示：</p>
 <ul>
 <li>Using join buffer (Block Nested Loop)：这是因为对表t2的访问不能有效利用索引，只好退而求其次，使用join buffer来减少对t2表的访问次数，从而提高性能。</li>
 <li>Using where：可以看到查询语句中有一个t1.e = t2.e条件，因为t1是驱动表，t2是被驱动表，所以在访问t2表时，t1.e的值已经确定下来了，所以实际上查询t2表的条件就是t2.e = 一个常数，所以提示了Using where额外信息。</li>
 </ul>
-<h3 id="using-filesort"><strong>Using filesort</strong></h3>
+<h3 id="using-filesort">Using filesort</h3>
 <p>很多情况下排序操作无法使用到索引，只能在内存中（记录较少的时候）或者磁盘中（记录较多的时候）进行排序，这种<strong>在内存中或者磁盘上进行排序的方式统称为文件排序</strong>（英文名：filesort）。如果<strong>某个查询需要使用文件排序的方式执行查询</strong>，就会在执行计划的Extra列中显示Using filesort提示。</p>
 <pre><code>mysql&gt; explain select * from t1 order by e; 
 </code></pre>
-<figure data-type="image" tabindex="38"><img src="https://uploader.shimo.im/f/lkYUcpFbExUbUH6G.png!thumbnail" alt="图片" loading="lazy"></figure>
-<p>排序 Extra = Using filesort</p>
-<h3 id="using-temporary"><strong>Using temporary</strong></h3>
+<figure data-type="image" tabindex="40"><img src="https://epitomm.github.io/post-images/Using_filesort.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">排序 Extra = Using filesort</p>
+<h3 id="using-temporary">Using temporary</h3>
 <p>在许多查询的执行过程中，MySQL可能会借助<strong>临时表</strong>来完成一些功能，比如<strong>去重、排序</strong>之类的，比如我们在执行许多包含<strong>DISTINCT、GROUP BY、UNION</strong>等子句的查询过程中，如果<strong>不能</strong>有效<strong>利用索引</strong>来完成查询，MySQL很有可能寻求通过<strong>建立内部的临时表</strong>来执行查询。如果查询中使用到了内部的临时表，在执行计划的Extra列将会显示Using temporary提示。</p>
 <p>能利用索引：</p>
 <pre><code>mysql&gt; explain select distinct b from t1; 
 </code></pre>
-<figure data-type="image" tabindex="39"><img src="https://uploader.shimo.im/f/cEGVii4KYFk3YvxW.png!thumbnail" alt="图片" loading="lazy"></figure>
-<p>利用索引distinct：Extra = Using index</p>
+<figure data-type="image" tabindex="41"><img src="https://epitomm.github.io/post-images/Using_temporary.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">利用索引distinct：Extra = Using index</p>
 <p>不能利用索引</p>
 <pre><code>mysql&gt; explain select distinct e from t1; 
 </code></pre>
-<figure data-type="image" tabindex="40"><img src="https://uploader.shimo.im/f/ftVelUhuxKknZcK7.png!thumbnail" alt="图片" loading="lazy"></figure>
-<p>不能利用索引的 distinct，建立内部临时表：Extra = Using temporary</p>
+<figure data-type="image" tabindex="42"><img src="https://epitomm.github.io/post-images/Using_temporary2.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">不能利用索引的 distinct，建立内部临时表：Extra = Using temporary</p>
 <p>即有Using temporary，又有Using filesort，因为group by默认会先排序 （Using filesort）</p>
 <pre><code>mysql&gt; explain select e, count(1) from t1 group by e; 
 </code></pre>
-<figure data-type="image" tabindex="41"><img src="https://uploader.shimo.im/f/F7ga2JDwixUJPydU.png!thumbnail" alt="图片" loading="lazy"></figure>
-<p>Extra = Using temporary; Using filesort</p>
+<figure data-type="image" tabindex="43"><img src="https://epitomm.github.io/post-images/Using_temporary3.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">Extra = Using temporary; Using filesort</p>
 <p>使用order by null禁用排序</p>
 <pre><code>mysql&gt; explain select e, count(1) from t1 group by e order by null; 
 </code></pre>
-<figure data-type="image" tabindex="42"><img src="https://uploader.shimo.im/f/JFr9Wvsas8Yh77yo.png!thumbnail" alt="图片" loading="lazy"></figure>
-<p>禁用排序，Extra = Using temporary</p>
-<h3 id="start-temporary-end-temporary"><strong>Start temporary、End temporary</strong></h3>
+<figure data-type="image" tabindex="44"><img src="https://epitomm.github.io/post-images/Using_temporary4.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">禁用排序，Extra = Using temporary</p>
+<h3 id="start-temporary-end-temporary">Start temporary、End temporary</h3>
 <p><strong>查询优化器会优先尝试将IN子查询转换成semi-join</strong>，而semi-join又有好多种执行策略，当执行策略为 <strong>DuplicateWeedout <strong>时，也就是通过</strong>建立临时表</strong>来实现为外层查询中的记录进行<strong>去重</strong>操作时，<strong>驱动表</strong>查询执行计划的Extra列将显示<strong>Start temporary</strong>提示，<strong>被驱动表</strong>查询执行计划的Extra列将显示<strong>End temporary</strong>提示</p>
 <pre><code>mysql&gt; explain select * from t1 where a in (select e from t2 where e = 1); 
 </code></pre>
-<figure data-type="image" tabindex="43"><img src="https://uploader.shimo.im/f/FQcWywTGL4Eq63jz.png!thumbnail" alt="图片" loading="lazy"></figure>
+<figure data-type="image" tabindex="45"><img src="https://epitomm.github.io/post-images/Start_temporary.png" alt="图片" loading="lazy"></figure>
 <h3 id="firstmatch表名">FirstMatch（表名）</h3>
 <p>在将In子查询转为semi-join时，如果采用的是<strong>FirstMatch</strong>执行策略，则在<strong>被驱动表</strong>执行计划的Extra列就是显示 **FirstMatch(tbl_name)**提示。</p>
 <pre><code>mysql&gt; explain select * from t1 where a in (select c from t2 where c = 1); 
 </code></pre>
-<figure data-type="image" tabindex="44"><img src="https://uploader.shimo.im/f/m63uyJpLDm8UkR8L.png!thumbnail" alt="图片" loading="lazy"></figure>
+<figure data-type="image" tabindex="46"><img src="https://epitomm.github.io/post-images/FirstMatch.png" alt="图片" loading="lazy"></figure>
 <h1 id="总结">总结</h1>
 <h2 id="性能按-type-排序">性能按 type 排序</h2>
 <p>system &gt; const &gt; eq_ref &gt; ref &gt; ref_or_null &gt; index_merge &gt; unique_subquery &gt; index_subquery &gt; range &gt; index &gt; ALL</p>
@@ -602,7 +602,6 @@ luban.t1.a | 1 | 100.00 | NULL |
 <li><a href="#unique_subquery"><strong>unique_subquery</strong></a></li>
 <li><a href="#index_subquery"><strong>index_subquery</strong></a></li>
 <li><a href="#range">range</a></li>
-<li><a href="#">!图片</a></li>
 <li><a href="#index"><strong>index</strong></a></li>
 <li><a href="#all"><strong>ALL</strong></a></li>
 </ul>
@@ -621,9 +620,9 @@ luban.t1.a | 1 | 100.00 | NULL |
 <li><a href="#using-index-condition"><strong>Using index condition</strong></a></li>
 <li><a href="#using-where"><strong>Using where</strong></a></li>
 <li><a href="#using-joinbufferblock-nested-loop"><strong>Using joinbuffer(Block Nested Loop)</strong></a></li>
-<li><a href="#using-filesort"><strong>Using filesort</strong></a></li>
-<li><a href="#using-temporary"><strong>Using temporary</strong></a></li>
-<li><a href="#start-temporary-end-temporary"><strong>Start temporary、End temporary</strong></a></li>
+<li><a href="#using-filesort">Using filesort</a></li>
+<li><a href="#using-temporary">Using temporary</a></li>
+<li><a href="#start-temporary-end-temporary">Start temporary、End temporary</a></li>
 <li><a href="#firstmatch%E8%A1%A8%E5%90%8D">FirstMatch（表名）</a></li>
 </ul>
 </li>
