@@ -3,7 +3,7 @@
     <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>MySQL —— Explain 关键字 | SSM</title>
-<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1587267098513">
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1587267294415">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
 <link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
 <link rel="alternate" type="application/atom+xml" title="MySQL —— Explain 关键字 | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
@@ -44,7 +44,7 @@ partitions
       <div class="main-content">
         <div class="site-header">
   <a href="https://epitomm.github.io">
-  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1587267098513" alt="">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1587267294415" alt="">
   </a>
   <h1 class="site-title">
     SSM
@@ -301,13 +301,13 @@ Query OK, 1 row affected (0.01 sec)
 </code></pre>
 <figure data-type="image" tabindex="15"><img src="https://epitomm.github.io/post-images/system.png" alt="图片" loading="lazy"></figure>
 <p style = "text-align:center;font-family:楷体">表中只有一条数据、存储引擎精确统计 type = system</p>
-<h3 id="const"><strong>const</strong></h3>
+<h3 id="const">const</h3>
 <p>当我们根据<strong>主键</strong>或者<strong>唯一二级索引列</strong>与<strong>常数</strong>进行<strong>等值匹配时</strong>，对单表的访问方法就是const。</p>
 <pre><code>mysql&gt; explain select * from t1 where a = 1; 
 </code></pre>
 <figure data-type="image" tabindex="16"><img src="https://epitomm.github.io/post-images/const.png" alt="图片" loading="lazy"></figure>
 <p style = "text-align:center;font-family:楷体">根据主键与常数进行等职匹配 type = const</p>
-<h3 id="eq_ref"><strong>eq_ref</strong></h3>
+<h3 id="eq_ref">eq_ref</h3>
 <p>在连接查询时，如果<strong>被驱动表是通过主键或者唯一二级索引列等值匹配的方式进行访问的</strong>（如果该主键或者唯一二级索引是联合索引的话，所有的索引列都必须进行等值比较），则对该被驱动表的访问方法就是eq_ref</p>
 <pre><code>mysql&gt; explain select * from t1 join t2 on t1.a = t2.a; 
 </code></pre>
@@ -324,7 +324,7 @@ Query OK, 1 row affected (0.01 sec)
 </code></pre>
 <figure data-type="image" tabindex="19"><img src="https://epitomm.github.io/post-images/ref.png" alt="图片" loading="lazy"></figure>
 <p style = "text-align:center;font-family:楷体">当通过普通的二级索引列与常量进行等值匹配时来查询某个表 type = ref</p>
-<h3 id="ref_of_null"><strong>ref_of_null</strong></h3>
+<h3 id="ref_of_null">ref_of_null</h3>
 <p>当对<strong>普通二级索引进行等值匹配查询</strong>，<strong>该索引列的值也可以是NULL值</strong>时，那么对该表的访问方法就可能是 ref_or_null</p>
 <pre><code>mysql&gt; explain select * from t1 where b = 1 or b is null; 
 </code></pre>
@@ -336,7 +336,7 @@ Query OK, 1 row affected (0.01 sec)
 </code></pre>
 <figure data-type="image" tabindex="21"><img src="https://epitomm.github.io/post-images/index_merge.png" alt="图片" loading="lazy"></figure>
 <p style = "text-align:center;font-family:楷体">索引合并 type = index_merge</p>
-<h3 id="unique_subquery"><strong>unique_subquery</strong></h3>
+<h3 id="unique_subquery">unique_subquery</h3>
 <p>如果<strong>查询优化器决定将IN子查询转换为EXISTS子查询，<strong>而且</strong>子查询可以使用到主键进行等值匹配</strong>的话，那么该子查询执行计划的type列的值就是unique_subquery。</p>
 <pre><code>mysql&gt; explain select * from t1 where c in (select a from t2 where t1.e = t2.e) or a = 1;
 </code></pre>
@@ -346,7 +346,7 @@ Query OK, 1 row affected (0.01 sec)
 <figure data-type="image" tabindex="22"><img src="https://epitomm.github.io/post-images/unique_subquery.png" alt="图片" loading="lazy"></figure>
 <p style = "text-align:center;font-family:楷体">查询优化器将IN子查询转换为EXISTS子查询，而且子查询可以使用到主键进行等值匹配 </p>
 <p>type = unique_subquery</p>
-<h3 id="index_subquery"><strong>index_subquery</strong></h3>
+<h3 id="index_subquery">index_subquery</h3>
 <p>index_subquery与unique_subquery类似，只不过访问子查询中的表时使用的是普通的索引。</p>
 <pre><code>mysql&gt; explain select * from t1 where c in (select b from t2 where t1.e = t2.e) or a = 1;
 +----+--------------------+-------+------------+----------------+---------------+----- 
@@ -377,7 +377,7 @@ idx_t2_b_c_d | 5 | func | 1 | 12.50 | Using where |
 </code></pre>
 <figure data-type="image" tabindex="25"><img src="https://epitomm.github.io/post-images/in_range2.png" alt="图片" loading="lazy"></figure>
 <p style = "text-align:center;font-family:楷体">a in (1,2) type = range</p>
-<h3 id="index"><strong>index</strong></h3>
+<h3 id="index">index</h3>
 <p>当我们可以使用覆盖索引，但<strong>需要扫描全部的索引记录</strong>时，该表的访问方法就是index。</p>
 <p>遍历索引上的所有叶子节点，因为B+树所有数据都存储在叶子节点上，而非叶子结点是用来过滤筛选条件的。</p>
 <pre><code>mysql&gt; explain select a from t1; 
@@ -391,7 +391,7 @@ idx_t2_b_c_d | 5 | func | 1 | 12.50 | Using where |
 </code></pre>
 <figure data-type="image" tabindex="28"><img src="https://epitomm.github.io/post-images/index_3.png" alt="图片" loading="lazy"></figure>
 <p style = "text-align:center;font-family:楷体">e 字段没有索引，所以 type = ALL</p>
-<h3 id="all"><strong>ALL</strong></h3>
+<h3 id="all">ALL</h3>
 <p>全表扫描</p>
 <h2 id="possible_keys-和-key">possible_keys 和 key</h2>
 <p>possible_keys列表示在某个查询语句中，对某个表执行单表查询时可能用到的索引有哪些，key列表示实际用到的索引有哪些。</p>
@@ -399,7 +399,7 @@ idx_t2_b_c_d | 5 | func | 1 | 12.50 | Using where |
 <blockquote>
 <p>possible_keys列中的值并不是越多越好，可能使用的索引越多，查询优化器计算查询成本时就得花费更长 时间，所以如果可以的话，尽量删除那些用不到的索引</p>
 </blockquote>
-<h2 id="key_len"><strong>key_len</strong></h2>
+<h2 id="key_len">key_len</h2>
 <p>key_len列表示当优化器决定使用某个索引执行查询时，该索引记录的最大长度，它是由这三个部分构成的：</p>
 <ul>
 <li>对于使用固定长度类型的索引列来说，它实际占用的存储空间的最大长度就是该固定值，对于指定字符集的变长类型的索引列来说，比如某个索引列的类型是VARCHAR(100)，使用的字符集是 utf8，那么该列实际占用的最大存储空间就是100 × 3 = 300个字节。</li>
@@ -407,7 +407,7 @@ idx_t2_b_c_d | 5 | func | 1 | 12.50 | Using where |
 <li>对于变长字段来说，都会有2个字节的空间来存储该变长列的实际长度。</li>
 </ul>
 <figure data-type="image" tabindex="29"><img src="https://epitomm.github.io/post-images/key_len.png" alt="图片" loading="lazy"></figure>
-<h2 id="ref-2"><strong>ref</strong></h2>
+<h2 id="ref-2">ref</h2>
 <p>当使用索引列等值匹配的条件去执行查询时，也就是在访问方法是const、eq_ref、ref、ref_or_null、 unique_subquery、index_subquery其中之一时，ref列展示的就是与索引列作等值匹配的东西是什么，比如只是一个常数或者是某个列。</p>
 <pre><code>mysql&gt; explain select b from t1 where b = 1; 
 </code></pre>
@@ -415,7 +415,7 @@ idx_t2_b_c_d | 5 | func | 1 | 12.50 | Using where |
 <pre><code>mysql&gt; explain select * from t1 where a in (select a from t2); 
 </code></pre>
 <figure data-type="image" tabindex="31"><img src="https://epitomm.github.io/post-images/ref_2.png" alt="图片" loading="lazy"></figure>
-<h2 id="rows"><strong>rows</strong></h2>
+<h2 id="rows">rows</h2>
 <p>如果查询优化器决定使用全表扫描的方式对某个表执行查询时，执行计划的rows列就代表预计需要扫描的行数， 如果使用索引来执行查询时，执行计划的rows列就代表预计扫描的索引记录行数。</p>
 <h2 id="filtered">filtered</h2>
 <p>代表查询优化器预测在这扫描的记录中，有多少条记录满足其余的搜索条件。</p>
@@ -477,20 +477,20 @@ luban.t1.a | 1 | 100.00 | NULL |
 </code></pre>
 <figure data-type="image" tabindex="35"><img src="https://epitomm.github.io/post-images/UsingIndex.png" alt="图片" loading="lazy"></figure>
 <p style = "text-align:center;font-family:楷体">覆盖索引 Extra = Using index</p>
-<h3 id="using-index-condition"><strong>Using index condition</strong></h3>
+<h3 id="using-index-condition">Using index condition</h3>
 <p>有些<strong>搜索条件中虽然出现了索引列，但却不能使用到索引</strong>（在MySQL 5.6版本后加入的新特性）</p>
 <figure data-type="image" tabindex="36"><img src="https://epitomm.github.io/post-images/Using_index_condition.png" alt="图片" loading="lazy"></figure>
 <pre><code>mysql&gt; explain select * from t1 where b =1 and c like '%1'; 
 </code></pre>
 <figure data-type="image" tabindex="37"><img src="https://epitomm.github.io/post-images/Using_index_condition2.png" alt="图片" loading="lazy"></figure>
 <p style = "text-align:center;font-family:楷体">搜索条件中虽然出现了索引列，但却不能使用到索引 Extra = Using index condition</p>
-<h3 id="using-where"><strong>Using where</strong></h3>
+<h3 id="using-where">Using where</h3>
 <p>当我们使用<strong>全表扫描来执行对某个表的查询，并且该语句的WHERE子句中有针对该表的搜索条件时</strong>，在Extra列中会提示上述额外信息。</p>
 <pre><code>mysql&gt; explain select * from t1 where e = 1; 
 </code></pre>
 <figure data-type="image" tabindex="38"><img src="https://epitomm.github.io/post-images/UsingWhere.png" alt="图片" loading="lazy"></figure>
 <p style = "text-align:center;font-family:楷体">全表扫描来执行对某个表的查询，并且该语句的WHERE子句中有针对该表的搜索条件时：Extra = Using where</p>
-<h3 id="using-joinbufferblock-nested-loop"><strong>Using joinbuffer(Block Nested Loop)</strong></h3>
+<h3 id="using-joinbufferblock-nested-loop">Using joinbuffer(Block Nested Loop)</h3>
 <p>在<strong>连接查询</strong>执行过程中，当被驱动表<strong>不能有效的利用索引</strong>加快访问速度，MySQL一般会为其分配一块名叫join buffer 的内存块来加快查询速度。</p>
 <pre><code>mysql&gt; explain select * from t1 join t2 on t1.e = t2.e; 
 </code></pre>
@@ -594,22 +594,22 @@ luban.t1.a | 1 | 100.00 | NULL |
 <li><a href="#type">TYPE</a>
 <ul>
 <li><a href="#system">system</a></li>
-<li><a href="#const"><strong>const</strong></a></li>
-<li><a href="#eq_ref"><strong>eq_ref</strong></a></li>
+<li><a href="#const">const</a></li>
+<li><a href="#eq_ref">eq_ref</a></li>
 <li><a href="#ref">ref</a></li>
-<li><a href="#ref_of_null"><strong>ref_of_null</strong></a></li>
+<li><a href="#ref_of_null">ref_of_null</a></li>
 <li><a href="#index_merge">index_merge</a></li>
-<li><a href="#unique_subquery"><strong>unique_subquery</strong></a></li>
-<li><a href="#index_subquery"><strong>index_subquery</strong></a></li>
+<li><a href="#unique_subquery">unique_subquery</a></li>
+<li><a href="#index_subquery">index_subquery</a></li>
 <li><a href="#range">range</a></li>
-<li><a href="#index"><strong>index</strong></a></li>
-<li><a href="#all"><strong>ALL</strong></a></li>
+<li><a href="#index">index</a></li>
+<li><a href="#all">ALL</a></li>
 </ul>
 </li>
 <li><a href="#possible_keys-%E5%92%8C-key">possible_keys 和 key</a></li>
-<li><a href="#key_len"><strong>key_len</strong></a></li>
-<li><a href="#ref-2"><strong>ref</strong></a></li>
-<li><a href="#rows"><strong>rows</strong></a></li>
+<li><a href="#key_len">key_len</a></li>
+<li><a href="#ref-2">ref</a></li>
+<li><a href="#rows">rows</a></li>
 <li><a href="#filtered">filtered</a></li>
 <li><a href="#extra">Extra</a>
 <ul>
@@ -617,9 +617,9 @@ luban.t1.a | 1 | 100.00 | NULL |
 <li><a href="#impossible-where">Impossible WHERE</a></li>
 <li><a href="#no-matching-minmax-row">No matching min/max row</a></li>
 <li><a href="#using-index">Using index</a></li>
-<li><a href="#using-index-condition"><strong>Using index condition</strong></a></li>
-<li><a href="#using-where"><strong>Using where</strong></a></li>
-<li><a href="#using-joinbufferblock-nested-loop"><strong>Using joinbuffer(Block Nested Loop)</strong></a></li>
+<li><a href="#using-index-condition">Using index condition</a></li>
+<li><a href="#using-where">Using where</a></li>
+<li><a href="#using-joinbufferblock-nested-loop">Using joinbuffer(Block Nested Loop)</a></li>
 <li><a href="#using-filesort">Using filesort</a></li>
 <li><a href="#using-temporary">Using temporary</a></li>
 <li><a href="#start-temporary-end-temporary">Start temporary、End temporary</a></li>
