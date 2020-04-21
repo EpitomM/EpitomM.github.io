@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://epitomm.github.io</id>
     <title>SSM</title>
-    <updated>2020-04-21T09:18:59.508Z</updated>
+    <updated>2020-04-21T13:48:45.661Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://epitomm.github.io"/>
     <link rel="self" href="https://epitomm.github.io/atom.xml"/>
@@ -11,7 +11,7 @@
     <icon>https://epitomm.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, SSM</rights>
     <entry>
-        <title type="html"><![CDATA[HTTP（一）了解 HTTP 协议]]></title>
+        <title type="html"><![CDATA[HTTP系列（一）了解 HTTP 协议]]></title>
         <id>https://epitomm.github.io/post/httpyi-liao-jie-http-xie-yi/</id>
         <link href="https://epitomm.github.io/post/httpyi-liao-jie-http-xie-yi/">
         </link>
