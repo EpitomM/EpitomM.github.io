@@ -3,7 +3,7 @@
     <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>MySQL 索引详解 | SSM</title>
-<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1587519408397">
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1587564867284">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
 <link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
 <link rel="alternate" type="application/atom+xml" title="MySQL 索引详解 | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
@@ -11,14 +11,9 @@
 
 
 
-    <meta name="description" content="索引
-InnoDB：不加任何条件 select 出来的数据是排好序的（按主键字段排序）——聚簇索引
-MyISAM：不加任何条件 select 出来的数据是没有排序的（按照插入顺序输出）——堆表
-
-聚簇索引
-聚簇索引的特点：
-
-按主键值的大小..." />
+    <meta name="description" content="存储引擎
+InnoDB：不加任何条件 select 出来的数据是排好序的（按主键字段排序）——聚簇索引。MySQL默认的存储引擎是 InnoDB。
+MyISAM：不加任何条件 select 出来的数据是没有排序的（按照插入顺序输出）——堆表..." />
     <meta name="keywords" content="MySQL" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
     <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
@@ -28,7 +23,7 @@ MyISAM：不加任何条件 select 出来的数据是没有排序的（按照插
       <div class="main-content">
         <div class="site-header">
   <a href="https://epitomm.github.io">
-  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1587519408397" alt="">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1587564867284" alt="">
   </a>
   <h1 class="site-title">
     SSM
@@ -88,7 +83,7 @@ MyISAM：不加任何条件 select 出来的数据是没有排序的（按照插
                 2020-04-20
               </span>
               <span>
-                18 min read
+                21 min read
               </span>
               
                 <a href="https://epitomm.github.io/tag/RX6u4Mtbp/" class="post-tag">
@@ -101,62 +96,170 @@ MyISAM：不加任何条件 select 出来的数据是没有排序的（按照插
             
             <div class="post-content-wrapper">
               <div class="post-content">
-                <h1 id="索引">索引</h1>
-<p><code>InnoDB</code>：不加任何条件 select 出来的数据是排好序的（按主键字段排序）——聚簇索引</p>
-<p><code>MyISAM</code>：不加任何条件 select 出来的数据是没有排序的（按照插入顺序输出）——堆表</p>
-<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/%E7%B4%A2%E5%BC%95_1.png" alt="图片" loading="lazy"></figure>
-<h2 id="聚簇索引">聚簇索引</h2>
+                <h2 id="存储引擎">存储引擎</h2>
+<p><code>InnoDB</code>：不加任何条件 <code>select</code> 出来的数据是排好序的（按主键字段排序）——聚簇索引。<code>MySQL</code>默认的存储引擎是 <code>InnoDB</code>。</p>
+<p><code>MyISAM</code>：不加任何条件 <code>select</code> 出来的数据是没有排序的（按照插入顺序输出）——堆表</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center"></th>
+<th style="text-align:center"><code>MyISAM</code></th>
+<th style="text-align:center"><code>InnoDB</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center"><strong>锁级别</strong></td>
+<td style="text-align:center">只有<strong>表级锁</strong></td>
+<td style="text-align:center">支持<strong>行级锁和表级锁</strong>，默认为行级锁</td>
+</tr>
+<tr>
+<td style="text-align:center">查询性能</td>
+<td style="text-align:center">强调的是性能，每次查询具有原子性，执行速度快</td>
+<td style="text-align:center">使用了聚簇索引、或需要访问的数据可以放入内存的应用下速度快</td>
+</tr>
+<tr>
+<td style="text-align:center"><strong>是否支持事务</strong></td>
+<td style="text-align:center">不支持</td>
+<td style="text-align:center">支持</td>
+</tr>
+<tr>
+<td style="text-align:center"><strong>是否支持崩溃后的安全恢复</strong></td>
+<td style="text-align:center">不支持</td>
+<td style="text-align:center">支持。事务、回滚、崩溃修复能力和事务安全型表</td>
+</tr>
+<tr>
+<td style="text-align:center">是否支持外键</td>
+<td style="text-align:center">不支持</td>
+<td style="text-align:center">支持</td>
+</tr>
+<tr>
+<td style="text-align:center">是否支持 <code>MVCC</code></td>
+<td style="text-align:center">不支持</td>
+<td style="text-align:center">支持。应对高并发事务，<code>MVCC</code>比单纯的加锁更高效。<code>MVCC</code>只在<code>READ COMMITTED</code> 和 <code>REPEATABLE READ</code> 两个隔离级别下工作；<code>MVCC</code> 可以使用乐观锁和悲观锁来实现。</td>
+</tr>
+<tr>
+<td style="text-align:center">其他功能</td>
+<td style="text-align:center">全文索引、压缩、空间函数</td>
+<td style="text-align:center"></td>
+</tr>
+</tbody>
+</table>
+<h2 id="索引的分类">索引的分类</h2>
+<h3 id="哈希索引">哈希索引</h3>
+<ul>
+<li>Hash索引底层的数据结构是<strong>哈希表</strong>。</li>
+<li>Hash 索引仅仅能满足 &quot;=&quot;、&quot;IN&quot; 的<strong>等值查询</strong>，不能使用范围查询。</li>
+<li>Hash 索引不能利用组合索引的<strong>部分索引键</strong>查询。</li>
+<li>Hash 索引遇到大量 Hash 值相等的情况后会发生<strong>碰撞</strong>，性能不一定会比 B+树 高。</li>
+</ul>
+<h3 id="b树-索引">B+树 索引</h3>
+<ul>
+<li>B+树 索引底层的数据结构是 <strong>B+树</strong>。</li>
+<li>B+树 索引支持<strong>范围查询</strong></li>
+<li>B+树 索引可以使用组合索引的<strong>部分索引</strong>键查询。</li>
+</ul>
+<h4 id="innodb-的-b树聚簇索引"><code>InnoDB</code> 的 B+树：聚簇索引</h4>
+<p><code>InnoDB</code> 中索引即数据，也就是聚簇索引的B+树的叶子节点中包含完整的数据记录。</p>
+<p><code>InnoDB</code> 的 B+Tree 索引分为主索引和辅助索引。</p>
+<p>主索引的叶子节点 data 域记录着<strong>完整的数据记录</strong>，这种索引方式被称为<strong>聚簇索引</strong>。</p>
+<p>辅助索引的叶子节点的 data 域记录着<strong>主键的值</strong>，因此在使用辅助索引进行查找时，需要先查找到主键值，然后再到主索引中进行查找。</p>
+<h5 id="聚簇索引">聚簇索引</h5>
 <p>聚簇索引的特点：</p>
 <ol>
 <li>按<strong>主键值的大小</strong>进行记录和页的排序：</li>
 </ol>
 <ul>
-<li>数据页(叶子节点)里的记录是按照主键值从小到大排序的一个单向链表。</li>
-<li>数据页(叶子节点)之间也是是按照主键值从小到大排序的一个双向链表。</li>
-<li>B+树中同一个层的页目录也是按照主键值从小到大排序的一个双向链表。</li>
+<li>
+<p>数据页(叶子节点)里的记录是按照主键值从小到大排序的一个单向链表。</p>
+</li>
+<li>
+<p>数据页(叶子节点)之间也是是按照主键值从小到大排序的一个双向链表。</p>
+</li>
+<li>
+<p>B+树中同一个层的页目录也是按照主键值从小到大排序的一个双向链表。</p>
+</li>
 </ul>
 <ol start="2">
 <li>B+树的<strong>叶子节点</strong>存储的是完整的用户记录，就是指这个记录中<strong>存储了所有列的值</strong>（包括隐藏列）。</li>
 </ol>
 <p>具有这两种特性的B+树称为<strong>聚簇索引</strong>，所有完整的用户记录都存放在这个聚簇索引的叶子节点处。这种聚簇索引并不需要我们在<code>MySQL</code>语句中显式的使用<code>INDEX</code>语句去创建。<code>InnoDB</code>存储引擎会自动的为我们创建聚簇索引。在<code>InnoDB</code>存储引擎中，聚簇索引就是数据的存储方式（所有的用户记录都存储在了叶子节点），也就是所谓的<strong>索引即数据</strong>，数据即索引。</p>
-<h2 id="二级索引辅助索引">二级索引（辅助索引）</h2>
+<h4 id="myisam-的-b树非聚簇索引"><code>MyISAM</code> 的 B+树：非聚簇索引</h4>
+<p><code>InnoDB</code> 中索引即数据，也就是聚簇索引的那棵B+树的叶子节点中已经把所有完整的用户记录都包含了，而<code>MyISAM</code> 的索引方案虽然也使用树形结构，但是却将<strong>索引和数据分开存储</strong>：</p>
+<ul>
+<li>
+<p>将表中的记录按照记录的<strong>插入顺序</strong>单独存储在一个文件中，称之为数据文件。这个文件并不划分为若干个数据页，有多少记录就往这个文件中塞多少记录就成了。我们可以通过<strong>行号</strong>而快速访问到一条记录。</p>
+</li>
+<li>
+<p>使用 <code>MyISAM</code> 存储引擎的表会把索引信息另外存储到一个称为<strong>索引文件</strong>的另一个文件中。<code>MyISAM</code>会单独为表的主键创建一个索引，只不过在索引的<strong>叶子节点</strong>中存储的不是完整的用户记录，而是<strong>主键值+行号</strong>的组合。也就是先通过索引找到对应的行号，再通过行号去找对应的记录！这一点和<code>InnoDB</code>是完全不相同的，在<code>lnnoDB</code>存储引擎中，我们只需要根据主键值对聚簇索引进行一次查找就能找到对应的记录，而在<code>MyISAM</code>中却需要进行一次回表操作，意味着<code>MyISAM</code>中建立的索引相当于全部都是二级索引！</p>
+</li>
+<li>
+<p>如果有需要的话，我们也可以对其它的列分别建立索引或者建立联合索引，原理和<code>InnoDB</code>中的索引差不多，不过在叶子节点处存储的是相应的<strong>列+行号</strong>。这些索引也全部都是二级索引。</p>
+</li>
+</ul>
+<blockquote>
+<p>为什么不自动为每个列都建立个索引呢？</p>
+<p>① 当对表中的数据进行增加、删除和修改的时候，索引也要<strong>动态的维护</strong>，这样就降低了数据的维护速度。</p>
+<p>② 索引需要占<strong>物理空间</strong>，除了数据表占数据空间之外，每一个索引还要占一定的物理空间，如果要建立聚簇索引，那么需要的空间就会更大。</p>
+<p>③ 创建索引和维护索引要<strong>耗费时间</strong>，这种时间随着数据量的增加而增加。</p>
+</blockquote>
+<h3 id="二级索引辅助索引">二级索引（辅助索引）</h3>
 <p>聚簇索引只能在搜索条件是主键值时才能发挥作用，因为B+树中的数据都是按照主键进行排序的。当我们想以别的列作为搜索条件时我们可以多建几棵B+树，不同的B+树中的数据采用不同的排序规则。</p>
 <p>二级索引与聚簇索引有几处不同：</p>
 <ol>
-<li>按<strong>指定的索引列的值</strong>来进行排序</li>
-<li><strong>叶子节点</strong>存储的不是完整的用户记录，而只是<strong>索引列+主键</strong>。</li>
-<li>目录项记录中不是主键+页号，变成了<strong>索引列+页号</strong>。</li>
-<li>在对二级索引进行查找数据时，需要根据主键值去聚簇索引中再查找一遍完整的用户记录，这个过程叫做 <strong>回表</strong></li>
+<li>
+<p>按<strong>指定的索引列的值</strong>来进行排序</p>
+</li>
+<li>
+<p><strong>叶子节点</strong>存储的不是完整的用户记录，而只是<strong>索引列+主键</strong>。</p>
+</li>
+<li>
+<p>目录项记录中不是主键+页号，变成了<strong>索引列+页号</strong>。</p>
+</li>
+<li>
+<p>在对二级索引进行查找数据时，需要根据主键值去聚簇索引中再查找一遍完整的用户记录，这个过程叫做 <strong>回表</strong></p>
+</li>
 </ol>
-<h2 id="联合索引">联合索引</h2>
+<h3 id="联合索引">联合索引</h3>
 <p>以多个列的大小为排序规则建立的 B+树 称为联合索引，本质上也是一个二级索引。</p>
+<h2 id="覆盖索引">覆盖索引</h2>
+<h3 id="什么是覆盖索引">什么是覆盖索引</h3>
+<p>如果<strong>一个索引包含（或者说覆盖）所有需要查询的字段的值</strong>，我们就称之为“覆盖索引”。我们知道在<code>InnoDB</code>存储引擎中，如果不是主键索引，叶子节点存储的是主键+列值。最终还是要“回表”，也就是要通过主键再查找一次。这样就会比较慢。覆盖索引就是把要查询出的列和索引是对应的，不做回表操作！</p>
+<h3 id="覆盖索引使用实例">覆盖索引使用实例</h3>
+<p>现在我创建了索引(username,age)，在查询数据的时候：<code>select username , age from user where username = 'Java' and age = 22</code>。要查询出的列在叶子节点都存在！所以，就不用回表。</p>
 <h2 id="目录项记录的唯一性">目录项记录的唯一性</h2>
 <p>我们需要保证在 B+树 的同一层内节点的目录项记录除页号这个字段以外是唯一的。所以对于二级索引的内节点的目录项记录的内容实际上是由三个部分构成的：</p>
 <ul>
-<li>索引列的值</li>
-<li>主键值</li>
-<li>页号</li>
+<li>
+<p>索引列的值</p>
+</li>
+<li>
+<p>主键值</p>
+</li>
+<li>
+<p>页号</p>
+</li>
 </ul>
-<h2 id="myisam-中的索引方案简单介绍">MyISAM 中的索引方案简单介绍</h2>
-<p>InnoDB 中索引即数据，也就是聚簇索引的那棵B+树的叶子节点中已经把所有完整的用户记录都包含了，而MyISAM 的索引方案虽然也使用树形结构，但是却将<strong>索引和数据分开存储</strong>：</p>
-<ul>
-<li>将表中的记录按照记录的<strong>插入顺序</strong>单独存储在一个文件中，称之为数据文件。这个文件并不划分为若干个数据页，有多少记录就往这个文件中塞多少记录就成了。我们可以通过<strong>行号</strong>而快速访问到一条记录。</li>
-<li>使用 MyISAM 存储引擎的表会把索引信息另外存储到一个称为<strong>索引文件</strong>的另一个文件中。MyISAM会单独为表的主键创建一个索引，只不过在索引的<strong>叶子节点</strong>中存储的不是完整的用户记录，而是<strong>主键值+行号</strong>的组合。也就是先通过索引找到对应的行号，再通过行号去找对应的记录！这一点和InnoDB是完全不相同的，在lnnoDB存储引擎中，我们只需要根据主键值对聚簇索引进行一次查找就能找到对应的记录，而在MyISAM中却需要进行一次回表操作，意味着MyISAM中建立的索引相当于全部都是二级索引！</li>
-<li>如果有需要的话，我们也可以对其它的列分别建立索引或者建立联合索引，原理和InnoDB中的索引差不多，不过在叶子节点处存储的是相应的<strong>列+行号</strong>。这些索引也全部都是二级索引。</li>
-</ul>
-<blockquote>
-<p>为什么不自动为每个列都建立个索引呢？别忘了，每建立一个索引都会建立一棵B+树，每插入一条记录都要维护各个记录、数据页的排序关系，这是很费性能和存储空间的。</p>
-</blockquote>
 <h2 id="b树的索引总结">B+树的索引总结</h2>
 <ol>
-<li>每个索引都对应一棵<strong>B+树</strong>。用户记录都存储在 B+树 的叶子节点，所有目录记录都存储在非叶子节点。</li>
-<li>InnoDB存储引擎会自动为<strong>主键</strong>（如果没有它会自动帮我们添加）建立<strong>聚簇索引</strong>，聚簇索引的叶子节点包含完整的用户记录。</li>
-<li>可以为指定的列建立二级索引，二级索引的叶子节点包含的用户记录由<strong>索引列 + 主键</strong>组成，所以如果想通过二级索引来查找完整的用户记录的话，需要通过<strong>回表</strong>操作，也就是在通过二级索引找到主键值之后再到聚簇索引中查找完整的用户记录。</li>
-<li>B+树中每层节点都是按照索引列值从小到大的顺序排序而组成了双向链表，而且每个页内的记录（不论是用户记录还是目录项记录）都是按照索引列的值从小到大的顺序而形成了一个单链表。如果是联合索引的话，则页面和记录先按照联合索引前边的列排序，如果该列值相同，再按照联合索引后边的列排序。</li>
-<li>通过索引查找记录是从 B+树 的根节点开始，一层一层向下搜索。由于每个页面都按照索引列的值建立了页目录，所以在这些页面中的查找非常快。</li>
+<li>
+<p>每个索引都对应一棵<strong>B+树</strong>。用户记录都存储在 B+树 的叶子节点，所有目录记录都存储在非叶子节点。</p>
+</li>
+<li>
+<p><code>InnoDB</code>存储引擎会自动为<strong>主键</strong>（如果没有它会自动帮我们添加）建立<strong>聚簇索引</strong>，聚簇索引的叶子节点包含完整的用户记录。</p>
+</li>
+<li>
+<p>可以为指定的列建立二级索引，二级索引的叶子节点包含的用户记录由<strong>索引列 + 主键</strong>组成，所以如果想通过二级索引来查找完整的用户记录的话，需要通过<strong>回表</strong>操作，也就是在通过二级索引找到主键值之后再到聚簇索引中查找完整的用户记录。</p>
+</li>
+<li>
+<p>B+树中每层节点都是按照索引列值从小到大的顺序排序而组成了双向链表，而且每个页内的记录（不论是用户记录还是目录项记录）都是按照索引列的值从小到大的顺序而形成了一个单链表。如果是联合索引的话，则页面和记录先按照联合索引前边的列排序，如果该列值相同，再按照联合索引后边的列排序。</p>
+</li>
+<li>
+<p>通过索引查找记录是从 B+树 的根节点开始，一层一层向下搜索。由于每个页面都按照索引列的值建立了页目录，所以在这些页面中的查找非常快。</p>
+</li>
 </ol>
 <p>表：</p>
-<pre><code>create table t1(
+<pre><code class="language-sql">create table t1(
   a int primary key, 
   b int,
   c int,
@@ -165,13 +268,13 @@ MyISAM：不加任何条件 select 出来的数据是没有排序的（按照插
 )engine=InnoDB;
 </code></pre>
 <p>表记录：</p>
-<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/%E8%A1%A8%E8%AE%B0%E5%BD%95.png" alt="图片" loading="lazy"></figure>
+<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/%E8%A1%A8%E8%AE%B0%E5%BD%95.png" alt="图片" loading="lazy"></figure>
 <p>创建索引：</p>
-<pre><code>create index idx_t1_bcd on t1(b,c,d);
+<pre><code class="language-sql">create index idx_t1_bcd on t1(b,c,d);
 </code></pre>
-<figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/%E8%87%AA%E5%AE%9A%E4%B9%89%E7%B4%A2%E5%BC%95.png" alt="图片" loading="lazy"></figure>
+<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/%E8%87%AA%E5%AE%9A%E4%B9%89%E7%B4%A2%E5%BC%95.png" alt="图片" loading="lazy"></figure>
 <p style = "text-align:center;font-family:楷体">自行创建索引</p>
-<figure data-type="image" tabindex="4"><img src="https://epitomm.github.io/post-images/%E4%B8%BB%E9%94%AE%E7%B4%A2%E5%BC%95.png" alt="图片" loading="lazy"></figure>
+<figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/%E4%B8%BB%E9%94%AE%E7%B4%A2%E5%BC%95.png" alt="图片" loading="lazy"></figure>
 <p style = "text-align:center;font-family:楷体">主键索引</p>
 <h2 id="索引的代价">索引的代价</h2>
 <h3 id="空间上的代价">空间上的代价</h3>
@@ -181,90 +284,116 @@ MyISAM：不加任何条件 select 出来的数据是没有排序的（按照插
 <h2 id="b树索引实战">B+树索引实战</h2>
 <h3 id="全值匹配">全值匹配</h3>
 <p>如果我们的搜索条件中的列和索引列一致的话，这种情况就称为全值匹配，比方说下边这个查找语句：</p>
-<pre><code>select * from t1 where b=1 and c=1 and d=1；
+<pre><code class="language-sql">select * from t1 where b=1 and c=1 and d=1；
 </code></pre>
-<p>MySQL中有查询优化器，会分析这些搜索条件并且按照可以使用的索引中列的顺序来决定先使用哪个搜索条件。</p>
+<p><code>MySQL</code>中有查询优化器，会分析这些搜索条件并且按照可以使用的索引中列的顺序来决定先使用哪个搜索条件。</p>
 <h3 id="匹配左边的列">匹配左边的列</h3>
-<pre><code>select * from t1 where b=1；
+<pre><code class="language-sql">select * from t1 where b=1；
 select * from t1 where b=1 and c=1；
 </code></pre>
-<p>下面这个sql是用不到索引的</p>
-<pre><code>select * from t1 where c = 1；
+<p>下面这个<code>sql</code>是用不到索引的</p>
+<pre><code class="language-sql">select * from t1 where c = 1；
 </code></pre>
 <p>因为 B+树 的数据页和记录先是按照 b 列的值排序的，在 b 列的值相同的情况下才使用 c 列进行排序，也就是说 b 列的值不同的记录中 c 的值可能是无序的。而现在你跳过 b 列直接根据 c 的值去查找，这是做不到的。</p>
-<h3 id="匹配列前缀">匹配列前缀</h3>
+<h3 id="匹配列前缀"><strong>匹配列前缀</strong></h3>
 <p>但是需要注意的是，如果只给出后缀或者中间的某个字符串，比如这样：</p>
-<pre><code>select * from t1 where b like ''%101%';
+<pre><code class="language-sql">select * from t1 where b like ''%101%';
 </code></pre>
 <p>MySQL 就无法快速定位记录位置了，所以只能全表扫描了。有时候我们有一些匹配某些字符串后缀的需求，比方说某个表有一个url列，该列中存储了许多url：</p>
 <pre><code>www.baidu.com 
+
 www.google.com 
+
 www.qq.com
 </code></pre>
 <p>假设已经对该 url 列创建了索引，如果我们想查询以 com 为后缀的网址的话可以这样写查询条件：WHERE url LIKE '%com'，但是这样的话无法使用该 url 列的索引。为了在查询时用到这个索引而不至于全表扫描，我们可以把后缀查询改写成前缀查询，不过我们就得把表中的数据全部逆序存储一下，也就是说我们可以这样保存 url 列中的数据：</p>
 <pre><code>moc.udiab.www 
+
 moc.e1goog.www
+
 moc.qq.www
 </code></pre>
 <p>这样再查找以com为后缀的网址时搜索条件便可以这么写：WHERE url LIKE 'moc%'，这样就可以用到索引了。</p>
 <h3 id="匹配范围值">匹配范围值</h3>
 <p>查询方式：</p>
 <ul>
-<li>辅助索引查询成本+回表成本</li>
-<li>全表扫描成本</li>
+<li>
+<p>辅助索引查询成本+回表成本</p>
+</li>
+<li>
+<p>全表扫描成本</p>
+</li>
 </ul>
 <p>所有记录都是按照索引列的值从小到大的顺序排好序的，所以这极大的方便我们查找索引列的值在某个范围内的记录。比方说下边这个查询语句：</p>
 <pre><code>select * from t1 where b &gt; 1 and b &lt; 2000;
 </code></pre>
 <p>由于B+树中的数据页和记录是先按 b 列排序的，所以我们上边的查询过程其实是这样的：</p>
 <ul>
-<li>找到 b 值为 1 的记录。</li>
-<li>找到 b 值为 20000 的记录。</li>
-<li>由于所有记录都是由链表连起来的（记录之间用单链表，数据页之间用双链表），所以他们之间的记录都可以很容易的取出来</li>
-<li>找到这些记录的主键值，再到聚簇索引中回表查找完整的记录。</li>
+<li>
+<p>找到 b 值为 1 的记录。</p>
+</li>
+<li>
+<p>找到 b 值为 20000 的记录。</p>
+</li>
+<li>
+<p>由于所有记录都是由链表连起来的（记录之间用单链表，数据页之间用双链表），所以他们之间的记录都可以很容易的取出来</p>
+</li>
+<li>
+<p>找到这些记录的主键值，再到聚簇索引中回表查找完整的记录。</p>
+</li>
 </ul>
 <p>不过在使用联合进行范围查找的时候需要注意，如果对多个列同时进行范围查找的话，只有对索引最左边的那个列进行范围查找的时候才能用到 B+树 索引，比方说这样：</p>
-<pre><code>select * from t1 where b &gt; 1 and c &gt; 1;
+<pre><code class="language-sql">select * from t1 where b &gt; 1 and c &gt; 1;
 </code></pre>
 <p>上边这个查询可以分成两个部分：</p>
 <ol>
-<li>通过条件 b&gt;1 来对 b 进行范围查找，查找的结果可能有多条 b 值不同的记录，</li>
-<li>对这些 b 值不同的记录继续通过 c&gt;1 继续过滤。</li>
+<li>
+<p>通过条件 b&gt;1 来对 b 进行范围查找，查找的结果可能有多条 b 值不同的记录，</p>
+</li>
+<li>
+<p>对这些 b 值不同的记录继续通过 c&gt;1 继续过滤。</p>
+</li>
 </ol>
 <p>这样子对于联合索引来说，只能用到 b 列的部分，而用不到 c 列的部分，因为只有 b 值相同的情况下才能用 c 列的值进行排序（select * from t1 where b = 1 and c &gt;1），而这个查询中通过 b 进行范围查找的记录中可能并不是按照 c 列进行排序的，所以在搜索条件中继续以 c 列进行查找时是用不到这个B+树索引的。</p>
 <h3 id="精确匹配某一列并范围匹配另外一列">精确匹配某一列并范围匹配另外一列</h3>
 <p>对于同一个联合索引来说，虽然对多个列都进行范围查找时只能用到最左边那个索引列，但是如果左边的列是精确查找，则右边的列可以进行范围查找，比方说这样：</p>
-<pre><code>select * from t1 where b=1 and c&gt;1；
+<pre><code class="language-sql">select * from t1 where b=1 and c&gt;1；
 </code></pre>
 <h3 id="排序">排序</h3>
 <p>我们在写查询语句的时候经常需要对查询出来的记录通过 ORDER BY 子句按照某种规则进行排序。一般情况下，我们只能把记录都加载到内存中，再用一些排序算法，比如快速排序、归并排序等等在内存中对这些记录进行排序，有的时候可能查询的结果集太大以至于不能在内存中进行排序的话，还可能暂时借助磁盘的空间来存放中间结果，排序操作完成后再把排好序的结果集返回到客户端。在MySQL中，把这种在内存中或者磁盘上进行排序的方式统称为<strong>文件排序</strong>（英文名：filesort），这些排序操作非常慢。但是如果 ORDER BY 子句里使用到了我们的索引列，就有可能省去在内存或文件中排序的步骤，比如下边这个简单的查询语句：</p>
-<pre><code>select * from t1 order by b，c，d
+<pre><code class="language-sql">select * from t1 order by b，c，d
 </code></pre>
 <p>这个查询的结果集需要先按照 b 值排序，如果记录的 b 值相同，则需要按照 c 来排序，如果 c 的值相同，则需要按照 d 排序。因为这个 B+ 树索引本身就是按照上述规则排好序的，所以直接从索引中提取数据，然后进行回表操作取出该索引中不包含的列就好了。</p>
 <h3 id="分组">分组</h3>
-<pre><code>select b，c，d，count（*）from t1 group by b，c，d；
+<pre><code class="language-sql">select b，c，d，count（*）from t1 group by b，c，d；
 </code></pre>
 <p>这个查询语句相当于做了3次分组操作：</p>
 <ol>
-<li>先把记录按照b值进行分组，所有 b 值相同的记录划分为一组。</li>
-<li>将每个 b 值相同的分组里的记录再按照 c 的值进行分组，将 title 值相同的记录放到一个小分组里，所以看起来就像在一个大分组里又化分了好多小分组。</li>
-<li>再将上一步中产生的小分组按照 d 的值分成更小的分组，所以整体上看起来就像是先把记录分成一个大分组，然后把大分组分成若干个小分组，然后把若干个小分组再细分成更多的小小分组。</li>
+<li>
+<p>先把记录按照b值进行分组，所有 b 值相同的记录划分为一组。</p>
+</li>
+<li>
+<p>将每个 b 值相同的分组里的记录再按照 c 的值进行分组，将 title 值相同的记录放到一个小分组里，所以看起来就像在一个大分组里又化分了好多小分组。</p>
+</li>
+<li>
+<p>再将上一步中产生的小分组按照 d 的值分成更小的分组，所以整体上看起来就像是先把记录分成一个大分组，然后把大分组分成若干个小分组，然后把若干个小分组再细分成更多的小小分组。</p>
+</li>
 </ol>
 <p>然后针对那些小小分组进行统计，比如在我们这个查询语句中就是统计每个小小分组包含的记录条数。如果没有索引的话，这个分组过程全部需要在内存里实现，而如果有了索引的话，恰巧这个分组顺序又和我们的 B+树 中的索引列的顺序是一致的，而我们的 B+树 索引又是按照索引列排好序的，所以可以直接使用 B+树 索引进行分组。</p>
 <p>和使用 B+树 索引进行排序是一个道理，分组列的顺序也需要和索引列的顺序一致，也可以只使用索引列中左边的列进行分组。</p>
 <h3 id="使用联合索引进行排序或分组的注意事项">使用联合索引进行排序或分组的注意事项</h3>
 <p>对于联合索引有个问题需要注意，ORDER BY 的子句后边的列的顺序也必须按照索引列的顺序给出，如果给出 order by c，b 的顺序，那也是用不了 B+树 索引的。</p>
 <p>同理，order by b，order by b，c 这种匹配索引左边的列的形式可以使用部分的 B+树 索引。当联合索引左边列的值为常量，也可以使用后边的列进行排序，比如这样：</p>
-<pre><code>select * from t1 where b=1 order by c，d；
+<pre><code class="language-sql">select * from t1 where b=1 order by c，d；
 </code></pre>
 <p>这个查询能使用联合索引进行排序是因为 b 列的值相同的记录是按照 c，d 排序的。</p>
 <h3 id="不可以使用索引进行排序或分组的几种情况">不可以使用索引进行排序或分组的几种情况</h3>
-<p><strong>ASC、DESC混用</strong></p>
-<p>对于使用联合索引进行排序的场景，我们要求各个排序列的排序顺序是一致的，也就是要么各个列都是 ASC 规则排序，要么都是 DESC 规则排序。</p>
+<p><code>ASC</code>、<code>DESC</code>混用</p>
+<p>对于使用联合索引进行排序的场景，我们要求各个排序列的排序顺序是一致的，也就是要么各个列都是 <code>ASC</code> 规则排序，要么都是 <code>DESC</code> 规则排序。</p>
 <blockquote>
-<p>ORDER BY 子句后的列如果不加 ASC 或者 DESC 默认是按照 ASC 排序规则排序的，也就是升序排序的。</p>
+<p>ORDER BY 子句后的列如果不加 <code>ASC</code> 或者 <code>DESC</code> 默认是按照 <code>ASC</code> 排序规则排序的，也就是升序排序的。</p>
 </blockquote>
-<pre><code>select * from t1 order by b ASC，c DESC；
+<pre><code class="language-sql">select * from t1 order by b ASC，c DESC；
 </code></pre>
 <p>这个查询时用不到索引的。</p>
 <h2 id="如何建立索引">如何建立索引</h2>
@@ -276,46 +405,78 @@ moc.qq.www
 <h3 id="考虑前缀索引">考虑前缀索引</h3>
 <p>用列的前缀代替整个列作为索引 key，当前缀长度合适时，可以做到既使得前缀索引的选择性接近全列索引，同时因为索引 key 变短而减少了索引文件的大小和维护开销。</p>
 <blockquote>
-<p>使用mysql官网提供的示例数据库：<a href="https://dev.mysql.com/doc/employee/en/employees-installation.html">https://dev.mysql.com/doc/employee/en/employees-installation.html</a><br>
-github地址：<a href="https://github.com/datacharmer/test_db">https://github.com/datacharmer/test_db</a></p>
+<p>使用mysql官网提供的示例数据库：<a href="https://dev.mysql.com/doc/employee/en/employees-installation.html">https://dev.mysql.com/doc/employee/en/employees-installation.html</a></p>
+<p>github地址：<a href="https://github.com/datacharmer/test_db">https://github.com/datacharmer/test_db</a></p>
 </blockquote>
 <p>employees表只有一个索引&lt;emp_no&gt;，那么如果我们想按名字搜索一个人，就只能全表扫描了：</p>
-<pre><code>EXPLAIN SELECT * FROM employees.employees WHERE first_name='Eric' AND
-last_name='Anido';
+<pre><code class="language-sql">EXPLAIN SELECT * FROM employees.employees WHERE first_name='Eric' AND last_name='Anido';
 </code></pre>
 <p>那么可以对 &lt;first_name&gt; 或 &lt;first_name，last_name&gt; 建立索引，看下两个索引的选择性：</p>
-<pre><code>SELECT count(DISTINCT(first_name))/count(*) AS Selectivity FROM employees.employees; -- 0.0042
+<pre><code class="language-sql">SELECT count(DISTINCT(first_name))/count(*) AS Selectivity FROM employees.employees; -- 0.0042
+
 SELECT count(DISTINCT(concat(first_name, last_name)))/count(*) AS Selectivity FROM employees.employees; -- 0.9313
 </code></pre>
 <p>&lt;first_name&gt;显然选择性太低，&lt;first_name，last_name&gt;选择性很好，但是first_name和last_name加起来长度为30，有没有兼顾长度和选择性的办法？可以考虑用first_name和last_name的前几个字符建立索引，例如&lt;first_name, left(last_name, 3)&gt;，看看其选择性：</p>
-<pre><code>SELECT count(DISTINCT(concat(first_name, left(last_name, 3))))/count(*) AS Selectivity FROM employees.employees; -- 0.7879
+<pre><code class="language-sql">SELECT count(DISTINCT(concat(first_name, left(last_name, 3))))/count(*) AS Selectivity FROM employees.employees; -- 0.7879
 </code></pre>
 <p>选择性还不错，但离0.9313还是有点距离，那么把last_name前缀加到4：</p>
-<pre><code>SELECT count(DISTINCT(concat(first_name, left(last_name, 4))))/count(*) AS Selectivity FROM employees.employees; -- 0.9007
+<pre><code class="language-sql">SELECT count(DISTINCT(concat(first_name, left(last_name, 4))))/count(*) AS Selectivity FROM employees.employees; -- 0.9007
 </code></pre>
-<p>这时选择性已经很理想了，而这个索引的长度只有18，比&lt;first_name，last_name&gt;短了接近一半，建立前缀索引的方式为：</p>
-<pre><code>ALTER TABLE employees.employees ADD INDEX `first_name_last_name4` (first_name,last_name(4));
+<p>这时选择性已很理想了，而这个索引的长度只有18，比&lt;first_name，last_name&gt;短了接近一半，建立前缀索引的方式为：</p>
+<pre><code class="language-sql">ALTER TABLE employees.employees ADD INDEX first_name_last_name4 (first_name,last_name(4));
 </code></pre>
 <p>前缀索引兼顾索引大小和查询速度，但是其缺点是不能用于 OFRDER BY 和 GROUP BY 操作，也不能用于覆盖索引。</p>
 <h3 id="总结">总结</h3>
 <ul>
-<li>索引列的类型尽量小</li>
-<li>利用索引字符串值的前缀</li>
-<li>主键自增</li>
-<li>定位并删除表中的重复和冗余索引</li>
-<li>尽量使用覆盖索引进行查询，避免回表带来的性能损耗。</li>
+<li>
+<p>索引列的类型尽量小</p>
+</li>
+<li>
+<p>利用索引字符串值的前缀</p>
+</li>
+<li>
+<p>主键自增</p>
+</li>
+<li>
+<p>定位并删除表中的重复和冗余索引</p>
+</li>
+<li>
+<p>尽量使用覆盖索引进行查询，避免回表带来的性能损耗。</p>
+</li>
 </ul>
+<h2 id="参考资料">参考资料</h2>
+<p>https://cyc2018.github.io/CS-Notes/#/notes/MySQL</p>
 
               </div>
               <div class="toc-container">
                 <ul class="markdownIt-TOC">
-<li><a href="#%E7%B4%A2%E5%BC%95">索引</a>
+<li>
+<ul>
+<li><a href="#%E5%AD%98%E5%82%A8%E5%BC%95%E6%93%8E">存储引擎</a></li>
+<li><a href="#%E7%B4%A2%E5%BC%95%E7%9A%84%E5%88%86%E7%B1%BB">索引的分类</a>
+<ul>
+<li><a href="#%E5%93%88%E5%B8%8C%E7%B4%A2%E5%BC%95">哈希索引</a></li>
+<li><a href="#b%E6%A0%91-%E7%B4%A2%E5%BC%95">B+树 索引</a>
+<ul>
+<li><a href="#innodb-%E7%9A%84-b%E6%A0%91%E8%81%9A%E7%B0%87%E7%B4%A2%E5%BC%95"><code>InnoDB</code> 的 B+树：聚簇索引</a>
 <ul>
 <li><a href="#%E8%81%9A%E7%B0%87%E7%B4%A2%E5%BC%95">聚簇索引</a></li>
+</ul>
+</li>
+<li><a href="#myisam-%E7%9A%84-b%E6%A0%91%E9%9D%9E%E8%81%9A%E7%B0%87%E7%B4%A2%E5%BC%95"><code>MyISAM</code> 的 B+树：非聚簇索引</a></li>
+</ul>
+</li>
 <li><a href="#%E4%BA%8C%E7%BA%A7%E7%B4%A2%E5%BC%95%E8%BE%85%E5%8A%A9%E7%B4%A2%E5%BC%95">二级索引（辅助索引）</a></li>
 <li><a href="#%E8%81%94%E5%90%88%E7%B4%A2%E5%BC%95">联合索引</a></li>
+</ul>
+</li>
+<li><a href="#%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95">覆盖索引</a>
+<ul>
+<li><a href="#%E4%BB%80%E4%B9%88%E6%98%AF%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95">什么是覆盖索引</a></li>
+<li><a href="#%E8%A6%86%E7%9B%96%E7%B4%A2%E5%BC%95%E4%BD%BF%E7%94%A8%E5%AE%9E%E4%BE%8B">覆盖索引使用实例</a></li>
+</ul>
+</li>
 <li><a href="#%E7%9B%AE%E5%BD%95%E9%A1%B9%E8%AE%B0%E5%BD%95%E7%9A%84%E5%94%AF%E4%B8%80%E6%80%A7">目录项记录的唯一性</a></li>
-<li><a href="#myisam-%E4%B8%AD%E7%9A%84%E7%B4%A2%E5%BC%95%E6%96%B9%E6%A1%88%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D">MyISAM 中的索引方案简单介绍</a></li>
 <li><a href="#b%E6%A0%91%E7%9A%84%E7%B4%A2%E5%BC%95%E6%80%BB%E7%BB%93">B+树的索引总结</a></li>
 <li><a href="#%E7%B4%A2%E5%BC%95%E7%9A%84%E4%BB%A3%E4%BB%B7">索引的代价</a>
 <ul>
@@ -327,7 +488,7 @@ SELECT count(DISTINCT(concat(first_name, last_name)))/count(*) AS Selectivity FR
 <ul>
 <li><a href="#%E5%85%A8%E5%80%BC%E5%8C%B9%E9%85%8D">全值匹配</a></li>
 <li><a href="#%E5%8C%B9%E9%85%8D%E5%B7%A6%E8%BE%B9%E7%9A%84%E5%88%97">匹配左边的列</a></li>
-<li><a href="#%E5%8C%B9%E9%85%8D%E5%88%97%E5%89%8D%E7%BC%80">匹配列前缀</a></li>
+<li><a href="#%E5%8C%B9%E9%85%8D%E5%88%97%E5%89%8D%E7%BC%80"><strong>匹配列前缀</strong></a></li>
 <li><a href="#%E5%8C%B9%E9%85%8D%E8%8C%83%E5%9B%B4%E5%80%BC">匹配范围值</a></li>
 <li><a href="#%E7%B2%BE%E7%A1%AE%E5%8C%B9%E9%85%8D%E6%9F%90%E4%B8%80%E5%88%97%E5%B9%B6%E8%8C%83%E5%9B%B4%E5%8C%B9%E9%85%8D%E5%8F%A6%E5%A4%96%E4%B8%80%E5%88%97">精确匹配某一列并范围匹配另外一列</a></li>
 <li><a href="#%E6%8E%92%E5%BA%8F">排序</a></li>
@@ -343,6 +504,7 @@ SELECT count(DISTINCT(concat(first_name, last_name)))/count(*) AS Selectivity FR
 <li><a href="#%E6%80%BB%E7%BB%93">总结</a></li>
 </ul>
 </li>
+<li><a href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99">参考资料</a></li>
 </ul>
 </li>
 </ul>
