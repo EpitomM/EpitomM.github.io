@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://epitomm.github.io</id>
     <title>SSM</title>
-    <updated>2020-04-23T02:24:03.173Z</updated>
+    <updated>2020-04-23T02:53:52.353Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://epitomm.github.io"/>
     <link rel="self" href="https://epitomm.github.io/atom.xml"/>
@@ -975,7 +975,7 @@ public class NIOServer {
 <p>对<strong>于包含UNION子句的查询语句来说，每个SELECT关键字对应一个id值</strong>也是没错的，不过还是有点儿特别的东西，比方说下边这个查询：</p>
 <pre><code>mysql&gt; explain select * from t1 union select * from t2; 
 </code></pre>
-<figure data-type="image" tabindex="5"><img src="https://epitomm.github.io/post-images/UNION%E5%8E%BB%E9%87%8D.png" alt="图片" loading="lazy"></figure>
+<figure data-type="image" tabindex="5"><img src="https://epitomm.github.io/post-images/union%E5%8E%BB%E9%87%8D.png" alt="图片" loading="lazy"></figure>
 <p style = "text-align:center;font-family:楷体">union 去重</p>
 <p>这个语句的执行计划的第三条记录是什么？为什么id值是NULL？UNION会把多个查询的结果集合并起来并对结果集中的记录进行去重，怎么去重呢？MySQL使用的是内部的临时表。正如上边的查询计划中所示，<strong>UNION子句是为了把id为1的查询和id为2的查询的结果集合并起来并去重，所以在内部创建了一个名为的临时表</strong>（就是执行计划第三条记录的table列的名称），id为NULL表明这个临时表是为了合并两个查询的结果集而创建的。</p>
 <p>跟UNION对比起来，<strong>UNION ALL就不需要为最终的结果集进行去重</strong>，它只是单纯的把多个查询的结果集中的记录合并成一个并返回给用户，所以也就不需要使用临时表。所以在包含UNION ALL子句的查询的执行计划中，就没有那个id为NULL的记录，如下所示：</p>
