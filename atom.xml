@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://epitomm.github.io</id>
     <title>SSM</title>
-    <updated>2020-04-23T02:53:52.353Z</updated>
+    <updated>2020-04-23T04:10:20.053Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://epitomm.github.io"/>
     <link rel="self" href="https://epitomm.github.io/atom.xml"/>
@@ -10,6 +10,114 @@
     <logo>https://epitomm.github.io/images/avatar.png</logo>
     <icon>https://epitomm.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, SSM</rights>
+    <entry>
+        <title type="html"><![CDATA[leetcode876. 链表的中间结点]]></title>
+        <id>https://epitomm.github.io/post/leetcode876-lian-biao-de-zhong-jian-jie-dian/</id>
+        <link href="https://epitomm.github.io/post/leetcode876-lian-biao-de-zhong-jian-jie-dian/">
+        </link>
+        <updated>2020-04-23T02:57:57.000Z</updated>
+        <content type="html"><![CDATA[<h2 id="问题描述">问题描述</h2>
+<p>给定一个带有头结点 head 的非空单链表，返回链表的中间结点。</p>
+<p>如果有两个中间结点，则返回第二个中间结点。</p>
+<h2 id="示例">示例</h2>
+<p>示例 1：</p>
+<p>输入：[1,2,3,4,5]<br>
+输出：此列表中的结点 3 (序列化形式：[3,4,5])<br>
+返回的结点值为 3 。 (测评系统对该结点序列化表述是 [3,4,5])。<br>
+注意，我们返回了一个 ListNode 类型的对象 ans，这样：<br>
+ans.val = 3, ans.next.val = 4, ans.next.next.val = 5, 以及 ans.next.next.next = NULL.</p>
+<p>示例 2：</p>
+<p>输入：[1,2,3,4,5,6]<br>
+输出：此列表中的结点 4 (序列化形式：[4,5,6])<br>
+由于该列表有两个中间结点，值分别为 3 和 4，我们返回第二个结点。</p>
+<p>提示：</p>
+<p>给定链表的结点数介于 1 和 100 之间。</p>
+<h2 id="方法一遍历两次链表">方法一：遍历两次链表</h2>
+<h3 id="问题分析">问题分析</h3>
+<ul>
+<li>
+<p>遍历链表，记录下链表长度 length。</p>
+</li>
+<li>
+<p>再遍历链表返回第 length/2 个节点。</p>
+</li>
+</ul>
+<h3 id="复杂度分析">复杂度分析</h3>
+<ul>
+<li>
+<p>时间复杂度：O(n)</p>
+</li>
+<li>
+<p>空间复杂度：O(1)</p>
+</li>
+</ul>
+<p>链表节点数为奇数个时：</p>
+<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/%E5%8D%95%E9%93%BE%E8%A1%A8%E4%B8%AD%E9%97%B4%E8%8A%82%E7%82%B9.png" alt="图片" loading="lazy"></figure>
+<p>链表节点数为偶数个时：</p>
+<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/%E5%8D%95%E9%93%BE%E8%A1%A8%E4%B8%AD%E9%97%B4%E8%8A%82%E7%82%B92.png" alt="图片" loading="lazy"></figure>
+<h3 id="代码">代码</h3>
+<pre><code>public class AlgoCasts {
+  public class ListNode {
+    int val;
+    ListNode next;
+    ListNode(int x) {
+      val = x;
+    }
+  }
+  // Time: O(n), Space: O(1)
+  public ListNode getMiddleNodeTwoPass(ListNode head) {
+    ListNode p = head;
+    int len = 0;
+    for (; p != null; p = p.next) ++len;
+    p = head;
+    for (int i = 0; i &lt; len/2; ++i) p = p.next;
+    return p;
+  }
+}
+</code></pre>
+<h2 id="方法二快慢指针">方法二：快慢指针</h2>
+<h3 id="问题分析-2">问题分析</h3>
+<p>快指针一次走两步，慢指针一次走一步，<strong>当快指针遍历完链表时，慢指针正好指向中间节点</strong>。</p>
+<h3 id="复杂度分析-2">复杂度分析</h3>
+<ul>
+<li>
+<p>时间复杂度：O(n)</p>
+</li>
+<li>
+<p>空间复杂度：O(1)</p>
+</li>
+</ul>
+<pre><code>while(fast != nul &amp;&amp; fast.next != null){
+  fast = fast.next.next; // 快指针移动两步
+  slow = slow.next; // 慢指针移动一步
+}  
+</code></pre>
+<p>链表节点数为奇数个时：<br>
+<img src="https://epitomm.github.io/post-images/%E9%93%BE%E8%A1%A8%E4%B8%AD%E9%97%B4%E8%8A%82%E7%82%B9_%E5%BF%AB%E6%85%A2%E6%8C%87%E9%92%881.png" alt="图片" loading="lazy"></p>
+<p>链表节点数为偶数个时：<br>
+<img src="https://epitomm.github.io/post-images/%E9%93%BE%E8%A1%A8%E4%B8%AD%E9%97%B4%E8%8A%82%E7%82%B9_%E5%BF%AB%E6%85%A2%E6%8C%87%E9%92%882.png" alt="图片" loading="lazy"></p>
+<h3 id="代码-2">代码</h3>
+<pre><code>public class AlgoCasts {
+  public class ListNode {
+    int val;
+    ListNode next;
+    ListNode(int x) {
+      val = x;
+    }
+  }
+  // Time: O(n), Space: O(1)
+  public ListNode getMiddleNodeOnePass(ListNode head) {
+    ListNode fast = head, slow = head;
+    while (fast != null &amp;&amp; fast.next != null) {
+      fast = fast.next.next;
+      slow = slow.next;
+    }
+    return slow;
+  }
+}
+</code></pre>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[HTTP系列（一）了解 HTTP 协议]]></title>
         <id>https://epitomm.github.io/post/httpyi-liao-jie-http-xie-yi/</id>
@@ -4841,129 +4949,6 @@ public class HelloServiceImpl implements HelloService {
 <figure data-type="image" tabindex="65"><img src="https://uploader.shimo.im/f/DxTlKd889QMR0jp1.png!thumbnail" alt="图片" loading="lazy"></figure>
 <h3 id="5-dubbo原理-服务调用">5、dubbo原理	-服务调用</h3>
 <figure data-type="image" tabindex="66"><img src="https://uploader.shimo.im/f/rugf4MklrfIiNoOW.png!thumbnail" alt="图片" loading="lazy"></figure>
-]]></content>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[记一个面试题 —— 实现一个读写锁]]></title>
-        <id>https://epitomm.github.io/post/ji-yi-ge-mian-shi-ti-shi-xian-yi-ge-du-xie-suo/</id>
-        <link href="https://epitomm.github.io/post/ji-yi-ge-mian-shi-ti-shi-xian-yi-ge-du-xie-suo/">
-        </link>
-        <updated>2020-04-10T05:57:59.000Z</updated>
-        <content type="html"><![CDATA[<h1 id="用共享对象实现写优先的读者写者锁">用共享对象实现写优先的读者写者锁</h1>
-<p>首先，我们实现一个读者/写者锁。类似于一个普通的互斥锁，一个读者/写者锁(RWLock)保护共享数据。然而，它会做如下的优化。为了最大化性能，一个 RWLock 允许多个“读者”线程同时访问共享数据。任意数量的线程可以在同一时间安全地读共享数据，只要没有线程在修改数据。然而，任意时刻，至多只能有 1 个写者线程可以持有 RWLock（读者线程只能读共享数据，写者线程既可以写也可以读共享数据）。当一个写者线程持有 RWLock，它可以安全地修改数据，因为锁保证了不会有其他的线程同时持有该锁。读者写者锁常常被用于数据库，它们被用于支持对数据库的更快的搜索查询，同时也支持不太频繁的更新。另一个常见的应用是在操作系统内核中，核心的数据结构常常被许多线程读但更新却不太频繁。为了将我们的互斥锁一般化为一个读者/写者锁，我们实现了一个新类型的共享对象，RWLock，来保护对共享数据的访问。RWLock 采用了我们标准化的同步构建模块：互斥锁和条件变量来实现。<br>
-一个线程想要（原子地）读共享数据，其过程如下：</p>
-<pre><code>rwLock-&gt;startRead();
-read shared data
-rwLock-&gt;doneRead();
-</code></pre>
-<p>类似的，一个线程想要（原子地）写共享数据，其过程如下：</p>
-<pre><code>rwLock-&gt;startWrite();
-Read and write shared data
-rwLock-&gt;doneWrite();
-</code></pre>
-<p>为了设计 RWLock 类，我们首先定义它的接口（如上面代码所示），和它的共享状态。这里，对象的行为可以通过<strong>正在读和正在写的线程的数量和等待读和等代写的线程的数量</strong>来刻画。所以，我们需要 4 个整数来追踪这些值。 代码 5.9 展示了 RWLock 类的成员和接口. 接下来，我们通过提出以下的问题来添加同步变量，“什么时候方法需要等待？”首先，我们添加一个互斥锁：保证当有线程在访问 RWLock 的方法的时候，其他访问 RWLock 的方法的线程必须等待。接下来，我们观察到 startRead 或 startWrite 可能需要等待，因此我们为每种情况添加了一个条件变量：readGo 和 writeGo.</p>
-<h2 id="读者写者锁的接口和成员变量">读者/写者锁的接口和成员变量</h2>
-<pre><code>class RWLock{
-    private:
-        //Synchronization variables
-        Lock lock;
-        CV readGo;
-        CV writeGo;
-
-        // State variables
-        int activeReaders;
-        int activeWriters;
-        int waitingReaders;
-        int waitingWriters;
-    public:
-        RWLock();
-        ~RWLock(){};
-        void startRead();
-        void doneRead();
-        void startWrite();
-        void doneWrite();
-    private:
-        bool readShouldWait();
-        bool writeShouldWait();
-} 
-</code></pre>
-<p>代码 5.9：  我们的读者/写者锁的接口和成员变量<br>
-RWLock: doneRead 和 doneWrite 不需要等待（不包括获取互斥锁）。因此，这些方法不需要额外的条件变量。<br>
-现在我们实现 RWLock。<br>
-首先，我们先给每个方法添加上锁的获取和锁的释放。如下图所示：</p>
-<pre><code>void RWLock :: startRead(){
-    lock.acquire();
-
-    lock.release();
-}
-
-void RWLock::doneRead(){
-    lock.acquire();
-
-    lock.release();
-}
-</code></pre>
-<p>RWLock::startWrite 和 RWLock::doneWrite 也类似。</p>
-<p>由于我们知道 startRead 和 startWrite 必须等待，因此我们可以在每个方法的中间写上while(…){wait();}的循环。然后，我们开始思考其中的细节，例如循环等待的判断条件。代码 5.10 展示了完整的解法。</p>
-<h2 id="读者写者锁完整代码">读者写者锁完整代码</h2>
-<pre><code>// Wait until no active or waiting writers,then proceed
-void RWLock::startRead(){
-    lock.acquire();
-    waitingReaders++;
-    while(readShouldWait()){
-        readGo.Wait(&amp;lock);
-    }
-    waitingReaders--;
-    activeReaders++;
-    lock.release();
-}
-
-// Done reading.If no other active readers,a write may proceed.
-void RWLock::doneRead(){
-    lock.acquire();
-    activeReaders--;
-    if(activeReaders == 0 &amp;&amp; waitingWriters &gt; 0){
-        writeGo.signal();
-    }
-    lock.release();
-}
-
-// Read waits if any active or waiting write(&quot;writers preferred&quot;).
-bool RWLock::readShouldWait(){
-    return (activeWriters &gt; 0 || waitingWriters &gt; 0);
-}
-
-// Wait until no active read or write then proceed;
-void RWLock::startWrite(){
-    lock.acquire();
-    waitingWriterw++;
-    while(writeShouldWait()){
-        writeGo.Wait(&amp;lock);
-    }
-    waitingWriters--;
-    activeWriters++;
-    lock.release();
-}
-
-// Done writing. A waiting write or read may proceed.
-void RWLock::doneWrite(){
-    lock.acquire();
-    activeWriters--;
-    assert(activeWriters == 0);
-    if(waitingWriters &gt; 0){
-        writeGo.signal();
-    }else{
-        readGo.broadcast();
-    }
-    lock.release();
-}
-
-// Write waits for active read or write.
-bool RWLock::writeShouldWait(){
-    return(activeWriters &gt; 0 || activeReaders &gt; 0);
-}
-</code></pre>
-<p>代码 5.10：  一个读者写者锁的实现</p>
 ]]></content>
     </entry>
 </feed>
