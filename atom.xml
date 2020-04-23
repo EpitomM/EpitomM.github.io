@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://epitomm.github.io</id>
     <title>SSM</title>
-    <updated>2020-04-23T06:43:17.033Z</updated>
+    <updated>2020-04-23T06:55:26.758Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://epitomm.github.io"/>
     <link rel="self" href="https://epitomm.github.io/atom.xml"/>
@@ -471,7 +471,7 @@ admin@qq.com —— 代表某个人的 QQ 邮箱，admin@qq.com 也是一个 URI
 <blockquote>
 <p>不知道对方支持什么方法，询问一下。</p>
 </blockquote>
-<figure data-type="image" tabindex="7"><img src="https://epitomm.github.io/post-images/OPTION%E8%AF%B7%E6%B1%82.png" alt="图片" loading="lazy"></figure>
+<figure data-type="image" tabindex="7"><img src="https://epitomm.github.io/post-images/OPTIONS%E8%AF%B7%E6%B1%82.png" alt="图片" loading="lazy"></figure>
 <h2 id="traceconnect">TRACE/CONNECT</h2>
 <ul>
 <li>TRACE：回显服务器收到的请求，主要用于测试或诊断</li>
