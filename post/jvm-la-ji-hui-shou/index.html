@@ -3,7 +3,7 @@
     <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>JVM 垃圾回收 | SSM</title>
-<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1587741810091">
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1587743018619">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
 <link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
 <link rel="alternate" type="application/atom+xml" title="JVM 垃圾回收 | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
@@ -26,7 +26,7 @@ A 对象引用 B 对象，B 对象的引用计数 = 1；B..." />
       <div class="main-content">
         <div class="site-header">
   <a href="https://epitomm.github.io">
-  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1587741810091" alt="">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1587743018619" alt="">
   </a>
   <h1 class="site-title">
     SSM
@@ -103,10 +103,10 @@ A 对象引用 B 对象，B 对象的引用计数 = 1；B..." />
 <h3 id="循环引用问题">循环引用问题</h3>
 <figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/%E5%BE%AA%E7%8E%AF%E5%BC%95%E7%94%A8.png" alt="图片" loading="lazy"></figure>
 <p>A 对象引用 B 对象，B 对象的引用计数 = 1；B 对象引用了 A 对象，A 对象的引用计数 = 1，但是没有其他对象在引用它们两个，它们本应被回收，却因彼此循环引用，计数器不为 0 ，不能被回收，造成内存泄露。</p>
-<h2 id="12-可达性分析算法">**1.2 可达性分析算法 **</h2>
+<h2 id="12-可达性分析算法">1.2 可达性分析算法</h2>
 <ul>
 <li>Java 虚拟机中的垃圾回收器采用<strong>可达性分析</strong>来探索所有存活的对象</li>
-<li>扫描<strong>堆</strong>中的对象，看是否能够沿着 **GC Root对象 **<strong>为起点的引用链找到该对象</strong>，找不到，表示可以回收</li>
+<li>扫描<strong>堆</strong>中的对象，看是否能够沿着 <strong>GC Root对象为起点的引用链找到该对象</strong>，找不到，表示可以回收</li>
 <li>哪些对象可以作为 GC Root ?
 <ul>
 <li>虚拟机栈中局部变量引用的对象</li>
@@ -116,7 +116,7 @@ A 对象引用 B 对象，B 对象的引用计数 = 1；B..." />
 </ul>
 </li>
 </ul>
-<h2 id="13-四种引用">**1.3 四种引用 **</h2>
+<h2 id="13-四种引用">1.3 四种引用</h2>
 <ol>
 <li>强引用</li>
 </ol>
@@ -391,14 +391,14 @@ public class Demo2_5 {
 </blockquote>
 <figure data-type="image" tabindex="18"><img src="https://epitomm.github.io/post-images/%E5%A0%86%E5%86%85%E5%AD%98%E5%88%92%E5%88%86.png" alt="图片" loading="lazy"></figure>
 <ul>
-<li>**对象首先分配在伊甸园区域 **</li>
-<li>**新生代空间不足时，触发 minor gc，伊甸园和 from 存活的对象使用 copy 复制到 to 中，存活的对象年龄加 1并且交换 from、to **</li>
-<li>**minor gc 会引发 stop the world，暂停其它用户的线程，等垃圾回收结束，用户线程才恢复运行 **
+<li><strong>对象首先分配在伊甸园区域</strong></li>
+<li><strong>新生代空间不足时，触发 minor gc，伊甸园和 from 存活的对象使用 copy 复制到 to 中，存活的对象年龄加 1并且交换 from、to</strong></li>
+<li><strong>minor gc 会引发 stop the world，暂停其它用户的线程，等垃圾回收结束，用户线程才恢复运行</strong>
 <ul>
 <li>对象的复制会更改对象地址，如果用户线程仍在运行，就会造成访问原来对象的地址找不到。</li>
 </ul>
 </li>
-<li>**当对象寿命超过阈值时，会晋升至老年代，最大寿命是15（对象头中占用 4bit：1111B） **</li>
+<li><strong>当对象寿命超过阈值时，会晋升至老年代，最大寿命是15</strong>（对象头中占用 4bit：1111B）</li>
 <li><strong>当老年代空间不足，会先尝试触发 minor gc，如果之后空间仍不足，那么触发 full gc，STW的时间更长，如果之后空间仍不足，就会内存溢出。</strong></li>
 </ul>
 <h2 id="31-分代垃圾回收机制原理">3.1 分代垃圾回收机制原理</h2>
@@ -408,10 +408,10 @@ public class Demo2_5 {
 <p>将伊甸园区的对象进行标记后，非垃圾对象复制到幸存区 TO，并且将这些非垃圾对象的寿命 +1，清空伊甸园内剩余的垃圾对象</p>
 <figure data-type="image" tabindex="21"><img src="https://epitomm.github.io/post-images/%E5%88%86%E4%BB%A3%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6_3.png" alt="图片" loading="lazy"></figure>
 <p>交换 FROM 和 TO</p>
-<p>创建一个新对象，存放到<strong>伊甸园</strong>，当伊甸园被占满时，触发** minor gc**，先对伊甸园区域内的对象进行<strong>标记</strong>，标记结束后，采用<strong>复制算法</strong>，将非垃圾对象<strong>复制</strong>到幸存区 TO，并让这些对象的寿命+1，伊甸园剩余的垃圾对象回收掉，**交换 **FROM 和 TO，第一次 minor gc 结束。</p>
+<p>创建一个新对象，存放到<strong>伊甸园</strong>，当伊甸园被占满时，触发 <strong>minor gc</strong>，先对伊甸园区域内的对象进行<strong>标记</strong>，标记结束后，采用<strong>复制算法</strong>，将非垃圾对象<strong>复制</strong>到幸存区 TO，并让这些对象的寿命+1，伊甸园剩余的垃圾对象回收掉，<strong>交换</strong> FROM 和 TO，第一次 minor gc 结束。</p>
 <figure data-type="image" tabindex="22"><img src="https://epitomm.github.io/post-images/%E5%88%86%E4%BB%A3%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6_4.png" alt="图片" loading="lazy"></figure>
 <p>将伊甸园和幸存区 FROM 中的非垃圾对象复制到幸存区 TO，并将这些对象的寿命 +1，清空伊甸园和幸存区 FROM 中的非垃圾对象，交换 FROM 和 TO。将新对象放入伊甸园。</p>
-<p>继续创建对象向伊甸园添加，伊甸园再次被填满，再次触发 minor gc，除了要将伊甸园中的非垃圾对象找到以外，还要把**幸存区 FROM **中的非垃圾对象找到，将非垃圾对象复制到幸存区 TO，并让这些对象的寿命 +1，伊甸园和幸存区 FROM 的垃圾对象清除，交换 FROM 和 TO，第二次 minor gc 结束。</p>
+<p>继续创建对象向伊甸园添加，伊甸园再次被填满，再次触发 minor gc，除了要将伊甸园中的非垃圾对象找到以外，还要把**幸存区 FROM ** 中的非垃圾对象找到，将非垃圾对象复制到幸存区 TO，并让这些对象的寿命 +1，伊甸园和幸存区 FROM 的垃圾对象清除，交换 FROM 和 TO，第二次 minor gc 结束。</p>
 <figure data-type="image" tabindex="23"><img src="https://epitomm.github.io/post-images/%E5%88%86%E4%BB%A3%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6_5.png" alt="图片" loading="lazy"></figure>
 <p>当幸存区对象的寿命 = 15时，将此对对象移动到老年代。</p>
 <figure data-type="image" tabindex="24"><img src="https://epitomm.github.io/post-images/%E5%88%86%E4%BB%A3%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6_6.png" alt="图片" loading="lazy"></figure>
@@ -639,7 +639,7 @@ public class Demo2_1 {
 <ul>
 <li>多线程</li>
 <li>堆内存较大，多核 cpu</li>
-<li>尽可能让**单次 STW 的时间最短。**五次垃圾回收：0.1+0.1+0.1+0.1+0.1 = 0.5</li>
+<li>尽可能让<strong>单次 STW 的时间最短</strong>。五次垃圾回收：0.1+0.1+0.1+0.1+0.1 = 0.5</li>
 </ul>
 <h2 id="41-串行">4.1 串行</h2>
 <pre><code>-XX:+UseSerialGC = Serial + SerialOld 
@@ -780,7 +780,7 @@ SerialOld：工作在<strong>老年代</strong>。<strong>标记整理</strong>�
 <li>concurrent refinement threads 更新 Remembered Set</li>
 </ul>
 <figure data-type="image" tabindex="39"><img src="https://epitomm.github.io/post-images/Card2.png" alt="图片" loading="lazy"></figure>
-<p>粉色的 Card 都是<strong>脏卡区</strong>，Card 内有对象指向新生代区域的对象，新生代会记录** Remembered Set：从外部对我的引用**，将来对新生代 Eden 进行垃圾回收时，就可以先通过 Remembered Set 知道它对应的哪些脏 Card，然后在到这些脏卡区遍历对象找到 GC Root。通过** post-write barrier**：写屏障在每次<strong>对象的引用发生变更时，去更新脏 Card</strong>，这个过程是<strong>异步</strong>操作，不会立刻完成脏卡的更新，会把更新指令放在 <strong>dirty card queue 脏卡队列</strong>中，将来由一个线程完成脏卡更新的操作。</p>
+<p>粉色的 Card 都是<strong>脏卡区</strong>，Card 内有对象指向新生代区域的对象，新生代会记录 <strong>Remembered Set：从外部对我的引用</strong>，将来对新生代 Eden 进行垃圾回收时，就可以先通过 Remembered Set 知道它对应的哪些脏 Card，然后在到这些脏卡区遍历对象找到 GC Root。通过 <strong>post-write barrier</strong>：写屏障在每次<strong>对象的引用发生变更时，去更新脏 Card</strong>，这个过程是<strong>异步</strong>操作，不会立刻完成脏卡的更新，会把更新指令放在 <strong>dirty card queue 脏卡队列</strong>中，将来由一个线程完成脏卡更新的操作。</p>
 <h3 id="7-remark-重标记阶段">7) Remark 重标记阶段</h3>
 <ul>
 <li>pre-write barrier + satb_mark_queue</li>
@@ -834,8 +834,8 @@ String s2 = new String(&quot;hello&quot;); // char[]{'h','e','l','l','o'}
 <li>JDK 9 之前需要使用 -XX:InitiatingHeapOccupancyPercent：老年代在堆内存的占比，当超过设置的这个阈值时，就会触发并发垃圾回收。</li>
 <li>JDK 9 可以动态调整
 <ul>
-<li>-XX:InitiatingHeapOccupancyPercent 用来设置**初始值 **</li>
-<li>进行<strong>数据采样</strong>并**动态调整 **</li>
+<li>-XX:InitiatingHeapOccupancyPercent 用来设置<strong>初始值</strong></li>
+<li>进行<strong>数据采样</strong>并<strong>动态调整</strong></li>
 <li>总会添加一个安全的空档空间</li>
 </ul>
 </li>
@@ -876,7 +876,7 @@ String s2 = new String(&quot;hello&quot;); // char[]{'h','e','l','l','o'}
 <ul>
 <li>数据是不是太多？
 <ul>
-<li>resultSet = statement.executeQuery(&quot;select * from 大表** limit n**&quot;)</li>
+<li><code>resultSet = statement.executeQuery(&quot;select * from 大表 limit n&quot;)</code></li>
 </ul>
 </li>
 <li>数据表示是否太臃肿？
@@ -939,7 +939,7 @@ Oracle recommends that you keep the size for the young generation greater than 2
 </li>
 <li><strong>幸存区大到能保留当前活跃对象+需要晋升对象</strong>
 <ul>
-<li>幸存区中有两类对象：<strong>①生命周期较短，下一次垃圾回收就把它回收掉了</strong>，但由于现在还在使用，暂时不能回收；**②将来会被晋升到老年代，**但是由于年龄不够，所以暂时存放在幸存区中。</li>
+<li>幸存区中有两类对象：<strong>①生命周期较短，下一次垃圾回收就把它回收掉了</strong>，但由于现在还在使用，暂时不能回收；<strong>②将来会被晋升到老年代</strong>，但是由于年龄不够，所以暂时存放在幸存区中。</li>
 <li><strong>如果幸存区较小，就会由 JVM 动态调整晋升阈值</strong>，也许本来有些对象不应该晋升的，但是由于幸存区内存不够，导致会提前<strong>把本应回收的对象晋升到老年代</strong>。如果存活时间短的对象被晋升到了老年代，需要等到老年代内存不足，触发 Full GC 时才能把它当做垃圾进行回收，延长了对象的生存时间。</li>
 </ul>
 </li>
@@ -1018,8 +1018,8 @@ percent 越小，老年代垃圾回收触发时间越早。</p>
 <li><a href="#%E5%BE%AA%E7%8E%AF%E5%BC%95%E7%94%A8%E9%97%AE%E9%A2%98">循环引用问题</a></li>
 </ul>
 </li>
-<li><a href="#12-%E5%8F%AF%E8%BE%BE%E6%80%A7%E5%88%86%E6%9E%90%E7%AE%97%E6%B3%95">**1.2 可达性分析算法 **</a></li>
-<li><a href="#13-%E5%9B%9B%E7%A7%8D%E5%BC%95%E7%94%A8">**1.3 四种引用 **</a></li>
+<li><a href="#12-%E5%8F%AF%E8%BE%BE%E6%80%A7%E5%88%86%E6%9E%90%E7%AE%97%E6%B3%95">1.2 可达性分析算法</a></li>
+<li><a href="#13-%E5%9B%9B%E7%A7%8D%E5%BC%95%E7%94%A8">1.3 四种引用</a></li>
 </ul>
 </li>
 <li><a href="#%E4%BA%8C-%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E7%AE%97%E6%B3%95">二、垃圾回收算法</a>
