@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://epitomm.github.io</id>
     <title>SSM</title>
-    <updated>2020-04-24T13:32:04.490Z</updated>
+    <updated>2020-04-24T15:23:32.983Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://epitomm.github.io"/>
     <link rel="self" href="https://epitomm.github.io/atom.xml"/>
@@ -10,6 +10,924 @@
     <logo>https://epitomm.github.io/images/avatar.png</logo>
     <icon>https://epitomm.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, SSM</rights>
+    <entry>
+        <title type="html"><![CDATA[JVM 垃圾回收]]></title>
+        <id>https://epitomm.github.io/post/jvm-la-ji-hui-shou/</id>
+        <link href="https://epitomm.github.io/post/jvm-la-ji-hui-shou/">
+        </link>
+        <updated>2020-04-24T14:54:12.000Z</updated>
+        <content type="html"><![CDATA[<h1 id="一-如何判断对象可以回收">一、如何判断对象可以回收</h1>
+<h2 id="11-引用计数法"><strong>1.1 引用计数法</strong></h2>
+<p>如果一个对象被其他变量引用，计数器 +1，如果某个变量不再引用，计数器 -1。如果一个对象的<strong>引用次数为 0</strong>，就可以被回收。</p>
+<h3 id="循环引用问题">循环引用问题</h3>
+<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/%E5%BE%AA%E7%8E%AF%E5%BC%95%E7%94%A8.png" alt="图片" loading="lazy"></figure>
+<p>A 对象引用 B 对象，B 对象的引用计数 = 1；B 对象引用了 A 对象，A 对象的引用计数 = 1，但是没有其他对象在引用它们两个，它们本应被回收，却因彼此循环引用，计数器不为 0 ，不能被回收，造成内存泄露。</p>
+<h2 id="12-可达性分析算法">**1.2 可达性分析算法 **</h2>
+<ul>
+<li>Java 虚拟机中的垃圾回收器采用<strong>可达性分析</strong>来探索所有存活的对象</li>
+<li>扫描<strong>堆</strong>中的对象，看是否能够沿着 **GC Root对象 **<strong>为起点的引用链找到该对象</strong>，找不到，表示可以回收</li>
+<li>哪些对象可以作为 GC Root ?
+<ul>
+<li>虚拟机栈中局部变量引用的对象</li>
+<li>本地方法栈中 JNI 中引用的对象</li>
+<li>方法去区静态属性引用的对象</li>
+<li>方法区中的常量引用的对象</li>
+</ul>
+</li>
+</ul>
+<h2 id="13-四种引用">**1.3 四种引用 **</h2>
+<ol>
+<li>强引用</li>
+</ol>
+<blockquote>
+<p>一个对象通过等号赋值运算符赋值给变量，如：List<String> list = new ArrayList&lt;&gt;();<br>
+变量 list 强引用了对象 ArrayList。只要沿着 GC Root 能够找到这个对象，这个对象就不会被垃圾回收。</p>
+</blockquote>
+<ul>
+<li>只有所有 GC Roots 对象都不通过【强引用】引用该对象，该对象才能被垃圾回收</li>
+</ul>
+<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/%E5%BC%BA%E5%BC%95%E7%94%A8.png" alt="图片" loading="lazy"></figure>
+<figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/%E5%BC%BA%E5%BC%95%E7%94%A82.png" alt="图片" loading="lazy"></figure>
+<ol start="2">
+<li>软引用（SoftReference）</li>
+</ol>
+<ul>
+<li>仅有软引用引用该对象时，在<strong>垃圾回收后，内存仍不足</strong>时会再次触发垃圾回收，回收软引用对象</li>
+<li>可以配合<strong>引用队列</strong>来释放软引用自身</li>
+</ul>
+<figure data-type="image" tabindex="4"><img src="https://epitomm.github.io/post-images/%E8%BD%AF%E5%BC%95%E7%94%A8.png" alt="图片" loading="lazy"></figure>
+<pre><code>package cn.itcast.jvm.t2;
+
+import java.io.IOException;
+import java.lang.ref.SoftReference;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * 演示软引用
+ * -Xmx20m -XX:+PrintGCDetails -verbose:gc
+ */
+public class Demo2_3 {
+    private static final int _4MB = 4 * 1024 * 1024;
+    public static void main(String[] args) throws IOException {
+      List&lt;byte[]&gt; list = new ArrayList&lt;&gt;();
+      for (int i = 0; i &lt; 5; i++) {
+          list.add(new byte[_4MB]);// 读取图片放到 list 集合中进行显示，但是图片资源并不属于核心业务资源，如果图片过多，用强引用就会导致溢出。不太重要的资源能不能在内存紧张时把它占用的内存释放掉，以后如果再用到的话再读取一遍呢？采用软引用。
+      } 
+      System.in.read();
+    }
+}
+</code></pre>
+<p>运行结果：</p>
+<pre><code>Exception in thread &quot;main&quot; java.lang.OutOfMemoryError: Java heap space
+	at cn.itcast.jvm.t2.Demo2_3.main(Demo2_3.java:21)
+</code></pre>
+<pre><code>package cn.itcast.jvm.t2;
+
+import java.io.IOException;
+import java.lang.ref.SoftReference;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * 演示软引用
+ * -Xmx20m -XX:+PrintGCDetails -verbose:gc
+ */
+public class Demo2_3 {
+
+    private static final int _4MB = 4 * 1024 * 1024;
+
+    public static void main(String[] args) throws IOException {
+        soft();
+    }
+
+    public static void soft() {
+        // list --&gt; SoftReference --&gt; byte[]
+        // list 和 SoftReference 之间是强引用，SoftReference 和 byte[] 之间是软引用
+        List&lt;SoftReference&lt;byte[]&gt;&gt; list = new ArrayList&lt;&gt;();
+        for (int i = 0; i &lt; 5; i++) {
+            SoftReference&lt;byte[]&gt; ref = new SoftReference&lt;&gt;(new byte[_4MB]);
+            System.out.println(ref.get());
+            list.add(ref);
+            System.out.println(list.size());
+
+        }
+        System.out.println(&quot;循环结束：&quot; + list.size());
+        for (SoftReference&lt;byte[]&gt; ref : list) {
+            System.out.println(ref.get());
+        }
+    }
+}
+</code></pre>
+<figure data-type="image" tabindex="5"><img src="https://epitomm.github.io/post-images/%E8%BD%AF%E5%BC%95%E7%94%A8GC.png" alt="图片" loading="lazy"></figure>
+<p><strong>清理无用的软引用：引用队列</strong></p>
+<p>软引用对象被释放后，没必要再保存在 list 中了，希望把<strong>软引用本身做一个清理</strong>，从 list 集合中清理掉。</p>
+<pre><code>package cn.itcast.jvm.t2;
+
+import java.lang.ref.Reference;
+import java.lang.ref.ReferenceQueue;
+import java.lang.ref.SoftReference;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * 演示软引用, 配合引用队列
+ */
+public class Demo2_4 {
+    private static final int _4MB = 4 * 1024 * 1024;
+
+    public static void main(String[] args) {
+        List&lt;SoftReference&lt;byte[]&gt;&gt; list = new ArrayList&lt;&gt;();
+
+        // 引用队列
+        ReferenceQueue&lt;byte[]&gt; queue = new ReferenceQueue&lt;&gt;();
+        for (int i = 0; i &lt; 5; i++) {
+            // 关联了引用队列， 当软引用所关联的 byte[]被回收时，软引用自己会加入到 queue 中去
+            SoftReference&lt;byte[]&gt; ref = new SoftReference&lt;&gt;(new byte[_4MB], queue);
+            System.out.println(ref.get());
+            list.add(ref);
+            System.out.println(list.size());
+        }
+
+        // 从队列中获取无用的 软引用对象，并移除
+        Reference&lt;? extends byte[]&gt; poll = queue.poll();
+        while( poll != null) {
+            list.remove(poll);
+            poll = queue.poll();
+        }
+
+        System.out.println(&quot;===========================&quot;);
+        for (SoftReference&lt;byte[]&gt; reference : list) {
+            System.out.println(reference.get());
+        }
+
+    }
+}
+</code></pre>
+<p>运行结果：值为空的软引用都被从 list 集合中清除了</p>
+<pre><code>[B@6d6f6e28
+1
+[B@135fbaa4
+2
+[B@45ee12a7
+3
+[B@330bedb4
+4
+[B@2503dbd3
+5
+===========================
+[B@2503dbd3
+</code></pre>
+<ol start="3">
+<li>弱引用（WeakReference）</li>
+</ol>
+<ul>
+<li>仅有弱引用引用该对象时，在垃圾回收时，无论内存是否充足，都会回收弱引用对象</li>
+<li>可以配合引用队列来释放弱引用自身</li>
+</ul>
+<figure data-type="image" tabindex="6"><img src="https://epitomm.github.io/post-images/%E5%BC%B1%E5%BC%95%E7%94%A8.png" alt="图片" loading="lazy"></figure>
+<p>引用队列：</p>
+<figure data-type="image" tabindex="7"><img src="https://epitomm.github.io/post-images/%E5%BC%B1%E5%BC%95%E7%94%A8%E5%BC%95%E7%94%A8%E9%98%9F%E5%88%97.png" alt="图片" loading="lazy"></figure>
+<p>当软引用的对象被回收后，软引用自身也是一个对象，如果在创建时给他分配了一个引用队列，那在它<strong>引用的对象被回收</strong>时，软引用就会进入这个<strong>引用队列</strong>。当弱引用的对象被垃圾回收后，弱引用如果被分配了引用队列的话， 弱引用也会进入引用队列。因为软引用、弱引用自身也要占用一定内存，如果要对它俩占用的内存进一步释放，需要使用引用队列来找到它们。</p>
+<pre><code>package cn.itcast.jvm.t2;
+
+import java.lang.ref.Reference;
+import java.lang.ref.ReferenceQueue;
+import java.lang.ref.SoftReference;
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * 演示弱引用
+ * -Xmx20m -XX:+PrintGCDetails -verbose:gc
+ */
+public class Demo2_5 {
+    private static final int _4MB = 4 * 1024 * 1024;
+
+    public static void main(String[] args) {
+        //  list --&gt; WeakReference --&gt; byte[]
+        List&lt;WeakReference&lt;byte[]&gt;&gt; list = new ArrayList&lt;&gt;();
+        for (int i = 0; i &lt; 10; i++) {
+            WeakReference&lt;byte[]&gt; ref = new WeakReference&lt;&gt;(new byte[_4MB]);
+            list.add(ref);
+            for (WeakReference&lt;byte[]&gt; w : list) {
+                System.out.print(w.get()+&quot; &quot;);
+            }
+            System.out.println();
+
+        }
+        System.out.println(&quot;循环结束：&quot; + list.size());
+    }
+}
+</code></pre>
+<figure data-type="image" tabindex="8"><img src="https://epitomm.github.io/post-images/%E5%BC%B1%E5%BC%95%E7%94%A8GC.png" alt="图片" loading="lazy"></figure>
+<p>在<strong>垃圾回收时，会把弱引用所占用的内存释放掉</strong>，弱引用自身占用的内存要释放的话，要结合引用队列来实现。</p>
+<ol start="4">
+<li>虚引用（PhantomReference）</li>
+</ol>
+<p>虚引用和终结器引用必须配合引用队列使用。<strong>当创建虚引用和终结器引用时，都会关联一个引用队列。</strong></p>
+<ul>
+<li>必须配合引用队列使用，主要配合 ByteBuffer 使用，被引用对象回收时，会将虚引用入队， 由 Reference Handler 线程调用虚引用相关方法**释放直接内存 **</li>
+</ul>
+<figure data-type="image" tabindex="9"><img src="https://epitomm.github.io/post-images/%E8%99%9A%E5%BC%95%E7%94%A8.png" alt="图片" loading="lazy"></figure>
+<p>创建 ByteBuffer 的实现对象时，会创建一个名为 Cleaner 的<strong>虚引用对象</strong>，ByteBuffer 会分配一块直接内存，并且会把直接内存的地址传递给虚引用对象。将来 ByteBuffer 没有被强引用引用时，ByteBuffer 就会被垃圾回收，但是给他分配的<strong>直接内存并不能被 Java 垃圾回收</strong>管理。</p>
+<figure data-type="image" tabindex="10"><img src="https://epitomm.github.io/post-images/%E8%99%9A%E5%BC%95%E7%94%A82.png" alt="图片" loading="lazy"></figure>
+<p>所以在 ByteBuffer 被回收时，让虚引用对象进入引用队列，虚引用所在的引用队列会由 ReferenceHandler 线程定时到这个引用队列中找看有没有新入队的 Cleaner，如果有，就会调用 Cleaner 中的 clean() 方法，根据前面记录的直接内存的地址调用 Unsafe.freeMemory()，<strong>释放直接内存</strong>。</p>
+<ol start="5">
+<li>终结器引用（FinalReference）</li>
+</ol>
+<ul>
+<li>无需手动编码，但其内部<strong>配合引用队列使用</strong>，在<strong>垃圾回收</strong>时，<strong>终结器引用入队</strong>（被引用对象暂时没有被回收），再由 Finalizer 线程通过终结器引用找到被引用对象并<strong>调用它的 finalize 方法</strong>，<strong>第二次 GC 时才能回收被引用对象</strong></li>
+</ul>
+<figure data-type="image" tabindex="11"><img src="https://epitomm.github.io/post-images/%E7%BB%88%E7%BB%93%E5%99%A8%E5%BC%95%E7%94%A8.png" alt="图片" loading="lazy"></figure>
+<p>所有的 Java 对象都会继承在 Object 父类，Object 类中有一个 finalize() 终结方法。某个对象<strong>重写了 finalize() 方法</strong>，当没有强引用引用它时，就由虚拟机创建它对应的终结器引用，当这个对象要被垃圾回收时，就会把这个<strong>终结器引用加入引用队列</strong>，再由一个<strong>优先级很低的线程 <strong>（finalize() 迟迟未能被调用，导致对象很久不能被真正回收，所以不推荐使用 finalize() 释放资源）finalizeHandler 线程查看引用队列中是否有终结器引用，如果有，就会根据终结器引用找到那个</strong>要被垃圾回收的对象</strong>，并且<strong>调用它的 finalize()方法</strong>，调用完了，<strong>下一次垃圾回收时就可以把这个对象占用的内存真正回收了</strong>。</p>
+<h1 id="二-垃圾回收算法">二、垃圾回收算法</h1>
+<h2 id="21-标记清除">**2.1 标记清除 **</h2>
+<p>定义： Mark Sweep</p>
+<ul>
+<li>速度快</li>
+<li>会造成内存碎片</li>
+</ul>
+<h3 id="标记清除流程">标记清除流程</h3>
+<figure data-type="image" tabindex="12"><img src="https://epitomm.github.io/post-images/%E6%A0%87%E8%AE%B0%E6%B8%85%E9%99%A4.png" alt="图片" loading="lazy"></figure>
+<p><strong>标记</strong>：沿着 GC Root 的引用链去找，扫描整个堆对象的过程中，如果发现某个堆对象确实被引用了，那么这个堆对象是非垃圾对象，如果某个对<strong>象没有任何一个 GC Root 直接或间接引用</strong>它，那么把它<strong>标记为垃圾对象</strong>。</p>
+<p><strong>清除</strong>：将被标记为垃圾对象所占用的空间释放掉。这里说的释放不是把这个对象所占用的内存的每个字节清零，只需要把垃<strong>圾对象占用内存的起始、结束地址记录下来，放在一个空闲地址列表</strong>，下次分配新对象时，到空闲地址列表中找是否有一块足够的空间能容纳新对象。</p>
+<h3 id="优点"><strong>优点</strong></h3>
+<p><strong>速度快</strong>，只需把垃圾对象的起始、结束地址记录下来。</p>
+<h3 id="缺点"><strong>缺点</strong></h3>
+<figure data-type="image" tabindex="13"><img src="https://epitomm.github.io/post-images/%E6%A0%87%E8%AE%B0%E6%B8%85%E9%99%A4%E5%86%85%E7%A2%8E%E7%89%87.png" alt="图片" loading="lazy"></figure>
+<p>易产生<strong>内存碎片</strong>。清除垃圾对象后不会对内存空间进行整理，如果分配了一个较大的对象，比如数组，数组需要一段连续的内存。每个小的空闲空间都不足以容纳下这个较大的新对象，虽然总的空闲空间足够，但由于<strong>不连续</strong>，造成新对象不能被保存。</p>
+<h2 id="22-标记整理">2.2 标记整理</h2>
+<p>定义：Mark Compact</p>
+<ul>
+<li>速度慢</li>
+<li>没有内存碎片</li>
+</ul>
+<h3 id="标记整理流程">标记整理流程</h3>
+<figure data-type="image" tabindex="14"><img src="https://epitomm.github.io/post-images/%E6%A0%87%E8%AE%B0%E6%95%B4%E7%90%86.png" alt="图片" loading="lazy"></figure>
+<p><strong>标记</strong>：没有任何 GC Root 直接或间接指向的堆对象被标记为垃圾对象。</p>
+<p><strong>整理</strong>：避免标记清除时的内存碎片问题，在清理垃圾的过程中，会把可用的对象向前移动，让内存更为<strong>紧凑</strong>，连续的内存空间就更大了。</p>
+<h3 id="优点-2">优点</h3>
+<p><strong>没有内碎片</strong>。</p>
+<h3 id="缺点-2">缺点</h3>
+<p>由于整理牵扯到对象的移动，<strong>效率降低</strong>。</p>
+<p>对象在整理过程中发生移动，如果有其他局部变量引用了这个被移动的对象，就需要改变这些引用的地址。</p>
+<h2 id="23-复制">2.3 复制</h2>
+<p>定义：Copy</p>
+<ul>
+<li>不会有内存碎片</li>
+<li>需要占用双倍内存空间</li>
+</ul>
+<h3 id="复制流程">复制流程</h3>
+<figure data-type="image" tabindex="15"><img src="https://epitomm.github.io/post-images/%E5%A4%8D%E5%88%B61.png" alt="图片" loading="lazy"></figure>
+<p>标记垃圾对象</p>
+<figure data-type="image" tabindex="16"><img src="https://epitomm.github.io/post-images/%E5%A4%8D%E5%88%B62.png" alt="图片" loading="lazy"></figure>
+<p>复制 FROM 区域的非垃圾对象到 TO 区域</p>
+<figure data-type="image" tabindex="17"><img src="https://epitomm.github.io/post-images/%E5%A4%8D%E5%88%B63.png" alt="图片" loading="lazy"></figure>
+<p>清空 FROM 区域剩余的垃圾对象后交换 FROM 和 TO 区域</p>
+<p>将内存区域划分成两块大小相等的区域，FROM 和 TO（空闲）。</p>
+<p><strong>标记</strong>：找到那些不被引用的对象标记为垃圾对象。</p>
+<p><strong>复制</strong>：把** FROM 区域上的非垃圾对象复制到 TO 区域<strong>中，复制的过程中完成碎片整理。复制完成后，<strong>FROM 区域</strong>都是垃圾对象，<strong>全部清除</strong>，并且</strong>交换 FROM 和 TO 区域**。</p>
+<h3 id="优点-3">优点</h3>
+<p><strong>不会产生碎片。</strong></p>
+<h3 id="缺点-3"><strong>缺点</strong></h3>
+<p><strong>占用双倍内存空间。</strong></p>
+<h1 id="三-分代垃圾回收">三、分代垃圾回收</h1>
+<p><strong>堆内存划分</strong></p>
+<ul>
+<li>新生代：用完了就丢弃。<strong>朝生夕死</strong>的对象
+<ul>
+<li>伊甸园 Eden</li>
+<li>幸存区 FROM</li>
+<li>幸存区 TO</li>
+</ul>
+</li>
+<li>老年代：长时间使用的对象。<strong>长期存活</strong>的对象</li>
+</ul>
+<blockquote>
+<p>有一栋居民楼，类似 Java 虚拟机中的堆内存，居民楼中每家每户每天要产生一些垃圾，需要保洁工人来处理，如果保洁工人挨家挨户去收垃圾，效率低，所以设立一个垃圾场（新生代），存放生命周期短的垃圾，比如盒饭、包装袋等，都是回收更为频繁的垃圾，保洁工人需要每天打扫了一次。 每家每户里存储的垃圾（老年代），比如用旧的椅子，暂存在家里，将来空间紧张到放不下时，找保洁员清理这些垃圾。</p>
+</blockquote>
+<figure data-type="image" tabindex="18"><img src="https://epitomm.github.io/post-images/%E5%A0%86%E5%86%85%E5%AD%98%E5%88%92%E5%88%86.png" alt="图片" loading="lazy"></figure>
+<ul>
+<li>**对象首先分配在伊甸园区域 **</li>
+<li>**新生代空间不足时，触发 minor gc，伊甸园和 from 存活的对象使用 copy 复制到 to 中，存活的对象年龄加 1并且交换 from、to **</li>
+<li>**minor gc 会引发 stop the world，暂停其它用户的线程，等垃圾回收结束，用户线程才恢复运行 **
+<ul>
+<li>对象的复制会更改对象地址，如果用户线程仍在运行，就会造成访问原来对象的地址找不到。</li>
+</ul>
+</li>
+<li>**当对象寿命超过阈值时，会晋升至老年代，最大寿命是15（对象头中占用 4bit：1111B） **</li>
+<li><strong>当老年代空间不足，会先尝试触发 minor gc，如果之后空间仍不足，那么触发 full gc，STW的时间更长，如果之后空间仍不足，就会内存溢出。</strong></li>
+</ul>
+<h2 id="31-分代垃圾回收机制原理">3.1 分代垃圾回收机制原理</h2>
+<figure data-type="image" tabindex="19"><img src="https://epitomm.github.io/post-images/%E5%88%86%E4%BB%A3%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6_1.png" alt="图片" loading="lazy"></figure>
+<p>当伊甸园被占满时要添加新对象，触发 minor gc</p>
+<figure data-type="image" tabindex="20"><img src="https://epitomm.github.io/post-images/%E5%88%86%E4%BB%A3%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6_2.png" alt="图片" loading="lazy"></figure>
+<p>将伊甸园区的对象进行标记后，非垃圾对象复制到幸存区 TO，并且将这些非垃圾对象的寿命 +1，清空伊甸园内剩余的垃圾对象</p>
+<figure data-type="image" tabindex="21"><img src="https://epitomm.github.io/post-images/%E5%88%86%E4%BB%A3%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6_3.png" alt="图片" loading="lazy"></figure>
+<p>交换 FROM 和 TO</p>
+<p>创建一个新对象，存放到<strong>伊甸园</strong>，当伊甸园被占满时，触发** minor gc**，先对伊甸园区域内的对象进行<strong>标记</strong>，标记结束后，采用<strong>复制算法</strong>，将非垃圾对象<strong>复制</strong>到幸存区 TO，并让这些对象的寿命+1，伊甸园剩余的垃圾对象回收掉，**交换 **FROM 和 TO，第一次 minor gc 结束。</p>
+<figure data-type="image" tabindex="22"><img src="https://epitomm.github.io/post-images/%E5%88%86%E4%BB%A3%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6_4.png" alt="图片" loading="lazy"></figure>
+<p>将伊甸园和幸存区 FROM 中的非垃圾对象复制到幸存区 TO，并将这些对象的寿命 +1，清空伊甸园和幸存区 FROM 中的非垃圾对象，交换 FROM 和 TO。将新对象放入伊甸园。</p>
+<p>继续创建对象向伊甸园添加，伊甸园再次被填满，再次触发 minor gc，除了要将伊甸园中的非垃圾对象找到以外，还要把**幸存区 FROM **中的非垃圾对象找到，将非垃圾对象复制到幸存区 TO，并让这些对象的寿命 +1，伊甸园和幸存区 FROM 的垃圾对象清除，交换 FROM 和 TO，第二次 minor gc 结束。</p>
+<figure data-type="image" tabindex="23"><img src="https://epitomm.github.io/post-images/%E5%88%86%E4%BB%A3%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6_5.png" alt="图片" loading="lazy"></figure>
+<p>当幸存区对象的寿命 = 15时，将此对对象移动到老年代。</p>
+<figure data-type="image" tabindex="24"><img src="https://epitomm.github.io/post-images/%E5%88%86%E4%BB%A3%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6_6.png" alt="图片" loading="lazy"></figure>
+<p>当老年代空间不足，触发 FULL GC，对整个堆进行清理。</p>
+<h2 id="32-相关-vm-参数">3.2 相关 VM 参数</h2>
+<table>
+<thead>
+<tr>
+<th style="text-align:left"><strong>含义</strong></th>
+<th style="text-align:left"><strong>参数</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">堆初始大小</td>
+<td style="text-align:left">-Xms</td>
+</tr>
+<tr>
+<td style="text-align:left">堆最大大小</td>
+<td style="text-align:left">-Xmx 或 -XX:MaxHeapSize=size</td>
+</tr>
+<tr>
+<td style="text-align:left">新生代大小</td>
+<td style="text-align:left">-Xmn 或 (-XX:NewSize=size + -XX:MaxNewSize=size )</td>
+</tr>
+<tr>
+<td style="text-align:left">幸存区比例（动态）</td>
+<td style="text-align:left">-XX:InitialSurvivorRatio=ratio 和 -XX:+UseAdaptiveSizePolicy</td>
+</tr>
+<tr>
+<td style="text-align:left">幸存区比例</td>
+<td style="text-align:left">-XX:SurvivorRatio=ratio</td>
+</tr>
+<tr>
+<td style="text-align:left">晋升阈值</td>
+<td style="text-align:left">-XX:MaxTenuringThreshold=threshold</td>
+</tr>
+<tr>
+<td style="text-align:left">晋升详情</td>
+<td style="text-align:left">-XX:+PrintTenuringDistribution</td>
+</tr>
+<tr>
+<td style="text-align:left">GC详情</td>
+<td style="text-align:left">-XX:+PrintGCDetails -verbose:gc</td>
+</tr>
+<tr>
+<td style="text-align:left">FullGC 前 MinorGC</td>
+<td style="text-align:left">-XX:+ScavengeBeforeFullGC</td>
+</tr>
+</tbody>
+</table>
+<ol>
+<li>没有运行任何代码时，虚拟机参数 -Xms20M -Xmx20M -Xmn10M -XX:+UseSerialGC -XX:+PrintGCDetails -verbose:gc 的堆内存占用情况</li>
+</ol>
+<pre><code>public class Demo2_1 {
+    // -Xms20M -Xmx20M -Xmn10M -XX:+UseSerialGC -XX:+PrintGCDetails -verbose:gc
+    // -Xms20M：初始堆空间20M；
+    // -Xmx20M：最大堆空间20M；
+    // -Xmn10M：新生代10M；
+    // -XX:+UseSerialGC：垃圾回收器，幸存区比例不会动态调整
+    // -XX:+PrintGCDetails -verbose:gc：打印 gc 详情
+    public static void main(String[] args) throws InterruptedException {
+
+
+    }
+</code></pre>
+<figure data-type="image" tabindex="25"><img src="https://epitomm.github.io/post-images/VM%E5%8F%82%E6%95%B0.png" alt="图片" loading="lazy"></figure>
+<p>2.Eden 区域不足时，触发 minor gc 时的堆内存占用</p>
+<pre><code>package cn.itcast.vm.t2;
+import java.util.ArrayList;
+public class Demo2_1 {
+    private static final int _7MB = 7 * 1024 * 1024;
+
+    // -Xms20M -Xmx20M -Xmn10M -XX:+UseSerialGC -XX:+PrintGCDetails -verbose:gc -XX:-ScavengeBeforeFullGC
+    public static void main(String[] args) throws InterruptedException {
+        ArrayList&lt;byte[]&gt; list = new ArrayList&lt;&gt;();
+        list.add(new byte[_7MB]);
+    }
+}
+</code></pre>
+<p>因为 Eden 共 8M，类加载时创建一些对象占用了 29% 的空间，大概剩余 6M 空间，创建一个 7M 的对象，加入 Eden，Eden 内存不足，会触发垃圾回收。<br>
+<img src="https://epitomm.github.io/post-images/VM%E5%8F%82%E6%95%B02.png" alt="图片" loading="lazy"></p>
+<pre><code>package cn.itcast.jvm.t2;
+
+import java.util.ArrayList;
+
+/**
+ *  演示内存的分配策略
+ */
+public class Demo2_1 {
+    private static final int _512KB = 512 * 1024;
+    private static final int _1MB = 1024 * 1024;
+    private static final int _6MB = 6 * 1024 * 1024;
+    private static final int _7MB = 7 * 1024 * 1024;
+    private static final int _8MB = 8 * 1024 * 1024;
+
+    // -Xms20M -Xmx20M -Xmn10M -XX:+UseSerialGC -XX:+PrintGCDetails -verbose:gc -XX:-ScavengeBeforeFullGC
+    public static void main(String[] args) throws InterruptedException {
+        ArrayList&lt;byte[]&gt; list = new ArrayList&lt;&gt;();
+        list.add(new byte[_7MB]);
+        list.add(new byte[_512KB]);
+    }
+</code></pre>
+<p>}</p>
+<figure data-type="image" tabindex="26"><img src="https://epitomm.github.io/post-images/VM%E5%8F%82%E6%95%B03.png" alt="图片" loading="lazy"></figure>
+<ol start="3">
+<li>新生代区域内存不足创建对象，放入老年代</li>
+</ol>
+<pre><code>package cn.itcast.jvm.t2;
+
+import java.util.ArrayList;
+
+/**
+ *  演示内存的分配策略
+ */
+public class Demo2_1 {
+    private static final int _512KB = 512 * 1024;
+    private static final int _1MB = 1024 * 1024;
+    private static final int _6MB = 6 * 1024 * 1024;
+    private static final int _7MB = 7 * 1024 * 1024;
+    private static final int _8MB = 8 * 1024 * 1024;
+
+    // -Xms20M -Xmx20M -Xmn10M -XX:+UseSerialGC -XX:+PrintGCDetails -verbose:gc -XX:-ScavengeBeforeFullGC
+    public static void main(String[] args) throws InterruptedException {
+        ArrayList&lt;byte[]&gt; list = new ArrayList&lt;&gt;();
+        list.add(new byte[_7MB]);
+        list.add(new byte[_512KB]);
+        list.add(new byte[_512KB]);
+    }
+}
+</code></pre>
+<figure data-type="image" tabindex="27"><img src="https://epitomm.github.io/post-images/VM%E5%8F%82%E6%95%B04.png" alt="图片" loading="lazy"></figure>
+<ol start="4">
+<li>添加的对象比新生代总内存大，直接放入老年代且不触发 GC。</li>
+</ol>
+<pre><code>package cn.itcast.jvm.t2;
+import java.util.ArrayList;
+public class Demo2_1 {
+    private static final int _8MB = 8 * 1024 * 1024;
+    // -Xms20M -Xmx20M -Xmn10M -XX:+UseSerialGC -XX:+PrintGCDetails -verbose:gc -XX:-ScavengeBeforeFullGC
+    public static void main(String[] args) throws InterruptedException {
+        ArrayList&lt;byte[]&gt; list = new ArrayList&lt;&gt;();
+        list.add(new byte[_8MB]);
+    }
+}
+</code></pre>
+<figure data-type="image" tabindex="28"><img src="https://epitomm.github.io/post-images/VM%E5%8F%82%E6%95%B05.png" alt="图片" loading="lazy"></figure>
+<ol start="5">
+<li>内存溢出</li>
+</ol>
+<pre><code>package cn.itcast.jvm.t2;
+
+import java.util.ArrayList;
+
+/**
+ *  演示内存的分配策略
+ */
+public class Demo2_1 {
+    private static final int _512KB = 512 * 1024;
+    private static final int _1MB = 1024 * 1024;
+    private static final int _6MB = 6 * 1024 * 1024;
+    private static final int _7MB = 7 * 1024 * 1024;
+    private static final int _8MB = 8 * 1024 * 1024;
+
+    // -Xms20M -Xmx20M -Xmn10M -XX:+UseSerialGC -XX:+PrintGCDetails -verbose:gc -XX:-ScavengeBeforeFullGC
+    public static void main(String[] args) throws InterruptedException {
+        ArrayList&lt;byte[]&gt; list = new ArrayList&lt;&gt;();
+        list.add(new byte[_8MB]);
+        list.add(new byte[_8MB]);
+    }
+}
+</code></pre>
+<figure data-type="image" tabindex="29"><img src="https://epitomm.github.io/post-images/VM%E5%8F%82%E6%95%B06.png" alt="图片" loading="lazy"></figure>
+<ol start="6">
+<li>当内存溢出发生在子线程中，是否会导致 java 进程结束？</li>
+</ol>
+<pre><code>package cn.itcast.jvm.t2;
+
+import java.util.ArrayList;
+
+/**
+ *  演示内存的分配策略
+ */
+public class Demo2_1 {
+    private static final int _512KB = 512 * 1024;
+    private static final int _1MB = 1024 * 1024;
+    private static final int _6MB = 6 * 1024 * 1024;
+    private static final int _7MB = 7 * 1024 * 1024;
+    private static final int _8MB = 8 * 1024 * 1024;
+
+    // -Xms20M -Xmx20M -Xmn10M -XX:+UseSerialGC -XX:+PrintGCDetails 
+    public static void main(String[] args) throws InterruptedException {
+        new Thread(() -&gt; {
+            ArrayList&lt;byte[]&gt; list = new ArrayList&lt;&gt;();
+            list.add(new byte[_8MB]);
+            list.add(new byte[_8MB]);
+
+        }).start();
+
+        System.out.println(&quot;sleep....&quot;);
+        Thread.sleep(1000L);  
+    }
+}
+</code></pre>
+<figure data-type="image" tabindex="30"><img src="https://epitomm.github.io/post-images/VM%E5%8F%82%E6%95%B07.png" alt="图片" loading="lazy"></figure>
+<h1 id="四-垃圾回收器">四、垃圾回收器</h1>
+<ol>
+<li>串行</li>
+</ol>
+<ul>
+<li>单线程</li>
+<li>堆内存较小，适合个人电脑</li>
+</ul>
+<ol start="2">
+<li>吞吐量优先</li>
+</ol>
+<ul>
+<li>多线程</li>
+<li>堆内存较大，多核 cpu</li>
+<li>让单位时间内，STW 的时间最短。两次垃圾回收：0.2+0.2 = 0.4，<strong>垃圾回收时间占比最低，这样就称吞吐量高</strong></li>
+</ul>
+<ol start="3">
+<li>响应时间优先</li>
+</ol>
+<ul>
+<li>多线程</li>
+<li>堆内存较大，多核 cpu</li>
+<li>尽可能让**单次 STW 的时间最短。**五次垃圾回收：0.1+0.1+0.1+0.1+0.1 = 0.5</li>
+</ul>
+<h2 id="41-串行">4.1 串行</h2>
+<pre><code>-XX:+UseSerialGC = Serial + SerialOld 
+</code></pre>
+<p>Serial：工作在<strong>新生代</strong>。<strong>复制</strong>算法<br>
+SerialOld：工作在<strong>老年代</strong>。<strong>标记整理</strong>算法</p>
+<figure data-type="image" tabindex="31"><img src="https://epitomm.github.io/post-images/%E4%B8%B2%E8%A1%8C%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E5%99%A8.png" alt="图片" loading="lazy"></figure>
+<p>四个 CPU 在运行，某时刻堆内存不足，触发垃圾回收。触发垃圾回收时，需要让这些线程到达一个<strong>安全点</strong>再停下，因为在垃圾回收的过程中，可能对象的地址发生改变，为了保证安全地使用这些对象地址，需要所有正在工作的用户线程到达这个安全点在停下。因为 Serial、SerialOld 都是<strong>单线程</strong>的垃圾回收器，因此在一个垃圾回收线程运行时，其他的用户线程都要<strong>阻塞</strong>，等到垃圾回收线程结束后，其他的用户线程再恢复运行。</p>
+<h2 id="42-吞吐量优先">4.2 吞吐量优先</h2>
+<pre><code>-XX:+UseParallelGC ~ -XX:+UseParallelOldGC
+-XX:+UseAdaptiveSizePolicy
+-XX:GCTimeRatio=ratio 
+-XX:MaxGCPauseMillis=ms 
+-XX:ParallelGCThreads=n 
+</code></pre>
+<p><strong>-XX:+UseParallelGC ~ -XX:+UseParallelOldGC</strong>：JDK 1.8 默认使用 ParallelGC <strong>并行</strong>的垃圾回收器。UseParallelGC 并行的新生代垃圾回收器，采用<strong>复制</strong>算法；UseParallelOldGC 并行的老年代垃圾回收器，采用<strong>标记整理</strong>算法。吞吐量：CPU 用于运行用户程序的时间与总时间的比值。<br>
+<strong>-XX:+UseAdaptiveSizePolicy</strong>：自适应大小调整（新生代：Eden 和 Survival）策略</p>
+<p><strong>-XX:GCTimeRatio=ratio</strong>：根据设置目标调整堆的大小以达到期望的目标。吞吐量：垃圾回收时间和总时间占比。1/(1+ratio)。一般堆调大，减少垃圾回收次数。</p>
+<p><strong>-XX:MaxGCPauseMillis=ms</strong> ：最大暂停毫秒数（每一次垃圾回收耗时）</p>
+<p><strong>-XX:ParallelGCThreads=n <strong>：控制 ParallelGC 运行时的</strong>线程数</strong>。<br>
+<img src="https://epitomm.github.io/post-images/%E5%90%9E%E5%90%90%E9%87%8F%E4%BC%98%E5%85%88%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E5%99%A8.png" alt="图片" loading="lazy"></p>
+<p>四个 CPU 在运行，某一时刻内存不足触发垃圾回收，用户线程就会到达安全点然后停下来，垃圾回收器<strong>开启多个线程进行垃圾回收</strong>。垃圾回收线程个数默认和 CPU 核数相关。回收结束后再恢复其他的线程运行。在垃圾回收时，四核 CPU 都去进行垃圾回收了，<strong>CPU 占用率</strong>会一下达到 100%。</p>
+<h2 id="43-响应时间优先">4.3 响应时间优先</h2>
+<pre><code>-XX:+UseConcMarkSweepGC ~ -XX:+UseParNewGC ~ SerialOld 
+-XX:ParallelGCThreads=n ~ -XX:ConcGCThreads=threads 
+-XX:CMSInitiatingOccupancyFraction=percent 
+-XX:+CMSScavengeBeforeRemark
+</code></pre>
+<p><strong>-XX:+UseConcMarkSweepGC</strong> ：<strong>并发标记清除</strong>。垃圾回收器工作的同时，其他用户线程也能同时进行。垃圾回收线程和用户线程并发执行，都要去抢占 CPU。<strong>-XX:+UseParNewGC</strong>：工作在新生代，复制算法。 **SerialOld **：老年代垃圾回收器由并发退化为单线程 （基于标记整理的老年垃圾回收器）。<br>
+<img src="https://epitomm.github.io/post-images/%E5%93%8D%E5%BA%94%E6%97%B6%E9%97%B4%E4%BC%98%E5%85%88%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E5%99%A8.png" alt="图片" loading="lazy"></p>
+<p>多个 CPU 并行执行，老年代内存不足，所有进程到达安全点，执行初始标记，用户线程阻塞，STW；初始标记结束后，用户线程开始运行，停止 STW，与此同时垃圾回收线程并发标记，把剩余的垃圾找出来；并发标记结束后，进行重新标记，这个过程 STW，因为并发标记的过程用户线程可能对垃圾回收做了干扰，所以并发标记结束后还要再做一次重新标记；重新标记结束后，用户线程继续运行，垃圾回收线程并发清理。</p>
+<h2 id="44-g1">4.4 G1</h2>
+<p>定义：Garbage First</p>
+<ul>
+<li>2004 论文发布</li>
+<li>2009 JDK 6u14 体验</li>
+<li>2012 JDK 7u4 官方支持</li>
+<li>2017 JDK 9 默认。G1 取代了 CMS</li>
+</ul>
+<p>适用场景</p>
+<ul>
+<li>同时注重<strong>吞吐量</strong>（Throughput）和<strong>低延迟</strong>（Low latency），默认的暂停目标是 200 ms</li>
+<li>并发的垃圾回收器，和 CMS 一样追求低延迟，可以在用户线程工作的同时垃圾回收线程也并发执行。另外还借鉴了 Paralle：注重吞吐量垃圾回收器的思想，可以进行调整，设置默认暂停目标（-XX:MaxGCPauseMillis）。</li>
+<li><strong>超大堆内存</strong>，会<strong>将堆划分为多个大小相等的 Region</strong></li>
+</ul>
+<p>随着堆内存容量的增大，G1 与 CMS 相比优势更加明显。</p>
+<p>将堆划分为多个大小相等的 Region：每个区域都可以独立地作为 Eden、survive、老年代。</p>
+<p>-XX:G1HeapRegionSize：设置区域的大小，必须是2的幂。如果堆内存过大，回收速度会变慢，因为会涉及对象的复制标记，而分成小的区域进行管理，可以化整为零，进行一些优化加快标记拷贝的速度。</p>
+<ul>
+<li>整体上是 <strong>标记+整理</strong> 算法（避免标记清除算法产生的内碎片），两个区域之间是复制算法</li>
+</ul>
+<p>相关 JVM 参数</p>
+<pre><code>-XX:+UseG1GC 
+-XX:G1HeapRegionSize=size 
+-XX:MaxGCPauseMillis=time
+</code></pre>
+<figure data-type="image" tabindex="32"><img src="https://epitomm.github.io/post-images/G1_2.png" alt="图片" loading="lazy"></figure>
+<h3 id="1-g1-垃圾回收阶段">1) G1 垃圾回收阶段</h3>
+<figure data-type="image" tabindex="33"><img src="https://epitomm.github.io/post-images/G1%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E9%98%B6%E6%AE%B5.png" alt="图片" loading="lazy"></figure>
+<p>刚开始新生代垃圾收集，如果某时刻老年代内存超过阈值了，在新生代垃圾收集的同时进行并发标记，这个阶段结束后会进行混合收集：会对新生代、幸存区、老年代都进行收集。混合收集结束，Eden 内存释放掉，会再进入新生代垃圾收集。</p>
+<h3 id="2-young-collection">2) Young Collection</h3>
+<ul>
+<li>会 STW</li>
+</ul>
+<figure data-type="image" tabindex="34"><img src="https://epitomm.github.io/post-images/G1%E5%88%86%E5%8C%BA.png" alt="图片" loading="lazy"></figure>
+<p>G1 垃圾回收器把<strong>堆内存划分成大小相等的一个个区域</strong>，每个区域都可独立作为伊甸园、幸存区、老年代。刚开始白色的区域表示是空闲的区域，类加载时新创建的对象刚开始会分配到伊甸园区，绿色的 E 就代表 Eden 区，当 Eden 区域逐渐被占满，就会触发新生代的垃圾回收。</p>
+<figure data-type="image" tabindex="35"><img src="https://epitomm.github.io/post-images/G1%E6%96%B0%E7%94%9F%E4%BB%A3%E5%A4%8D%E5%88%B6%E7%AE%97%E6%B3%95.png" alt="图片" loading="lazy"></figure>
+<p>新生代垃圾回收会把非垃圾对象以复制算法放入幸存区。</p>
+<figure data-type="image" tabindex="36"><img src="https://epitomm.github.io/post-images/G1%E8%80%81%E5%B9%B4%E4%BB%A3.png" alt="图片" loading="lazy"></figure>
+<p>当幸存区对象放不下，或幸存区对象寿命达到一定值，会触发垃圾回收，幸存区一部分对象会晋升到老年代，而寿命未达到阈值的会拷贝到另一个幸存区，新生代的非垃圾对象也会复制到这个幸存区。</p>
+<h3 id="3-young-collection-cm">3) Young Collection + CM</h3>
+<p>CM：Concurrent mark：并发标记</p>
+<p><strong>初始标记</strong>：找到那些根对象，标记根对象。</p>
+<p><strong>并发标记</strong>：从根对象出发，顺着引用链找到其他非垃圾对象，标记那些其他非垃圾对象。</p>
+<ul>
+<li>在 Young GC 时会进行 GC Root 的<strong>初始标记</strong></li>
+<li>老年代占用堆空间比例达到阈值时，进行<strong>并发标记</strong>（不会 STW），由下面的 JVM 参数决定</li>
+</ul>
+<pre><code>-XX:InitialtingHeapOccupancyPercent=percent（默认45%）
+</code></pre>
+<p>老年代占用堆空间内存达到 45% 时，会进行并发标记。<br>
+<img src="https://epitomm.github.io/post-images/G1%E8%80%81%E5%B9%B4%E4%BB%A3%E8%BF%87%E5%A4%9A%E5%B9%B6%E5%8F%91%E6%A0%87%E8%AE%B0.png" alt="图片" loading="lazy"></p>
+<p>E：Eden</p>
+<p>S：Survive</p>
+<p>O：Old</p>
+<h3 id="4-mixed-collection">4) Mixed Collection</h3>
+<p>会对 E、S、O 进行<strong>全面垃圾回收</strong></p>
+<ul>
+<li>最终标记（Remark）会 STW</li>
+<li>拷贝存活（Evacuation）会 STW</li>
+</ul>
+<p>-XX:MaxGCPauseMillis=ms</p>
+<figure data-type="image" tabindex="37"><img src="https://epitomm.github.io/post-images/G1%E5%85%A8%E9%9D%A2%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6.png" alt="图片" loading="lazy"></figure>
+<p>Eden 区域的非垃圾对象被复制到 Survive 区域，Survive 区域寿命未达到阈值的非垃圾对象被复制到另一个 Survive 区域，寿命达到阈值的晋升到老年代区域。一部分老年代区域的幸存对象通过复制算法复制到新的的老年代区域，为什么没有把所有老年代都通过箭头指向新的老年代呢？因为 G1 会根据最大暂停时间有选择地进行回收，有时候堆内存空间太大了，老年代的垃圾回收可能时间比较长（复制算法大量对象的复制），就达不到<strong>最大暂停时间</strong>的目标了，为了达到这个目标，G1 会从老年代中挑<strong>出回收价值最高</strong>的区域（垃圾回收后能释放空间多的区域），只从老年代中挑选一部分区域复制，复制的区域少了，就可以达到暂停时间的目标了。如果老年代没有那么多，可以达到最大暂停时间的话， 就会把所有区域都进行复制。</p>
+<h3 id="5-full-gc">5) Full GC</h3>
+<ul>
+<li>SerialGC：串行
+<ul>
+<li>新生代内存不足发生的垃圾收集 - minor gc</li>
+<li>老年代内存不足发生的垃圾收集 - full gc</li>
+</ul>
+</li>
+<li>ParallelGC：并行
+<ul>
+<li>新生代内存不足发生的垃圾收集 - minor gc</li>
+<li>老年代内存不足发生的垃圾收集 - full gc</li>
+</ul>
+</li>
+<li>CMS
+<ul>
+<li>新生代内存不足发生的垃圾收集 - minor gc</li>
+<li>老年代内存不足
+<ul>
+<li>并发收集失败后 Full GC</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>G1
+<ul>
+<li>新生代内存不足发生的垃圾收集 - minor gc</li>
+<li>老年代内存不足
+<ul>
+<li>有一个阈值，当老年代内存达到阈值，就会触发并发标记、混合收集阶段。如果垃圾回收的速度高于新的用户线程产生垃圾的速度，就处于并发垃圾收集阶段，这阶段还不算 Full GC。</li>
+<li>当垃圾回收的速度跟不上垃圾产生的速度，并发收集失败，就会触发串行收集，这阶段叫做 Full GC。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="6-young-collection-跨代引用">6) Young Collection 跨代引用</h3>
+<p>新生代回收的跨代引用（老年代引用新生代）问题</p>
+<figure data-type="image" tabindex="38"><img src="https://epitomm.github.io/post-images/Card.png" alt="图片" loading="lazy"></figure>
+<p>新生代垃圾回收：找到根对象，沿着引用链找到存活对象，存活对象进行复制到幸存区。要找新生代对象的根对象，<strong>根对象有一部分来自于老年代</strong>，老年代的存活对象非常多，如果遍历老年代找根对象效率低，因此把<strong>老年代区域再进行细分</strong>，分成一个个 Card，每个 Card 是512KB，如果老年代其中有一个** Card 中的对象引用了新生代的某一个对象**，就把这个** Card 标记为脏**，这样以后，做 GC Root 遍历的时候就不用去找整个老年代了，只需要关注那些脏 Card 即可，减少搜索范围，<strong>提高扫描根对象的效率</strong>。</p>
+<ul>
+<li>卡表与 Remembered Set</li>
+<li>在引用变更时通过 post-write barrier + dirty card queue</li>
+<li>concurrent refinement threads 更新 Remembered Set</li>
+</ul>
+<figure data-type="image" tabindex="39"><img src="https://epitomm.github.io/post-images/Card2.png" alt="图片" loading="lazy"></figure>
+<p>粉色的 Card 都是<strong>脏卡区</strong>，Card 内有对象指向新生代区域的对象，新生代会记录** Remembered Set：从外部对我的引用**，将来对新生代 Eden 进行垃圾回收时，就可以先通过 Remembered Set 知道它对应的哪些脏 Card，然后在到这些脏卡区遍历对象找到 GC Root。通过** post-write barrier**：写屏障在每次<strong>对象的引用发生变更时，去更新脏 Card</strong>，这个过程是<strong>异步</strong>操作，不会立刻完成脏卡的更新，会把更新指令放在 <strong>dirty card queue 脏卡队列</strong>中，将来由一个线程完成脏卡更新的操作。</p>
+<h3 id="7-remark-重标记阶段">7) Remark 重标记阶段</h3>
+<ul>
+<li>pre-write barrier + satb_mark_queue</li>
+</ul>
+<p>pre-write barrier：写屏障：在对象引用改变前，将对象加入到 satb_mark_queue</p>
+<p>队列，将来 remark 从队列中取出对象进一步判断。</p>
+<figure data-type="image" tabindex="40"><img src="https://epitomm.github.io/post-images/%E9%87%8D%E6%A0%87%E8%AE%B0_1.png" alt="图片" loading="lazy"></figure>
+<p>并发标记阶段对象的 true 和 false，其中图中<strong>黑色</strong>表示已经处理完成，并且有引用在引用它们，在垃圾回收后会被<strong>保留</strong>下来。<strong>灰色</strong>的是正在<strong>触发中</strong>，灰色的因为有强引用黑色的在指向它，所以最终会变成黑色，<strong>白色</strong>的是<strong>尚未处理</strong>，如果有强引用指向它最后会变成黑色，如果没有引用指向它最终还是白色，会被当成垃圾回收。垃圾回收结束后，会根据对象的黑白状态区分它到底应该存活还是被回收。</p>
+<p><img src="https://epitomm.github.io/post-images/%E9%87%8D%E6%A0%87%E8%AE%B0_2.png" alt="图片" loading="lazy"><br>
+<img src="https://epitomm.github.io/post-images/%E9%87%8D%E6%A0%87%E8%AE%B0_3.png" alt="图片" loading="lazy"></p>
+<p><strong>Remark 流程：</strong><br>
+<img src="https://epitomm.github.io/post-images/%E9%87%8D%E6%A0%87%E8%AE%B0_4.png" alt="图片" loading="lazy"></p>
+<h3 id="8-jdk-8u20-字符串去重">8) JDK 8u20 字符串去重</h3>
+<ul>
+<li>优点：节省大量内存</li>
+<li>缺点：略微多占用了 cpu 时间，新生代回收时间略微增加</li>
+</ul>
+<p>-XX:+UseStringDeduplication</p>
+<pre><code>String s1 = new String(&quot;hello&quot;); // char[]{'h','e','l','l','o'} 
+String s2 = new String(&quot;hello&quot;); // char[]{'h','e','l','l','o'}
+</code></pre>
+<ul>
+<li>将所有新分配的字符串放入一个<strong>队列</strong></li>
+<li>当新生代回收时，G1并发检查队列中是否有字符串重复</li>
+<li>如果它们值一样，让它们<strong>引用同一个 char[]</strong></li>
+<li>注意，与 String.intern() 不一样
+<ul>
+<li>String.intern() 关注的是<strong>字符串对象</strong></li>
+<li>而字符串去重关注的是** char[]**</li>
+<li>在 JVM 内部，使用了不同的字符串表</li>
+</ul>
+</li>
+</ul>
+<h3 id="9-jdk-8u40-并发标记类卸载">9) JDK 8u40 并发标记类卸载</h3>
+<p>所有对象都经过并发标记后，就能知道<strong>哪些类不再被使用</strong>，当一个类加载器的所有类都不再使用，则<strong>卸载它所加载的所有类</strong></p>
+<p>-XX:+ClassUnloadingWithConcurrentMark 默认启用</p>
+<h3 id="10-jdk-8u60-回收巨型对象">10) JDK 8u60 回收巨型对象</h3>
+<figure data-type="image" tabindex="41"><img src="https://epitomm.github.io/post-images/%E5%9B%9E%E6%94%B6%E5%B7%A8%E5%9E%8B%E5%AF%B9%E8%B1%A1.png" alt="图片" loading="lazy"></figure>
+<p>Region 区域内粉色的 H 就是巨型对象。</p>
+<ul>
+<li>一个对象<strong>大于 region 的一半</strong>时，称之为巨型对象</li>
+<li>G1 <strong>不会对巨型对象进行拷贝</strong></li>
+<li><strong>回收时被优先考虑</strong></li>
+<li>G1 会跟踪老年代所有 incoming 引用，这样老年代 incoming 引用为0 的巨型对象就可以在新生代垃圾回收时处理掉</li>
+</ul>
+<figure data-type="image" tabindex="42"><img src="https://epitomm.github.io/post-images/%E5%9B%9E%E6%94%B6%E5%B7%A8%E5%9E%8B%E5%AF%B9%E8%B1%A1_2.png" alt="图片" loading="lazy"></figure>
+<h3 id="11-jdk-9-并发标记起始时间的调整">11) JDK 9 并发标记起始时间的调整</h3>
+<p>如果垃圾回收的速度跟不上垃圾产生的速度，最终会退化为 Full GC。G1 的 Full GC 是多线程的，Full GC 的 STW 过程很长，因此要尽可能避免 Full GC 的发生。如何减少 Full GC 呢？提前让垃圾回收开始，并发标记、混合收集提前开始，就能减少 Full GC 发生的几率。</p>
+<ul>
+<li>并发标记必须在堆空间占满前完成，否则退化为 FullGC</li>
+<li>JDK 9 之前需要使用 -XX:InitiatingHeapOccupancyPercent：老年代在堆内存的占比，当超过设置的这个阈值时，就会触发并发垃圾回收。</li>
+<li>JDK 9 可以动态调整
+<ul>
+<li>-XX:InitiatingHeapOccupancyPercent 用来设置**初始值 **</li>
+<li>进行<strong>数据采样</strong>并**动态调整 **</li>
+<li>总会添加一个安全的空档空间</li>
+</ul>
+</li>
+</ul>
+<h3 id="12-jdk-9-更高效的回收">12) JDK 9 更高效的回收</h3>
+<p>250+增强</p>
+<p>180+bug修复</p>
+<p><a href="https://docs.oracle.com/en/java/javase/12/gctuning">https://docs.oracle.com/en/java/javase/12/gctuning</a></p>
+<h1 id="五-垃圾回收调优">五、垃圾回收调优</h1>
+<p>预备知识</p>
+<ul>
+<li>掌握 GC 相关的 VM 参数，会基本的空间调整</li>
+<li>掌握相关工具</li>
+<li>明白一点：调优跟应用、环境有关，没有放之四海而皆准的法则</li>
+</ul>
+<p>查看虚拟机运行参数：</p>
+<pre><code>&quot;C:\Program Files\Java\jdk1.8.0_172\bin\java&quot; -XX:+PrintFlagsFinal -version | findstr &quot;GC&quot;
+</code></pre>
+<figure data-type="image" tabindex="43"><img src="https://epitomm.github.io/post-images/%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E8%B0%83%E4%BC%98.png" alt="图片" loading="lazy"></figure>
+<h2 id="51-调优领域">5.1 调优领域</h2>
+<ul>
+<li>内存</li>
+<li>锁竞争</li>
+<li>cpu 占用</li>
+<li>io</li>
+</ul>
+<h2 id="52-确定目标">5.2 确定目标</h2>
+<ul>
+<li>【低延迟】还是【高吞吐量】，选择合适的回收器</li>
+<li>CMS，G1，ZGC：低延迟</li>
+<li>ParallelGC：高吞吐量</li>
+<li>Zing</li>
+</ul>
+<h2 id="53-最快的-gc-是不发生-gc">5.3 最快的 GC 是不发生 GC</h2>
+<p>答案是不发生 GC</p>
+<ul>
+<li>查看 FullGC 前后的内存占用，考虑下面几个问题
+<ul>
+<li>数据是不是太多？
+<ul>
+<li>resultSet = statement.executeQuery(&quot;select * from 大表** limit n**&quot;)</li>
+</ul>
+</li>
+<li>数据表示是否太臃肿？
+<ul>
+<li>对象图</li>
+<li>对象大小 16 Integer 24 int 4</li>
+</ul>
+</li>
+<li>是否存在内存泄漏？
+<ul>
+<li>static Map map 不断向里面放数据</li>
+<li>软</li>
+<li>弱</li>
+<li>第三方缓存实现</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="54-新生代调优">5.4 新生代调优</h2>
+<h3 id="新生代的特点">新生代的特点</h3>
+<ul>
+<li>所有的 new 操作的内存分配非常廉价
+<ul>
+<li>TLAB thread-local allocation buffer
+<ul>
+<li>在 Eden 中给<strong>每个线程分配一块私有缓冲区 TLAB</strong>，new 对象时会首先检查 TLAB 缓冲区内是否有空白区域，如果有就优先在 TLAB 这块内存分配。因为线程安全问题，比如线程 1 要用这块内存，分配还没结束时，线程 2 不能也要用这块内存，造成内存分配混乱，  因此在对象的内存分配时，要做线程安全的保护，<strong>减少线程之间对分配时的并发冲突</strong>：TLAB  ：线程局部分配缓冲区。每个线程用自己私有的 Eden 内存来进行内存分配，多个线程即使同时创建对象，也不会产生对内存占用的干扰。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>死亡对象的回收代价是零
+<ul>
+<li>新生代发生垃圾回收时，垃圾回收器复制算法：把 Eden、幸存区 FROM 中的幸存对象都复制到幸存区 TO，Eden、FROM 中的内存就被释放了，因此死亡对象的回收代价是零。</li>
+</ul>
+</li>
+<li>新生代大部分对象用过即死</li>
+<li>Minor GC 的时间远远低于 Full GC</li>
+</ul>
+<h3 id="新生代越大越好吗">新生代越大越好吗？</h3>
+<p>-Xmn</p>
+<blockquote>
+<p>Sets the initial and maximum size (in bytes) of the heap for the young generation (nursery).<br>
+GC is performed in this region more often than in other regions. If the size for the young<br>
+generation is too small, then a lot of minor garbage collections are performed. If the size is too  large, then only full garbage collections are performed, which can take a long time to complete.<br>
+Oracle recommends that you keep the size for the young generation greater than 25% and less than 50% of the overall heap size.</p>
+</blockquote>
+<p>-Xmn：设置堆中新生代的初始和最大值。<strong>新生代设置小</strong>了，<strong>可用空间少</strong>，创建对象时一旦发现新生代的空间不足就会触发新生代的** minor gc**。如果新<strong>生代内存太大</strong>了，<strong>老年代的可用空间相对少了</strong>，老年代的空间少了，将来新生代觉得我空闲空间很多，新创建的对象都还不会触发垃圾回收，但是老年代的空间紧张，再触发垃圾回收，就是 full gc，<strong>full gc 的暂停时间比 minor gc 时间更长</strong>。<strong>新生代大于堆内存的 1/4 ,小于 1/2 即可</strong>。</p>
+<figure data-type="image" tabindex="44"><img src="https://epitomm.github.io/post-images/%E6%96%B0%E7%94%9F%E4%BB%A3-%E5%90%9E%E5%90%90%E9%87%8F.png" alt="图片" loading="lazy"></figure>
+<p><strong>吞吐量</strong>：单位时间能响应的请求数量。</p>
+<p>随着新生代空间越来越大，吞吐量越来越高，垃圾回收占用整个 CPU 计算的时间比例少了，CPU时间更多用来处理请求了，吞吐量就变高了，但是到了一定的大小后，会有一个下降：<strong>新生代空间大了，意味着回收的时间较长</strong>。</p>
+<p><strong>新生代调整尽可能大</strong>，新生代的垃圾回收都是复制算法，复制算法分成：标记、复制两个阶段，复制阶段花费的时间更多，而新<strong>生代的对象，绝大部分都是朝生夕死的，最终只有少量的对象会存活下来，复制所占用的时间也是相对较短的</strong>，而标记时间相对于复制时间来讲，就显得不是很重要了，所以<strong>新生代调大的情况下，主要时间还是耗费在复制上，即使增得很大，效率也不会有很明显的下降</strong>。</p>
+<h3 id="新生代的大小设置">新生代的大小设置</h3>
+<ul>
+<li><strong>新生代能容纳并发量 *  (一次请求-响应过程产生的对象)的数据</strong>
+<ul>
+<li>并发量 * 请求 - 响应过程中所产生的的对象</li>
+<li>如果一次 请求-响应 过程中产生的对象是 512KB，并发量是 1000，那么新生代理想的内存就是 1000* 512KB = 521M。因为一次 请求-响应的过程，在这次 请求-响应 结束后，大多数对象都会被回收，只要这一次 请求-响应 占用的内存不超过新生代的内存，就不会触发新生代的垃圾回收</li>
+</ul>
+</li>
+<li><strong>幸存区大到能保留当前活跃对象+需要晋升对象</strong>
+<ul>
+<li>幸存区中有两类对象：<strong>①生命周期较短，下一次垃圾回收就把它回收掉了</strong>，但由于现在还在使用，暂时不能回收；**②将来会被晋升到老年代，**但是由于年龄不够，所以暂时存放在幸存区中。</li>
+<li><strong>如果幸存区较小，就会由 JVM 动态调整晋升阈值</strong>，也许本来有些对象不应该晋升的，但是由于幸存区内存不够，导致会提前<strong>把本应回收的对象晋升到老年代</strong>。如果存活时间短的对象被晋升到了老年代，需要等到老年代内存不足，触发 Full GC 时才能把它当做垃圾进行回收，延长了对象的生存时间。</li>
+</ul>
+</li>
+<li><strong>晋升阈值配置得当，让长时间存活对象尽快晋升</strong>
+<ul>
+<li>如果是一个<strong>长期存活的对象</strong>，把它<strong>留到幸存区里</strong>，只会<strong>耗费幸存区的内存</strong>，并且新生代垃圾回收都是复制算法，要把幸存区的存活对象从 FROM 复制到 TO，如果大量长时间存活的对象不能及早晋升，那么就要留在幸存区被<strong>复制来复制去</strong>。调整晋升阈值，让<strong>长时间存活的对象尽快晋升到老年代</strong>。</li>
+</ul>
+</li>
+</ul>
+<p>调整最大晋升阈值：</p>
+<pre><code>-XX:MaxTenuringThreshold=threshold 
+</code></pre>
+<p>显示幸存区对象详情：</p>
+<pre><code>-XX:+PrintTenuringDistribution 
+</code></pre>
+<pre><code>Desired survivor size 48286924 bytes, new threshold 10 (max 10) 
+- age 1: 28992024 bytes, 28992024 total 
+- age 2: 1366864 bytes, 30358888 total 
+- age 3: 1425912 bytes, 31784800 total 
+...
+</code></pre>
+<h2 id="55-老年代调优">5.5 老年代调优</h2>
+<h3 id="以-cms-为例">以 CMS 为例</h3>
+<p>CMS 垃圾回收器：<strong>低响应时间、并发的</strong>（垃圾回收线程在工作的同时其他用户线程也能在并发的执行：垃圾回收的同时其他用户线程也在运行，就会产生新的浮动垃圾，如果浮动垃圾产生导致内存不足，就会造成 CMS 并发失败，CMS 垃圾回收器退化为 串行老年代垃圾回收器：STW）</p>
+<ul>
+<li>CMS 的<strong>老年代内存越大越好</strong>
+<ul>
+<li>预留更多空间，避免浮动垃圾引起的并发失败</li>
+</ul>
+</li>
+<li><strong>先尝试不做调优</strong>，如果没有 Full GC 那么已经可以了，否则先尝试调优新生代</li>
+<li>观察<strong>发生 Full GC 时老年代内存占用</strong>，将老年代内存预设调大 1/4 ~ 1/3</li>
+</ul>
+<pre><code>-XX:CMSInitiatingOccupancyFraction=percent
+</code></pre>
+<p>老年代的空间占用达到老年代的 percent% 时，触发垃圾回收<br>
+percent 越小，老年代垃圾回收触发时间越早。</p>
+<h2 id="56-案例">5.6 案例</h2>
+<h3 id="案例1-full-gc-和-minor-gc频繁空间紧张">案例1 Full GC 和 Minor GC频繁：空间紧张</h3>
+<ul>
+<li>问题分析：</li>
+</ul>
+<p>新生代空间紧张：当业务高峰期来了，大量对象被创建，<strong>新生代被填满</strong>，<strong>幸存区空间紧张</strong>了，<strong>晋升对象的阈值就会降低</strong>，导致很多原来<strong>生存周期很短的对象被晋升到老年代</strong>了，老年代存了大量生存周期很短的对象，进一步触发老年代 <strong>Full GC</strong> 发生。</p>
+<ul>
+<li>问题解决：</li>
+</ul>
+<p><strong>增大新生代内存</strong>，新生代内存增大了，内存充裕，新生代的垃圾回收不那么频繁了，增大了幸存区的空间以及晋升阈值，生命周期较短的对象尽可能在幸存区被回收，而不要晋升到老年代，减少老年代 Full GC。</p>
+<h3 id="案例2-请求高峰期发生-full-gc单次暂停时间特别长-cms">案例2 请求高峰期发生 Full GC，单次暂停时间特别长 （CMS）</h3>
+<ul>
+<li>问题分析：</li>
+</ul>
+<p>查看日志，看 CMS 哪个阶段耗费时间长</p>
+<figure data-type="image" tabindex="45"><img src="https://epitomm.github.io/post-images/%E5%90%9E%E5%90%90%E9%87%8F%E4%BC%98%E5%85%88%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8.png" alt="图片" loading="lazy"></figure>
+<p>初始标记和并发标记都是比较快的，<strong>重新标记比较慢</strong>， 查看 GC 日志会把每一阶段耗费的时间显示。</p>
+<ul>
+<li>问题解决：</li>
+</ul>
+<p>重新标记会扫描整个内存，不光是要扫描老年代对象，也要同时扫描新生代对象，如果是业务高峰期，新生代对象比较多，扫描标记时间就会很长，因为要根据对象找它的引用，能不能<strong>在重新标记前把新生代的对象做一次垃圾回收</strong>，减少新生代对象的数量，减少重新标记阶段耗费的时间。通过设置：-XX:+CMSScavengeBeforeRemark：在重新标记发生之前，先对新生代进行一次垃圾清理。</p>
+<h3 id="案例3-老年代充裕情况下发生-full-gc-cms-jdk17">案例3 老年代充裕情况下，发生 Full GC （CMS jdk1.7）</h3>
+<ul>
+<li>问题分析：</li>
+</ul>
+<p>CMS 可能由于空间不足导致并发失败，或者由于空间碎片多都会产生 Full GC。但是经过排查，在 GC 日志没有并发失败或者碎片过多的提示。说明老年代空间充裕，不是由于老年代空间不足产生的 Full GC。<strong>JDK1.7 及以前采用永久代作为方法区的实现，永久代空间不足也会导致 Full GC 发生</strong>，1.8 以后使用元空间就不是由 Java 控制了，所以元空间使用操作系统的空间一般情况是比较充裕的。1.7 以前永久代空间设置小了就会触发整个堆的 Full GC。</p>
+<ul>
+<li>问题解决：</li>
+</ul>
+<p>增大永久代的初始值和最大值</p>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[HTTP 系列（二）熟悉 HTTP 协议结构和通讯原理]]></title>
         <id>https://epitomm.github.io/post/http-xi-lie-er-shou-xi-http-xie-yi-jie-gou-he-tong-xun-yuan-li/</id>
@@ -4036,357 +4954,6 @@ k 表示整数二进制表示中 1 的个数</li>
 <h2 id="来源">来源</h2>
 <p>来源：力扣（LeetCode）<br>
 链接：<a href="https://leetcode-cn.com/problems/number-of-1-bits">https://leetcode-cn.com/problems/number-of-1-bits</a></p>
-]]></content>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[Redis 哨兵]]></title>
-        <id>https://epitomm.github.io/post/redis-shao-bing/</id>
-        <link href="https://epitomm.github.io/post/redis-shao-bing/">
-        </link>
-        <updated>2020-04-13T04:48:14.000Z</updated>
-        <content type="html"><![CDATA[<h1 id="哨兵简介">哨兵简介</h1>
-<h2 id="主机宕机">主机“宕机”</h2>
-<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/%E4%B8%BB%E6%9C%BA%E5%AE%95%E6%9C%BA.png" alt="图片" loading="lazy"></figure>
-<blockquote>
-<p>master 宕机，需要选取一个 slave 作为 master</p>
-</blockquote>
-<ul>
-<li>将宕机的 master 下线</li>
-<li>找一个slave作为master</li>
-<li>通知所有的 slave 连接新的 master</li>
-<li>启动新的master与slave</li>
-<li>全量复制<em>N+部分复制</em>N</li>
-</ul>
-<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/%E5%93%A8%E5%85%B5.png" alt="图片" loading="lazy"></figure>
-<ul>
-<li>谁来确认 master 宕机了</li>
-<li>找一个主？怎么找法？</li>
-<li>修改配置后，原始的主恢复了怎么办？</li>
-</ul>
-<h2 id="哨兵">哨兵</h2>
-<p>哨兵(sentinel) 是一个<strong>分布式系统</strong>，用于对主从结构中的每台服务器进行<strong>监控</strong>，当出现故障时通过<strong>投票</strong>机制选择新的 master并将所有slave连接到新的master。</p>
-<figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F%E4%B8%AD%E7%9A%84%E5%93%A8%E5%85%B5.png" alt="图片" loading="lazy"></figure>
-<h2 id="哨兵的作用">哨兵的作用</h2>
-<ul>
-<li>监控
-<ul>
-<li>不断的检查master和slave是否正常运行。</li>
-<li>master存活检测、master与slave运行情况检测</li>
-</ul>
-</li>
-<li>通知（提醒）
-<ul>
-<li>当被监控的服务器出现问题时，向其他（哨兵间，客户端）发送通知。</li>
-</ul>
-</li>
-<li>自动故障转移
-<ul>
-<li>断开master与slave连接，选取一个slave作为master，将其他slave连接到新的master，并告知客户端新的服务器地址</li>
-</ul>
-</li>
-</ul>
-<p>注意：</p>
-<p>哨兵也是一台<strong>redis服务器</strong>，只是不提供数据服务</p>
-<p>通常哨兵配置数量为<strong>单数</strong></p>
-<h1 id="启用哨兵模式">启用哨兵模式</h1>
-<h2 id="配置哨兵">配置哨兵</h2>
-<p>清空 data 下数据</p>
-<pre><code>[root@iZ2ze4u2bufi0915gyi843Z data]# rm -rf *
-</code></pre>
-<ul>
-<li>配置一拖二的主从结构</li>
-</ul>
-<h3 id="1-一个-master">1. 一个 master</h3>
-<p>（1）配置文件</p>
-<pre><code>[root@iZ2ze4u2bufi0915gyi843Z conf]# vim redis-6379.conf 
-port 6379
-daemonize no
-#logfile &quot;6379.log&quot;
-dir /root/redis-5.0.7/data
-dbfilename dump-6379.rdb
-rdbcompression yes 
-rdbchecksum yes 
-appendonly yes
-appendfsync everysec
-appendfilename appendonly-6379.aof
-bind 127.0.0.1
-databases 16
-</code></pre>
-<p>（2）启动master:6379 redis 服务</p>
-<pre><code>[root@iZ2ze4u2bufi0915gyi843Z conf]# redis-server redis-6379.conf
-</code></pre>
-<h3 id="2-两个-slave">2. 两个 slave</h3>
-<p>（1）配置文件</p>
-<pre><code>[root@iZ2ze4u2bufi0915gyi843Z conf]# vim redis-6380.conf 
-port 6380
-daemonize no
-#logfile &quot;6379.log&quot;
-dir &quot;/root/redis-5.0.7/data&quot;
-replicaof 127.0.0.1 6379
-[root@iZ2ze4u2bufi0915gyi843Z conf]# vim redis-6381.conf 
-port 6381
-daemonize no
-#logfile &quot;6379.log&quot;
-dir &quot;/root/redis-5.0.7/data&quot;
-</code></pre>
-<p>（2）启动 slave:6380、slave:6381 服务</p>
-<pre><code>[root@iZ2ze4u2bufi0915gyi843Z conf]# redis-server redis-6380.conf
-</code></pre>
-<pre><code>[root@iZ2ze4u2bufi0915gyi843Z conf]# redis-server redis-6381.conf
-</code></pre>
-<h3 id="配置三个哨兵配置相同端口不同">配置三个哨兵（配置相同，端口不同）</h3>
-<ul>
-<li>参看sentinel.conf</li>
-</ul>
-<p>（1）查看 sentinel.conf 配置文件</p>
-<pre><code>[root@iZ2ze4u2bufi0915gyi843Z redis-5.0.7]# cat sentinel.conf | grep -v &quot;#&quot; | grep -v &quot;^$&quot; // 过滤到注释和空行
-port 26379
-daemonize no
-pidfile /var/run/redis-sentinel.pid
-logfile &quot;&quot;
-dir /tmp
-sentinel monitor mymaster 127.0.0.1 6379 2
-sentinel down-after-milliseconds mymaster 30000
-sentinel parallel-syncs mymaster 1
-sentinel failover-timeout mymaster 180000
-sentinel deny-scripts-reconfig yes
-</code></pre>
-<p><img src="https://epitomm.github.io/post-images/sentinel.conf.png" alt="图片" loading="lazy"><br>
-sentinel.conf</p>
-<p>（2）将配置文件 复制到 redis-5.0.7/conf 目录下</p>
-<pre><code>[root@iZ2ze4u2bufi0915gyi843Z redis-5.0.7]#cat sentinel.conf | grep -v &quot;#&quot; | grep -v &quot;^$&quot; &gt; ./conf/sentinel-26379.conf
-</code></pre>
-<p>（3）修改 sentinel-26379.conf 配置文件</p>
-<pre><code>[root@iZ2ze4u2bufi0915gyi843Z conf]# vim sentinel-26379.conf 
-port 26379
-daemonize no
-dir /root/redis-5.0.7/data
-sentinel monitor mymaster 127.0.0.1 6379 2
-sentinel down-after-milliseconds mymaster 30000
-sentinel parallel-syncs mymaster 1
-sentinel failover-timeout mymaster 180000
-sentinel deny-scripts-reconfig yes
-</code></pre>
-<p>（4）复制生成 sentinel-26380.conf、 sentinel-26381.conf 两个配置文件</p>
-<pre><code>[root@iZ2ze4u2bufi0915gyi843Z conf]# sed 's/26379/26380/g' sentinel-26379.conf &gt; sentinel-26380.conf
-[root@iZ2ze4u2bufi0915gyi843Z conf]# sed 's/26379/26381/g' sentinel-26379.conf &gt; sentinel-26381.conf
-</code></pre>
-<h2 id="启动哨兵">启动哨兵</h2>
-<pre><code>redis-sentinel sentinel-端口号.conf
-</code></pre>
-<p>启动三个哨兵：</p>
-<pre><code>redis-sentinel sentinel-26379.conf
-
-redis-sentinel sentinel-26380.conf
-
-redis-sentinel sentinel-26381.conf
-</code></pre>
-<p>当 master:6379 下线后，哨兵投票选举出新的 master:6381</p>
-<figure data-type="image" tabindex="4"><img src="https://epitomm.github.io/post-images/master%E4%B8%8B%E7%BA%BF%E5%90%8E%EF%BC%8C%E5%93%A8%E5%85%B5%E6%8A%95%E7%A5%A8%E9%80%89%E4%B8%BE%E6%96%B0%E7%9A%84master.png" alt="图片" loading="lazy"></figure>
-<p>master 下线后，哨兵投票选举新的 master</p>
-<h2 id="配置哨兵-2">配置哨兵</h2>
-<table>
-<thead>
-<tr>
-<th style="text-align:left">配置项</th>
-<th style="text-align:center">范例</th>
-<th style="text-align:left">说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left">sentinel auth-pass    &lt;服务器名称&gt; <password></td>
-<td style="text-align:center">sentinel auth-pass mymaster   itcast</td>
-<td style="text-align:left">连接服务器口令</td>
-</tr>
-<tr>
-<td style="text-align:left">sentinel down-after-milliseconds &lt;自定义服务名称&gt;&lt;主机地址&gt;&lt;端口&gt;&lt;主从服务器总量&gt;</td>
-<td style="text-align:center">sentinel monitor mymaster    192.168.194.131 6381 1</td>
-<td style="text-align:left">设置哨兵监听的主服务器信息，最后的参数决定了最终参与选举的服务器 数量（-1）</td>
-</tr>
-<tr>
-<td style="text-align:left">sentinel down-after-milliseconds    &lt;服务名称&gt;&lt;毫秒数（整数）&gt;</td>
-<td style="text-align:center">sentinel down-after  milliseconds mymaster 3000</td>
-<td style="text-align:left">指定哨兵在监控Redis服务时，判定服务器挂掉的时间周期，默认30秒 （30000），也是主从切换的启动条件之一</td>
-</tr>
-<tr>
-<td style="text-align:left">sentinel parallel-syncs    &lt;服务名称&gt;&lt;服务器数（整数）&gt;</td>
-<td style="text-align:center">sentinel parallel-syncs    mymaster 1</td>
-<td style="text-align:left">指定同时进行主从的slave数量，数值越大，要求网络资源越高，要求越小，同步时间越长</td>
-</tr>
-<tr>
-<td style="text-align:left">sentinel failover-timeout    &lt;服务名称&gt;&lt;毫秒数（整数）&gt;</td>
-<td style="text-align:center">sentinel failover-timeout    mymaster 9000</td>
-<td style="text-align:left">指定出现故障后，故障切换的最大超时时间，超过该值，认定切换失败，默认3分钟</td>
-</tr>
-<tr>
-<td style="text-align:left">sentinel notification-script    &lt;服务名称&gt;&lt;脚本路径&gt;</td>
-<td style="text-align:center"></td>
-<td style="text-align:left">服务器无法正常联通时，设定的执行脚本，通常调试使用。</td>
-</tr>
-</tbody>
-</table>
-<h1 id="哨兵工作原理">哨兵工作原理</h1>
-<h2 id="主从切换">主从切换</h2>
-<ul>
-<li>哨兵在进行主从切换过程中经历三个阶段
-<ul>
-<li>监控</li>
-<li>通知</li>
-<li>故障转移</li>
-</ul>
-</li>
-</ul>
-<h2 id="阶段一监控阶段">阶段一：监控阶段</h2>
-<figure data-type="image" tabindex="5"><img src="https://epitomm.github.io/post-images/%E7%9B%91%E6%8E%A7%E9%98%B6%E6%AE%B5.png" alt="图片" loading="lazy"></figure>
-<ul>
-<li>用于同步各个节点的状态信息
-<ul>
-<li>获取各个sentinel的状态（是否在线）</li>
-<li>获取master的状态
-<ul>
-<li>master属性
-<ul>
-<li>runid</li>
-<li>role：master</li>
-</ul>
-</li>
-<li>各个slave的详细信息</li>
-</ul>
-</li>
-<li>获取所有slave的状态（根据master中的slave信息）
-<ul>
-<li>slave属性
-<ul>
-<li>runid</li>
-<li>role：slave</li>
-<li>master_host、master_port</li>
-<li>offset</li>
-<li>......</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<figure data-type="image" tabindex="6"><img src="https://epitomm.github.io/post-images/%E7%9B%91%E6%8E%A7%E9%98%B6%E6%AE%B52.png" alt="图片" loading="lazy"></figure>
-<blockquote>
-<p>① 第一个哨兵进去的时候，只有 master 和 slave 可以连，哨兵先<strong>连接 master</strong>，发送 info 指令。<br>
-② 为了方便后期 master 和 sentinel 命令交换，<strong>建立了一个 cmd 连接</strong>，专门用于发送命令。<br>
-在这个过程中，保存了所有哨兵状态 SentinelState，在哨兵端把所有信息进行记录；在 master 端记录 redis 实例对应信息：SentinelRedisInstance<br>
-③ sentinel 根据从 master 获取的 slaves 信息<strong>去与每一个 slave 进行连接</strong>，发送 info 命令。<br>
-④ 下一个 sentinel 进入，<strong>发送 info 命令连接 master</strong>，发现 master 端的 SentinelRedisInstance 中的 sentinels 有信息，知道了在它之前有对应的 sentinel 与master 建立了连接。<br>
-⑤ sentinel <strong>与 master 建立 cmd 连接</strong>。<br>
-在 sentinel 端创建 SentinelState（包含两个 sentinel 节点信息）。<br>
-为了保证两个 sentinel 信息同步，在两个 sentinel 之间建立沟通的桥梁进行发布订阅，向这个通道发送信息大家可以互联，为了保证连接，两个 sentinel 还会互相发送 ping 命令看对方是不是还在<br>
-⑥ sentinel 与 slave 连接</p>
-</blockquote>
-<figure data-type="image" tabindex="7"><img src="https://epitomm.github.io/post-images/%E7%9B%91%E6%8E%A7%E9%98%B6%E6%AE%B53.png" alt="图片" loading="lazy"></figure>
-<blockquote>
-<p>当第三个节点进来时，除了连接 master 和 slaves，还需要与现存的 sentinel 进行连接，此时三个 sentinel 组成了一个小的网络，彼此间交换信息，在这个网络中：哪个哨兵拿到信息，快速扩散给大家，由于每个 sentinel 之间都是信任的，一旦有一个 sentinel 发送信息，其他哨兵接收，发现和自己的信息不一致，就更新掉。</p>
-</blockquote>
-<p>监控阶段的信息获取：sentinel 会向 master、slave、其他的 sentinel 要状态，sentinel 之间会组建对应的频道，大家在这里发布、订阅、同步信息。</p>
-<h2 id="阶段二通知阶段">阶段二：通知阶段</h2>
-<p>信息的长期维护阶段</p>
-<figure data-type="image" tabindex="8"><img src="https://epitomm.github.io/post-images/%E9%80%9A%E7%9F%A5%E9%98%B6%E6%AE%B5.png" alt="图片" loading="lazy"></figure>
-<blockquote>
-<p>三个 sentinel 组成了一个小群体，它们之间进行信息互通，提供数据的 master 和 slave 正常工作，sentinel 会通过 cmd 连接获取它们对应的工作状态，通过发布 hello 信息来获取，无论是哪个 sentinel 拿到结果，都会在 sentinel 内部网络进行信息互通，告诉其他 sentinel。</p>
-</blockquote>
-<h2 id="阶段三故障转移阶段">阶段三：故障转移阶段</h2>
-<figure data-type="image" tabindex="9"><img src="https://epitomm.github.io/post-images/%E6%95%85%E9%9A%9C%E8%BD%AC%E7%A7%BB%E9%98%B6%E6%AE%B5.png" alt="图片" loading="lazy"></figure>
-<blockquote>
-<p>① sentinel 向 master 发送 hello 指令，master 没有回复，sentinel 就不停给 master 发送 hello，发送了到了一定阶段后，sentinel 认为 master 掉线了，给 master 标记为 S_DOWN 状态。<br>
-② sentinel1 把这个信息传递到内网中。如果是某个 sentinel 断了导致无法和 master 建立连接，该 sentinel 把 master 状态标记为 S_DOWN，并把信息发送到内网时，发送失败（此 sentinel 断线了）。<br>
-③ 当内网中的其他 sentinel 接收到 master 挂掉的信息后，于是去围观不停地给 master 发送 hello，仍然没有回复，该 master 果然掉线了。<br>
-④ 于是把它们接收到的结果信息也传送到内网中确认 sentinel1 说的对，master 果然挂了。<br>
-⑤ 此时所有 sentinel 都认为 master 挂了，master 端的状态信息更改为：O_DOWN。事实上，只要半数以上的 sentinel 认为 master 挂了，状态就标记为 O_DOWN，不必要等所有 sentinel 都确认。</p>
-</blockquote>
-<p>主观下线：一个 sentinel 认为 master 挂了。</p>
-<p>客观下线：半数以上 sentinel 认为 master 挂了。</p>
-<h3 id="1-投票选举-sentinel-代表">1. 投票选举 sentinel 代表</h3>
-<p>客观下线后，进入下一环节：开始清理队伍。清理队伍前，需选出一个 sentinel 作为代表去清理。</p>
-<figure data-type="image" tabindex="10"><img src="https://epitomm.github.io/post-images/%E6%8A%95%E7%A5%A8%E9%80%89%E4%B8%BE%E5%93%A8%E5%85%B5%E4%BB%A3%E8%A1%A8.png" alt="图片" loading="lazy"></figure>
-<blockquote>
-<p>所有 sentinel 同时发送指令表示我要作为代表去清理队伍。<br>
-发送的指令中携带以下信息：</p>
-<ol>
-<li>挂的 ip</li>
-<li>挂的端口</li>
-<li>竞选次数（我在这方面处理的经验：参与竞选的次数）</li>
-<li>自己的 runid</li>
-</ol>
-</blockquote>
-<figure data-type="image" tabindex="11"><img src="https://epitomm.github.io/post-images/%E5%93%A8%E5%85%B5%E6%8A%95%E7%A5%A82.png" alt="图片" loading="lazy"></figure>
-<blockquote>
-<p>那么到底应该选哪一个呢？<br>
-投票机制<br>
-每一个 sentinel 作为参选者，同时也是投票者，每人有一票，当 sentinel1 和 sentinel4 同时把信息发送到微信群中时，sentinel2 先接收到谁的就把票投给谁。</p>
-</blockquote>
-<figure data-type="image" tabindex="12"><img src="https://epitomm.github.io/post-images/%E5%93%A8%E5%85%B5%E6%8A%95%E7%A5%A83.png" alt="图片" loading="lazy"></figure>
-<blockquote>
-<p>所有信息沟通完毕会得到一个投票结果，假如有一个 sentinel 获得超过半数以上的票，就当选，如果没有得到这样的一个结果，就重新投一轮，每增加一轮，竞选次数+1.</p>
-</blockquote>
-<h3 id="2-sentinel-代表从备选-slave-中选择一个当-master">2. sentinel 代表从备选 slave 中选择一个当 master</h3>
-<ul>
-<li>服务器列表中挑选备选master
-<ul>
-<li>在线的</li>
-<li>响应慢的</li>
-<li>与原master断开时间久的</li>
-<li>优先原则
-<ul>
-<li>优先级</li>
-<li>offset</li>
-<li>runid</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>发送指令（ sentinel ）
-<ul>
-<li>向新的master发送slaveof no one</li>
-<li>向其他slave发送slaveof 新masterIP端口</li>
-</ul>
-</li>
-</ul>
-<figure data-type="image" tabindex="13"><img src="https://epitomm.github.io/post-images/%E6%95%85%E9%9A%9C%E8%BD%AC%E7%A7%BB%E9%98%B6%E6%AE%B5%E6%80%BB%E7%BB%93.png" alt="图片" loading="lazy"></figure>
-<h3 id="主从切换过程总结">主从切换过程总结</h3>
-<ul>
-<li>监控
-<ul>
-<li>同步信息</li>
-</ul>
-</li>
-<li>通知
-<ul>
-<li>保持联通</li>
-</ul>
-</li>
-<li>故障转移
-<ul>
-<li>发现问题</li>
-<li>竞选负责人</li>
-<li>优选新master</li>
-<li>新master上任，其他slave切换master，原master作为slave故障恢复后连接</li>
-</ul>
-</li>
-</ul>
-<figure data-type="image" tabindex="14"><img src="https://epitomm.github.io/post-images/%E4%B8%BB%E4%BB%8E%E5%88%87%E6%8D%A2%E8%BF%87%E7%A8%8B%E6%97%A5%E5%BF%97.png" alt="图片" loading="lazy"></figure>
-<p>主从切换过程日志信息</p>
-<h1 id="总结">总结</h1>
-<p><strong>哨兵模式</strong></p>
-<ul>
-<li>什么是哨兵 （监控整体工作过程）</li>
-<li>哨兵模式搭建</li>
-<li>哨兵工作原理
-<ul>
-<li>监控</li>
-<li>通知</li>
-<li>故障转移</li>
-</ul>
-</li>
-</ul>
 ]]></content>
     </entry>
 </feed>
