@@ -3,7 +3,7 @@
     <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>JVM 垃圾回收 | SSM</title>
-<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1587782513931">
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1587793728606">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
 <link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
 <link rel="alternate" type="application/atom+xml" title="JVM 垃圾回收 | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
@@ -26,7 +26,7 @@ A 对象引用 B 对象，B 对象的引用计数 = 1；B..." />
       <div class="main-content">
         <div class="site-header">
   <a href="https://epitomm.github.io">
-  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1587782513931" alt="">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1587793728606" alt="">
   </a>
   <h1 class="site-title">
     SSM
@@ -303,7 +303,7 @@ public class Demo2_5 {
 <h3 id="134-虚引用phantomreference">1.3.4. 虚引用（PhantomReference）</h3>
 <p>虚引用和终结器引用必须配合引用队列使用。<strong>当创建虚引用和终结器引用时，都会关联一个引用队列。</strong></p>
 <ul>
-<li>必须配合引用队列使用，主要配合 ByteBuffer 使用，被引用对象回收时，会将虚引用入队， 由 Reference Handler 线程调用虚引用相关方法**释放直接内存 **</li>
+<li>必须配合引用队列使用，主要配合 ByteBuffer 使用，被引用对象回收时，会将虚引用入队， 由 Reference Handler 线程调用虚引用相关方法<strong>释放直接内存</strong></li>
 </ul>
 <figure data-type="image" tabindex="9"><img src="https://epitomm.github.io/post-images/%E8%99%9A%E5%BC%95%E7%94%A8.png" alt="图片" loading="lazy"></figure>
 <p>创建 ByteBuffer 的实现对象时，会创建一个名为 Cleaner 的<strong>虚引用对象</strong>，ByteBuffer 会分配一块直接内存，并且会把直接内存的地址传递给虚引用对象。将来 ByteBuffer 没有被强引用引用时，ByteBuffer 就会被垃圾回收，但是给他分配的<strong>直接内存并不能被 Java 垃圾回收</strong>管理。</p>
@@ -354,14 +354,14 @@ public class Demo2_5 {
 </ul>
 <h3 id="复制流程">复制流程</h3>
 <figure data-type="image" tabindex="15"><img src="https://epitomm.github.io/post-images/%E5%A4%8D%E5%88%B61.png" alt="图片" loading="lazy"></figure>
-<p>标记垃圾对象</p>
+<p style = "text-align:center;font-family:楷体">标记垃圾对象</p>
 <figure data-type="image" tabindex="16"><img src="https://epitomm.github.io/post-images/%E5%A4%8D%E5%88%B62.png" alt="图片" loading="lazy"></figure>
-<p>复制 FROM 区域的非垃圾对象到 TO 区域</p>
+<p style = "text-align:center;font-family:楷体">复制 FROM 区域的非垃圾对象到 TO 区域</p>
 <figure data-type="image" tabindex="17"><img src="https://epitomm.github.io/post-images/%E5%A4%8D%E5%88%B63.png" alt="图片" loading="lazy"></figure>
-<p>清空 FROM 区域剩余的垃圾对象后交换 FROM 和 TO 区域</p>
+<p style = "text-align:center;font-family:楷体">清空 FROM 区域剩余的垃圾对象后交换 FROM 和 TO 区域</p>
 <p>将内存区域划分成两块大小相等的区域，FROM 和 TO（空闲）。</p>
 <p><strong>标记</strong>：找到那些不被引用的对象标记为垃圾对象。</p>
-<p><strong>复制</strong>：把** FROM 区域上的非垃圾对象复制到 TO 区域<strong>中，复制的过程中完成碎片整理。复制完成后，<strong>FROM 区域</strong>都是垃圾对象，<strong>全部清除</strong>，并且</strong>交换 FROM 和 TO 区域**。</p>
+<p><strong>复制</strong>：把 <strong>FROM 区域上的非垃圾对象复制到 TO 区域</strong>中，复制的过程中完成碎片整理。复制完成后，<strong>FROM 区域</strong>都是垃圾对象，<strong>全部清除</strong>，并且<strong>交换 FROM 和 TO 区域</strong>。</p>
 <h3 id="优点-3">优点</h3>
 <p><strong>不会产生碎片。</strong></p>
 <h3 id="缺点-3">缺点</h3>
@@ -395,19 +395,19 @@ public class Demo2_5 {
 </ul>
 <h2 id="31-分代垃圾回收机制原理">3.1 分代垃圾回收机制原理</h2>
 <figure data-type="image" tabindex="19"><img src="https://epitomm.github.io/post-images/%E5%88%86%E4%BB%A3%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6_1.png" alt="图片" loading="lazy"></figure>
-<p>当伊甸园被占满时要添加新对象，触发 minor gc</p>
+<p style = "text-align:center;font-family:楷体">当伊甸园被占满时要添加新对象，触发 minor gc</p>
 <figure data-type="image" tabindex="20"><img src="https://epitomm.github.io/post-images/%E5%88%86%E4%BB%A3%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6_2.png" alt="图片" loading="lazy"></figure>
-<p>将伊甸园区的对象进行标记后，非垃圾对象复制到幸存区 TO，并且将这些非垃圾对象的寿命 +1，清空伊甸园内剩余的垃圾对象</p>
+<p style = "text-align:center;font-family:楷体">将伊甸园区的对象进行标记后，非垃圾对象复制到幸存区 TO，并且将这些非垃圾对象的寿命 +1，清空伊甸园内剩余的垃圾对象</p>
 <figure data-type="image" tabindex="21"><img src="https://epitomm.github.io/post-images/%E5%88%86%E4%BB%A3%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6_3.png" alt="图片" loading="lazy"></figure>
-<p>交换 FROM 和 TO</p>
+<p style = "text-align:center;font-family:楷体">交换 FROM 和 TO</p>
 <p>创建一个新对象，存放到<strong>伊甸园</strong>，当伊甸园被占满时，触发 <strong>minor gc</strong>，先对伊甸园区域内的对象进行<strong>标记</strong>，标记结束后，采用<strong>复制算法</strong>，将非垃圾对象<strong>复制</strong>到幸存区 TO，并让这些对象的寿命+1，伊甸园剩余的垃圾对象回收掉，<strong>交换</strong> FROM 和 TO，第一次 minor gc 结束。</p>
 <figure data-type="image" tabindex="22"><img src="https://epitomm.github.io/post-images/%E5%88%86%E4%BB%A3%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6_4.png" alt="图片" loading="lazy"></figure>
-<p>将伊甸园和幸存区 FROM 中的非垃圾对象复制到幸存区 TO，并将这些对象的寿命 +1，清空伊甸园和幸存区 FROM 中的非垃圾对象，交换 FROM 和 TO。将新对象放入伊甸园。</p>
-<p>继续创建对象向伊甸园添加，伊甸园再次被填满，再次触发 minor gc，除了要将伊甸园中的非垃圾对象找到以外，还要把**幸存区 FROM ** 中的非垃圾对象找到，将非垃圾对象复制到幸存区 TO，并让这些对象的寿命 +1，伊甸园和幸存区 FROM 的垃圾对象清除，交换 FROM 和 TO，第二次 minor gc 结束。</p>
+<p style = "text-align:center;font-family:楷体">将伊甸园和幸存区 FROM 中的非垃圾对象复制到幸存区 TO，并将这些对象的寿命 +1，清空伊甸园和幸存区 FROM 中的非垃圾对象，交换 FROM 和 TO。将新对象放入伊甸园。</p>
+<p>继续创建对象向伊甸园添加，伊甸园再次被填满，再次触发 minor gc，除了要将伊甸园中的非垃圾对象找到以外，还要把<strong>幸存区 FROM</strong> 中的非垃圾对象找到，将非垃圾对象复制到幸存区 TO，并让这些对象的寿命 +1，伊甸园和幸存区 FROM 的垃圾对象清除，交换 FROM 和 TO，第二次 minor gc 结束。</p>
 <figure data-type="image" tabindex="23"><img src="https://epitomm.github.io/post-images/%E5%88%86%E4%BB%A3%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6_5.png" alt="图片" loading="lazy"></figure>
-<p>当幸存区对象的寿命 = 15时，将此对对象移动到老年代。</p>
+<p style = "text-align:center;font-family:楷体">当幸存区对象的寿命 = 15时，将此对对象移动到老年代。</p>
 <figure data-type="image" tabindex="24"><img src="https://epitomm.github.io/post-images/%E5%88%86%E4%BB%A3%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6_6.png" alt="图片" loading="lazy"></figure>
-<p>当老年代空间不足，触发 FULL GC，对整个堆进行清理。</p>
+<p style = "text-align:center;font-family:楷体">当老年代空间不足，触发 FULL GC，对整个堆进行清理。</p>
 <h2 id="32-相关-vm-参数">3.2 相关 VM 参数</h2>
 <table>
 <thead>
@@ -456,7 +456,7 @@ public class Demo2_5 {
 </tbody>
 </table>
 <ol>
-<li>没有运行任何代码时，虚拟机参数 -Xms20M -Xmx20M -Xmn10M -XX:+UseSerialGC -XX:+PrintGCDetails -verbose:gc 的堆内存占用情况</li>
+<li>没有运行任何代码时，虚拟机参数 <code>-Xms20M -Xmx20M -Xmn10M -XX:+UseSerialGC -XX:+PrintGCDetails -verbose:gc</code> 的堆内存占用情况</li>
 </ol>
 <pre><code>public class Demo2_1 {
     // -Xms20M -Xmx20M -Xmn10M -XX:+UseSerialGC -XX:+PrintGCDetails -verbose:gc
@@ -506,8 +506,8 @@ public class Demo2_1 {
         list.add(new byte[_7MB]);
         list.add(new byte[_512KB]);
     }
+}
 </code></pre>
-<p>}</p>
 <figure data-type="image" tabindex="26"><img src="https://epitomm.github.io/post-images/VM%E5%8F%82%E6%95%B03.png" alt="图片" loading="lazy"></figure>
 <ol start="3">
 <li>新生代区域内存不足创建对象，放入老年代</li>
@@ -634,25 +634,27 @@ public class Demo2_1 {
 <li>尽可能让<strong>单次 STW 的时间最短</strong>。五次垃圾回收：0.1+0.1+0.1+0.1+0.1 = 0.5</li>
 </ul>
 <h2 id="41-串行">4.1 串行</h2>
-<pre><code>-XX:+UseSerialGC = Serial + SerialOld 
+<pre><code>-XX:+UseSerialGC = Serial + SerialOld
 </code></pre>
 <p>Serial：工作在<strong>新生代</strong>。<strong>复制</strong>算法<br>
 SerialOld：工作在<strong>老年代</strong>。<strong>标记整理</strong>算法</p>
 <figure data-type="image" tabindex="31"><img src="https://epitomm.github.io/post-images/%E4%B8%B2%E8%A1%8C%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E5%99%A8.png" alt="图片" loading="lazy"></figure>
 <p>四个 CPU 在运行，某时刻堆内存不足，触发垃圾回收。触发垃圾回收时，需要让这些线程到达一个<strong>安全点</strong>再停下，因为在垃圾回收的过程中，可能对象的地址发生改变，为了保证安全地使用这些对象地址，需要所有正在工作的用户线程到达这个安全点在停下。因为 Serial、SerialOld 都是<strong>单线程</strong>的垃圾回收器，因此在一个垃圾回收线程运行时，其他的用户线程都要<strong>阻塞</strong>，等到垃圾回收线程结束后，其他的用户线程再恢复运行。</p>
 <h2 id="42-吞吐量优先">4.2 吞吐量优先</h2>
+<p><strong>吞吐量</strong>：CPU 用于运行用户程序的时间与总时间的比值。</p>
 <pre><code>-XX:+UseParallelGC ~ -XX:+UseParallelOldGC
 -XX:+UseAdaptiveSizePolicy
 -XX:GCTimeRatio=ratio 
 -XX:MaxGCPauseMillis=ms 
 -XX:ParallelGCThreads=n 
 </code></pre>
-<p><strong>-XX:+UseParallelGC ~ -XX:+UseParallelOldGC</strong>：JDK 1.8 默认使用 ParallelGC <strong>并行</strong>的垃圾回收器。UseParallelGC 并行的新生代垃圾回收器，采用<strong>复制</strong>算法；UseParallelOldGC 并行的老年代垃圾回收器，采用<strong>标记整理</strong>算法。吞吐量：CPU 用于运行用户程序的时间与总时间的比值。<br>
-<strong>-XX:+UseAdaptiveSizePolicy</strong>：自适应大小调整（新生代：Eden 和 Survival）策略</p>
-<p><strong>-XX:GCTimeRatio=ratio</strong>：根据设置目标调整堆的大小以达到期望的目标。吞吐量：垃圾回收时间和总时间占比。1/(1+ratio)。一般堆调大，减少垃圾回收次数。</p>
-<p><strong>-XX:MaxGCPauseMillis=ms</strong> ：最大暂停毫秒数（每一次垃圾回收耗时）</p>
-<p><strong>-XX:ParallelGCThreads=n <strong>：控制 ParallelGC 运行时的</strong>线程数</strong>。<br>
-<img src="https://epitomm.github.io/post-images/%E5%90%9E%E5%90%90%E9%87%8F%E4%BC%98%E5%85%88%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E5%99%A8.png" alt="图片" loading="lazy"></p>
+<p><code>-XX:+UseParallelGC ~ -XX:+UseParallelOldGC</code>：JDK 1.8 默认使用 ParallelGC <strong>并行</strong>的垃圾回收器。<br>
+UseParallelGC 并行的新生代垃圾回收器，采用<strong>复制</strong>算法；UseParallelOldGC 并行的老年代垃圾回收器，采用<strong>标记整理</strong>算法。</p>
+<p><code>-XX:+UseAdaptiveSizePolicy</code>：自适应大小调整（新生代：Eden 和 Survival）策略</p>
+<p><code>-XX:GCTimeRatio=ratio</code>：根据设置目标调整堆的大小以达到期望的目标。吞吐量：垃圾回收时间和总时间占比。1/(1+ratio)。一般堆调大，减少垃圾回收次数。</p>
+<p><code>-XX:MaxGCPauseMillis=ms</code>：最大暂停毫秒数（每一次垃圾回收耗时）</p>
+<p><code>-XX:ParallelGCThreads=n</code> ：控制 ParallelGC 运行时的<strong>线程数</strong>。</p>
+<figure data-type="image" tabindex="32"><img src="https://epitomm.github.io/post-images/%E5%90%9E%E5%90%90%E9%87%8F%E4%BC%98%E5%85%88%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E5%99%A8.png" alt="图片" loading="lazy"></figure>
 <p>四个 CPU 在运行，某一时刻内存不足触发垃圾回收，用户线程就会到达安全点然后停下来，垃圾回收器<strong>开启多个线程进行垃圾回收</strong>。垃圾回收线程个数默认和 CPU 核数相关。回收结束后再恢复其他的线程运行。在垃圾回收时，四核 CPU 都去进行垃圾回收了，<strong>CPU 占用率</strong>会一下达到 100%。</p>
 <h2 id="43-响应时间优先">4.3 响应时间优先</h2>
 <pre><code>-XX:+UseConcMarkSweepGC ~ -XX:+UseParNewGC ~ SerialOld 
@@ -660,9 +662,10 @@ SerialOld：工作在<strong>老年代</strong>。<strong>标记整理</strong>�
 -XX:CMSInitiatingOccupancyFraction=percent 
 -XX:+CMSScavengeBeforeRemark
 </code></pre>
-<p><strong>-XX:+UseConcMarkSweepGC</strong> ：<strong>并发标记清除</strong>。垃圾回收器工作的同时，其他用户线程也能同时进行。垃圾回收线程和用户线程并发执行，都要去抢占 CPU。<strong>-XX:+UseParNewGC</strong>：工作在新生代，复制算法。 **SerialOld **：老年代垃圾回收器由并发退化为单线程 （基于标记整理的老年垃圾回收器）。<br>
+<p><code>-XX:+UseConcMarkSweepGC</code> ：<strong>并发标记清除</strong>。垃圾回收器工作的同时，其他用户线程也能同时进行。垃圾回收线程和用户线程并发执行，都要去抢占 CPU。<br>
+<code>-XX:+UseParNewGC</code>：工作在新生代，复制算法。 <strong>SerialOld</strong>：老年代垃圾回收器由并发退化为单线程 （基于标记整理的老年垃圾回收器）。<br>
 <img src="https://epitomm.github.io/post-images/%E5%93%8D%E5%BA%94%E6%97%B6%E9%97%B4%E4%BC%98%E5%85%88%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E5%99%A8.png" alt="图片" loading="lazy"></p>
-<p>多个 CPU 并行执行，老年代内存不足，所有进程到达安全点，执行初始标记，用户线程阻塞，STW；初始标记结束后，用户线程开始运行，停止 STW，与此同时垃圾回收线程并发标记，把剩余的垃圾找出来；并发标记结束后，进行重新标记，这个过程 STW，因为并发标记的过程用户线程可能对垃圾回收做了干扰，所以并发标记结束后还要再做一次重新标记；重新标记结束后，用户线程继续运行，垃圾回收线程并发清理。</p>
+<p>多个 CPU 并行执行，老年代内存不足，所有进程到达安全点，执行<strong>初始标记</strong>，用户线程阻塞，STW；初始标记结束后，用户线程开始运行，停止 STW，与此同时垃圾回收线程<strong>并发标记</strong>，把剩余的垃圾找出来；并发标记结束后，进行<strong>重新标记</strong>，这个过程 STW，因为并发标记的过程用户线程可能对垃圾回收做了干扰，所以并发标记结束后还要再做一次重新标记；重新标记结束后，用户线程继续运行，垃圾回收线程<strong>并发清理</strong>。</p>
 <h2 id="44-g1">4.4 G1</h2>
 <p>定义：Garbage First</p>
 <ul>
@@ -674,12 +677,12 @@ SerialOld：工作在<strong>老年代</strong>。<strong>标记整理</strong>�
 <p>适用场景</p>
 <ul>
 <li>同时注重<strong>吞吐量</strong>（Throughput）和<strong>低延迟</strong>（Low latency），默认的暂停目标是 200 ms</li>
-<li>并发的垃圾回收器，和 CMS 一样追求低延迟，可以在用户线程工作的同时垃圾回收线程也并发执行。另外还借鉴了 Paralle：注重吞吐量垃圾回收器的思想，可以进行调整，设置默认暂停目标（-XX:MaxGCPauseMillis）。</li>
+<li>并发的垃圾回收器，和 CMS 一样追求低延迟，可以在用户线程工作的同时垃圾回收线程也并发执行。另外还借鉴了 Parallel：注重吞吐量垃圾回收器的思想，可以进行调整，设置默认暂停目标（<code>-XX:MaxGCPauseMillis</code>）。</li>
 <li><strong>超大堆内存</strong>，会<strong>将堆划分为多个大小相等的 Region</strong></li>
 </ul>
 <p>随着堆内存容量的增大，G1 与 CMS 相比优势更加明显。</p>
 <p>将堆划分为多个大小相等的 Region：每个区域都可以独立地作为 Eden、survive、老年代。</p>
-<p>-XX:G1HeapRegionSize：设置区域的大小，必须是2的幂。如果堆内存过大，回收速度会变慢，因为会涉及对象的复制标记，而分成小的区域进行管理，可以化整为零，进行一些优化加快标记拷贝的速度。</p>
+<p><code>-XX:G1HeapRegionSize</code>：设置区域的大小，必须是2的幂。如果堆内存过大，回收速度会变慢，因为会涉及对象的复制标记，而分成小的区域进行管理，可以化整为零，进行一些优化加快标记拷贝的速度。</p>
 <ul>
 <li>整体上是 <strong>标记+整理</strong> 算法（避免标记清除算法产生的内碎片），两个区域之间是复制算法</li>
 </ul>
@@ -688,19 +691,19 @@ SerialOld：工作在<strong>老年代</strong>。<strong>标记整理</strong>�
 -XX:G1HeapRegionSize=size 
 -XX:MaxGCPauseMillis=time
 </code></pre>
-<figure data-type="image" tabindex="32"><img src="https://epitomm.github.io/post-images/G1_2.png" alt="图片" loading="lazy"></figure>
+<figure data-type="image" tabindex="33"><img src="https://epitomm.github.io/post-images/G1_2.png" alt="图片" loading="lazy"></figure>
 <h3 id="1-g1-垃圾回收阶段">1) G1 垃圾回收阶段</h3>
-<figure data-type="image" tabindex="33"><img src="https://epitomm.github.io/post-images/G1%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E9%98%B6%E6%AE%B5.png" alt="图片" loading="lazy"></figure>
+<figure data-type="image" tabindex="34"><img src="https://epitomm.github.io/post-images/G1%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E9%98%B6%E6%AE%B5.png" alt="图片" loading="lazy"></figure>
 <p>刚开始新生代垃圾收集，如果某时刻老年代内存超过阈值了，在新生代垃圾收集的同时进行并发标记，这个阶段结束后会进行混合收集：会对新生代、幸存区、老年代都进行收集。混合收集结束，Eden 内存释放掉，会再进入新生代垃圾收集。</p>
 <h3 id="2-young-collection">2) Young Collection</h3>
 <ul>
 <li>会 STW</li>
 </ul>
-<figure data-type="image" tabindex="34"><img src="https://epitomm.github.io/post-images/G1%E5%88%86%E5%8C%BA.png" alt="图片" loading="lazy"></figure>
+<figure data-type="image" tabindex="35"><img src="https://epitomm.github.io/post-images/G1%E5%88%86%E5%8C%BA.png" alt="图片" loading="lazy"></figure>
 <p>G1 垃圾回收器把<strong>堆内存划分成大小相等的一个个区域</strong>，每个区域都可独立作为伊甸园、幸存区、老年代。刚开始白色的区域表示是空闲的区域，类加载时新创建的对象刚开始会分配到伊甸园区，绿色的 E 就代表 Eden 区，当 Eden 区域逐渐被占满，就会触发新生代的垃圾回收。</p>
-<figure data-type="image" tabindex="35"><img src="https://epitomm.github.io/post-images/G1%E6%96%B0%E7%94%9F%E4%BB%A3%E5%A4%8D%E5%88%B6%E7%AE%97%E6%B3%95.png" alt="图片" loading="lazy"></figure>
+<figure data-type="image" tabindex="36"><img src="https://epitomm.github.io/post-images/G1%E6%96%B0%E7%94%9F%E4%BB%A3%E5%A4%8D%E5%88%B6%E7%AE%97%E6%B3%95.png" alt="图片" loading="lazy"></figure>
 <p>新生代垃圾回收会把非垃圾对象以复制算法放入幸存区。</p>
-<figure data-type="image" tabindex="36"><img src="https://epitomm.github.io/post-images/G1%E8%80%81%E5%B9%B4%E4%BB%A3.png" alt="图片" loading="lazy"></figure>
+<figure data-type="image" tabindex="37"><img src="https://epitomm.github.io/post-images/G1%E8%80%81%E5%B9%B4%E4%BB%A3.png" alt="图片" loading="lazy"></figure>
 <p>当幸存区对象放不下，或幸存区对象寿命达到一定值，会触发垃圾回收，幸存区一部分对象会晋升到老年代，而寿命未达到阈值的会拷贝到另一个幸存区，新生代的非垃圾对象也会复制到这个幸存区。</p>
 <h3 id="3-young-collection-cm">3) Young Collection + CM</h3>
 <p>CM：Concurrent mark：并发标记</p>
@@ -724,8 +727,8 @@ SerialOld：工作在<strong>老年代</strong>。<strong>标记整理</strong>�
 <li>拷贝存活（Evacuation）会 STW</li>
 </ul>
 <p>-XX:MaxGCPauseMillis=ms</p>
-<figure data-type="image" tabindex="37"><img src="https://epitomm.github.io/post-images/G1%E5%85%A8%E9%9D%A2%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6.png" alt="图片" loading="lazy"></figure>
-<p>Eden 区域的非垃圾对象被复制到 Survive 区域，Survive 区域寿命未达到阈值的非垃圾对象被复制到另一个 Survive 区域，寿命达到阈值的晋升到老年代区域。一部分老年代区域的幸存对象通过复制算法复制到新的的老年代区域，为什么没有把所有老年代都通过箭头指向新的老年代呢？因为 G1 会根据最大暂停时间有选择地进行回收，有时候堆内存空间太大了，老年代的垃圾回收可能时间比较长（复制算法大量对象的复制），就达不到<strong>最大暂停时间</strong>的目标了，为了达到这个目标，G1 会从老年代中挑<strong>出回收价值最高</strong>的区域（垃圾回收后能释放空间多的区域），只从老年代中挑选一部分区域复制，复制的区域少了，就可以达到暂停时间的目标了。如果老年代没有那么多，可以达到最大暂停时间的话， 就会把所有区域都进行复制。</p>
+<figure data-type="image" tabindex="38"><img src="https://epitomm.github.io/post-images/G1%E5%85%A8%E9%9D%A2%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6.png" alt="图片" loading="lazy"></figure>
+<p>Eden 区域的非垃圾对象被复制到 Survive 区域，Survive 区域寿命未达到阈值的非垃圾对象被复制到另一个 Survive 区域，寿命达到阈值的晋升到老年代区域。一部分老年代区域的幸存对象通过复制算法复制到新的的老年代区域，为什么没有把所有老年代都通过箭头指向新的老年代呢？因为 G1 会根据最大暂停时间有选择地进行回收，有时候堆内存空间太大了，老年代的垃圾回收可能时间比较长（复制算法大量对象的复制），就达不到<strong>最大暂停时间</strong>的目标了，为了达到这个目标，G1 会从老年代中挑出<strong>回收价值最高</strong>的区域（垃圾回收后能释放空间多的区域），只从老年代中挑选一部分区域复制，复制的区域少了，就可以达到暂停时间的目标了。如果老年代没有那么多，可以达到最大暂停时间的话， 就会把所有区域都进行复制。</p>
 <h3 id="5-full-gc">5) Full GC</h3>
 <ul>
 <li>SerialGC：串行
@@ -764,22 +767,21 @@ SerialOld：工作在<strong>老年代</strong>。<strong>标记整理</strong>�
 </ul>
 <h3 id="6-young-collection-跨代引用">6) Young Collection 跨代引用</h3>
 <p>新生代回收的跨代引用（老年代引用新生代）问题</p>
-<figure data-type="image" tabindex="38"><img src="https://epitomm.github.io/post-images/Card.png" alt="图片" loading="lazy"></figure>
-<p>新生代垃圾回收：找到根对象，沿着引用链找到存活对象，存活对象进行复制到幸存区。要找新生代对象的根对象，<strong>根对象有一部分来自于老年代</strong>，老年代的存活对象非常多，如果遍历老年代找根对象效率低，因此把<strong>老年代区域再进行细分</strong>，分成一个个 Card，每个 Card 是512KB，如果老年代其中有一个** Card 中的对象引用了新生代的某一个对象**，就把这个** Card 标记为脏**，这样以后，做 GC Root 遍历的时候就不用去找整个老年代了，只需要关注那些脏 Card 即可，减少搜索范围，<strong>提高扫描根对象的效率</strong>。</p>
+<figure data-type="image" tabindex="39"><img src="https://epitomm.github.io/post-images/Card.png" alt="图片" loading="lazy"></figure>
+<p>新生代垃圾回收：找到根对象，沿着引用链找到存活对象，存活对象进行复制到幸存区。要找新生代对象的根对象，<strong>根对象有一部分来自于老年代</strong>，老年代的存活对象非常多，如果遍历老年代找根对象效率低，因此把<strong>老年代区域再进行细分</strong>，分成一个个 Card，每个 Card 是512KB，如果老年代其中有一个 <strong>Card 中的对象引用了新生代的某一个对象</strong>，就把这个 <strong>Card 标记为脏</strong>，这样以后，做 GC Root 遍历的时候就不用去找整个老年代了，只需要关注那些脏 Card 即可，减少搜索范围，<strong>提高扫描根对象的效率</strong>。</p>
 <ul>
 <li>卡表与 Remembered Set</li>
 <li>在引用变更时通过 post-write barrier + dirty card queue</li>
 <li>concurrent refinement threads 更新 Remembered Set</li>
 </ul>
-<figure data-type="image" tabindex="39"><img src="https://epitomm.github.io/post-images/Card2.png" alt="图片" loading="lazy"></figure>
+<figure data-type="image" tabindex="40"><img src="https://epitomm.github.io/post-images/Card2.png" alt="图片" loading="lazy"></figure>
 <p>粉色的 Card 都是<strong>脏卡区</strong>，Card 内有对象指向新生代区域的对象，新生代会记录 <strong>Remembered Set：从外部对我的引用</strong>，将来对新生代 Eden 进行垃圾回收时，就可以先通过 Remembered Set 知道它对应的哪些脏 Card，然后在到这些脏卡区遍历对象找到 GC Root。通过 <strong>post-write barrier</strong>：写屏障在每次<strong>对象的引用发生变更时，去更新脏 Card</strong>，这个过程是<strong>异步</strong>操作，不会立刻完成脏卡的更新，会把更新指令放在 <strong>dirty card queue 脏卡队列</strong>中，将来由一个线程完成脏卡更新的操作。</p>
 <h3 id="7-remark-重标记阶段">7) Remark 重标记阶段</h3>
 <ul>
 <li>pre-write barrier + satb_mark_queue</li>
 </ul>
-<p>pre-write barrier：写屏障：在对象引用改变前，将对象加入到 satb_mark_queue</p>
-<p>队列，将来 remark 从队列中取出对象进一步判断。</p>
-<figure data-type="image" tabindex="40"><img src="https://epitomm.github.io/post-images/%E9%87%8D%E6%A0%87%E8%AE%B0_1.png" alt="图片" loading="lazy"></figure>
+<p><code>pre-write barrier</code>：写屏障：在对象引用改变前，将对象加入到 <code>satb_mark_queue</code> 队列，将来 remark 从队列中取出对象进一步判断。</p>
+<figure data-type="image" tabindex="41"><img src="https://epitomm.github.io/post-images/%E9%87%8D%E6%A0%87%E8%AE%B0_1.png" alt="图片" loading="lazy"></figure>
 <p>并发标记阶段对象的 true 和 false，其中图中<strong>黑色</strong>表示已经处理完成，并且有引用在引用它们，在垃圾回收后会被<strong>保留</strong>下来。<strong>灰色</strong>的是正在<strong>触发中</strong>，灰色的因为有强引用黑色的在指向它，所以最终会变成黑色，<strong>白色</strong>的是<strong>尚未处理</strong>，如果有强引用指向它最后会变成黑色，如果没有引用指向它最终还是白色，会被当成垃圾回收。垃圾回收结束后，会根据对象的黑白状态区分它到底应该存活还是被回收。</p>
 <p><img src="https://epitomm.github.io/post-images/%E9%87%8D%E6%A0%87%E8%AE%B0_2.png" alt="图片" loading="lazy"><br>
 <img src="https://epitomm.github.io/post-images/%E9%87%8D%E6%A0%87%E8%AE%B0_3.png" alt="图片" loading="lazy"></p>
@@ -790,7 +792,7 @@ SerialOld：工作在<strong>老年代</strong>。<strong>标记整理</strong>�
 <li>优点：节省大量内存</li>
 <li>缺点：略微多占用了 cpu 时间，新生代回收时间略微增加</li>
 </ul>
-<p>-XX:+UseStringDeduplication</p>
+<p><code>-XX:+UseStringDeduplication</code></p>
 <pre><code>String s1 = new String(&quot;hello&quot;); // char[]{'h','e','l','l','o'} 
 String s2 = new String(&quot;hello&quot;); // char[]{'h','e','l','l','o'}
 </code></pre>
@@ -801,16 +803,16 @@ String s2 = new String(&quot;hello&quot;); // char[]{'h','e','l','l','o'}
 <li>注意，与 String.intern() 不一样
 <ul>
 <li>String.intern() 关注的是<strong>字符串对象</strong></li>
-<li>而字符串去重关注的是** char[]**</li>
+<li>而字符串去重关注的是 <strong>char[]</strong></li>
 <li>在 JVM 内部，使用了不同的字符串表</li>
 </ul>
 </li>
 </ul>
 <h3 id="9-jdk-8u40-并发标记类卸载">9) JDK 8u40 并发标记类卸载</h3>
 <p>所有对象都经过并发标记后，就能知道<strong>哪些类不再被使用</strong>，当一个类加载器的所有类都不再使用，则<strong>卸载它所加载的所有类</strong></p>
-<p>-XX:+ClassUnloadingWithConcurrentMark 默认启用</p>
+<p><code>-XX:+ClassUnloadingWithConcurrentMark</code> 默认启用</p>
 <h3 id="10-jdk-8u60-回收巨型对象">10) JDK 8u60 回收巨型对象</h3>
-<figure data-type="image" tabindex="41"><img src="https://epitomm.github.io/post-images/%E5%9B%9E%E6%94%B6%E5%B7%A8%E5%9E%8B%E5%AF%B9%E8%B1%A1.png" alt="图片" loading="lazy"></figure>
+<figure data-type="image" tabindex="42"><img src="https://epitomm.github.io/post-images/%E5%9B%9E%E6%94%B6%E5%B7%A8%E5%9E%8B%E5%AF%B9%E8%B1%A1.png" alt="图片" loading="lazy"></figure>
 <p>Region 区域内粉色的 H 就是巨型对象。</p>
 <ul>
 <li>一个对象<strong>大于 region 的一半</strong>时，称之为巨型对象</li>
@@ -818,15 +820,15 @@ String s2 = new String(&quot;hello&quot;); // char[]{'h','e','l','l','o'}
 <li><strong>回收时被优先考虑</strong></li>
 <li>G1 会跟踪老年代所有 incoming 引用，这样老年代 incoming 引用为0 的巨型对象就可以在新生代垃圾回收时处理掉</li>
 </ul>
-<figure data-type="image" tabindex="42"><img src="https://epitomm.github.io/post-images/%E5%9B%9E%E6%94%B6%E5%B7%A8%E5%9E%8B%E5%AF%B9%E8%B1%A1_2.png" alt="图片" loading="lazy"></figure>
+<figure data-type="image" tabindex="43"><img src="https://epitomm.github.io/post-images/%E5%9B%9E%E6%94%B6%E5%B7%A8%E5%9E%8B%E5%AF%B9%E8%B1%A1_2.png" alt="图片" loading="lazy"></figure>
 <h3 id="11-jdk-9-并发标记起始时间的调整">11) JDK 9 并发标记起始时间的调整</h3>
 <p>如果垃圾回收的速度跟不上垃圾产生的速度，最终会退化为 Full GC。G1 的 Full GC 是多线程的，Full GC 的 STW 过程很长，因此要尽可能避免 Full GC 的发生。如何减少 Full GC 呢？提前让垃圾回收开始，并发标记、混合收集提前开始，就能减少 Full GC 发生的几率。</p>
 <ul>
 <li>并发标记必须在堆空间占满前完成，否则退化为 FullGC</li>
-<li>JDK 9 之前需要使用 -XX:InitiatingHeapOccupancyPercent：老年代在堆内存的占比，当超过设置的这个阈值时，就会触发并发垃圾回收。</li>
+<li>JDK 9 之前需要使用 <code>-XX:InitiatingHeapOccupancyPercent</code>：老年代在堆内存的占比，当超过设置的这个阈值时，就会触发并发垃圾回收。</li>
 <li>JDK 9 可以动态调整
 <ul>
-<li>-XX:InitiatingHeapOccupancyPercent 用来设置<strong>初始值</strong></li>
+<li><code>-XX:InitiatingHeapOccupancyPercent</code> 用来设置<strong>初始值</strong></li>
 <li>进行<strong>数据采样</strong>并<strong>动态调整</strong></li>
 <li>总会添加一个安全的空档空间</li>
 </ul>
@@ -846,7 +848,7 @@ String s2 = new String(&quot;hello&quot;); // char[]{'h','e','l','l','o'}
 <p>查看虚拟机运行参数：</p>
 <pre><code>&quot;C:\Program Files\Java\jdk1.8.0_172\bin\java&quot; -XX:+PrintFlagsFinal -version | findstr &quot;GC&quot;
 </code></pre>
-<figure data-type="image" tabindex="43"><img src="https://epitomm.github.io/post-images/%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E8%B0%83%E4%BC%98.png" alt="图片" loading="lazy"></figure>
+<figure data-type="image" tabindex="44"><img src="https://epitomm.github.io/post-images/%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E8%B0%83%E4%BC%98.png" alt="图片" loading="lazy"></figure>
 <h2 id="51-调优领域">5.1 调优领域</h2>
 <ul>
 <li>内存</li>
@@ -916,11 +918,11 @@ GC is performed in this region more often than in other regions. If the size for
 generation is too small, then a lot of minor garbage collections are performed. If the size is too  large, then only full garbage collections are performed, which can take a long time to complete.<br>
 Oracle recommends that you keep the size for the young generation greater than 25% and less than 50% of the overall heap size.</p>
 </blockquote>
-<p>-Xmn：设置堆中新生代的初始和最大值。<strong>新生代设置小</strong>了，<strong>可用空间少</strong>，创建对象时一旦发现新生代的空间不足就会触发新生代的** minor gc**。如果新<strong>生代内存太大</strong>了，<strong>老年代的可用空间相对少了</strong>，老年代的空间少了，将来新生代觉得我空闲空间很多，新创建的对象都还不会触发垃圾回收，但是老年代的空间紧张，再触发垃圾回收，就是 full gc，<strong>full gc 的暂停时间比 minor gc 时间更长</strong>。<strong>新生代大于堆内存的 1/4 ,小于 1/2 即可</strong>。</p>
-<figure data-type="image" tabindex="44"><img src="https://epitomm.github.io/post-images/%E6%96%B0%E7%94%9F%E4%BB%A3-%E5%90%9E%E5%90%90%E9%87%8F.png" alt="图片" loading="lazy"></figure>
+<p>-Xmn：设置堆中新生代的初始和最大值。<strong>新生代设置小</strong>了，<strong>可用空间少</strong>，创建对象时一旦发现新生代的空间不足就会触发新生代的 <strong>minor gc</strong>。如果新<strong>生代内存太大</strong>了，<strong>老年代的可用空间相对少了</strong>，老年代的空间少了，将来新生代觉得我空闲空间很多，新创建的对象都还不会触发垃圾回收，但是老年代的空间紧张，再触发垃圾回收，就是 full gc，<strong>full gc 的暂停时间比 minor gc 时间更长</strong>。<strong>新生代大于堆内存的 1/4 ,小于 1/2 即可</strong>。</p>
+<figure data-type="image" tabindex="45"><img src="https://epitomm.github.io/post-images/%E6%96%B0%E7%94%9F%E4%BB%A3-%E5%90%9E%E5%90%90%E9%87%8F.png" alt="图片" loading="lazy"></figure>
 <p><strong>吞吐量</strong>：单位时间能响应的请求数量。</p>
 <p>随着新生代空间越来越大，吞吐量越来越高，垃圾回收占用整个 CPU 计算的时间比例少了，CPU时间更多用来处理请求了，吞吐量就变高了，但是到了一定的大小后，会有一个下降：<strong>新生代空间大了，意味着回收的时间较长</strong>。</p>
-<p><strong>新生代调整尽可能大</strong>，新生代的垃圾回收都是复制算法，复制算法分成：标记、复制两个阶段，复制阶段花费的时间更多，而新<strong>生代的对象，绝大部分都是朝生夕死的，最终只有少量的对象会存活下来，复制所占用的时间也是相对较短的</strong>，而标记时间相对于复制时间来讲，就显得不是很重要了，所以<strong>新生代调大的情况下，主要时间还是耗费在复制上，即使增得很大，效率也不会有很明显的下降</strong>。</p>
+<p><strong>新生代调整尽可能大</strong>，新生代的垃圾回收都是复制算法，复制算法分成：标记、复制两个阶段，复制阶段花费的时间更多，而<strong>新生代的对象，绝大部分都是朝生夕死的，最终只有少量的对象会存活下来，复制所占用的时间也是相对较短的</strong>，而标记时间相对于复制时间来讲，就显得不是很重要了，所以<strong>新生代调大的情况下，主要时间还是耗费在复制上，即使增得很大，效率也不会有很明显的下降</strong>。</p>
 <h3 id="新生代的大小设置">新生代的大小设置</h3>
 <ul>
 <li><strong>新生代能容纳并发量 *  (一次请求-响应过程产生的对象)的数据</strong>
@@ -967,8 +969,7 @@ Oracle recommends that you keep the size for the young generation greater than 2
 </ul>
 <pre><code>-XX:CMSInitiatingOccupancyFraction=percent
 </code></pre>
-<p>老年代的空间占用达到老年代的 percent% 时，触发垃圾回收<br>
-percent 越小，老年代垃圾回收触发时间越早。</p>
+<p>老年代的空间占用达到老年代的 percent% 时，触发垃圾回收 percent 越小，老年代垃圾回收触发时间越早。</p>
 <h2 id="56-案例">5.6 案例</h2>
 <h3 id="案例1-full-gc-和-minor-gc频繁空间紧张">案例1 Full GC 和 Minor GC频繁：空间紧张</h3>
 <ul>
@@ -984,12 +985,12 @@ percent 越小，老年代垃圾回收触发时间越早。</p>
 <li>问题分析：</li>
 </ul>
 <p>查看日志，看 CMS 哪个阶段耗费时间长</p>
-<figure data-type="image" tabindex="45"><img src="https://epitomm.github.io/post-images/%E5%90%9E%E5%90%90%E9%87%8F%E4%BC%98%E5%85%88%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8.png" alt="图片" loading="lazy"></figure>
+<figure data-type="image" tabindex="46"><img src="https://epitomm.github.io/post-images/%E5%90%9E%E5%90%90%E9%87%8F%E4%BC%98%E5%85%88%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E5%99%A8.png" alt="图片" loading="lazy"></figure>
 <p>初始标记和并发标记都是比较快的，<strong>重新标记比较慢</strong>， 查看 GC 日志会把每一阶段耗费的时间显示。</p>
 <ul>
 <li>问题解决：</li>
 </ul>
-<p>重新标记会扫描整个内存，不光是要扫描老年代对象，也要同时扫描新生代对象，如果是业务高峰期，新生代对象比较多，扫描标记时间就会很长，因为要根据对象找它的引用，能不能<strong>在重新标记前把新生代的对象做一次垃圾回收</strong>，减少新生代对象的数量，减少重新标记阶段耗费的时间。通过设置：-XX:+CMSScavengeBeforeRemark：在重新标记发生之前，先对新生代进行一次垃圾清理。</p>
+<p>重新标记会扫描整个内存，不光是要扫描老年代对象，也要同时扫描新生代对象，如果是业务高峰期，新生代对象比较多，扫描标记时间就会很长，因为要根据对象找它的引用，能不能<strong>在重新标记前把新生代的对象做一次垃圾回收</strong>，减少新生代对象的数量，减少重新标记阶段耗费的时间。通过设置：<code>-XX:+CMSScavengeBeforeRemark</code>：在重新标记发生之前，先对新生代进行一次垃圾清理。</p>
 <h3 id="案例3-老年代充裕情况下发生-full-gc-cms-jdk17">案例3 老年代充裕情况下，发生 Full GC （CMS jdk1.7）</h3>
 <ul>
 <li>问题分析：</li>

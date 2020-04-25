@@ -3,7 +3,7 @@
     <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>面试题系列 —— JVM | SSM</title>
-<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1587782513931">
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1587793728606">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
 <link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
 <link rel="alternate" type="application/atom+xml" title="面试题系列 —— JVM | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
@@ -26,7 +26,7 @@ JDK：JVM + 基础类库..." />
       <div class="main-content">
         <div class="site-header">
   <a href="https://epitomm.github.io">
-  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1587782513931" alt="">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1587793728606" alt="">
   </a>
   <h1 class="site-title">
     SSM
@@ -339,10 +339,10 @@ obj = null;
 <p>JDK 1.8 默认使用 Parallel Scavenge + Parallel Old 垃圾回收器。</p>
 <ul>
 <li><strong>多线程</strong>垃圾收集器</li>
-<li><strong>吞吐量优先</strong>。吞吐量：CPU 用于运行用户程序的时间与总时间的比值。<br>
-<img src="https://epitomm.github.io/post-images/%E5%90%9E%E5%90%90%E9%87%8F%E4%BC%98%E5%85%88%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E5%99%A8.png" alt="图片" loading="lazy"><br>
-停顿时间越短就越适合需要与用户交互的程序，良好的响应速度能提升用户体验。而高吞吐量则可以高效率地利用 CPU 时间，尽快完成程序的运算任务，适合在后台运算而不需要太多交互的任务。</li>
+<li><strong>吞吐量优先</strong>。吞吐量：CPU 用于运行用户程序的时间与总时间的比值。</li>
 </ul>
+<figure data-type="image" tabindex="11"><img src="https://epitomm.github.io/post-images/%E5%90%9E%E5%90%90%E9%87%8F%E4%BC%98%E5%85%88%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E5%99%A8.png" alt="图片" loading="lazy"></figure>
+<p>停顿时间越短就越适合需要与用户交互的程序，良好的响应速度能提升用户体验。而高吞吐量则可以高效率地利用 CPU 时间，尽快完成程序的运算任务，适合在后台运算而不需要太多交互的任务。</p>
 <p><strong>缩短停顿时间是以牺牲吞吐量和新生代空间来换取的</strong>：新生代空间变小，垃圾回收变得频繁，导致吞吐量下降。</p>
 <p>可以通过一个开关参数打开 GC 自适应的调节策略（GC Ergonomics），就不需要手工指定新生代的大小（-Xmn）、Eden 和 Survivor 区的比例、晋升老年代对象年龄等细节参数了。虚拟机会根据当前系统的运行情况收集性能监控信息，动态调整这些参数以提供最合适的停顿时间或者最大的吞吐量。</p>
 <h2 id="serial-old串行单线程老年代-收集器">Serial Old（串行单线程老年代） 收集器</h2>
@@ -374,12 +374,12 @@ obj = null;
 <h2 id="g1-收集器">G1 收集器</h2>
 <p>G1（Garbage-First），它是一款面向服务端应用的垃圾收集器，在多 CPU 和大内存的场景下有很好的性能。 HotSpot 开发团队赋予它的使命是未来可以替换掉 CMS 收集器。</p>
 <p>堆被分为新生代和老年代，其它收集器进行收集的范围都是整个新生代或者老年代，而 G1 可以直接对新生代和老年代一起回收。</p>
-<figure data-type="image" tabindex="11"><img src="https://epitomm.github.io/post-images/heap.png" alt="图片" loading="lazy"></figure>
+<figure data-type="image" tabindex="12"><img src="https://epitomm.github.io/post-images/heap.png" alt="图片" loading="lazy"></figure>
 <p>G1 把堆划分成多个大小相等的独立区域（Region），新生代和老年代不再物理隔离。</p>
-<figure data-type="image" tabindex="12"><img src="https://epitomm.github.io/post-images/G1.png" alt="图片" loading="lazy"></figure>
+<figure data-type="image" tabindex="13"><img src="https://epitomm.github.io/post-images/G1.png" alt="图片" loading="lazy"></figure>
 <p>通过引入 Region 的概念，从而将原来的一整块内存空间划分成多个的小空间，使得<strong>每个小空间可以单独进行垃圾回收</strong>。这种划分方法带来了很大的灵活性，使得可预测的停顿时间模型成为可能。通过记录每个 Region 垃圾回收时间以及回收所获得的空间（这两个值是通过过去回收的经验获得），并维护一个优先列表，每次根据允许的收集时间，优先回收价值最大的 Region。</p>
 <p>每个 Region 都有一个 Remembered Set，用来记录该 Region 对象的引用对象所在的 Region。通过使用 Remembered Set，在做可达性分析的时候就可以避免全堆扫描</p>
-<figure data-type="image" tabindex="13"><img src="https://epitomm.github.io/post-images/G1_2.png" alt="图片" loading="lazy"></figure>
+<figure data-type="image" tabindex="14"><img src="https://epitomm.github.io/post-images/G1_2.png" alt="图片" loading="lazy"></figure>
 <p><img src="https://epitomm.github.io/post-images/Card.png" alt="图片" loading="lazy"><br>
 新生代垃圾回收：找到根对象，沿着引用链找到存活对象，存活对象进行复制到幸存区。要找新生代对象的根对象，<strong>根对象有一部分来自于老年代</strong>，老年代的存活对象非常多，如果遍历老年代找根对象效率低，因此把<strong>老年代区域再进行细分</strong>，分成一个个 Card，每个 Card 是512KB，如果老年代其中有一个 <strong>Card 中的对象引用了新生代的某一个对象</strong>，就把这个 <strong>Card 标记为脏</strong>，这样以后，做 GC Root 遍历的时候就不用去找整个老年代了，只需要关注那些脏 Card 即可，减少搜索范围，提高扫描根对象的效率。</p>
 <ul>
