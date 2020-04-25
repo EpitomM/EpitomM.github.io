@@ -3,7 +3,7 @@
     <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>JVM 垃圾回收 | SSM</title>
-<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1587743018619">
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1587780280238">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
 <link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
 <link rel="alternate" type="application/atom+xml" title="JVM 垃圾回收 | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
@@ -26,7 +26,7 @@ A 对象引用 B 对象，B 对象的引用计数 = 1；B..." />
       <div class="main-content">
         <div class="site-header">
   <a href="https://epitomm.github.io">
-  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1587743018619" alt="">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1587780280238" alt="">
   </a>
   <h1 class="site-title">
     SSM
@@ -95,10 +95,12 @@ A 对象引用 B 对象，B 对象的引用计数 = 1；B..." />
               
             </div>
             
+              <img class="post-feature-image" src="https://epitomm.github.io/post-images/jvm-la-ji-hui-shou.png" alt="">
+            
             <div class="post-content-wrapper">
               <div class="post-content">
                 <h1 id="一-如何判断对象可以回收">一、如何判断对象可以回收</h1>
-<h2 id="11-引用计数法"><strong>1.1 引用计数法</strong></h2>
+<h2 id="11-引用计数法">1.1 引用计数法</h2>
 <p>如果一个对象被其他变量引用，计数器 +1，如果某个变量不再引用，计数器 -1。如果一个对象的<strong>引用次数为 0</strong>，就可以被回收。</p>
 <h3 id="循环引用问题">循环引用问题</h3>
 <figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/%E5%BE%AA%E7%8E%AF%E5%BC%95%E7%94%A8.png" alt="图片" loading="lazy"></figure>
@@ -1013,7 +1015,7 @@ percent 越小，老年代垃圾回收触发时间越早。</p>
                 <ul class="markdownIt-TOC">
 <li><a href="#%E4%B8%80-%E5%A6%82%E4%BD%95%E5%88%A4%E6%96%AD%E5%AF%B9%E8%B1%A1%E5%8F%AF%E4%BB%A5%E5%9B%9E%E6%94%B6">一、如何判断对象可以回收</a>
 <ul>
-<li><a href="#11-%E5%BC%95%E7%94%A8%E8%AE%A1%E6%95%B0%E6%B3%95"><strong>1.1 引用计数法</strong></a>
+<li><a href="#11-%E5%BC%95%E7%94%A8%E8%AE%A1%E6%95%B0%E6%B3%95">1.1 引用计数法</a>
 <ul>
 <li><a href="#%E5%BE%AA%E7%8E%AF%E5%BC%95%E7%94%A8%E9%97%AE%E9%A2%98">循环引用问题</a></li>
 </ul>
