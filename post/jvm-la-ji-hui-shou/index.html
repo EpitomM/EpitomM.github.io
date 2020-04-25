@@ -3,7 +3,7 @@
     <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>JVM 垃圾回收 | SSM</title>
-<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1587780280238">
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1587780342618">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
 <link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
 <link rel="alternate" type="application/atom+xml" title="JVM 垃圾回收 | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
@@ -26,7 +26,7 @@ A 对象引用 B 对象，B 对象的引用计数 = 1；B..." />
       <div class="main-content">
         <div class="site-header">
   <a href="https://epitomm.github.io">
-  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1587780280238" alt="">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1587780342618" alt="">
   </a>
   <h1 class="site-title">
     SSM
@@ -326,7 +326,7 @@ public class Demo2_5 {
 <figure data-type="image" tabindex="11"><img src="https://epitomm.github.io/post-images/%E7%BB%88%E7%BB%93%E5%99%A8%E5%BC%95%E7%94%A8.png" alt="图片" loading="lazy"></figure>
 <p>所有的 Java 对象都会继承在 Object 父类，Object 类中有一个 finalize() 终结方法。某个对象<strong>重写了 finalize() 方法</strong>，当没有强引用引用它时，就由虚拟机创建它对应的终结器引用，当这个对象要被垃圾回收时，就会把这个<strong>终结器引用加入引用队列</strong>，再由一个<strong>优先级很低的线程 <strong>（finalize() 迟迟未能被调用，导致对象很久不能被真正回收，所以不推荐使用 finalize() 释放资源）finalizeHandler 线程查看引用队列中是否有终结器引用，如果有，就会根据终结器引用找到那个</strong>要被垃圾回收的对象</strong>，并且<strong>调用它的 finalize()方法</strong>，调用完了，<strong>下一次垃圾回收时就可以把这个对象占用的内存真正回收了</strong>。</p>
 <h1 id="二-垃圾回收算法">二、垃圾回收算法</h1>
-<h2 id="21-标记清除">**2.1 标记清除 **</h2>
+<h2 id="21-标记清除">2.1 标记清除</h2>
 <p>定义： Mark Sweep</p>
 <ul>
 <li>速度快</li>
@@ -336,9 +336,9 @@ public class Demo2_5 {
 <figure data-type="image" tabindex="12"><img src="https://epitomm.github.io/post-images/%E6%A0%87%E8%AE%B0%E6%B8%85%E9%99%A4.png" alt="图片" loading="lazy"></figure>
 <p><strong>标记</strong>：沿着 GC Root 的引用链去找，扫描整个堆对象的过程中，如果发现某个堆对象确实被引用了，那么这个堆对象是非垃圾对象，如果某个对<strong>象没有任何一个 GC Root 直接或间接引用</strong>它，那么把它<strong>标记为垃圾对象</strong>。</p>
 <p><strong>清除</strong>：将被标记为垃圾对象所占用的空间释放掉。这里说的释放不是把这个对象所占用的内存的每个字节清零，只需要把垃<strong>圾对象占用内存的起始、结束地址记录下来，放在一个空闲地址列表</strong>，下次分配新对象时，到空闲地址列表中找是否有一块足够的空间能容纳新对象。</p>
-<h3 id="优点"><strong>优点</strong></h3>
+<h3 id="优点">优点</h3>
 <p><strong>速度快</strong>，只需把垃圾对象的起始、结束地址记录下来。</p>
-<h3 id="缺点"><strong>缺点</strong></h3>
+<h3 id="缺点">缺点</h3>
 <figure data-type="image" tabindex="13"><img src="https://epitomm.github.io/post-images/%E6%A0%87%E8%AE%B0%E6%B8%85%E9%99%A4%E5%86%85%E7%A2%8E%E7%89%87.png" alt="图片" loading="lazy"></figure>
 <p>易产生<strong>内存碎片</strong>。清除垃圾对象后不会对内存空间进行整理，如果分配了一个较大的对象，比如数组，数组需要一段连续的内存。每个小的空闲空间都不足以容纳下这个较大的新对象，虽然总的空闲空间足够，但由于<strong>不连续</strong>，造成新对象不能被保存。</p>
 <h2 id="22-标记整理">2.2 标记整理</h2>
@@ -374,7 +374,7 @@ public class Demo2_5 {
 <p><strong>复制</strong>：把** FROM 区域上的非垃圾对象复制到 TO 区域<strong>中，复制的过程中完成碎片整理。复制完成后，<strong>FROM 区域</strong>都是垃圾对象，<strong>全部清除</strong>，并且</strong>交换 FROM 和 TO 区域**。</p>
 <h3 id="优点-3">优点</h3>
 <p><strong>不会产生碎片。</strong></p>
-<h3 id="缺点-3"><strong>缺点</strong></h3>
+<h3 id="缺点-3">缺点</h3>
 <p><strong>占用双倍内存空间。</strong></p>
 <h1 id="三-分代垃圾回收">三、分代垃圾回收</h1>
 <p><strong>堆内存划分</strong></p>
@@ -1026,11 +1026,11 @@ percent 越小，老年代垃圾回收触发时间越早。</p>
 </li>
 <li><a href="#%E4%BA%8C-%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E7%AE%97%E6%B3%95">二、垃圾回收算法</a>
 <ul>
-<li><a href="#21-%E6%A0%87%E8%AE%B0%E6%B8%85%E9%99%A4">**2.1 标记清除 **</a>
+<li><a href="#21-%E6%A0%87%E8%AE%B0%E6%B8%85%E9%99%A4">2.1 标记清除</a>
 <ul>
 <li><a href="#%E6%A0%87%E8%AE%B0%E6%B8%85%E9%99%A4%E6%B5%81%E7%A8%8B">标记清除流程</a></li>
-<li><a href="#%E4%BC%98%E7%82%B9"><strong>优点</strong></a></li>
-<li><a href="#%E7%BC%BA%E7%82%B9"><strong>缺点</strong></a></li>
+<li><a href="#%E4%BC%98%E7%82%B9">优点</a></li>
+<li><a href="#%E7%BC%BA%E7%82%B9">缺点</a></li>
 </ul>
 </li>
 <li><a href="#22-%E6%A0%87%E8%AE%B0%E6%95%B4%E7%90%86">2.2 标记整理</a>
@@ -1044,7 +1044,7 @@ percent 越小，老年代垃圾回收触发时间越早。</p>
 <ul>
 <li><a href="#%E5%A4%8D%E5%88%B6%E6%B5%81%E7%A8%8B">复制流程</a></li>
 <li><a href="#%E4%BC%98%E7%82%B9-3">优点</a></li>
-<li><a href="#%E7%BC%BA%E7%82%B9-3"><strong>缺点</strong></a></li>
+<li><a href="#%E7%BC%BA%E7%82%B9-3">缺点</a></li>
 </ul>
 </li>
 </ul>
