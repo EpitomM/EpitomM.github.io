@@ -3,7 +3,7 @@
     <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>MySQL —— Explain 关键字 | SSM</title>
-<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1587807562799">
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1587828940102">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
 <link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
 <link rel="alternate" type="application/atom+xml" title="MySQL —— Explain 关键字 | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
@@ -44,7 +44,7 @@ partitions
       <div class="main-content">
         <div class="site-header">
   <a href="https://epitomm.github.io">
-  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1587807562799" alt="">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1587828940102" alt="">
   </a>
   <h1 class="site-title">
     SSM
@@ -306,7 +306,7 @@ Query OK, 1 row affected (0.01 sec)
 <pre><code>mysql&gt; explain select * from t1 where a = 1; 
 </code></pre>
 <figure data-type="image" tabindex="16"><img src="https://epitomm.github.io/post-images/const.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">根据主键与常数进行等职匹配 type = const</p>
+<p style = "text-align:center;font-family:楷体">根据主键与常数进行等值匹配 type = const</p>
 <h3 id="eq_ref">eq_ref</h3>
 <p>在连接查询时，如果<strong>被驱动表是通过主键或者唯一二级索引列等值匹配的方式进行访问的</strong>（如果该主键或者唯一二级索引是联合索引的话，所有的索引列都必须进行等值比较），则对该被驱动表的访问方法就是eq_ref</p>
 <pre><code>mysql&gt; explain select * from t1 join t2 on t1.a = t2.a; 

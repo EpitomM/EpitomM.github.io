@@ -3,7 +3,7 @@
     <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>面试题 —— 由浅入深全面解析 ThreadLocal | SSM</title>
-<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1587807562799">
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1587828940102">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
 <link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
 <link rel="alternate" type="application/atom+xml" title="面试题 —— 由浅入深全面解析 ThreadLocal | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
@@ -25,7 +25,7 @@
       <div class="main-content">
         <div class="site-header">
   <a href="https://epitomm.github.io">
-  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1587807562799" alt="">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1587828940102" alt="">
   </a>
   <h1 class="site-title">
     SSM
@@ -1034,7 +1034,7 @@ A.首先获取当前线程，并根据当前线程获取一个<code>Map</code></
  * 除非线程先调用了set方法，在这种情况下，initialvalue 才不会被这个线程调用。
  * 通常情况下，每个线程最多调用一次这个方法。
  * &lt;p&gt;这个方法仅仅简单的返回nu11{@code nu11}；
- * 如果程序员想ThreadLocal线程局部变量有一个除nu11以外的初始值，
+ * 如果程序员想ThreadLocal线程局部变量有一个除null 以外的初始值，
  * 必须通过子类继承{@code ThreadLocal}的方式去重写此方法
  * 通常，可以通过匿名内部类的方式实现
  * 
@@ -1093,7 +1093,7 @@ static class Entry extends WeakReference&lt;ThreadLocal&lt;?&gt;&gt; {
     }
 }
 </code></pre>
-<p>在<code>ThreadLocalMa</code>p中，也是用<code>Entry</code>来保存<code>K-V</code>结构数据的。不过<code>Entry</code>中的<code>key</code>只能是<code>ThreadLocal</code>对象，这点在构造方法中已经限定死了。<br>
+<p>在<code>ThreadLocalMap</code>中，也是用<code>Entry</code>来保存<code>K-V</code>结构数据的。不过<code>Entry</code>中的<code>key</code>只能是<code>ThreadLocal</code>对象，这点在构造方法中已经限定死了。<br>
 另外，<code>Entry</code>继承<code>WeakReference</code>，也就是<code>key（ThreadLocal）</code>是弱引用，其目的是将<code>ThreadLocal</code>对象的生命周期和线程生命周期解绑。</p>
 <h2 id="52弱引用和内存泄漏">5.2弱引用和内存泄漏</h2>
 <p>有些程序员在使用<code>ThreadLocal</code>的过程中会发现有内存泄漏的情况发生，就猜测这个内存泄漏跟<code>Entry</code>中使用了<strong>弱引用</strong>的<code>key</code>有关系。这个理解其实是不对的。</p>
@@ -1113,7 +1113,7 @@ static class Entry extends WeakReference&lt;ThreadLocal&lt;?&gt;&gt; {
 <figure data-type="image" tabindex="4"><img src="https://epitomm.github.io/post-images/key%E5%BC%BA%E5%BC%95%E7%94%A8.png" alt="图片" loading="lazy"></figure>
 <p>1.假设在业务代码中使用完<code>ThreadLocal</code>，<code>ThreadLocal Ref</code>被回收了。</p>
 <p>2.但是因为<code>ThreadLocalMap</code>的<code>Entry</code>强引用了<code>ThreadLocal</code>，造成<code>ThreadLocal</code>无法被回收。</p>
-<p>3.在没有手动删除这个<code>Entry</code>以及<code>CurrentThread</code>依然运行的前提下，始终有强引用链<code>TthreadRef-&gt;CurrentThread-&gt;ThreadLocalMap-&gt;Entry</code>，<code>Entry</code>就不会被回收（<code>Entry</code>中包括了<code>ThreadLocal</code>实例和<code>value</code>），<strong>导致<code>Entry</code>内存泄漏</strong>。</p>
+<p>3.在没有手动删除这个<code>Entry</code>以及<code>CurrentThread</code>依然运行的前提下，始终有强引用链<code>ThreadRef-&gt;CurrentThread-&gt;ThreadLocalMap-&gt;Entry</code>，<code>Entry</code>就不会被回收（<code>Entry</code>中包括了<code>ThreadLocal</code>实例和<code>value</code>），<strong>导致<code>Entry</code>内存泄漏</strong>。</p>
 <p>也就是说，<code>ThreadLocalMap</code>中的<code>key</code>使用了强引用，是无法完全避免内存泄漏的。</p>
 <h3 id="4如果key使用弱引用">（4）如果key使用弱引用</h3>
 <p>那么<code>ThreadLocalMap</code>中的<code>key</code>使用了弱引用，会出现内存泄漏吗？此时<code>ThreadLocal</code>的内存图（实线表示强引用，虚线表示弱引用）如下：</p>
@@ -1137,9 +1137,9 @@ static class Entry extends WeakReference&lt;ThreadLocal&lt;?&gt;&gt; {
 <p>相对第一种方式，第二种方式显然更不好控制，特别是使用线程池的时候，线程结束是不会销毁的。</p>
 <p>也就是说，只要记得在使用完<code>ThreadLocal</code>及时的调用<code>remove</code>，无论<code>key</code>是强引用还是弱引用都不会有问题。</p>
 <p><strong>那么为什么key要用弱引用呢？</strong></p>
-<p>事实上，在<code>ThreadLocalMap</code>中的<code>set/getEntry</code>方法中，会对<code>key</code>为<code>nul</code>（也即是<code>ThreadLocal</code>为<code>null</code>）进行判断，如果为<code>null</code>的话，那么是会对<code>value</code>置为<code>null</code>的。</p>
+<p>事实上，在<code>ThreadLocalMap</code>中的<code>set/getEntry</code>方法中，会对<code>key</code>为<code>null</code>（也即是<code>ThreadLocal</code>为<code>null</code>）进行判断，如果为<code>null</code>的话，那么是会对<code>value</code>置为<code>null</code>的。</p>
 <p>这就意味着使用完<code>ThreadLocal</code>，<code>CurrentThread</code>依然运行的前提下，就算忘记调用<code>remove</code>方法，弱引用比强引用可以多一层保障：弱引用的<code>ThreadLocal</code>会被回收，对应的<code>value</code>在下一次<code>ThreadLocalMap</code>调用<code>set</code>，<code>get</code>，<code>remove</code>中的任一方法的时候会被清除，从而避免内存泄漏。</p>
-<h2 id="43hash冲突的解决">4.3hash冲突的解决</h2>
+<h2 id="53hash冲突的解决">5.3hash冲突的解决</h2>
 <p><code>hash</code>冲突的解决是<code>Map</code>中的一个重要内容。我们以<code>hash</code>冲突的解决为线索，来研究一下<code>ThreadLocalMap</code>的核心源码。</p>
 <h3 id="1首先从threadlocal的set方法入手">（1）首先从ThreadLocal的set(）方法入手</h3>
 <pre><code>public void set(T value) {
@@ -1248,7 +1248,7 @@ private static int nextIndex(int i, int len) {
 }
 </code></pre>
 <p>代码执行流程：<br>
-A.首先还是根据<code>key</code>计算出索引i，然后查找位置上的<code>Entry</code>，<br>
+A.首先还是根据<code>key</code>计算出索引 i，然后查找位置上的<code>Entry</code>，<br>
 B.若是<code>Entry</code>已经存在并且<code>key</code>等于传入的<code>key</code>，那么这时候直接给这个<code>Entry</code>赋新的<code>value</code>值<br>
 C.若是<code>Entry</code>存在，但是<code>key</code>为<code>null</code>，则调用<code>replaceStaleEntry</code>来更换这个<code>key</code>为空的<code>Entry</code>，<br>
 D.不断循环检测，直到遇到为<code>null</code>的地方，这时候要是还没在循环过程中<code>return</code>，那么就在这个<code>null</code>的位置新建一个<code>Entry</code>，并且插入，同时<code>size</code>增加1。</p>
@@ -1328,7 +1328,7 @@ D.不断循环检测，直到遇到为<code>null</code>的地方，这时候要�
 <li><a href="#6%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BD%BF%E7%94%A8%E5%BC%B1%E5%BC%95%E7%94%A8">（6）为什么使用弱引用</a></li>
 </ul>
 </li>
-<li><a href="#43hash%E5%86%B2%E7%AA%81%E7%9A%84%E8%A7%A3%E5%86%B3">4.3hash冲突的解决</a>
+<li><a href="#53hash%E5%86%B2%E7%AA%81%E7%9A%84%E8%A7%A3%E5%86%B3">5.3hash冲突的解决</a>
 <ul>
 <li><a href="#1%E9%A6%96%E5%85%88%E4%BB%8Ethreadlocal%E7%9A%84set%E6%96%B9%E6%B3%95%E5%85%A5%E6%89%8B">（1）首先从ThreadLocal的set(）方法入手</a></li>
 <li><a href="#2%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95threadlocalmapthreadlocal-firstkey-object-firstvalue">（2）构造方法ThreadLocalMap(ThreadLocal&lt;?&gt; firstKey, Object firstValue)</a></li>

@@ -3,7 +3,7 @@
     <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>面试题系列 —— Java 并发 | SSM</title>
-<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1587807562799">
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1587828940102">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
 <link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
 <link rel="alternate" type="application/atom+xml" title="面试题系列 —— Java 并发 | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
@@ -27,7 +27,7 @@ Java 并发的东西比较多，今天先总结一部分。
       <div class="main-content">
         <div class="site-header">
   <a href="https://epitomm.github.io">
-  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1587807562799" alt="">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1587828940102" alt="">
   </a>
   <h1 class="site-title">
     SSM
@@ -212,32 +212,52 @@ class MyCallable implements Callable&lt;Integer&gt;{
 <li><strong>是否会自动苏醒</strong>：wait 方法被调用后，线程不会自动苏醒，需要别的线程调用同一个对象上的 notify() 或者 notifyAll() 方法。sleep() 方法执行完成后，线程会自动苏醒。或者可以使用 wait(long timeout) 超时后线程会自动苏醒。</li>
 </ul>
 <h1 id="8reentrantlock-和-synchronized-的比较">8.ReentrantLock 和 synchronized 的比较</h1>
-<ul>
+<ol>
 <li>锁的实现</li>
-</ul>
-<p>synchronized 是 JVM 实现的，而 ReentrantLock 是 JDK 实现的。</p>
+</ol>
 <ul>
+<li>synchronized 是 JVM 实现的，而 ReentrantLock 是 JDK 实现的。</li>
+</ul>
+<ol start="2">
 <li>性能</li>
-</ul>
-<p>新版本 Java 对 synchronized 进行了很多优化，例如自旋锁等，synchronized 和 ReentrantLock 大致相同。</p>
+</ol>
 <ul>
+<li>新版本 Java 对 synchronized 进行了很多优化，例如自旋锁等，synchronized 和 ReentrantLock 大致相同。</li>
+</ul>
+<ol start="3">
 <li>等待可中断</li>
-</ul>
+</ol>
+<ul>
+<li>
 <p>当持有锁的线程长期不释放锁时，正在等待的线程可以选择放弃等待，改为处理其他事情。</p>
+</li>
+<li>
 <p>ReentrantLock 可中断，而 synchronized 不行。</p>
-<ul>
+</li>
+</ul>
+<ol start="4">
 <li>公平锁</li>
-</ul>
+</ol>
+<ul>
+<li>
 <p>公平锁是指多个线程在等待同一个锁时，必须按照申请锁的时间顺序来依次获得锁。</p>
+</li>
+<li>
 <p>synchronized 是不公平锁，而 ReentrantLock 默认情况下也是非公平的，但是可以在构造函数中设置公平还是不公平锁。</p>
-<ul>
+</li>
+</ul>
+<ol start="5">
 <li>锁绑定多个条件</li>
-</ul>
-<p>一个 ReentrantLock 可以同时绑定多个 Conditino 对象</p>
+</ol>
 <ul>
-<li>使用选择</li>
+<li>一个 ReentrantLock 可以同时绑定多个 Condition 对象</li>
 </ul>
-<p>除非需要使用 ReentrantLock 的高级功能，否则优先使用 synchronized。这是因为 synchronized 是 JVM 实现的一 种锁机制，JVM 原生地支持它，而 ReentrantLock 不是所有的 JDK 版本都支持。并且使用 synchronized 不用担心没有释放锁而导致死锁问题，因为 JVM 会确保锁的释放。</p>
+<ol start="6">
+<li>使用选择</li>
+</ol>
+<ul>
+<li>除非需要使用 ReentrantLock 的高级功能，否则优先使用 synchronized。这是因为 synchronized 是 JVM 实现的一 种锁机制，JVM 原生地支持它，而 ReentrantLock 不是所有的 JDK 版本都支持。并且使用 synchronized 不用担心没有释放锁而导致死锁问题，因为 JVM 会确保锁的释放。</li>
+</ul>
 <h1 id="9cyclicbarrier和countdownlatch的区别">9.CyclicBarrier和CountDownLatch的区别</h1>
 <h2 id="countdownlatch">CountDownLatch</h2>
 <p>用来控制一个线程等待多个线程。</p>
@@ -283,18 +303,18 @@ class MyCallable implements Callable&lt;Integer&gt;{
     }
   }
   public static void main(String[] args) {
-  for (int i = 0; i &lt; 2; i++) {
-    Producer producer = new Producer();
-    producer.start();
-  }
-  for (int i = 0; i &lt; 5; i++) {
-    Consumer consumer = new Consumer();
-    consumer.start();
-  }
-  for (int i = 0; i &lt; 3; i++) {
-    Producer producer = new Producer();
-    producer.start();
-  } 
+    for (int i = 0; i &lt; 2; i++) {
+        Producer producer = new Producer();
+        producer.start();
+    }
+    for (int i = 0; i &lt; 5; i++) {
+        Consumer consumer = new Consumer();
+        consumer.start();
+    }
+    for (int i = 0; i &lt; 3; i++) {
+        Producer producer = new Producer();
+        producer.start();
+    } 
 }
 </code></pre>
 <p>运行结果：</p>
