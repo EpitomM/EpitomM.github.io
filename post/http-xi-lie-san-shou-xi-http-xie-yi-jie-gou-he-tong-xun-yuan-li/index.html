@@ -1,0 +1,775 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>HTTP 系列（三）熟悉 HTTP 协议结构和通讯原理 | SSM</title>
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1587961261350">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="HTTP 系列（三）熟悉 HTTP 协议结构和通讯原理 | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="HTTP 协议之身份认证
+身份认证信息
+
+密码
+
+
+只有本人才知道的字符串信息
+
+
+动态令牌
+
+
+仅限本人持有的设备内显示的一次性密码
+
+
+数字证书
+
+
+只有本人终端持有的信息
+
+
+生物认证
+
+
+指纹、虹膜
+
+
+IC 卡等
+
+
+仅限本人持有..." />
+    <meta name="keywords" content="HTTP,计算机网络" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://epitomm.github.io">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1587961261350" alt="">
+  </a>
+  <h1 class="site-title">
+    SSM
+  </h1>
+  <p class="site-description">
+    热心善良的老学姐
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              HTTP 系列（三）熟悉 HTTP 协议结构和通讯原理
+            </h2>
+            <div class="post-info">
+              <span>
+                2020-04-27
+              </span>
+              <span>
+                25 min read
+              </span>
+              
+                <a href="https://epitomm.github.io/tag/LXiZFuZAY/" class="post-tag">
+                  # HTTP
+                </a>
+              
+                <a href="https://epitomm.github.io/tag/QxXq3bhNg/" class="post-tag">
+                  # 计算机网络
+                </a>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <h1 id="http-协议之身份认证">HTTP 协议之身份认证</h1>
+<h2 id="身份认证信息">身份认证信息</h2>
+<ul>
+<li>密码</li>
+</ul>
+<blockquote>
+<p>只有本人才知道的字符串信息</p>
+</blockquote>
+<ul>
+<li>动态令牌</li>
+</ul>
+<blockquote>
+<p>仅限本人持有的设备内显示的一次性密码</p>
+</blockquote>
+<ul>
+<li>数字证书</li>
+</ul>
+<blockquote>
+<p>只有本人终端持有的信息</p>
+</blockquote>
+<ul>
+<li>生物认证</li>
+</ul>
+<blockquote>
+<p>指纹、虹膜</p>
+</blockquote>
+<ul>
+<li>IC 卡等</li>
+</ul>
+<blockquote>
+<p>仅限本人持有的</p>
+</blockquote>
+<blockquote>
+<p>身份认证信息时用来核对只有登陆者本人才知道、拥有的信息内容，但是即便对方是假冒用户，只要能够通过用户认证，HTTP 服务器就会默认这是出自于本人的行为。因此掌控机密性的密码不能让其他人得到，更不能轻易被破解。</p>
+</blockquote>
+<h2 id="常见认证方式">常见认证方式</h2>
+<ul>
+<li>BASIC 认证（基本认证）</li>
+<li>DIGEST 认证（摘要认证）</li>
+<li>SSL 客户端认证</li>
+<li>FormBase 认证（基于表单认证）</li>
+</ul>
+<h2 id="basic-认证">BASIC 认证</h2>
+<h3 id="什么是-basic-认证">什么是 BASIC 认证</h3>
+<ul>
+<li>从 HTTP1.0 就定义的一种认证方式，现在仍有一部分网站在使用。</li>
+</ul>
+<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/BASIC%E8%AE%A4%E8%AF%81.png" alt="图片" loading="lazy"></figure>
+<ul>
+<li>WEB 服务器与通信客户端之间进行的统一认证方式。</li>
+</ul>
+<h3 id="basic-认证过程">BASIC 认证过程</h3>
+<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/BASIC%E8%AE%A4%E8%AF%81%E8%BF%87%E7%A8%8B.png" alt="图片" loading="lazy"></figure>
+<ul>
+<li>客户端发送需要 BASIC 认证的请求资源</li>
+<li>当请求的资源需要 BASIC 认证时，服务器会随状态码 401 返回一个 Authorization Required，告诉客户端需要身份认证</li>
+<li>接收到状态码 401 的客户端为了通过 BASIC 认证，需要将用户名、密码发送给服务器，发送的字符和内容形式为是用户名和密码，中间用 “：” 拼接，将其经过 Base64 的编码后写入到首部字段 Authorization，并在前面加上“Basic ”，表明要执行的是 Basic 认证，发送给服务器。</li>
+<li>服务器端接收到包含首部字段 Authorization 的请求后，会去认证信息的正确性，如果验证通过，返回包含 Request URI 的资源响应，返回的是 200；如果认证失败，继续返回 401，表示认证未通过。</li>
+</ul>
+<blockquote>
+<p>BASIC 认证虽然采用 Base64 的编码方式，但是这不是加密处理，不需要任何附加信息就可以对 Base64 进行解码，由于明文解码后就是用户名和密码，在 HTTP 这样非加密通信的线路上，进行 BASIC 认证的过程中，如果不小心被别人窃听了，被盗的可能性就会非常大。<br>
+BASIC 认证在使用上不够便捷灵活，而且不安全，所以并不常用。</p>
+</blockquote>
+<h2 id="digest-认证">DIGEST 认证</h2>
+<h3 id="什么是digest认证">什么是DIGEST认证？</h3>
+<ul>
+<li>为弥补BASIC认证存在的弱点，从HTTP/1.1起就有了DIGEST认证。</li>
+<li>DIGEST 认证同样使用质询/响应的方式，但不会像BASIC认证那样直接发送明文密码。</li>
+</ul>
+<blockquote>
+<p>质询-响应方式：一方先发送认证要求给另一方，使用从另一方接收到的质询码，计算生成响应码，最后将响应码返回给对方进行认证。<br>
+因为发送给对方的只是响应摘要，以及由质询码产生的计算结果，所以比 BASIC 认证多了一层保护，密码泄露的可能性也就降低了。</p>
+</blockquote>
+<h3 id="digest-认证过程">DIGEST 认证过程</h3>
+<figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/DIGEST%E8%AE%A4%E8%AF%81%E8%BF%87%E7%A8%8B.png" alt="图片" loading="lazy"></figure>
+<ul>
+<li>客户端发送需要 DIGEST 认证的请求</li>
+<li>服务端返回状态码 401，同时里面包含一个头部字段，包含质询-响应认证方式所需要的临时质询码，质询码是一个随机数 nonce，一次返回都是 401 响应生成的任意随机的 Base64 编码的字符串，多数情况下，由一串数字、或一串字符或一串其他的组成</li>
+<li>接收到 401 状态码的客户端返回的响应中包含 DIGEST 认证必须要的头部字段 Authorization，包含这些信息：Digest username=&quot;xxx&quot;, realm=&quot;DIGEST&quot;, nonce=&quot;xxxxx&quot;, url=&quot;&quot;, response=&quot;&quot; ，其中 realm 和 nonce 就是从服务器端接收和响应的字段。username 是 realm 限定范围内可进行认证的内容，response 存放经过 MD5 算法运算生成的密码字符串。</li>
+<li>服务器接收到包含首部字段的 Authorization，服务器端接收到这个请求会确认认证信息的正确性</li>
+</ul>
+<blockquote>
+<p>DIGEST 认证提供了高于 BASIC 认证的安全等级，但是和 HTTPS 客户端认证相比还是很弱。DIGEST 认证提供了 <strong>“防止密码被窃听</strong>” 的保护机制，但是并不存在 “<strong>防止用户伪装</strong>” 的保护机制。DIGEST 认证和 BASIC 认证一样，使用上不那么便捷灵活，安全性不够，适用范围有限。<br>
+使用用户名、密码的认证方式，只要二者的内容正确就可以认为是本人的行为，但是如果用户名和密码被盗，就很有可能<strong>被第三方冒充</strong>。所以利用 SSL 客户端认证，就可以避免这种情况的发生。</p>
+</blockquote>
+<h2 id="ssl客户端认证">SSL客户端认证</h2>
+<ul>
+<li>SSL 客户端认证是借由HTTPS的客户端<strong>证书</strong>完成认证的方式。凭借客户端证书认证，服务器可确认访问是否来自已登录的客户端。</li>
+</ul>
+<blockquote>
+<p>银行网银：先输入用户名、密码，输入正确后下载它们的证书，下载好之后，以后每次登录会把证书也通过 HTTP 报文的方式发给服务器，开始通信。<br>
+细节过程：①当服务器接收到需要认证资源的请求，服务器给客户端发送一个报文要求客户端提供客户端证书，②用户选择将发送的客户端证书后，客户端会把客户端证书信息以报文方式发送给服务器，③服务器验证客户端证书，验证通过后，就可以领取证书内客户端的公开秘钥，然后开始 HTTPS 的加密通信。</p>
+</blockquote>
+<h2 id="基于表单的认证">基于表单的认证</h2>
+<ul>
+<li>基于表单的认证方法并不是在HTTP协议中定义的。</li>
+<li>使用由Web应用程序各自实现基于表单的认证方式。</li>
+<li>通过Cookie和Session的方式来保持用户的状态。</li>
+</ul>
+<h1 id="http-的长连接与短连接">HTTP 的长连接与短连接</h1>
+<blockquote>
+<p>资源消耗的优化：长连接。<br>
+连接好比从 A 地到 B 地的交通方式，想从 A 地到 B 地，打车过去，这样是一个短连接，就连通了一下，没办法让更多的人上车；后来发现从 A 去 B 的人很多，于是开通了一条地铁线，建立了一条长连接，很多人都可以复用这个连接。<br>
+能一次性节约很多资源的、服务很多次的是长连接。</p>
+</blockquote>
+<ul>
+<li>HTTP协议是基于请求/响应模式的，因此只要服务端给了响应，本次HTTP请求就结束了。</li>
+<li>HTTP的长连接和短连接本质上是<strong>TCP长连接和短连接</strong>。</li>
+</ul>
+<blockquote>
+<p>HTTP 协议是应用层协议，传输层使用的是 TCP 协议，网络层使用的是IP 协议，IP 协议主要解决网络路由、寻址的问题， TCP 协议解决的是如何在 IP 层之上可靠的传递数据包，使得在接收端能收到发送方发送的所有包，并且顺序与发出顺序一致。<br>
+HTTP 分成长连接和短连接，本质上就是 TCP 连接。TCP 连接是一个双向通道，可以保持一段时间不关闭，因此 TCP 连接才有真正的长连接和短连接。</p>
+</blockquote>
+<ul>
+<li>HTTP/1.0中，默认使用的是<strong>短连接</strong>。也就是说，浏览器和服务器每进行一次HTTP操作，就建立一次连接，结束就中断。</li>
+</ul>
+<blockquote>
+<p>如果客户端浏览器访问某个 html，该 html 内包含其他 js、css、img 资源，当浏览器每遇到一个 web 资源，就会建立一个 HTTP 会话。</p>
+</blockquote>
+<ul>
+<li>HTTP/1.1起，默认使用<strong>长连接</strong>，用以保持连接特性。</li>
+</ul>
+<figure data-type="image" tabindex="4"><img src="https://epitomm.github.io/post-images/HTTP%E9%95%BF%E8%BF%9E%E6%8E%A5.png" alt="图片" loading="lazy"></figure>
+<blockquote>
+<p>使用长连接的情况时，当一个网页打开完成后，客户端和服务器之间用于传输 HTTP 数据的 TCP 连接不会关闭，如果客户端再次访问这个服务器上的网页，会继续使用这一条已经建立的连接，这个 keep-alive 不会永久保持连接，有一个保持时间，在不同的服务器软件可以设置。</p>
+</blockquote>
+<ul>
+<li>短连接：</li>
+</ul>
+<p>建立连接一数据传输一关闭连接..建立连接一数据传输一关闭连接</p>
+<blockquote>
+<p>客户端向服务器发送连接请求，Server 接到请求，双方建立连接，客户端向 Server 发送消息，Server 回应 Client，一次读写就完成了，这时候双方任何一个都可以发起 close 关闭的操作，一般都是 Client 先发起 close。短连接一般只会在 Client-Server 间传递一次读写操作。</p>
+</blockquote>
+<ul>
+<li>长连接：</li>
+</ul>
+<p>建立连接—数据传输…（保持连接）.…数据传输——关闭连接</p>
+<blockquote>
+<p>Client 向 Server 发起连接请求，Server 接受 Client 的请求，双方建立连接，Client 与 Server 完成一次读写之后，它们之间的连接不会主动关闭，后续的读写操作会继续使用这个连接。<br>
+短连接对于服务器来说，它的管理较为简单，存在的连接都是有用的连接，不需要额外的控制手段，但如果客户请求频繁，将在 TCP 建立和关闭的操作上浪费时间也浪费带宽，响应的反应速度就会变慢，客户体验感不好。<br>
+长连接可以省去较多的 TCP 连接和关闭的时间，减少浪费、节约时间，对于频繁请求资源的客户来说，比较适合使用长连接。在长连接的应用场景下， Client 端一般不会主动关闭连接，与短连接不同，Client 与 Server 之间的连接如果一直不关闭的话，就会存在问题：随着客户端连接越来越多，Server 承受不住，这时 Server 端需要采取一些策略，比如说，关闭一些长时间没有读写事件发生的连接，可以避免一些恶意连接导致 Server 端服务受损。</p>
+</blockquote>
+<h1 id="http-中介之代理">HTTP 中介之代理</h1>
+<figure data-type="image" tabindex="5"><img src="https://epitomm.github.io/post-images/HTTP%E4%B8%AD%E4%BB%8B%E4%B9%8B%E4%BB%A3%E7%90%86.png" alt="图片" loading="lazy"></figure>
+<blockquote>
+<p>一般情况下是客户端直接与服务器连接，但是出于不方便或是其他的特殊原因，可能会通过一个中间人与服务器连接。这个中间人就叫做 <strong>web 代理</strong>，这个中间人<strong>既是客户端、又是服务端</strong>，对于服务器来说，由于请求是从代理访问过来的，所以在这个过程中，代理起到了客户端的作用；而对于真正的客户端来说，请求是发给代理的，所以代理起到了服务器的作用。</p>
+</blockquote>
+<h2 id="代理的作用">代理的作用</h2>
+<ul>
+<li>抓包</li>
+</ul>
+<blockquote>
+<p>为了能够更好的分析 HTTP 请求，或者达到安全措施的目的，只有使用代理才可以更好的对客户端的数据包进行拦截，在这里代理的名字有另外一种叫法：拦截服务器</p>
+</blockquote>
+<ul>
+<li>FQ</li>
+</ul>
+<blockquote>
+<p>如果想通过计算机访问 facebook，由于长城防火墙屏蔽了 facebook、YouTube 这些网站，不可直接访问，就要通过代理翻墙。</p>
+</blockquote>
+<figure data-type="image" tabindex="6"><img src="https://epitomm.github.io/post-images/FQ.png" alt="图片" loading="lazy"></figure>
+<ul>
+<li>匿名访问</li>
+</ul>
+<blockquote>
+<p>HTTP 协议本身具有匿名性，HTTP 代理服务器通过删除 HTTP 报文中的身份特性，比如客户端的 IP 地址、Cookie、会话 ID 等，从而对远端的服务器隐藏原始用户的 IP 地址以及其他细节，同时 HTTP 代理服务器上也不会记录原始用户访问记录，就使得代理上网的客户可以在更加安全隐秘的环境中访问网络。</p>
+</blockquote>
+<ul>
+<li>过滤器</li>
+</ul>
+<figure data-type="image" tabindex="7"><img src="https://epitomm.github.io/post-images/%E8%BF%87%E6%BB%A4%E5%99%A8.png" alt="图片" loading="lazy"></figure>
+<blockquote>
+<p>HTTP 协议并不知道在访问网络的是谁，即便是个小朋友登上父母的账号进行访问，认证起来我们也认为他就是他的父母。通过代理服务器进行分析和部分请求的拦截，进一步加强对网络的控制。</p>
+</blockquote>
+<h1 id="http-中介之网关">HTTP 中介之网关</h1>
+<ul>
+<li>网关可以作为某种翻译器使用，它抽象出了一种能够到达资源的方法。网关是资源和应用程序之间的粘合剂。</li>
+<li>网关扮演的是“协议转换器”的角色。</li>
+</ul>
+<figure data-type="image" tabindex="8"><img src="https://epitomm.github.io/post-images/HTTP%E4%B8%AD%E4%BB%8B%E4%B9%8B%E7%BD%91%E5%85%B3.png" alt="图片" loading="lazy"></figure>
+<blockquote>
+<p>代理连接的是两个或多个使用相同协议的应用程序。<br>
+网关连接的是两个或多个使用不同协议的端点，网关扮演的是 “<strong>协议转换器</strong>” 的角色，网关可以向数据库发送查询数据、发邮件、生成动态内容。</p>
+</blockquote>
+<h2 id="web-网关">WEB 网关</h2>
+<ul>
+<li>Web网关在一侧使用HTTP协议，在另一侧使用另一种协议。</li>
+</ul>
+<p>&lt;客户端协议&gt;/&lt;服务器端协议&gt;</p>
+<p>①（HTTP/）服务器端网关：通过HTTP协议与客户端对话，通过其他协议与服务器通信。</p>
+<blockquote>
+<p>发邮件就是服务器端网关，客户端是 HTTP 协议，邮件服务器是 SMTP 协议</p>
+</blockquote>
+<p>②（/HTTP）客户端网关：通过其他协议与客户端对话，通过HTTP协议与服务器通信。</p>
+<h2 id="常见的网关类型">常见的网关类型</h2>
+<ul>
+<li>（HTTP/*）服务器端Web网关</li>
+</ul>
+<blockquote>
+<p>客户端发送 HTTP 请求，服务器端 web网关会把这个请求转换为其他协议与服务器进行连接，完成获取资源后，会将对象放在一条 HTTP 响应中，发送给客户端：发邮件。</p>
+</blockquote>
+<ul>
+<li>（HTTP/HTTPS）服务器端安全网关</li>
+</ul>
+<blockquote>
+<p>客户端发送 HTTP 请求，网关自动进行加密，加密来自客户端的请求，然后再发送给服务器，为了安全问题。</p>
+</blockquote>
+<ul>
+<li>（HTTPS/HTTP）客户端安全加速器网关</li>
+</ul>
+<blockquote>
+<p>客户端发送的请求是经过加密的安全的 HTTPS ，通过网关进行解密后再向 web 服务器发送普通的 HTTP 请求。</p>
+</blockquote>
+<ul>
+<li>资源网关</li>
+</ul>
+<blockquote>
+<p>客户端通过 HTTP 连接到应用程序的服务器，服务器并不回送文件，而是将请求通过网关 API 发送给运行在服务器上的应用程序，应用程序将请求资源回送给客户端。</p>
+</blockquote>
+<h1 id="http-缓存">HTTP 缓存</h1>
+<h2 id="为什么要使用http缓存">为什么要使用HTTP缓存？</h2>
+<p>请求一次服务器，请求头大小 1KB，响应头大小 1KB，请求的文件大小 10KB，一次请求的流量就是 12KB，10 次就是 120KB，n 次请求就是 12*n KB。</p>
+<ul>
+<li><strong>客户端</strong>每次都要请求服务器，浪费<strong>流量</strong>。</li>
+<li><strong>服务器</strong>每次都提供查找、下载，请求用户基数如果太大，服务器就会存在很大<strong>压力</strong>。</li>
+<li><strong>客户端</strong>每次请求完都要进行页面渲染，<strong>用户体验差</strong>。</li>
+</ul>
+<p>是否可以将请求的文件存放起来使用：HTTP 缓存。</p>
+<h2 id="缓存的内容又是什么">缓存的内容又是什么？</h2>
+<p>主要针对样式：CSS、JS、图片这一系列更新频率不大的<strong>静态文件</strong>进行缓存。</p>
+<blockquote>
+<p>缓存是通过什么实现的？请求头-响应头</p>
+</blockquote>
+<h2 id="http缓存头部字段">HTTP缓存头部字段</h2>
+<ul>
+<li>Cache-Control请求/响应头，缓存控制字段</li>
+</ul>
+<blockquote>
+<p>控制 HTTP 缓存的最高指令，要不要缓存也是 Cache-Control 说了算。</p>
+</blockquote>
+<p>no-store：所有内容都不缓存。</p>
+<p>no-cache：缓存，但是浏览器使用缓存前，都会请求服务器判断缓存资源是否是最新。</p>
+<p>max-age=X（单位秒）请求缓存后的X秒不再发起请求。</p>
+<p>s-maxage=X（单位秒）代理服务器请求源站缓存后的X秒不再发起请求，只对CDN缓存有效。</p>
+<p>public：客户端和代理服务器（CDN）都可缓存。</p>
+<p>private：只有客户端可以缓存。</p>
+<ul>
+<li>Expires</li>
+</ul>
+<p>响应头，代表资源过期时间，由服务器返回提供，是http1.0的属性，在与max-age共存的情况下，优先级要低。</p>
+<ul>
+<li>Last-Modified</li>
+</ul>
+<p>响应头，资源最新修改时间，由服务器告诉浏览器。</p>
+<ul>
+<li>if-Modified-Since</li>
+</ul>
+<p>请求头，资源最新修改时间，由浏览器告诉服务器，和Last-Modified是一对，它两会进行对比。</p>
+<ul>
+<li>Etag</li>
+</ul>
+<p>响应头，资源标识，由服务器告诉浏览器。</p>
+<ul>
+<li>if-None-Match</li>
+</ul>
+<p>请求头，缓存资源标识，由浏览器告诉服务器（其实就是上次服务器给的Etag），和Etag是一对，它两会进行对比。</p>
+<h2 id="http缓存工作方式">HTTP缓存工作方式</h2>
+<h3 id="expires">Expires</h3>
+<ul>
+<li>场景一：让服务器与浏览器约定一个文件过期时间一Expires</li>
+</ul>
+<figure data-type="image" tabindex="9"><img src="https://epitomm.github.io/post-images/Expires.png" alt="图片" loading="lazy"></figure>
+<blockquote>
+<p>① 第一次请求时，浏览器向服务器请求一个 f.js 文件<br>
+② 服务器说文件给你，我们约定一个时间，通过响应头返回一个 Expires 过期约定时间，同时返回了 f.js<br>
+③ 后续请求浏览器先对比当前时间是否已经大于 Expires，判断缓存的文件是否超过了约定的过期时间，时间没过的话，不发起请求，直接使用本地缓存；时间过期了，就发起请求，再返回到步骤 ①。<br>
+假设 Expires 已经过期，浏览器请求服务器，但是 f.js 并未改变，如何避免这时发起请求呢？</p>
+</blockquote>
+<h3 id="last-modified-与-if-modified-since">Last-Modified 与 if-Modified-Since</h3>
+<ul>
+<li>场景二：让服务器与浏览器在约定文件过期时间的基础上，再加一个文件最新修改时间的对比——Last-Modified 与 if-Modified-Since</li>
+</ul>
+<figure data-type="image" tabindex="10"><img src="https://epitomm.github.io/post-images/Last-Modified.png" alt="图片" loading="lazy"></figure>
+<blockquote>
+<p>① 浏览器向服务器请求 f.js，并要一个过期时间<br>
+② 服务器返回给浏览器 f.js 和 一个过期时间，再给一个文件最新修改时间 Last-Modified，通过设置响应头返回给浏览器，文件过期后，双方核对文件修改时间<br>
+后续浏览器可能有如下三种情况：</p>
+<ol>
+<li>Expires 还未过期，浏览器使用本地缓存</li>
+<li>Expires 过期，浏览器请求服务器时带上文件最新修改时间，在请求头里面加上 if-Modified-Since，也就是上次请求服务器返回的 Last-Modified，把这个值又带回去。服务器把这个 if-Modified-Since（请求头里的文件最近修改时间） 和 服务器上的文件最新修改时间 Last-Modified 作对比，如果两个值不相等，服务器查找最新的 f.js + Expires + Last-Modified 返回给浏览器；如果相等，服务器返回状态码 304：文件未修改过，你还是用你的本地缓存吧。</li>
+</ol>
+</blockquote>
+<figure data-type="image" tabindex="11"><img src="https://epitomm.github.io/post-images/Last-Modified_2.png" alt="图片" loading="lazy"></figure>
+<blockquote>
+<p>浏览器端可以随意修改 Expires，很极端的情况下，Last-Modified 只能精确到秒，假设文件在 1秒 内发生变化，Last-Modified 无法感知这个文件的变化，这样情况下，浏览器永远无法拿到最新文件。</p>
+</blockquote>
+<h3 id="etag与lf-none-match">Etag与lf-None-Match</h3>
+<ul>
+<li>场景三：让服务器与浏览器在过期时间Expires+Last-Modified的基础上，增加一个文件内容唯一对比标记——Etag与lf-None-Match。Expires不稳定，再加入一个max-age来加以代替。</li>
+</ul>
+<figure data-type="image" tabindex="12"><img src="https://epitomm.github.io/post-images/Etag.png" alt="图片" loading="lazy"></figure>
+<blockquote>
+<p>① 浏览器请求 f.js<br>
+② 服务器将 f.js + max-age(过期时间) + Last-Modified + Etag（文件内容的唯一标识）<br>
+③ 浏览器 60s 内不发起请求，直接使用本地缓存，<br>
+max-age=60代表成功缓存后的 60s 内不再向服务器发起请求，与 Expires 相似，但 max-age 优先级比 Expires 高，max-age 存在时 Expires 就没用了。</p>
+<blockquote>
+<p>④ 60s 后，浏览器带上 If-Modified-Since 和 If-None-Match 向服务器发起请求，服务器对比 If-None-Match 与服务器端的 Etag，这时候尽管给出了 If-Modified-Since，但是不会再对比 If-Modified-Since 和 Last-Modified 了，因为 Etag 优先级比 Last-Modified 高，Etag 就是为了解决 1s 内文件发生改变的问题。如果 If-None-Match 与 Etag 不相等，说明 f.js 这个内容被修改过，服务器返回给浏览器最新的 f.js + 全新的 Etag + max-age +Last-Modified（没什么用了，优先级 &lt; Etag） + Expires（没什么用了，优先级&lt;max-age）；如果 Etag 与 If-None-Match 相等，返回 304 告诉浏览器继续使用之前的本地缓存。</p>
+</blockquote>
+</blockquote>
+<figure data-type="image" tabindex="13"><img src="https://epitomm.github.io/post-images/Etag_2.png" alt="图片" loading="lazy"></figure>
+<blockquote>
+<p>max-age 或 Expires 不过期的时候，浏览器没有办法主动感知服务器的文件变化。<br>
+如果服务端改变了文件，怎样让客户端知道呢？</p>
+</blockquote>
+<h2 id="缓存改进方案">缓存改进方案</h2>
+<h3 id="md5hash缓存">md5/hash缓存</h3>
+<p>通过不缓存html，为静态文件添加MD5或者hash标识，解决浏览器无法跳过缓存过期时间主动感知文件变化的问题。</p>
+<blockquote>
+<p>HTTP 缓存方案：服务器与浏览器的文件修改时间对比，文件内容标识对比，前提的基础都是建立在两者文件路径完全相同的基础上，请求的都是 f.js，这才能够解读这样的缓存，但是如果第一次要获取的名字是 f-hash1.js，下一次文件修改了就变成了 f-hash2.js，这是两个完全不同的文件。<br>
+浏览器第一次加载页面，请求并缓存了 f-hash1,js，第二次加载同样一个地方文件指向 f-hash2.js，浏览器不会询问缓存了，因为本地没有这个缓存，浏览器会直接重新请求 f-hash2.js，因为这就是两个不同的文件。<br>
+通过这种方式就可以解决过期时间没到，浏览器无法主动请求服务器的问题，只需要在在项目每次发布迭代的时候，将修改过的静态文件添加不同的 MD5 或者 hash 标识即可。</p>
+</blockquote>
+<h3 id="cdn缓存">CDN缓存</h3>
+<p>CDN是构建在网络之上的内容分发网络，依靠部署在各地的边缘服务器，通过中心平台的负载均衡、内容分发、调度等功能模块，使用户就近获取所需内容，降低网络拥塞，提高用户访问响应速度和命中率。</p>
+<blockquote>
+<p>假设多年前，我们所在的城市只有一个火车站，每次春运整个城市的人都得去这个火车站买票， 人流量及购票需求激增，为了缓解这个问题，城市的不同区都出现了火车票的代售点，这样每个区的人都可以就近买票，火车站总站的压力大大减轻。<br>
+可以把每个区的售票点称之为 CDN 节点，也就是前面所说的 代理服务器，简而言之，可以把 CDN 理解成浏览器与服务器之间的临时站点，它会替服务器处理部分浏览器请求，从而减轻总服务器上的压力。静态资源也是一样的，可以分成多个临时站点来存储。<br>
+把 CDN 的价值归纳为：<br>
+①通过分流大大减轻了原站（服务器端）的压力。<br>
+②解决了跨地区访问问题（就近站点访问）。</p>
+</blockquote>
+<h3 id="cdn-缓存工作方式">CDN 缓存工作方式</h3>
+<ul>
+<li>第一次请求</li>
+</ul>
+<figure data-type="image" tabindex="14"><img src="https://epitomm.github.io/post-images/CDN%E7%BC%93%E5%AD%98%E7%AC%AC%E4%B8%80%E6%AC%A1%E8%AF%B7%E6%B1%82.png" alt="图片" loading="lazy"></figure>
+<ul>
+<li>后续请求</li>
+</ul>
+<figure data-type="image" tabindex="15"><img src="https://epitomm.github.io/post-images/CDN%E7%BC%93%E5%AD%98%E5%90%8E%E7%BB%AD%E8%AF%B7%E6%B1%82.png" alt="图片" loading="lazy"></figure>
+<p>可能出现以下几种情况：</p>
+<p>① CDN 节点自己缓存的文件还没过期，于是返回 304 给浏览器，打回了这次请求</p>
+<p>② CND 节点发现自己缓存的文件过期了，为了保险起见，自己发送请求给服务器，成功拿回最新数据，然后交还给浏览器。</p>
+<p>CND 缓存的问题和 HTTP 缓存的问题一样，CDN 缓存时间不过期，浏览器始终被拦截，无法拿到最新的文件。回归 HTTP 缓存本身，缓存本身针对于更新频率不高的静态文件，CDN 缓存提供了分流、访问加速等。</p>
+<p>CDN 与 HTTP 缓存不一样的是：CDN 类似于一个平台，可以通过登录手动更新 CDN 缓存，变相解决了浏览器缓存无法手动控制的问题。</p>
+<h2 id="浏览器操作对http缓存的影响">浏览器操作对HTTP缓存的影响</h2>
+<table>
+<thead>
+<tr>
+<th style="text-align:left"><strong>用户操作</strong></th>
+<th style="text-align:left"><strong>Expires/Cache-Control</strong></th>
+<th style="text-align:left"><strong>Last-Modihed/Etag</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">地址栏回车</td>
+<td style="text-align:left">有效</td>
+<td style="text-align:left">有效</td>
+</tr>
+<tr>
+<td style="text-align:left">页面链接跳转</td>
+<td style="text-align:left">有效</td>
+<td style="text-align:left">有效</td>
+</tr>
+<tr>
+<td style="text-align:left">新开窗口</td>
+<td style="text-align:left">有效</td>
+<td style="text-align:left">有效</td>
+</tr>
+<tr>
+<td style="text-align:left">前进、后退</td>
+<td style="text-align:left">有效</td>
+<td style="text-align:left">有效</td>
+</tr>
+<tr>
+<td style="text-align:left">F5刷新</td>
+<td style="text-align:left">无效</td>
+<td style="text-align:left">有效</td>
+</tr>
+<tr>
+<td style="text-align:left">Ctrl+F5刷新</td>
+<td style="text-align:left">无效</td>
+<td style="text-align:left">无效</td>
+</tr>
+</tbody>
+</table>
+<h1 id="内容协商机制">内容协商机制</h1>
+<blockquote>
+<p>访问谷歌，同一个 URL，在国内打开谷歌是中文，在国外打开是英文的。</p>
+</blockquote>
+<ul>
+<li>指客户端和服务器端就响应的资源内容进行交涉，然后提供给客户端最为适合的资源。内容协商会以响应资源的语言，字符集，编码方式等作为判断的基准。</li>
+</ul>
+<h2 id="内容协商方式">内容协商方式</h2>
+<ul>
+<li>客户端驱动</li>
+</ul>
+<p>客户端发起请求，服务器发送可选项列表，客户端作出选择后在发送第二次请求。</p>
+<ul>
+<li>服务器驱动</li>
+</ul>
+<p>服务器检查客户端的请求头部集并决定提供哪个版本的页面。</p>
+<ul>
+<li>透明协商</li>
+</ul>
+<p>某个中间设备（通常是缓存代理）代表客户端进行协商。</p>
+<h2 id="服务器驱动内容协商-请求首部集">服务器驱动内容协商-请求首部集</h2>
+<ul>
+<li>Accept：告知服务器发送何种媒体类型</li>
+<li>Accept-Language：告知服务器发送何种语言</li>
+<li>Accept-Charset：告知服务器发送何种字符集</li>
+<li>Accept-Encoding：告知服务器采用何种编码</li>
+</ul>
+<h2 id="服务器驱动内容协商-请求首部集-2">服务器驱动内容协商-请求首部集</h2>
+<ul>
+<li>Content-Type</li>
+<li>Content-Language</li>
+<li>Content-Type</li>
+<li>Content-Encoding</li>
+</ul>
+<h2 id="服务器驱动内容协商-近似匹配">服务器驱动内容协商-近似匹配</h2>
+<blockquote>
+<p>客户端的 Accept-Language 指的是西班牙语，服务器端只有英语和法语，这个客户端希望在没有西班牙语的时候优先返回英语。这就意味着需要一种 HTTP 机制更详细的描述偏好：近似匹配方式。</p>
+</blockquote>
+<p>Accept-Language:en; q=0.5, fr; q=0.0, nl; q=1.0, tr; q=0.0</p>
+<blockquote>
+<p>上述首部表示用户最愿意接受 nl：荷兰语(nl; q=1.0)；其次，如果没有荷兰语的话，英文也行：en;q=0.5；不接受法语：fr;q=0.0 ，不接受土耳其语：tr;q=0.0</p>
+</blockquote>
+<p>q 值的范围是 0-1，不代表所有权重和为 1，不是权重的概念，只是优先级的概念。</p>
+<blockquote>
+<p>如果服务端既没有 nl 也没有 en，服务器端猜测，服务器端设置默认值。</p>
+</blockquote>
+<h2 id="断点续传和多线程下载">断点续传和多线程下载</h2>
+<ul>
+<li>断点续传？多线程下载？</li>
+</ul>
+<blockquote>
+<p>下载文件时，下载到一半，突然网络不太好，下载中断了；<br>
+或者主动暂停下载；<br>
+用迅雷下载一个大文件，会分成好多块分开下载。<br>
+上述叫断点续传。</p>
+<ul>
+<li>HTTP是通过在Header里两个参数实现的，客户端发请求时对应的是Range，服务器端响应时对应的是Content-Range。<br>
+不论是断点续传还是迅雷的多线程分块下载，如果续传成功，返回 206，如果文件有变动，返回 200 和新文件的内容。</li>
+</ul>
+</blockquote>
+<p>Range</p>
+<ul>
+<li>用于请求头中，指定第一个字节的位置和最后一个字节的位置，一般格式：</li>
+<li>Range:（unit=first byte pos）-[last byte pos] 左开右闭区间
+<ul>
+<li>Range:bytes=0-499</li>
+<li>Range:bytes=500-999</li>
+<li>Range:bytes=-500  后 500 个字节的内容</li>
+<li>imooc Range:bytes=500-   从第 500 字节开始，到文件结束部分</li>
+<li>Range:bytes=500-600,601-999</li>
+</ul>
+</li>
+</ul>
+<p>Content-Range</p>
+<ul>
+<li>用于响应头中，在发出带 Range的请求后，服务器会在Content-Range 头部返回当前接受的范围和文件总大小。一般格式：
+<ul>
+<li>Content-Range:bytes（unit first byte pos）-[last byte pos]/[entity legth]</li>
+</ul>
+</li>
+<li>而在响应完成后，返回的响应头内容也不同：
+<ul>
+<li>HTTP/1.1200 Ok（不使用断点续传方式）</li>
+<li>HTTP/1.1 206 Partial Content（使用断点续传方式）</li>
+</ul>
+</li>
+</ul>
+<h2 id="断点续传过程">断点续传过程</h2>
+<p>1.客户端下载一个1024K的文件，已经下载了其中512K。</p>
+<p>2.网络中断，客户端请求续传，因此需要在HTTP头中申明本次需要续传的片段：Range:bytes=512000-</p>
+<p>这个头通知服务端从文件的512K位置开始传输文件。</p>
+<p>3.服务端收到断点续传请求，从文件的512K位置开始传输，并且在HTTP头中增加：</p>
+<p>Content-Range:bytes 512000-/1024000并且此时服务端返回的HTTP状态码应该是206，而不是200。</p>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li><a href="#http-%E5%8D%8F%E8%AE%AE%E4%B9%8B%E8%BA%AB%E4%BB%BD%E8%AE%A4%E8%AF%81">HTTP 协议之身份认证</a>
+<ul>
+<li><a href="#%E8%BA%AB%E4%BB%BD%E8%AE%A4%E8%AF%81%E4%BF%A1%E6%81%AF">身份认证信息</a></li>
+<li><a href="#%E5%B8%B8%E8%A7%81%E8%AE%A4%E8%AF%81%E6%96%B9%E5%BC%8F">常见认证方式</a></li>
+<li><a href="#basic-%E8%AE%A4%E8%AF%81">BASIC 认证</a>
+<ul>
+<li><a href="#%E4%BB%80%E4%B9%88%E6%98%AF-basic-%E8%AE%A4%E8%AF%81">什么是 BASIC 认证</a></li>
+<li><a href="#basic-%E8%AE%A4%E8%AF%81%E8%BF%87%E7%A8%8B">BASIC 认证过程</a></li>
+</ul>
+</li>
+<li><a href="#digest-%E8%AE%A4%E8%AF%81">DIGEST 认证</a>
+<ul>
+<li><a href="#%E4%BB%80%E4%B9%88%E6%98%AFdigest%E8%AE%A4%E8%AF%81">什么是DIGEST认证？</a></li>
+<li><a href="#digest-%E8%AE%A4%E8%AF%81%E8%BF%87%E7%A8%8B">DIGEST 认证过程</a></li>
+</ul>
+</li>
+<li><a href="#ssl%E5%AE%A2%E6%88%B7%E7%AB%AF%E8%AE%A4%E8%AF%81">SSL客户端认证</a></li>
+<li><a href="#%E5%9F%BA%E4%BA%8E%E8%A1%A8%E5%8D%95%E7%9A%84%E8%AE%A4%E8%AF%81">基于表单的认证</a></li>
+</ul>
+</li>
+<li><a href="#http-%E7%9A%84%E9%95%BF%E8%BF%9E%E6%8E%A5%E4%B8%8E%E7%9F%AD%E8%BF%9E%E6%8E%A5">HTTP 的长连接与短连接</a></li>
+<li><a href="#http-%E4%B8%AD%E4%BB%8B%E4%B9%8B%E4%BB%A3%E7%90%86">HTTP 中介之代理</a>
+<ul>
+<li><a href="#%E4%BB%A3%E7%90%86%E7%9A%84%E4%BD%9C%E7%94%A8">代理的作用</a></li>
+</ul>
+</li>
+<li><a href="#http-%E4%B8%AD%E4%BB%8B%E4%B9%8B%E7%BD%91%E5%85%B3">HTTP 中介之网关</a>
+<ul>
+<li><a href="#web-%E7%BD%91%E5%85%B3">WEB 网关</a></li>
+<li><a href="#%E5%B8%B8%E8%A7%81%E7%9A%84%E7%BD%91%E5%85%B3%E7%B1%BB%E5%9E%8B">常见的网关类型</a></li>
+</ul>
+</li>
+<li><a href="#http-%E7%BC%93%E5%AD%98">HTTP 缓存</a>
+<ul>
+<li><a href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E4%BD%BF%E7%94%A8http%E7%BC%93%E5%AD%98">为什么要使用HTTP缓存？</a></li>
+<li><a href="#%E7%BC%93%E5%AD%98%E7%9A%84%E5%86%85%E5%AE%B9%E5%8F%88%E6%98%AF%E4%BB%80%E4%B9%88">缓存的内容又是什么？</a></li>
+<li><a href="#http%E7%BC%93%E5%AD%98%E5%A4%B4%E9%83%A8%E5%AD%97%E6%AE%B5">HTTP缓存头部字段</a></li>
+<li><a href="#http%E7%BC%93%E5%AD%98%E5%B7%A5%E4%BD%9C%E6%96%B9%E5%BC%8F">HTTP缓存工作方式</a>
+<ul>
+<li><a href="#expires">Expires</a></li>
+<li><a href="#last-modified-%E4%B8%8E-if-modified-since">Last-Modified 与 if-Modified-Since</a></li>
+<li><a href="#etag%E4%B8%8Elf-none-match">Etag与lf-None-Match</a></li>
+</ul>
+</li>
+<li><a href="#%E7%BC%93%E5%AD%98%E6%94%B9%E8%BF%9B%E6%96%B9%E6%A1%88">缓存改进方案</a>
+<ul>
+<li><a href="#md5hash%E7%BC%93%E5%AD%98">md5/hash缓存</a></li>
+<li><a href="#cdn%E7%BC%93%E5%AD%98">CDN缓存</a></li>
+<li><a href="#cdn-%E7%BC%93%E5%AD%98%E5%B7%A5%E4%BD%9C%E6%96%B9%E5%BC%8F">CDN 缓存工作方式</a></li>
+</ul>
+</li>
+<li><a href="#%E6%B5%8F%E8%A7%88%E5%99%A8%E6%93%8D%E4%BD%9C%E5%AF%B9http%E7%BC%93%E5%AD%98%E7%9A%84%E5%BD%B1%E5%93%8D">浏览器操作对HTTP缓存的影响</a></li>
+</ul>
+</li>
+<li><a href="#%E5%86%85%E5%AE%B9%E5%8D%8F%E5%95%86%E6%9C%BA%E5%88%B6">内容协商机制</a>
+<ul>
+<li><a href="#%E5%86%85%E5%AE%B9%E5%8D%8F%E5%95%86%E6%96%B9%E5%BC%8F">内容协商方式</a></li>
+<li><a href="#%E6%9C%8D%E5%8A%A1%E5%99%A8%E9%A9%B1%E5%8A%A8%E5%86%85%E5%AE%B9%E5%8D%8F%E5%95%86-%E8%AF%B7%E6%B1%82%E9%A6%96%E9%83%A8%E9%9B%86">服务器驱动内容协商-请求首部集</a></li>
+<li><a href="#%E6%9C%8D%E5%8A%A1%E5%99%A8%E9%A9%B1%E5%8A%A8%E5%86%85%E5%AE%B9%E5%8D%8F%E5%95%86-%E8%AF%B7%E6%B1%82%E9%A6%96%E9%83%A8%E9%9B%86-2">服务器驱动内容协商-请求首部集</a></li>
+<li><a href="#%E6%9C%8D%E5%8A%A1%E5%99%A8%E9%A9%B1%E5%8A%A8%E5%86%85%E5%AE%B9%E5%8D%8F%E5%95%86-%E8%BF%91%E4%BC%BC%E5%8C%B9%E9%85%8D">服务器驱动内容协商-近似匹配</a></li>
+<li><a href="#%E6%96%AD%E7%82%B9%E7%BB%AD%E4%BC%A0%E5%92%8C%E5%A4%9A%E7%BA%BF%E7%A8%8B%E4%B8%8B%E8%BD%BD">断点续传和多线程下载</a></li>
+<li><a href="#%E6%96%AD%E7%82%B9%E7%BB%AD%E4%BC%A0%E8%BF%87%E7%A8%8B">断点续传过程</a></li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://epitomm.github.io/post/jvm-la-ji-hui-shou/">
+              <h3 class="post-title">
+                JVM 垃圾回收
+              </h3>
+            </a>
+          </div>
+        
+
+        
+          
+            <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+<script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+
+<div id="gitalk-container"></div>
+
+<script>
+
+  var gitalk = new Gitalk({
+    clientID: '974bd77fbbd52c2a0647',
+    clientSecret: '6344370ca1314dbd553f45e75a2121a160ef1c44',
+    repo: 'EpitomM.github.io',
+    owner: 'EpitomM',
+    admin: ['EpitomM'],
+    id: (location.pathname).substring(0, 49),      // Ensure uniqueness and length less than 50
+    distractionFreeMode: false  // Facebook-like distraction free mode
+  })
+
+  gitalk.render('gitalk-container')
+
+</script>
+
+          
+
+          
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/EpitomM/EpitomM.github.io" target="_blank">EpitomM</a>
+  <a class="rss" href="https://epitomm.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>
