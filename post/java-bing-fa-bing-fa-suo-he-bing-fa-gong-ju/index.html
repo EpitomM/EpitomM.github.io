@@ -1,0 +1,504 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Java 并发——并发锁和并发工具 | SSM</title>
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1588061997055">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="Java 并发——并发锁和并发工具 | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="一、并发锁
+ReentrantLock
+
+一个可重入互斥Lock，具有与使用synchronized方法和语句访问的隐式监视锁相同的基本行为和语义，但具有扩展功能。
+
+ class X { 
+   
+   private final Ree..." />
+    <meta name="keywords" content="Java 并发" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://epitomm.github.io">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1588061997055" alt="">
+  </a>
+  <h1 class="site-title">
+    SSM
+  </h1>
+  <p class="site-description">
+    热心善良的老学姐
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              Java 并发——并发锁和并发工具
+            </h2>
+            <div class="post-info">
+              <span>
+                2020-04-28
+              </span>
+              <span>
+                10 min read
+              </span>
+              
+                <a href="https://epitomm.github.io/tag/oxh4weKge/" class="post-tag">
+                  # Java 并发
+                </a>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <h1 id="一-并发锁">一、并发锁</h1>
+<h2 id="reentrantlock">ReentrantLock</h2>
+<ul>
+<li>一个<strong>可重入互斥Lock</strong>，具有与使用synchronized方法和语句访问的隐式监视锁相同的基本行为和语义，但具有<strong>扩展功能</strong>。</li>
+</ul>
+<pre><code class="language-java"> class X { 
+   
+   private final ReentrantLock lock = new ReentrantLock(); 
+   // ... 
+   
+   public void m() { 
+     lock.lock(); // block until condition holds 
+     try { 
+       // ... method body 
+     } finally { 
+       lock.unlock() 
+     } 
+  } 
+  
+} 
+</code></pre>
+<ul>
+<li>构造方法：
+<ul>
+<li>ReentrantLock()：创建一个 ReentrantLock的实例。</li>
+<li>ReentrantLock(boolean fair)：根据给定的<strong>公平</strong>政策创建一个 ReentrantLock的实例。</li>
+</ul>
+</li>
+</ul>
+<h2 id="reentrantreadwritelock">ReentrantReadWriteLock</h2>
+<ul>
+<li>ReadWriteLock</li>
+</ul>
+<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/ReentrantReadWriteLock.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">ReadWriteLock 类的方法</center>
+<ul>
+<li>write.unlock()写锁释放之前要加读锁read.lock()：锁降级：从写锁降级到读锁</li>
+</ul>
+<h1 id="二-并发工具">二、并发工具</h1>
+<p>航班查询：APP ---&gt;多个线程到不同的公司查询 ---&gt; 全部线程都查询完毕后，整理结果 result 返回给前台用户。</p>
+<ol>
+<li>CountDownLatch</li>
+</ol>
+<h3 id="countdownlatch-用法">CountDownLatch 用法</h3>
+<ul>
+<li>CountDownLatch 类位于java.util.concurrent包下，利用它可以实现类似<strong>计数器</strong>的功能。</li>
+<li>比如有一个任务A，它要等待其他4个任务执行完毕之后才能执行，此时就可以利用CountDownLatch 来实现这种功能了。</li>
+<li>CountDownLatch是通过一个计数器来实现的，计数器的初始值为线程的数量。每当一个线程完成了自己的任务后，计数器的值就会减1。当计数器值到达0时，它表示所有的线程已经完成了任务，然后在闭锁上等待的线程就可以恢复执行任务。</li>
+</ul>
+<h3 id="countdownlatch-如何工作">CountDownLatch 如何工作</h3>
+<ul>
+<li>构造方法
+<ul>
+<li>CountDownLatch(int count)：构造一个以给定计数初始化的CountDownLatch。</li>
+<li>构造器的计数值（count）实际上就是闭锁需要等待的线程数量。这个值只能被设置一次，而且CountDownLatch 没有提供任何机制去重新设置这个计数值。</li>
+<li>与CountDownLatch的第一次交互是主线程等待其他线程。主线程必须在启动其他线程后立即调用CountDownLatch.await() 方法。这样主线程的操作就会在这个方法上阻塞，直到其他线程完成各自的任务。</li>
+<li>其他N个线程必须引用闭锁对象，因为他们需要通知CountDownLatch对象，他们已经完成了各自的任务。这种通知机制是通过CountDownLatch.countDown() 方法来完成的；每调用一次这个方法，在构造函数中初始化的count值就减1。所以当N个线程都调用了这个方法，count的值等于0，然后主线程就能通过await() 方法，恢复执行自己的任务。</li>
+</ul>
+</li>
+<li>await()
+<ul>
+<li>使当前线程在锁存器倒计时至零前一直等待，除非线程被中断。</li>
+<li>当 count 减少到零时，唤醒当前线程</li>
+</ul>
+</li>
+<li>countDown()
+<ul>
+<li>递减锁存器的计数，如果计数达到零，则释放所有等待。</li>
+</ul>
+</li>
+</ul>
+<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/CountDownLatch.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">CountDownLatch 航班查询流程图</center>
+<h3 id="示例">示例</h3>
+<pre><code class="language-java">package luban;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+public class FightQueryDemo {
+    private static List&lt;String&gt; company = Arrays.asList(&quot;东方航空&quot;,&quot;南方航空&quot;,&quot;海南航空&quot;);
+    // 结果列表
+    private static List&lt;String&gt; fightList = new ArrayList&lt;&gt;();
+    public static void main(String[] args) throws InterruptedException {
+        // 出发地
+        String origin = &quot;BJ&quot;;
+        // 目的地
+        String dest = &quot;SH&quot;;
+        // 定义门闩
+        CountDownLatch latch = new CountDownLatch(company.size());
+        // 创建线程池
+        ExecutorService service = Executors.newCachedThreadPool();
+        // 创建线程
+        for (int i = 0; i &lt; company.size(); i++) {
+            String name = company.get(i);
+            service.execute(() -&gt; {
+                // 获取公司名称
+                System.out.println(name + &quot;查询从&quot; + origin + &quot;到&quot; + dest + &quot;的机票&quot;);
+                // 生成随机数表示此公司机票数量
+                int val = new Random().nextInt(10);
+                try {
+                    TimeUnit.SECONDS.sleep(val);
+                    fightList.add(name + &quot;:&quot; + val);
+                    System.out.println(name + &quot;查询成功！&quot;);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                // 这个公司查询完毕，门闩 - 1
+                latch.countDown();
+            });
+        }
+        service.shutdown();
+        // 等待所有线程结束
+        latch.await();
+        System.out.println(&quot;==== 查询结果如下 ====&quot;);
+        System.out.println(fightList);
+    }
+}
+</code></pre>
+<p>运行结果：</p>
+<pre><code>东方航空查询从BJ到SH的机票
+海南航空查询从BJ到SH的机票
+南方航空查询从BJ到SH的机票
+海南航空查询成功！
+南方航空查询成功！
+东方航空查询成功！
+==== 查询结果如下 ====
+[海南航空:6, 南方航空:7, 东方航空:7]
+</code></pre>
+<ol start="2">
+<li>CyclicBarries</li>
+</ol>
+<figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/CyclicBarries.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">CyclieBarries 模拟运动员跑步比赛</center>
+<h3 id="cyclicbarrier用法">CyclicBarrier用法</h3>
+<ul>
+<li>字面意思<strong>回环栅栏</strong>，通过它可以实现让一组线程等待至某个状态之后再<strong>全部同时执行</strong>。</li>
+<li>叫做回环是因为<strong>当所有等待线程都被释放以后</strong>，CyclicBarrier可以被重用。我们暂且把这个状态就叫做barrier，当调用awai() 方法之后，线程就处于barrier了。</li>
+<li>赛跑：
+<ul>
+<li>需要所有的子任务都完成时，才执行主任务，这个时候就可以选择使用CyclicBarrier。</li>
+</ul>
+</li>
+</ul>
+<h2 id="基本原理">基本原理：</h2>
+<ul>
+<li>每个线程执行时，都会碰到一个屏障，直到所有线程执行结束，然后屏障便会打开，使所有线程继续往下执行。</li>
+<li>在 CyclicBarrier 的内部定义了一个 Lock 对象，每当一个线调用 await 方法时，将拦截的线程数加减 1，然后判断计数器当前是否等于 0 ，如果不是，进入Lock对象的条件队列等待。如果是，执行 barrierAction 对象的 Runnable 方法，然后将锁的条件队列中的所有线程放入锁等待队列中，这些线程会依次的获取锁、释放锁。</li>
+<li>CyclicBarrier的两个<strong>构造函数</strong>：
+<ul>
+<li>CyclicBarrier（int parties）：声明需要拦截的线程数</li>
+<li>CyclicBarrier（int parties，Runnable barierAction）：声明需要拦截的线程数，定义一个等待所有线程到达屏障优先执行的Runnable对象。</li>
+</ul>
+</li>
+</ul>
+<pre><code class="language-java">package luban;
+import java.util.Random;
+import java.util.concurrent.*;
+public class RaceDemo {
+    public static void main(String[] args) {
+        CyclicBarrier barrier = new CyclicBarrier(8);
+        ExecutorService service = Executors.newCachedThreadPool();
+        for(int i = 0 ; i &lt; 8 ; i++){
+            service.execute(() -&gt; {
+                try {
+                    TimeUnit.SECONDS.sleep(new Random().nextInt(10));
+                    System.out.println(Thread.currentThread().getName() + &quot;准备好了&quot;);
+                    // 此线程已经准备好，唤醒其他线程
+                    barrier.await();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (BrokenBarrierException e) {
+                    e.printStackTrace();
+                }
+                System.out.println(&quot;选手&quot; + Thread.currentThread().getName() + &quot;起跑&quot;);
+            });
+        }
+        service.shutdown();
+    }
+}
+</code></pre>
+<p>运行结果：</p>
+<pre><code>pool-1-thread-8准备好了
+pool-1-thread-4准备好了
+pool-1-thread-5准备好了
+pool-1-thread-2准备好了
+pool-1-thread-1准备好了
+pool-1-thread-7准备好了
+pool-1-thread-3准备好了
+pool-1-thread-6准备好了
+选手pool-1-thread-6起跑
+选手pool-1-thread-8起跑
+选手pool-1-thread-5起跑
+选手pool-1-thread-4起跑
+选手pool-1-thread-3起跑
+选手pool-1-thread-7起跑
+选手pool-1-thread-1起跑
+选手pool-1-thread-2起跑
+</code></pre>
+<ul>
+<li>一般情况下对于两个非常相似的类，我们一般都会想当然地去把他们进行类比。对于CountDownLatch 和CyclicBarrier 两个类，我们可以看到CountDownLatch 类都是一个类似于集结点的概念，很多个线程做完事情之后等待其他线程完成，全部线程完成之后再恢复运行。不同的是CountDownLatch 类需要你自己调用countDown() 方法减少一个计数，然后调用await() 方法即可。而CyclicBarrier 则直接调用await() 方法即可。</li>
+<li>所以从上面来看，CountDownLatch更倾向于多个线程合作的情况，等你所有东西都准备好了，我这边就自动执行了。而CyclicBarrier则是我们都在一个地方等你，大家到齐了，大家再一起执行。</li>
+</ul>
+<ol start="3">
+<li>Semaphore</li>
+</ol>
+<ul>
+<li>资源有限共享</li>
+<li>停车场为例：</li>
+</ul>
+<figure data-type="image" tabindex="4"><img src="https://epitomm.github.io/post-images/Semaphore.png" alt="图片" loading="lazy"></figure>
+<pre><code class="language-java">package com.ssm;
+
+import java.util.Random;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+
+public class CarDemo {
+    public static void main(String[] args) throws InterruptedException {
+        // 创建 Semaphore
+        Semaphore semaphore = new Semaphore(3);
+        Thread [] cars = new Thread[10];
+        for (int i = 0; i &lt; 10; i++) {
+            cars[i] = new Thread(()-&gt;{
+                try {
+                    // 请求许可
+                    semaphore.acquire();
+                    System.out.println(Thread.currentThread().getName() + &quot;可以进入停车场&quot;);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+                // 使用资源
+                try {
+                    int val = new Random().nextInt(5);
+                    TimeUnit.SECONDS.sleep(val);
+                    System.out.println(Thread.currentThread().getName()+&quot;停留了&quot;+val+&quot;秒&quot;);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                // 离开（释放资源）
+                semaphore.release();
+                System.out.println(Thread.currentThread().getName() + &quot;离开了停车场&quot;);
+            },&quot;car[&quot;+i+&quot;]&quot;);
+            cars[i].start();
+        }
+    }
+}
+</code></pre>
+<p>运行结果：</p>
+<pre><code>car[0]可以进入停车场
+car[2]可以进入停车场
+car[7]可以进入停车场
+car[0]停留了0秒
+car[0]离开了停车场
+car[4]可以进入停车场
+car[7]停留了2秒
+car[7]离开了停车场
+car[8]可以进入停车场
+car[2]停留了3秒
+car[8]停留了1秒
+car[3]可以进入停车场
+car[2]离开了停车场
+car[5]可以进入停车场
+car[8]离开了停车场
+car[4]停留了4秒
+car[4]离开了停车场
+car[1]可以进入停车场
+car[3]停留了2秒
+car[3]离开了停车场
+car[9]可以进入停车场
+car[9]停留了0秒
+car[9]离开了停车场
+car[6]可以进入停车场
+car[6]停留了0秒
+car[6]离开了停车场
+car[1]停留了1秒
+car[1]离开了停车场
+car[5]停留了3秒
+car[5]离开了停车场
+</code></pre>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li><a href="#%E4%B8%80-%E5%B9%B6%E5%8F%91%E9%94%81">一、并发锁</a>
+<ul>
+<li><a href="#reentrantlock">ReentrantLock</a></li>
+<li><a href="#reentrantreadwritelock">ReentrantReadWriteLock</a></li>
+</ul>
+</li>
+<li><a href="#%E4%BA%8C-%E5%B9%B6%E5%8F%91%E5%B7%A5%E5%85%B7">二、并发工具</a><br>
+*
+<ul>
+<li><a href="#countdownlatch-%E7%94%A8%E6%B3%95">CountDownLatch 用法</a></li>
+<li><a href="#countdownlatch-%E5%A6%82%E4%BD%95%E5%B7%A5%E4%BD%9C">CountDownLatch 如何工作</a></li>
+<li><a href="#%E7%A4%BA%E4%BE%8B">示例</a></li>
+<li><a href="#cyclicbarrier%E7%94%A8%E6%B3%95">CyclicBarrier用法</a></li>
+<li><a href="#%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86">基本原理：</a></li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://epitomm.github.io/post/http-xi-lie-si-an-quan-de-https/">
+              <h3 class="post-title">
+                HTTP系列（四）安全的HTTPS
+              </h3>
+            </a>
+          </div>
+        
+
+        
+          
+            <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+<script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+
+<div id="gitalk-container"></div>
+
+<script>
+
+  var gitalk = new Gitalk({
+    clientID: '974bd77fbbd52c2a0647',
+    clientSecret: '6344370ca1314dbd553f45e75a2121a160ef1c44',
+    repo: 'EpitomM.github.io',
+    owner: 'EpitomM',
+    admin: ['EpitomM'],
+    id: (location.pathname).substring(0, 49),      // Ensure uniqueness and length less than 50
+    distractionFreeMode: false  // Facebook-like distraction free mode
+  })
+
+  gitalk.render('gitalk-container')
+
+</script>
+
+          
+
+          
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/EpitomM/EpitomM.github.io" target="_blank">EpitomM</a>
+  <a class="rss" href="https://epitomm.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>
