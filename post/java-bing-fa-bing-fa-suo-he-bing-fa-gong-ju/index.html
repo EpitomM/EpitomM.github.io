@@ -3,7 +3,7 @@
     <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Java 并发——并发锁和并发工具 | SSM</title>
-<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1588066930088">
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1588067289412">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
 <link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
 <link rel="alternate" type="application/atom+xml" title="Java 并发——并发锁和并发工具 | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
@@ -28,7 +28,7 @@ ReentrantLock
       <div class="main-content">
         <div class="site-header">
   <a href="https://epitomm.github.io">
-  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1588066930088" alt="">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1588067289412" alt="">
   </a>
   <h1 class="site-title">
     SSM
@@ -243,7 +243,7 @@ public class FightQueryDemo {
 </ul>
 </li>
 </ul>
-<h2 id="基本原理">基本原理：</h2>
+<h3 id="基本原理">基本原理：</h3>
 <ul>
 <li>每个线程执行时，都会碰到一个屏障，直到所有线程执行结束，然后屏障便会打开，使所有线程继续往下执行。</li>
 <li>在 CyclicBarrier 的内部定义了一个 Lock 对象，每当一个线调用 await 方法时，将拦截的线程数加减 1，然后判断计数器当前是否等于 0 ，如果不是，进入Lock对象的条件队列等待。如果是，执行 barrierAction 对象的 Runnable 方法，然后将锁的条件队列中的所有线程放入锁等待队列中，这些线程会依次的获取锁、释放锁。</li>
@@ -400,9 +400,9 @@ car[5]离开了停车场
 <li><a href="#2-cyclicbarries">2. CyclicBarries</a>
 <ul>
 <li><a href="#cyclicbarrier%E7%94%A8%E6%B3%95">CyclicBarrier用法</a></li>
+<li><a href="#%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86">基本原理：</a></li>
 </ul>
 </li>
-<li><a href="#%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86">基本原理：</a></li>
 <li><a href="#3-semaphore">3. Semaphore</a></li>
 </ul>
 </li>
