@@ -3,7 +3,7 @@
     <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Java 并发——并发锁和并发工具 | SSM</title>
-<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1588061997055">
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1588066930088">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
 <link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
 <link rel="alternate" type="application/atom+xml" title="Java 并发——并发锁和并发工具 | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
@@ -28,7 +28,7 @@ ReentrantLock
       <div class="main-content">
         <div class="site-header">
   <a href="https://epitomm.github.io">
-  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1588061997055" alt="">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1588066930088" alt="">
   </a>
   <h1 class="site-title">
     SSM
@@ -139,9 +139,7 @@ ReentrantLock
 </ul>
 <h1 id="二-并发工具">二、并发工具</h1>
 <p>航班查询：APP ---&gt;多个线程到不同的公司查询 ---&gt; 全部线程都查询完毕后，整理结果 result 返回给前台用户。</p>
-<ol>
-<li>CountDownLatch</li>
-</ol>
+<h2 id="1-countdownlatch">1. CountDownLatch</h2>
 <h3 id="countdownlatch-用法">CountDownLatch 用法</h3>
 <ul>
 <li>CountDownLatch 类位于java.util.concurrent包下，利用它可以实现类似<strong>计数器</strong>的功能。</li>
@@ -232,9 +230,7 @@ public class FightQueryDemo {
 ==== 查询结果如下 ====
 [海南航空:6, 南方航空:7, 东方航空:7]
 </code></pre>
-<ol start="2">
-<li>CyclicBarries</li>
-</ol>
+<h2 id="2-cyclicbarries">2. CyclicBarries</h2>
 <figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/CyclicBarries.png" alt="图片" loading="lazy"></figure>
 <p style = "text-align:center;font-family:楷体">CyclieBarries 模拟运动员跑步比赛</center>
 <h3 id="cyclicbarrier用法">CyclicBarrier用法</h3>
@@ -306,9 +302,7 @@ pool-1-thread-6准备好了
 <li>一般情况下对于两个非常相似的类，我们一般都会想当然地去把他们进行类比。对于CountDownLatch 和CyclicBarrier 两个类，我们可以看到CountDownLatch 类都是一个类似于集结点的概念，很多个线程做完事情之后等待其他线程完成，全部线程完成之后再恢复运行。不同的是CountDownLatch 类需要你自己调用countDown() 方法减少一个计数，然后调用await() 方法即可。而CyclicBarrier 则直接调用await() 方法即可。</li>
 <li>所以从上面来看，CountDownLatch更倾向于多个线程合作的情况，等你所有东西都准备好了，我这边就自动执行了。而CyclicBarrier则是我们都在一个地方等你，大家到齐了，大家再一起执行。</li>
 </ul>
-<ol start="3">
-<li>Semaphore</li>
-</ol>
+<h2 id="3-semaphore">3. Semaphore</h2>
 <ul>
 <li>资源有限共享</li>
 <li>停车场为例：</li>
@@ -394,14 +388,22 @@ car[5]离开了停车场
 <li><a href="#reentrantreadwritelock">ReentrantReadWriteLock</a></li>
 </ul>
 </li>
-<li><a href="#%E4%BA%8C-%E5%B9%B6%E5%8F%91%E5%B7%A5%E5%85%B7">二、并发工具</a><br>
-*
+<li><a href="#%E4%BA%8C-%E5%B9%B6%E5%8F%91%E5%B7%A5%E5%85%B7">二、并发工具</a>
+<ul>
+<li><a href="#1-countdownlatch">1. CountDownLatch</a>
 <ul>
 <li><a href="#countdownlatch-%E7%94%A8%E6%B3%95">CountDownLatch 用法</a></li>
 <li><a href="#countdownlatch-%E5%A6%82%E4%BD%95%E5%B7%A5%E4%BD%9C">CountDownLatch 如何工作</a></li>
 <li><a href="#%E7%A4%BA%E4%BE%8B">示例</a></li>
+</ul>
+</li>
+<li><a href="#2-cyclicbarries">2. CyclicBarries</a>
+<ul>
 <li><a href="#cyclicbarrier%E7%94%A8%E6%B3%95">CyclicBarrier用法</a></li>
+</ul>
+</li>
 <li><a href="#%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86">基本原理：</a></li>
+<li><a href="#3-semaphore">3. Semaphore</a></li>
 </ul>
 </li>
 </ul>
