@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://epitomm.github.io</id>
     <title>SSM</title>
-    <updated>2020-04-28T09:48:14.530Z</updated>
+    <updated>2020-04-29T15:51:20.808Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://epitomm.github.io"/>
     <link rel="self" href="https://epitomm.github.io/atom.xml"/>
@@ -10,6 +10,695 @@
     <logo>https://epitomm.github.io/images/avatar.png</logo>
     <icon>https://epitomm.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, SSM</rights>
+    <entry>
+        <title type="html"><![CDATA[Java 并发——CAS 和 AQS]]></title>
+        <id>https://epitomm.github.io/post/java-bing-fa-cas-he-aqs/</id>
+        <link href="https://epitomm.github.io/post/java-bing-fa-cas-he-aqs/">
+        </link>
+        <updated>2020-04-29T15:37:33.000Z</updated>
+        <content type="html"><![CDATA[<ul>
+<li>多线程
+<ul>
+<li>Synchronized Volatile单例</li>
+<li>锁：封锁。
+<ul>
+<li>悲观锁、写（增删改）多，读（查）少Lock</li>
+<li>乐观锁：读（查）多、写少版本</li>
+</ul>
+</li>
+<li>1.5 JUC</li>
+</ul>
+</li>
+</ul>
+<h1 id="一-cas">一、CAS</h1>
+<h2 id="1-概念">1. 概念</h2>
+<ul>
+<li>CompareAndSet：比较和设置</li>
+<li>CompareAndSwap：比较和交换。一种无锁的原子算法，乐观锁。</li>
+<li>思想：
+<ul>
+<li>给你一个期望值，与现有的值比较，如果相等则修改；如果不相等什么事情都不做。</li>
+<li>CAS(V,E,N)
+<ul>
+<li>V：目前拿到的值</li>
+<li>E：期望值</li>
+<li>N：新值</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="2-作用及优点">2. 作用及优点</h2>
+<ul>
+<li>CAS 实现稍微复杂，无锁，不存在阻塞，提高了效率，CPU的吞吐量高，性能好。</li>
+</ul>
+<h2 id="3-实例">3. 实例</h2>
+<pre><code class="language-java">package luban;
+
+public class CASDemo1 {
+
+    private static volatile int m = 0;
+
+    public static void increase(){
+        m ++;
+    }
+    public static void main(String[] args){
+        for (int i = 0; i &lt; 20; i++) {
+            new Thread(() -&gt; {
+                CASDemo1.increase();
+            }).start();
+        }
+        System.out.println(m);
+    }
+}
+</code></pre>
+<p>运行结果：</p>
+<pre><code>16
+</code></pre>
+<p>分析：<br>
+m++ 不具有原子性。</p>
+<p>修改后：</p>
+<pre><code class="language-java">package luban;
+
+/**
+ * volatile 变量
+ * join()
+ */
+public class CASDemo3 {
+
+    private static volatile int m = 0;
+    public static void increase(){
+        m ++;
+    }
+    public static void main(String[] args) throws InterruptedException {
+        Thread[] threads = new Thread[20];
+        for (int i = 0; i &lt; threads.length; i++) {
+            threads[i] = new Thread(() -&gt; {
+                CASDemo3.increase();
+            });
+            threads[i].start();
+            threads[i].join();
+        }
+        System.out.println(m);
+    }
+}
+</code></pre>
+<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/join.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">join()</p>
+<p>反汇编：</p>
+<pre><code>javap -c CASDemo3
+</code></pre>
+<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/i++.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">i++ 三步操作</p>
+<pre><code class="language-java">package luban;
+
+/**
+ * AtomicInteger 变量
+ * join()
+ */
+
+import java.util.concurrent.atomic.AtomicInteger;
+
+public class CASDemo2 {
+
+    private static AtomicInteger atomicI = new AtomicInteger(0);
+
+    public static void increastAtomic(){
+        atomicI.incrementAndGet();
+    }
+    public static void main(String[] args) throws InterruptedException {
+        Thread[] threads = new Thread[20];
+        for (int i = 0; i &lt; threads.length; i++) {
+            threads[i] = new Thread(() -&gt; {
+                CASDemo2.increastAtomic();
+            });
+            threads[i].start();
+            threads[i].join();// join()：加入。当前 threads[i] 线程加入到线程组中，当前线程等待 threads[i]线程执行完了之后再执行
+        }
+        System.out.println(atomicI.get());
+    }
+}
+</code></pre>
+<p>反汇编：</p>
+<pre><code>javap -c CASDemo2
+</code></pre>
+<figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/atomicI.incrementAndGet.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">atomicI.incrementAndGet() 实现 i++ 只需一步操作</p>
+<h2 id="4-方法摘要">4. 方法摘要</h2>
+<figure data-type="image" tabindex="4"><img src="https://epitomm.github.io/post-images/atomic%E6%96%B9%E6%B3%95.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">java.util.concurrent.atomic</p>
+<figure data-type="image" tabindex="5"><img src="https://epitomm.github.io/post-images/AtomicInteger%E6%96%B9%E6%B3%95.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">AtomicInteger 方法摘要</p>
+<h2 id="5-原理">5. 原理</h2>
+<p>JUC下的atomic类都是通过CAS来实现的，下面就以AtomicInteger为例来阐述CAS的实现。如下：</p>
+<figure data-type="image" tabindex="6"><img src="https://epitomm.github.io/post-images/AtomicInteger%E7%B1%BB.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">AtomicInteger 类</p>
+<figure data-type="image" tabindex="7"><img src="https://epitomm.github.io/post-images/getUnsafe.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">JVM 调用底层指令实现 getUnsafe()</p>
+<figure data-type="image" tabindex="8"><img src="https://epitomm.github.io/post-images/incrementAndGet.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">incrementAndGet() 方法</p>
+<figure data-type="image" tabindex="9"><img src="https://epitomm.github.io/post-images/getAndAddInt.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">getAndAddInt() 方法</p>
+<pre><code class="language-java">public final native boolean compareAndSwapInt(Object var1, long var2, int var4, int var5);
+// var1：现在拿到的值
+// var2：期望的值
+// var4:最终改变的值
+// var5：最后改变了的值  
+</code></pre>
+<p>总结：CAS的原子性流程<br>
+<img src="https://epitomm.github.io/post-images/Unsafe.png" alt="图片" loading="lazy"></p>
+<p style = "text-align:center;font-family:楷体">Unsafe 的返回值是 Atomic::cmpchg(x, addr, e)</p>
+<figure data-type="image" tabindex="10"><img src="https://epitomm.github.io/post-images/Unsafe_2.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">Atomic::cmpchg(jint exchange_value, volatile jint* dest, jint com)</p>
+<p>incrementAndGet -&gt; unsafe.java -&gt; unsafe.cpp -&gt; 汇编 cmpxchg</p>
+<p>需要<strong>硬件支持</strong>汇编指令 cmpxchg</p>
+<p>Unsafe是CAS的核心类，Java无法直接访问底层操作系统，而是通过本地（native）方法来访问。不过尽管如此，JVM还是开了一个后门：Unsafe，它提供了硬件级别的原子操作。</p>
+<h2 id="6-缺点">6. 缺点</h2>
+<ul>
+<li>无法检测到中间值的变化：A(100) -&gt; B(110) -&gt; A(100)</li>
+</ul>
+<p>CAS需要检查操作值有没有发生改变，如果没有发生改变则更新。但是存在这样一种情况：如果一个值原来是A，变成了B，然后又变成了A，那么在CAS检查的时候会发现没有改变，但是实质上它已经发生了改变，这就是所谓的ABA问题。</p>
+<pre><code class="language-java">package luban;
+/**
+ * 无法检测到中间值的变化
+ */
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
+public class CASDemo4 {
+
+    private static AtomicInteger atomicI = new AtomicInteger(100);
+
+    public static void main(String[] args){
+        ExecutorService service = Executors.newCachedThreadPool();
+        service.execute(() -&gt; {
+            System.out.println(&quot;(1) 100 变为 110：&quot; + atomicI.compareAndSet(100,110));
+        });
+
+        service.execute(() -&gt; {
+            try {
+                TimeUnit.SECONDS.sleep(2);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            System.out.println(&quot;(2) 110 变为 100：&quot; + atomicI.compareAndSet(110,100));
+        });
+
+        service.execute(() -&gt; {
+            try {
+                TimeUnit.SECONDS.sleep(3);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            System.out.println(&quot;(3) 110 变为 100：&quot; + atomicI.compareAndSet(100,120));
+        });
+
+        service.shutdown();
+    }
+}
+</code></pre>
+<p>运行结果：</p>
+<pre><code>(1) 100 变为 110：true
+(2) 110 变为 100：true
+(3) 110 变为 100：true
+</code></pre>
+<h2 id="7-改进">7. 改进</h2>
+<p>类 AtomicStampedReference<V></p>
+<p>增加版本号声明：A1(100) -&gt; B2(110) -&gt; A3(100)</p>
+<pre><code class="language-java">package luban;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicStampedReference;
+
+public class CASDemo5 {
+
+    // 设置初值时，给定版本号
+    private static AtomicStampedReference asr = new AtomicStampedReference(100, 1);
+    public static void main(String[] args){
+        ExecutorService service = Executors.newCachedThreadPool();
+        service.execute(() -&gt; {
+            try {
+                TimeUnit.SECONDS.sleep(1);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            System.out.println(&quot;100 变为 110：&quot; + asr.compareAndSet(100,110,asr.getStamp(), asr.getStamp() + 1));
+            System.out.println(&quot;110 变成 100：&quot; +asr.compareAndSet(110,100,asr.getStamp(), asr.getStamp() + 1));
+        });
+        service.execute(() -&gt; {
+            // 得到版本号
+            int stamp = asr.getStamp();
+            try {
+                TimeUnit.SECONDS.sleep(2);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            System.out.println(asr.getStamp());
+            System.out.println(stamp);
+            System.out.println(&quot;100 变成 120：&quot; +asr.compareAndSet( 100,120,stamp, stamp  + 1));
+//            System.out.println(&quot;100 变成 120：&quot; +asr.compareAndSet( 100,120,asr.getStamp(), asr.getStamp()  + 1));
+        });
+    }
+}
+</code></pre>
+<p>运行结果：</p>
+<pre><code>100 变为 110：true
+110 变成 100：true
+3
+1
+100 变成 120：false
+</code></pre>
+<p>分析：第一个线程 sleep 2 秒后执行 set，所以第二个线程先 getStamp() 到的stamp 是初始化的，还未修改过的 stamp = 1；而第二个线程 sleep 后的 asr 得到的 stamp = 3，现有值与期望值不同，所以修改失败。<br>
+CAS 的应用场景：</p>
+<ul>
+<li>应用于简单的数据计算。</li>
+<li>适合线程冲突少的场景。</li>
+</ul>
+<h1 id="二-aqs">二、AQS</h1>
+<h2 id="1-概念-2">1. 概念</h2>
+<ul>
+<li>AbstractQueuedSynchronizer</li>
+<li>同步发生器</li>
+<li>构建 LOCK</li>
+<li>JUC：java.util.current</li>
+</ul>
+<h2 id="2-基本思想">2. 基本思想</h2>
+<ul>
+<li>通过内置得到 FIFO 同步队列来完成线程争夺资源的管理工作。</li>
+</ul>
+<h2 id="3-clh同步队列">3. CLH同步队列</h2>
+<figure data-type="image" tabindex="11"><img src="https://epitomm.github.io/post-images/CLH%E5%90%8C%E6%AD%A5%E9%98%9F%E5%88%97.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">CLH 同步队列</p>
+<pre><code>static final class Node {
+    /** Marker to indicate a node is waiting in shared mode */
+    static final Node SHARED = new Node(); // 共享
+    /** Marker to indicate a node is waiting in exclusive mode */
+    static final Node EXCLUSIVE = null; // 排他
+
+    /** waitStatus value to indicate thread has cancelled */
+    static final int CANCELLED =  1; // 因中断、完成 退出队列
+    /** waitStatus value to indicate successor's thread needs unparking */
+    static final int SIGNAL    = -1; // 节点的后继结点被阻塞
+    /** waitStatus value to indicate thread is waiting on condition */
+    static final int CONDITION = -2; // 条件阻塞
+    /**
+     * waitStatus value to indicate the next acquireShared should
+     * unconditionally propagate
+     */
+    static final int PROPAGATE = -3; // 共享模式下，头结点的状态
+</code></pre>
+<h1 id="三-自定义锁">三、自定义锁</h1>
+<ul>
+<li>AQS 写一个锁（Lock）
+<ul>
+<li>子类定义为非公共内部帮助器类（私有的内部类继承AQS），写锁的时候的一个帮助器，提供获取或和释放锁的功能。</li>
+</ul>
+</li>
+<li>方法
+<ul>
+<li>acquire(int arg)：以<strong>独占</strong>模式获取，忽略中断。</li>
+<li>acquireShared(int arg)：以<strong>共享</strong>模式获取，忽略中断。</li>
+</ul>
+</li>
+</ul>
+<pre><code class="language-java">public final void acquire(int arg) {
+    if (!tryAcquire(arg) &amp;&amp;
+        acquireQueued(addWaiter(Node.EXCLUSIVE), arg))
+        selfInterrupt();
+}
+</code></pre>
+<ul>
+<li>tryAcquire(int arg) ：尝试以独占模式获取对象状态。</li>
+<li>tryAcquireShared(int arg)：尝试以共享模式获取对象状态 。</li>
+</ul>
+<pre><code class="language-java">private Node addWaiter(Node mode) {
+    Node node = new Node(Thread.currentThread(), mode);
+    // Try the fast path of enq; backup to full enq on failure
+    Node pred = tail;
+    if (pred != null) {
+        node.prev = pred;
+        if (compareAndSetTail(pred, node)) {
+            pred.next = node;
+            return node;
+        }
+    }
+    enq(node);
+    return node;
+}
+</code></pre>
+<ul>
+<li>release(int arg)：以独占模式释放对象。</li>
+<li>releaseShared(int arg)：以共享模式释放对象。</li>
+</ul>
+<h2 id="实例">实例</h2>
+<figure data-type="image" tabindex="12"><img src="https://epitomm.github.io/post-images/Lock%E7%B1%BB%E6%96%B9%E6%B3%95.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">Lock 类的方法</p>
+<pre><code class="language-java">package luban;
+
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.AbstractQueuedSynchronizer;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+
+public class MyLock implements Lock {
+
+    private Helper helper = new Helper();
+
+    private class Helper extends AbstractQueuedSynchronizer{
+        // 获取锁
+        @Override
+        protected boolean tryAcquire(int arg) {
+            int state = getState();
+            if(state == 0){
+                // 利用 CAS 原理修改 state
+                if(compareAndSetState(0, arg)){
+                    // 设置当前线程占有资源
+                    setExclusiveOwnerThread(Thread.currentThread());
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // 释放锁
+        @Override
+        protected boolean tryRelease(int arg) {// arg:信号量
+            int state = getState() - arg;
+            boolean flag = false;
+            // 判断释放后是否为 0
+            if(state == 0){
+                setExclusiveOwnerThread(null);
+                setState(state);
+                return true;
+            }
+            setState(state);//不存在线程安全问题。重入性的问题，已经独占了资源state，其他线程不会干扰
+            return false;
+        }
+        public Condition newConditionObject(){
+            return new ConditionObject();
+        }
+    }
+    @Override
+    public void lock() {
+        helper.acquire(1);
+    }
+
+    @Override
+    public void lockInterruptibly() throws InterruptedException {
+        helper.acquireInterruptibly(1);
+    }
+
+    @Override
+    public boolean tryLock() {
+        return helper.tryAcquire(1);
+    }
+
+    @Override
+    public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
+        return helper.tryAcquireNanos(1, unit.toNanos(time));
+    }
+
+    @Override
+    public void unlock() {
+        helper.release(1);
+    }
+
+    @Override
+    public Condition newCondition() {
+        return helper.newConditionObject();
+    }
+}
+</code></pre>
+<ol>
+<li>不加锁的实现有问题</li>
+</ol>
+<pre><code class="language-java">package luban;
+import java.util.concurrent.TimeUnit;
+
+public class Demo {
+    private int m = 0;
+    private int next(){
+        try {
+            TimeUnit.SECONDS.sleep(1);
+            return m++;
+        } catch (InterruptedException e) {
+            throw new RuntimeException(&quot;ERROR&quot;);
+        }
+    }
+
+    public static void main(String[] args){
+        Demo demo = new Demo();
+        Thread[] th = new Thread[10];
+        for(int i = 0 ; i &lt; 10 ; i ++){
+            th[i] = new Thread(() -&gt; {
+                System.out.println(demo.next());
+            });
+            th[i].start();
+        }
+    }
+}
+</code></pre>
+<p>运行结果：</p>
+<pre><code>1
+7
+8
+6
+5
+0
+4
+3
+2
+0
+</code></pre>
+<ol start="2">
+<li>使用自定义锁的实现正确</li>
+</ol>
+<pre><code class="language-java">package luban;
+
+public class Demo01 {
+
+    private MyLock lock = new MyLock();
+
+    private int m = 0;
+
+    public int next(){
+        lock.lock();
+        try {
+            return m++;
+        } finally{
+            lock.unlock();
+        }
+    }
+
+    public static void main(String[] args){
+        Demo01 demo = new Demo01();
+        Thread[] th = new Thread[10];
+        for(int i = 0 ; i &lt; 10 ; i ++){
+            th[i] = new Thread(() -&gt; {
+                System.out.println(demo.next());
+            });
+            th[i].start();
+        }
+    }
+}
+</code></pre>
+<p>运行结果：</p>
+<pre><code>0
+4
+3
+2
+1
+5
+6
+7
+8
+9
+</code></pre>
+<p>上面实现的 MyLock 不具有可重入性。测试：</p>
+<pre><code class="language-java">package luban;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+public class Demo02 {
+
+    private MyLock lock = new MyLock();
+
+    private int m = 0;
+
+    public void a(){
+        lock.lock();
+        System.out.println(&quot;a&quot;);
+        b();
+        lock.unlock();
+    }
+    public void b(){
+        lock.lock();
+        System.out.println(&quot;b&quot;);
+        lock.unlock();
+    }
+
+    public int next(){
+        lock.lock();
+        try {
+            return m++;
+        } finally{
+            lock.unlock();
+        }
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        Demo02 demo = new Demo02();
+        ExecutorService service = Executors.newCachedThreadPool();
+        service.execute(() -&gt; {
+            demo.a();
+        });
+    }
+}
+</code></pre>
+<p>运行结果：</p>
+<pre><code>a
+（阻塞···）
+</code></pre>
+<h2 id="可重入性">可重入性</h2>
+<p>同一个锁对同一资源进行占有的时候，直接分配给这个线程。</p>
+<p>【占有锁的线程再次申请锁时仍可获取。获取一次，锁这个变量值(默认为 0) 加一。释放一次，锁这个变量值减一。锁这个变量值为 0 时，说明该锁没有被线程占用。】</p>
+<p>对 MyLock 代码进行修改，使其具有可重入性：</p>
+<pre><code class="language-java">package luban;
+
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.AbstractQueuedSynchronizer;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+
+public class MyLock implements Lock {
+
+    private Helper helper = new Helper();
+
+    private class Helper extends AbstractQueuedSynchronizer{
+        // 获取锁
+        @Override
+        protected boolean tryAcquire(int arg) {
+            int state = getState();
+            if(state == 0){
+                // 利用 CAS 原理修改 state
+                if(compareAndSetState(0, arg)){
+                    // 设置当前线程占有资源
+                    setExclusiveOwnerThread(Thread.currentThread());
+                    return true;
+                }
+            }else if(getExclusiveOwnerThread() == Thread.currentThread()){//可重入
+                setState(getState() + arg);
+                return true;
+            }
+            return false;
+        }
+
+        // 释放锁
+        @Override
+        protected boolean tryRelease(int arg) {// arg:信号量
+            int state = getState() - arg;
+            boolean flag = false;
+            // 判断释放后是否为 0
+            if(state == 0){
+                setExclusiveOwnerThread(null);
+                setState(state);
+                return true;
+            }
+            setState(state);//不存在线程安全问题。重入性的问题，已经独占了资源state，其他线程不会干扰
+            return false;
+        }
+
+        public Condition newConditionObject(){
+            return new ConditionObject();
+        }
+    }
+    @Override
+    public void lock() {
+        helper.acquire(1);
+    }
+
+    @Override
+    public void lockInterruptibly() throws InterruptedException {
+        helper.acquireInterruptibly(1);
+    }
+
+    @Override
+    public boolean tryLock() {
+        return helper.tryAcquire(1);
+    }
+
+    @Override
+    public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
+        return helper.tryAcquireNanos(1, unit.toNanos(time));
+    }
+
+    @Override
+    public void unlock() {
+        helper.release(1);
+    }
+
+    @Override
+    public Condition newCondition() {
+        return helper.newConditionObject();
+    }
+}
+</code></pre>
+<p>测试：</p>
+<pre><code class="language-java">package luban;
+
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+public class Demo02 {
+
+    private MyLock lock = new MyLock();
+
+    private int m = 0;
+
+    public void a(){
+        lock.lock();
+        System.out.println(&quot;a&quot;);
+        b();
+        lock.unlock();
+    }
+    public void b(){
+        lock.lock();
+        System.out.println(&quot;b&quot;);
+        lock.unlock();
+    }
+
+    public int next(){
+        lock.lock();
+        try {
+            return m++;
+        } finally{
+            lock.unlock();
+        }
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        Demo02 demo = new Demo02();
+        ExecutorService service = Executors.newCachedThreadPool();
+        service.execute(() -&gt; {
+            demo.a();
+        });
+        service.shutdown();
+    }
+}
+</code></pre>
+<p>运行结果：</p>
+<pre><code>a
+b
+</code></pre>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[Java 并发——并发锁和并发工具]]></title>
         <id>https://epitomm.github.io/post/java-bing-fa-bing-fa-suo-he-bing-fa-gong-ju/</id>
@@ -3579,470 +4268,6 @@ public class NIOServer {
     }
 }
 </code></pre>
-]]></content>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[MySQL —— Explain 关键字]]></title>
-        <id>https://epitomm.github.io/post/mysql-explain-guan-jian-zi/</id>
-        <link href="https://epitomm.github.io/post/mysql-explain-guan-jian-zi/">
-        </link>
-        <updated>2020-04-18T15:17:18.000Z</updated>
-        <content type="html"><![CDATA[<h1 id="explain-关键字">Explain 关键字</h1>
-<table>
-<thead>
-<tr>
-<th style="text-align:left"><strong>列名</strong></th>
-<th style="text-align:left"><strong>描述</strong></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left">id</td>
-<td style="text-align:left">在一个大的查询语句中每个SELECT关键字都对应一个唯一的id</td>
-</tr>
-<tr>
-<td style="text-align:left">select_type</td>
-<td style="text-align:left">SELECT关键字对应的那个查询的类型</td>
-</tr>
-<tr>
-<td style="text-align:left">table</td>
-<td style="text-align:left">表名</td>
-</tr>
-<tr>
-<td style="text-align:left">partitions</td>
-<td style="text-align:left">匹配的分区信息</td>
-</tr>
-<tr>
-<td style="text-align:left"><strong>type</strong></td>
-<td style="text-align:left"><strong>针对单表的访问方法</strong></td>
-</tr>
-<tr>
-<td style="text-align:left"><strong>possible_keys</strong></td>
-<td style="text-align:left"><strong>可能用到的索引</strong></td>
-</tr>
-<tr>
-<td style="text-align:left"><strong>key</strong></td>
-<td style="text-align:left"><strong>实际上使用的索引</strong></td>
-</tr>
-<tr>
-<td style="text-align:left"><strong>key_len</strong></td>
-<td style="text-align:left"><strong>实际使用到的索引长度</strong></td>
-</tr>
-<tr>
-<td style="text-align:left">ref</td>
-<td style="text-align:left">当使用索引列等值查询时，与索引列进行等值匹配的对象信息</td>
-</tr>
-<tr>
-<td style="text-align:left">rows</td>
-<td style="text-align:left">预估的需要读取的记录条数</td>
-</tr>
-<tr>
-<td style="text-align:left">filtered</td>
-<td style="text-align:left">某个表经过搜索条件过滤后剩余记录条数的百分比</td>
-</tr>
-<tr>
-<td style="text-align:left"><strong>Extra</strong></td>
-<td style="text-align:left"><strong>一些额外的信息</strong></td>
-</tr>
-</tbody>
-</table>
-<h2 id="table">table</h2>
-<p>表名</p>
-<pre><code>mysql&gt; explain select * from t1 join t2; 
-</code></pre>
-<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/table.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">explain select * from t1 join t2; </p>
-<h2 id="id">id</h2>
-<p>我们写的查询语句一般都以SELECT关键字开头，比较简单的查询语句里只有一个SELECT关键字，但是下边两种情况下在一条查询语句中会出现多个SELECT关键字：</p>
-<ul>
-<li>查询中包含子查询的情况</li>
-<li>查询中包含UNION语句的情况</li>
-</ul>
-<p>查询语句中每出现<strong>一个SELECT关键字</strong>，MySQL就会为它分配<strong>一个唯一的id值</strong>。这个id值就是EXPLAIN语句的第一个列。对于连接查询来说，一个SELECT关键字后边的<strong>FROM子句中可以跟随多个表</strong>，所以在连接查询的执行计划中，<strong>每个表都会对应一条记录，但是这些记录的id值都是相同的。</strong></p>
-<pre><code>mysql&gt; explain select * from t1 join t2; 
-</code></pre>
-<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/id1.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">一个 select 关键字，两条记录 id 值相同</p>
-<blockquote>
-<p>在连接查询的执行计划中，每个表都会对应一条记录，这些记录的id列的值是相同的，出现在前边的表是驱动表，出现在后边的表是被驱动表</p>
-</blockquote>
-<p>对于<strong>包含子查询的</strong>查询语句来说，就可能涉及<strong>多个SELECT</strong>关键字，所以在包含子查询的查询语句的执行计划中，<strong>每个SELECT关键字都会对应一个唯一的id值</strong>，比如这样：</p>
-<pre><code>mysql&gt; explain select * from t1 where a in (select a from t2) or c = 'c'; 
-</code></pre>
-<figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/id2.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体"> 两个 select 关键字，两个不同的 id  值</p>
-<p>但是这里大家需要特别注意，<strong>查询优化器可能对涉及子查询的查询语句进行重写，从而转换为连接查询</strong>。所以如果我们想知道查询优化器对某个包含子查询的语句是否进行了重写，直接查看执行计划就好了，比如说：</p>
-<pre><code>mysql&gt; explain select * from t1 where a in (select a from t2); 
-</code></pre>
-<figure data-type="image" tabindex="4"><img src="https://epitomm.github.io/post-images/%E6%9F%A5%E8%AF%A2%E4%BC%98%E5%8C%96%E5%99%A8%E5%B0%86%E5%AD%90%E6%9F%A5%E8%AF%A2%E4%BC%98%E5%8C%96%E4%B8%BA%E8%BF%9E%E6%8E%A5%E6%9F%A5%E8%AF%A2.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">查询优化器将子查询优化为连接查询</p>
-<p>可以看到，虽然我们的查询语句是一个子查询，但是执行计划中t1和t2表对应的记录的id值全部是1，这就表明了<strong>查询优化器将子查询转换为了连接查询</strong>。</p>
-<p>对<strong>于包含UNION子句的查询语句来说，每个SELECT关键字对应一个id值</strong>也是没错的，不过还是有点儿特别的东西，比方说下边这个查询：</p>
-<pre><code>mysql&gt; explain select * from t1 union select * from t2; 
-</code></pre>
-<figure data-type="image" tabindex="5"><img src="https://epitomm.github.io/post-images/union%E5%8E%BB%E9%87%8D.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">union 去重</p>
-<p>这个语句的执行计划的第三条记录是什么？为什么id值是NULL？UNION会把多个查询的结果集合并起来并对结果集中的记录进行去重，怎么去重呢？MySQL使用的是内部的临时表。正如上边的查询计划中所示，<strong>UNION子句是为了把id为1的查询和id为2的查询的结果集合并起来并去重，所以在内部创建了一个名为的临时表</strong>（就是执行计划第三条记录的table列的名称），id为NULL表明这个临时表是为了合并两个查询的结果集而创建的。</p>
-<p>跟UNION对比起来，<strong>UNION ALL就不需要为最终的结果集进行去重</strong>，它只是单纯的把多个查询的结果集中的记录合并成一个并返回给用户，所以也就不需要使用临时表。所以在包含UNION ALL子句的查询的执行计划中，就没有那个id为NULL的记录，如下所示：</p>
-<pre><code>mysql&gt; explain select * from t1 union all select * from t2; 
-+----+-------------+-------+------------+------+---------------+------+---------+----- 
--+------+----------+-------+ 
-| id | select_type | table | partitions | type | possible_keys | key | key_len | ref  
-| rows | filtered | Extra | 
-+----+-------------+-------+------------+------+---------------+------+---------+----- 
--+------+----------+-------+ 
-| 1 | PRIMARY | t1 | NULL | ALL | NULL | NULL | NULL | NULL 
-| 8 | 100.00 | NULL | 
-| 2 | UNION | t2 | NULL | ALL | NULL | NULL | NULL | NULL 
-| 8 | 100.00 | NULL | 
-+----+-------------+-------+------------+------+---------------+------+---------+----- 
--+------+----------+-------+ 
-2 rows in set, 1 warning (0.00 sec) 
-</code></pre>
-<h2 id="select_type">select_type</h2>
-<p>每一个SELECT关键字代表的小查询都定义了一个称之为select_type的属性，意思是我们只要知道了某个小查询的select_type属性，就知道了这个小查询在整个大查询中扮演了一个什么角色。</p>
-<h3 id="simple">SIMPLE</h3>
-<p>查询语句中<strong>不包含UNION或者子查询的查询</strong>都算作是SIMPLE类型。</p>
-<pre><code>mysql&gt; explain select * from t1; 
-</code></pre>
-<figure data-type="image" tabindex="6"><img src="https://epitomm.github.io/post-images/%E7%AE%80%E5%8D%95%E6%9F%A5%E8%AF%A2SIMPLE.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">简单查询 select_type = SIMPLE</p>
-<p>连接查询也算是SIMPLE类型</p>
-<pre><code>mysql&gt; explain select * from t1 join t2; 
-</code></pre>
-<figure data-type="image" tabindex="7"><img src="https://epitomm.github.io/post-images/%E8%BF%9E%E6%8E%A5%E6%9F%A5%E8%AF%A2SIMPLE.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">连接查询 select_type = SIMPLE</p>
-<h3 id="primary">PRIMARY</h3>
-<p>对于包含UNION、UNION ALL或者子查询的大查询来说，它是由几个小查询组成的，其中最左边的那个查询的 select_type值就是PRIMARY，比方说：</p>
-<pre><code>mysql&gt; explain select * from t1 where a in (select a from t2) or c = 'c'; 
-</code></pre>
-<figure data-type="image" tabindex="8"><img src="https://epitomm.github.io/post-images/PRIMARY.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">主查询的 select_type = PRIMARY；子查询的 select_type = SUBQUERY</p>
-<p>从结果中可以看到，最左边的小查询select * from t1对应的是执行计划中的第一条记录，它的select_type值就是 PRIMARY。</p>
-<h3 id="union">UNION</h3>
-<p>对于包含UNION或者UNION ALL的大查询来说，它是由几个小查询组成的，其中除了最左边的那个小查询以外， 其余的小查询的select_type值就是UNION。</p>
-<pre><code>mysql&gt; explain select * from t1 union select * from t2; 
-</code></pre>
-<figure data-type="image" tabindex="9"><img src="https://epitomm.github.io/post-images/UNION.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">UNION 查询的最左边查询 select_type = RIMARY，其余小查询的 select_type = UNION</p>
-<h3 id="union-result">UNION RESULT</h3>
-<p>MySQL选择使用临时表来完成UNION查询的去重工作，针对该临时表的查询的select_type就是UNION RESULT，例子上边有。</p>
-<figure data-type="image" tabindex="10"><img src="https://epitomm.github.io/post-images/UNION_RESULT.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">union 查询中临时表的 select_type = UNION RESULT</p>
-<h3 id="subquery">SUBQUERY</h3>
-<p><strong>非相关子查询</strong>，由于 select_type 为 SUBQUERY 的子查询由于会被物化，所以<strong>只需要执行一遍。</strong></p>
-<pre><code>mysql&gt; explain select * from t1 where a in (select a from t2) or c = 'c'; 
-</code></pre>
-<figure data-type="image" tabindex="11"><img src="https://epitomm.github.io/post-images/SUBQUERY.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">非相关子查询 select_type = SUBQUERY</p>
-<h3 id="dependent-subqurey">DEPENDENT SUBQUREY</h3>
-<p><strong>相关子查询</strong>，select_type 为 DEPENDENT SUBQUERY 的查询可能<strong>会被执行多次</strong></p>
-<pre><code>mysql&gt; explain select * from t1 where a in (select a from t2 where t1.a = t2.a) or c = 'c'; 
-</code></pre>
-<figure data-type="image" tabindex="12"><img src="https://epitomm.github.io/post-images/DEPENDENT_SUBQUREY.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">相关子查询 select_type = DEPENDENT SUBQUERY</p>
-<h3 id="derived">DERIVED</h3>
-<pre><code>mysql&gt; explain select * from (select a, count(*) from t2 group by a ) as deliver1; 
-</code></pre>
-<figure data-type="image" tabindex="13"><img src="https://epitomm.github.io/post-images/DERIVED.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">派生表 select_type = DRIVED </p>
-<p>从执行计划中可以看出，id为2的记录就代表子查询的执行方式，它的select_type是DERIVED，说明该子查询是以物化的方式执行的。id为1的记录代表外层查询，大家注意看它的table列显示的是<derived2>，表示该查询是针对将派生表物化之后的表进行查询的。</p>
-<h3 id="materialized">MATERIALIZED</h3>
-<p>当查询优化器在执行包含子查询的语句时，选择将子查询物化之后与外层查询进行连接查询时，该子查询对应的 select_type属性就是MATERIALIZED。</p>
-<pre><code>mysql&gt; explain select * from t1 where a in (select c from t2 where e = 1);
-</code></pre>
-<figure data-type="image" tabindex="14"><img src="https://epitomm.github.io/post-images/MATERIALIZED.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">物化表 select_type = MATERIALIZED </p>
-<blockquote>
-<p>将子查询出来的结果集放到一个物化表内，再将物化表与外层查询进行连接查询。</p>
-</blockquote>
-<h2 id="type">TYPE</h2>
-<p>访问方法（全表扫描还是走哪个索引）</p>
-<h3 id="system">system</h3>
-<p>当<strong>表中只有一条记录并且该表使用的存储引擎的统计数据是精确</strong>的，比如MyISAM、Memory，那么对该表的访问方法就是system。比方说我们新建一个MyISAM表，并为其插入一条记录：</p>
-<p>创建表 t</p>
-<pre><code>mysql&gt; CREATE TABLE t(i int) Engine=MyISAM; 
-Query OK, 0 rows affected (0.05 sec) 
-</code></pre>
-<p>向 t 表内插入一条数据</p>
-<pre><code>mysql&gt; INSERT INTO t VALUES(1); 
-Query OK, 1 row affected (0.01 sec)
-</code></pre>
-<p>执行 explain 语句</p>
-<pre><code>mysql&gt; explain select * from t; 
-</code></pre>
-<figure data-type="image" tabindex="15"><img src="https://epitomm.github.io/post-images/system.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">表中只有一条数据、存储引擎精确统计 type = system</p>
-<h3 id="const">const</h3>
-<p>当我们根据<strong>主键</strong>或者<strong>唯一二级索引列</strong>与<strong>常数</strong>进行<strong>等值匹配时</strong>，对单表的访问方法就是const。</p>
-<pre><code>mysql&gt; explain select * from t1 where a = 1; 
-</code></pre>
-<figure data-type="image" tabindex="16"><img src="https://epitomm.github.io/post-images/const.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">根据主键与常数进行等值匹配 type = const</p>
-<h3 id="eq_ref">eq_ref</h3>
-<p>在连接查询时，如果<strong>被驱动表是通过主键或者唯一二级索引列等值匹配的方式进行访问的</strong>（如果该主键或者唯一二级索引是联合索引的话，所有的索引列都必须进行等值比较），则对该被驱动表的访问方法就是eq_ref</p>
-<pre><code>mysql&gt; explain select * from t1 join t2 on t1.a = t2.a; 
-</code></pre>
-<figure data-type="image" tabindex="17"><img src="https://epitomm.github.io/post-images/eq_ref.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">被驱动表通过主键等值匹配的方式访问，被驱动表的 type = eq_ref</p>
-<h3 id="ref">ref</h3>
-<p>当通过<strong>普通的二级索引列</strong>与<strong>常量</strong>进行<strong>等值匹配</strong>时来查询某个表，那么对该表的访问方法就可能是ref。</p>
-<p>查看所有索引：</p>
-<pre><code>show keys for t1;
-</code></pre>
-<figure data-type="image" tabindex="18"><img src="https://epitomm.github.io/post-images/%E6%9F%A5%E7%9C%8B%E6%89%80%E6%9C%89%E7%B4%A2%E5%BC%95.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">查看所有索引</p>
-<pre><code>mysql&gt; explain select * from t1 where b = 1; 
-</code></pre>
-<figure data-type="image" tabindex="19"><img src="https://epitomm.github.io/post-images/ref.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">当通过普通的二级索引列与常量进行等值匹配时来查询某个表 type = ref</p>
-<h3 id="ref_of_null">ref_of_null</h3>
-<p>当对<strong>普通二级索引进行等值匹配查询</strong>，<strong>该索引列的值也可以是NULL值</strong>时，那么对该表的访问方法就可能是 ref_or_null</p>
-<pre><code>mysql&gt; explain select * from t1 where b = 1 or b is null; 
-</code></pre>
-<figure data-type="image" tabindex="20"><img src="https://epitomm.github.io/post-images/ref_of_null.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">对普通二级索引进行等值匹配查询，该索引列的值也可以是NULL值 type = ref_of_null</p>
-<h3 id="index_merge">index_merge</h3>
-<p><strong>索引合并</strong></p>
-<pre><code>mysql&gt; explain select * from t1 where a = 1 or b = 1; 
-</code></pre>
-<figure data-type="image" tabindex="21"><img src="https://epitomm.github.io/post-images/index_merge.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">索引合并 type = index_merge</p>
-<h3 id="unique_subquery">unique_subquery</h3>
-<p>如果<strong>查询优化器决定将IN子查询转换为EXISTS子查询，<strong>而且</strong>子查询可以使用到主键进行等值匹配</strong>的话，那么该子查询执行计划的type列的值就是unique_subquery。</p>
-<pre><code>mysql&gt; explain select * from t1 where c in (select a from t2 where t1.e = t2.e) or a = 1;
-</code></pre>
-<p>以上查询可以优化为 EXISTS 子查询：</p>
-<pre><code>mysql&gt; explain select * from t1 where exists(select a from t2 where t1.e = t2.e and t1.c = t2.a) or a = 1
-</code></pre>
-<figure data-type="image" tabindex="22"><img src="https://epitomm.github.io/post-images/unique_subquery.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">查询优化器将IN子查询转换为EXISTS子查询，而且子查询可以使用到主键进行等值匹配 </p>
-<p>type = unique_subquery</p>
-<h3 id="index_subquery">index_subquery</h3>
-<p>index_subquery与unique_subquery类似，只不过访问子查询中的表时使用的是普通的索引。</p>
-<pre><code>mysql&gt; explain select * from t1 where c in (select b from t2 where t1.e = t2.e) or a = 1;
-+----+--------------------+-------+------------+----------------+---------------+----- 
----------+---------+------+------+----------+-------------+ 
-| id | select_type | table | partitions | type | possible_keys | key  
-| key_len | ref | rows | filtered | Extra | 
-+----+--------------------+-------+------------+----------------+---------------+----- 
----------+---------+------+------+----------+-------------+ 
-| 1 | PRIMARY | t1 | NULL | ALL | PRIMARY | NULL  
-| NULL | NULL | 9 | 100.00 | Using where | 
-| 2 | DEPENDENT SUBQUERY | t2 | NULL | index_subquery | idx_t2_b_c_d | 
-idx_t2_b_c_d | 5 | func | 1 | 12.50 | Using where | 
-+----+--------------------+-------+------------+----------------+---------------+----- 
----------+---------+------+------+----------+-------------+ 
-2 rows in set, 2 warnings (0.00 sec) 
-</code></pre>
-<h3 id="range">range</h3>
-<p>范围查询</p>
-<pre><code>mysql&gt; explain select * from t1 where a &gt; 1; 
-</code></pre>
-<figure data-type="image" tabindex="23"><img src="https://epitomm.github.io/post-images/%E5%A4%A7%E4%BA%8E_range.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">a > 1 type = range</p>
-<pre><code>mysql&gt; explain select * from t1 where a in (1);
-</code></pre>
-<figure data-type="image" tabindex="24"><img src="https://epitomm.github.io/post-images/in_range.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">a in (1) type = const</p>
-<pre><code>mysql&gt; explain select * from t1 where a in (1,2);
-</code></pre>
-<figure data-type="image" tabindex="25"><img src="https://epitomm.github.io/post-images/in_range2.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">a in (1,2) type = range</p>
-<h3 id="index">index</h3>
-<p>当我们可以使用覆盖索引，但<strong>需要扫描全部的索引记录</strong>时，该表的访问方法就是index。</p>
-<p>遍历索引上的所有叶子节点，因为B+树所有数据都存储在叶子节点上，而非叶子结点是用来过滤筛选条件的。</p>
-<pre><code>mysql&gt; explain select a from t1; 
-</code></pre>
-<figure data-type="image" tabindex="26"><img src="https://epitomm.github.io/post-images/index_1.png" alt="图片" loading="lazy"></figure>
-<p>使用辅助索引没有使用主键索引的原因：辅助索引体积较小，辅助索引只存储字段b、c、d和主键a字段；而主索引存储所有字段值。</p>
-<pre><code>mysql&gt; explain select b from t1;
-</code></pre>
-<figure data-type="image" tabindex="27"><img src="https://epitomm.github.io/post-images/index_2.png" alt="图片" loading="lazy"></figure>
-<pre><code>mysql&gt; ecplain select e from t1;
-</code></pre>
-<figure data-type="image" tabindex="28"><img src="https://epitomm.github.io/post-images/index_3.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">e 字段没有索引，所以 type = ALL</p>
-<h3 id="all">ALL</h3>
-<p>全表扫描</p>
-<h2 id="possible_keys-和-key">possible_keys 和 key</h2>
-<p>possible_keys列表示在某个查询语句中，对某个表执行单表查询时可能用到的索引有哪些，key列表示实际用到的索引有哪些。</p>
-<p>不过有一点比较特别，就是在使用index访问方法来查询某个表时，possible_keys列是空的，而key列展示的是实际使用到的索引 。</p>
-<blockquote>
-<p>possible_keys列中的值并不是越多越好，可能使用的索引越多，查询优化器计算查询成本时就得花费更长 时间，所以如果可以的话，尽量删除那些用不到的索引</p>
-</blockquote>
-<h2 id="key_len">key_len</h2>
-<p>key_len列表示当优化器决定使用某个索引执行查询时，该索引记录的最大长度，它是由这三个部分构成的：</p>
-<ul>
-<li>对于使用固定长度类型的索引列来说，它实际占用的存储空间的最大长度就是该固定值，对于指定字符集的变长类型的索引列来说，比如某个索引列的类型是VARCHAR(100)，使用的字符集是 utf8，那么该列实际占用的最大存储空间就是100 × 3 = 300个字节。</li>
-<li>如果该索引列可以存储NULL值，则key_len比不可以存储NULL值时多1个字节。</li>
-<li>对于变长字段来说，都会有2个字节的空间来存储该变长列的实际长度。</li>
-</ul>
-<figure data-type="image" tabindex="29"><img src="https://epitomm.github.io/post-images/key_len.png" alt="图片" loading="lazy"></figure>
-<h2 id="ref-2">ref</h2>
-<p>当使用索引列等值匹配的条件去执行查询时，也就是在访问方法是const、eq_ref、ref、ref_or_null、 unique_subquery、index_subquery其中之一时，ref列展示的就是与索引列作等值匹配的东西是什么，比如只是一个常数或者是某个列。</p>
-<pre><code>mysql&gt; explain select b from t1 where b = 1; 
-</code></pre>
-<figure data-type="image" tabindex="30"><img src="https://epitomm.github.io/post-images/ref_1.png" alt="图片" loading="lazy"></figure>
-<pre><code>mysql&gt; explain select * from t1 where a in (select a from t2); 
-</code></pre>
-<figure data-type="image" tabindex="31"><img src="https://epitomm.github.io/post-images/ref_2.png" alt="图片" loading="lazy"></figure>
-<h2 id="rows">rows</h2>
-<p>如果查询优化器决定使用全表扫描的方式对某个表执行查询时，执行计划的rows列就代表预计需要扫描的行数， 如果使用索引来执行查询时，执行计划的rows列就代表预计扫描的索引记录行数。</p>
-<h2 id="filtered">filtered</h2>
-<p>代表查询优化器预测在这扫描的记录中，有多少条记录满足其余的搜索条件。</p>
-<pre><code>mysql&gt; explain select * from t1 where a &gt; 1 and e = 1; 
-+----+-------------+-------+------------+-------+---------------+---------+---------+- 
------+------+----------+-------------+ 
-| id | select_type | table | partitions | type | possible_keys | key | key_len | 
-ref | rows | filtered | Extra | 
-+----+-------------+-------+------------+-------+---------------+---------+---------+- 
------+------+----------+-------------+ 
-| 1 | SIMPLE | t1 | NULL | range | PRIMARY | PRIMARY | 4 | 
-NULL | 8 | 11.11 | Using where | 
-+----+-------------+-------+------------+-------+---------------+---------+---------+- 
------+------+----------+-------------+ 
-1 row in set, 1 warning (0.00 sec) 
-</code></pre>
-<p>从执行计划的key列中可以看出来，该查询使用PRIMARY索引来执行查询，从rows列可以看出满足a &gt; 1的记录有 8条。执行计划的filtered列就代表查询优化器预测在这8条记录中，<strong>有多少条记录满足其余的搜索条件</strong>，也就是e = 1这个条件的百分比。此处filtered列的值是11.11，说明查询优化器预测在8条记录中有11.11%的记录满足e = 1 这个条件。<br>
-对于单表查询来说，这个 filtered 列的值没什么意义，我们更关注在连接查询中驱动表对应的执行计划记录的  filtered 值，比方说下边这个查询：</p>
-<pre><code>mysql&gt; explain select * from t1 join t2 on t1.a = t2.a where t1.e = 1; 
-+----+-------------+-------+------------+--------+---------------+---------+--------- 
-+------------+------+----------+-------------+ 
-| id | select_type | table | partitions | type | possible_keys | key | key_len | 
-ref | rows | filtered | Extra | 
-+----+-------------+-------+------------+--------+---------------+---------+--------- 
-+------------+------+----------+-------------+ 
-| 1 | SIMPLE | t1 | NULL | ALL | PRIMARY | NULL | NULL | 
-NULL | 9 | 11.11 | Using where | 
-| 1 | SIMPLE | t2 | NULL | eq_ref | PRIMARY | PRIMARY | 4 | 
-luban.t1.a | 1 | 100.00 | NULL | 
-+----+-------------+-------+------------+--------+---------------+---------+--------- 
-+------------+------+----------+-------------+ 
-2 rows in set, 1 warning (0.00 sec) 
-</code></pre>
-<p>从执行计划中可以看出来，查询优化器打算把t1当作驱动表，t2当作被驱动表。我们可以看到驱动表t1表的执行计划的rows列为9， filtered 列为11.11，这意味着驱动表t1表经过条件过滤后有9 × 11.11% = 0.9999条记录，这说明还<strong>要对被驱动表执行大约1次(row * filtered)查询</strong>。</p>
-<h2 id="extra">Extra</h2>
-<p>Extra列是用来说明一些额外信息的，我们可以通过这些额外信息来更准确的理解MySQL到底将如何执行给定的查询语句。</p>
-<h3 id="no-tables-used">No tables used</h3>
-<p>当<strong>查询语句的没有FROM子句</strong>时将会提示该额外信息。</p>
-<pre><code>mysql&gt; explain select 1; 
-</code></pre>
-<figure data-type="image" tabindex="32"><img src="https://epitomm.github.io/post-images/Notablesused.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">查询语句没有 FROM 子句时：Extra = No tables used</p>
-<h3 id="impossible-where">Impossible WHERE</h3>
-<p><strong>查询语句的WHERE子句永远为FALSE</strong>时将会提示该额外信息。</p>
-<pre><code>mysql&gt; explain select b from t1 where 1=0; 
-</code></pre>
-<figure data-type="image" tabindex="33"><img src="https://epitomm.github.io/post-images/ImpossibleWHERE.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">WHERE 子句永远为 FALSE时：Extra = Impossible WHERE</p>
-<h3 id="no-matching-minmax-row">No matching min/max row</h3>
-<p>当<strong>查询列表处有MIN或者MAX聚集函数，但是并没有符合WHERE子句中的搜索条件的记录</strong>时，将会提示该额外信息。</p>
-<pre><code>mysql&gt; explain select max(a) from t1 where a=100; 
-</code></pre>
-<figure data-type="image" tabindex="34"><img src="https://epitomm.github.io/post-images/No_matching_minmax_row.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">查询列表处有MIN或者MAX聚集函数，但是并没有符合WHERE子句中的搜索条件的记录时：Extra = No matching min/max row</p>
-<h3 id="using-index">Using index</h3>
-<p>当我们的<strong>查询列表以及搜索条件中只包含属于某个索引的列</strong>，也就是在<strong>可以使用索引覆盖</strong>的情况下，在Extra列将会提示该额外信息。</p>
-<p>辅助索引包含 b、c、d 字段，根据查询条件 b=1 找到字段 d 的值，无需回表。</p>
-<pre><code>mysql&gt; explain select d from t1 where b =1; 
-</code></pre>
-<figure data-type="image" tabindex="35"><img src="https://epitomm.github.io/post-images/UsingIndex.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">覆盖索引 Extra = Using index</p>
-<h3 id="using-index-condition">Using index condition</h3>
-<p>有些<strong>搜索条件中虽然出现了索引列，但却不能使用到索引</strong>（在MySQL 5.6版本后加入的新特性）</p>
-<figure data-type="image" tabindex="36"><img src="https://epitomm.github.io/post-images/Using_index_condition.png" alt="图片" loading="lazy"></figure>
-<pre><code>mysql&gt; explain select * from t1 where b =1 and c like '%1'; 
-</code></pre>
-<figure data-type="image" tabindex="37"><img src="https://epitomm.github.io/post-images/Using_index_condition2.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">搜索条件中虽然出现了索引列，但却不能使用到索引 Extra = Using index condition</p>
-<h3 id="using-where">Using where</h3>
-<p>当我们使用<strong>全表扫描来执行对某个表的查询，并且该语句的WHERE子句中有针对该表的搜索条件时</strong>，在Extra列中会提示上述额外信息。</p>
-<pre><code>mysql&gt; explain select * from t1 where e = 1; 
-</code></pre>
-<figure data-type="image" tabindex="38"><img src="https://epitomm.github.io/post-images/UsingWhere.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">全表扫描来执行对某个表的查询，并且该语句的WHERE子句中有针对该表的搜索条件时：Extra = Using where</p>
-<h3 id="using-joinbufferblock-nested-loop">Using joinbuffer(Block Nested Loop)</h3>
-<p>在<strong>连接查询</strong>执行过程中，当被驱动表<strong>不能有效的利用索引</strong>加快访问速度，MySQL一般会为其分配一块名叫join buffer 的内存块来加快查询速度。</p>
-<pre><code>mysql&gt; explain select * from t1 join t2 on t1.e = t2.e; 
-</code></pre>
-<figure data-type="image" tabindex="39"><img src="https://epitomm.github.io/post-images/Using_joinbuffer.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">连接查询不能用到索引，分配 join buffer 内存块：Extra = Using join buffer</p>
-<p>可以在对t2表的执行计划的Extra列显示了两个提示：</p>
-<ul>
-<li>Using join buffer (Block Nested Loop)：这是因为对表t2的访问不能有效利用索引，只好退而求其次，使用join buffer来减少对t2表的访问次数，从而提高性能。</li>
-<li>Using where：可以看到查询语句中有一个t1.e = t2.e条件，因为t1是驱动表，t2是被驱动表，所以在访问t2表时，t1.e的值已经确定下来了，所以实际上查询t2表的条件就是t2.e = 一个常数，所以提示了Using where额外信息。</li>
-</ul>
-<h3 id="using-filesort">Using filesort</h3>
-<p>很多情况下排序操作无法使用到索引，只能在内存中（记录较少的时候）或者磁盘中（记录较多的时候）进行排序，这种<strong>在内存中或者磁盘上进行排序的方式统称为文件排序</strong>（英文名：filesort）。如果<strong>某个查询需要使用文件排序的方式执行查询</strong>，就会在执行计划的Extra列中显示Using filesort提示。</p>
-<pre><code>mysql&gt; explain select * from t1 order by e; 
-</code></pre>
-<figure data-type="image" tabindex="40"><img src="https://epitomm.github.io/post-images/Using_filesort.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">排序 Extra = Using filesort</p>
-<h3 id="using-temporary">Using temporary</h3>
-<p>在许多查询的执行过程中，MySQL可能会借助<strong>临时表</strong>来完成一些功能，比如<strong>去重、排序</strong>之类的，比如我们在执行许多包含<strong>DISTINCT、GROUP BY、UNION</strong>等子句的查询过程中，如果<strong>不能</strong>有效<strong>利用索引</strong>来完成查询，MySQL很有可能寻求通过<strong>建立内部的临时表</strong>来执行查询。如果查询中使用到了内部的临时表，在执行计划的Extra列将会显示Using temporary提示。</p>
-<p>能利用索引：</p>
-<pre><code>mysql&gt; explain select distinct b from t1; 
-</code></pre>
-<figure data-type="image" tabindex="41"><img src="https://epitomm.github.io/post-images/Using_temporary.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">利用索引distinct：Extra = Using index</p>
-<p>不能利用索引</p>
-<pre><code>mysql&gt; explain select distinct e from t1; 
-</code></pre>
-<figure data-type="image" tabindex="42"><img src="https://epitomm.github.io/post-images/Using_temporary2.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">不能利用索引的 distinct，建立内部临时表：Extra = Using temporary</p>
-<p>即有Using temporary，又有Using filesort，因为group by默认会先排序 （Using filesort）</p>
-<pre><code>mysql&gt; explain select e, count(1) from t1 group by e; 
-</code></pre>
-<figure data-type="image" tabindex="43"><img src="https://epitomm.github.io/post-images/Using_temporary3.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">Extra = Using temporary; Using filesort</p>
-<p>使用order by null禁用排序</p>
-<pre><code>mysql&gt; explain select e, count(1) from t1 group by e order by null; 
-</code></pre>
-<figure data-type="image" tabindex="44"><img src="https://epitomm.github.io/post-images/Using_temporary4.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">禁用排序，Extra = Using temporary</p>
-<h3 id="start-temporary-end-temporary">Start temporary、End temporary</h3>
-<p><strong>查询优化器会优先尝试将IN子查询转换成semi-join</strong>，而semi-join又有好多种执行策略，当执行策略为 <strong>DuplicateWeedout <strong>时，也就是通过</strong>建立临时表</strong>来实现为外层查询中的记录进行<strong>去重</strong>操作时，<strong>驱动表</strong>查询执行计划的Extra列将显示<strong>Start temporary</strong>提示，<strong>被驱动表</strong>查询执行计划的Extra列将显示<strong>End temporary</strong>提示</p>
-<pre><code>mysql&gt; explain select * from t1 where a in (select e from t2 where e = 1); 
-</code></pre>
-<figure data-type="image" tabindex="45"><img src="https://epitomm.github.io/post-images/Start_temporary.png" alt="图片" loading="lazy"></figure>
-<h3 id="firstmatch表名">FirstMatch（表名）</h3>
-<p>在将In子查询转为semi-join时，如果采用的是<strong>FirstMatch</strong>执行策略，则在<strong>被驱动表</strong>执行计划的Extra列就是显示 **FirstMatch(tbl_name)**提示。</p>
-<pre><code>mysql&gt; explain select * from t1 where a in (select c from t2 where c = 1); 
-</code></pre>
-<figure data-type="image" tabindex="46"><img src="https://epitomm.github.io/post-images/FirstMatch.png" alt="图片" loading="lazy"></figure>
-<h1 id="总结">总结</h1>
-<h2 id="性能按-type-排序">性能按 type 排序</h2>
-<p>system &gt; const &gt; eq_ref &gt; ref &gt; ref_or_null &gt; index_merge &gt; unique_subquery &gt; index_subquery &gt; range &gt; index &gt; ALL</p>
-<h2 id="性能按-extra-排序">性能按 Extra 排序</h2>
-<ul>
-<li>Using index：用了覆盖索引</li>
-<li>Using index condition：用了条件索引（索引下推）</li>
-<li>Using where：从索引查出来数据后继续用where条件过滤</li>
-<li>Using join buffer (Block Nested Loop)：join的时候利用了join buffer（优化策略：去除外连接、增 大join buffer大小）</li>
-<li>Using filesort：用了文件排序，排序的时候没有用到索引</li>
-<li>Using temporary：用了临时表（优化策略：增加条件以减少结果集、增加索引，思路就是要么减少待排序的数量，要么就提前排好序）</li>
-<li>Start temporary, End temporary：子查询的时候，可以优化成半连接，但是使用的是通过临时表来去重</li>
-<li>FirstMatch(tbl_name)：子查询的时候，可以优化成半连接，但是使用的是直接进行数据比较来去重</li>
-</ul>
-<h2 id="常见的优化手段">常见的优化手段</h2>
-<ol>
-<li>SQL语句中IN包含的值不应过多，不能超过200个，200个以内查询优化器计算成本时比较精准，超过200 个是估算的成本，另外建议能用between就不要用in，这样就可以使用range索引了。</li>
-<li>SELECT语句务必指明字段名称：SELECT * 增加很多不必要的消耗（cpu、io、内存、网络带宽）；增加了使用覆盖索引的可能性；当表结构发生改变时，前端也需要更新。所以要求直接在select后面接上字段名。</li>
-<li>当只需要一条数据的时候，使用limit 1</li>
-<li>排序时注意是否能用到索引</li>
-<li>使用 or 时如果没有用到索引，可以改为union all 或者union</li>
-<li>如果in不能用到索引，可以改成exists看是否能用到索引</li>
-<li>使用合理的分页方式以提高分页的效率</li>
-<li>不建议使用%前缀模糊查询</li>
-<li>避免在where子句中对字段进行表达式操作</li>
-<li>避免隐式类型转换 （字符 ‘a’ -&gt; 数字 0，数字 !-&gt; 字符）</li>
-<li>对于联合索引来说，要遵守最左前缀法则</li>
-<li>必要时可以使用force index来强制查询走某个索引</li>
-<li>对于联合索引来说，如果存在范围查询，比如between,&gt;,&lt;等条件时，会造成后面的索引字段失效。</li>
-<li>尽量使用inner join，避免left join，让查询优化器来自动选择小表作为驱动表</li>
-<li>必要时刻可以使用straight_join来指定驱动表，前提条件是本身是inner join</li>
-</ol>
 ]]></content>
     </entry>
 </feed>

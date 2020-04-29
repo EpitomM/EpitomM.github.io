@@ -1,0 +1,915 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Java 并发——CAS 和 AQS | SSM</title>
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1588175478044">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="Java 并发——CAS 和 AQS | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="
+多线程
+
+Synchronized Volatile单例
+锁：封锁。
+
+悲观锁、写（增删改）多，读（查）少Lock
+乐观锁：读（查）多、写少版本
+
+
+1.5 JUC
+
+
+
+一、CAS
+1. 概念
+
+CompareAndSet：比较和设置
+..." />
+    <meta name="keywords" content="" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://epitomm.github.io">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1588175478044" alt="">
+  </a>
+  <h1 class="site-title">
+    SSM
+  </h1>
+  <p class="site-description">
+    热心善良的老学姐
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              Java 并发——CAS 和 AQS
+            </h2>
+            <div class="post-info">
+              <span>
+                2020-04-29
+              </span>
+              <span>
+                13 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <ul>
+<li>多线程
+<ul>
+<li>Synchronized Volatile单例</li>
+<li>锁：封锁。
+<ul>
+<li>悲观锁、写（增删改）多，读（查）少Lock</li>
+<li>乐观锁：读（查）多、写少版本</li>
+</ul>
+</li>
+<li>1.5 JUC</li>
+</ul>
+</li>
+</ul>
+<h1 id="一-cas">一、CAS</h1>
+<h2 id="1-概念">1. 概念</h2>
+<ul>
+<li>CompareAndSet：比较和设置</li>
+<li>CompareAndSwap：比较和交换。一种无锁的原子算法，乐观锁。</li>
+<li>思想：
+<ul>
+<li>给你一个期望值，与现有的值比较，如果相等则修改；如果不相等什么事情都不做。</li>
+<li>CAS(V,E,N)
+<ul>
+<li>V：目前拿到的值</li>
+<li>E：期望值</li>
+<li>N：新值</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="2-作用及优点">2. 作用及优点</h2>
+<ul>
+<li>CAS 实现稍微复杂，无锁，不存在阻塞，提高了效率，CPU的吞吐量高，性能好。</li>
+</ul>
+<h2 id="3-实例">3. 实例</h2>
+<pre><code class="language-java">package luban;
+
+public class CASDemo1 {
+
+    private static volatile int m = 0;
+
+    public static void increase(){
+        m ++;
+    }
+    public static void main(String[] args){
+        for (int i = 0; i &lt; 20; i++) {
+            new Thread(() -&gt; {
+                CASDemo1.increase();
+            }).start();
+        }
+        System.out.println(m);
+    }
+}
+</code></pre>
+<p>运行结果：</p>
+<pre><code>16
+</code></pre>
+<p>分析：<br>
+m++ 不具有原子性。</p>
+<p>修改后：</p>
+<pre><code class="language-java">package luban;
+
+/**
+ * volatile 变量
+ * join()
+ */
+public class CASDemo3 {
+
+    private static volatile int m = 0;
+    public static void increase(){
+        m ++;
+    }
+    public static void main(String[] args) throws InterruptedException {
+        Thread[] threads = new Thread[20];
+        for (int i = 0; i &lt; threads.length; i++) {
+            threads[i] = new Thread(() -&gt; {
+                CASDemo3.increase();
+            });
+            threads[i].start();
+            threads[i].join();
+        }
+        System.out.println(m);
+    }
+}
+</code></pre>
+<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/join.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">join()</p>
+<p>反汇编：</p>
+<pre><code>javap -c CASDemo3
+</code></pre>
+<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/i++.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">i++ 三步操作</p>
+<pre><code class="language-java">package luban;
+
+/**
+ * AtomicInteger 变量
+ * join()
+ */
+
+import java.util.concurrent.atomic.AtomicInteger;
+
+public class CASDemo2 {
+
+    private static AtomicInteger atomicI = new AtomicInteger(0);
+
+    public static void increastAtomic(){
+        atomicI.incrementAndGet();
+    }
+    public static void main(String[] args) throws InterruptedException {
+        Thread[] threads = new Thread[20];
+        for (int i = 0; i &lt; threads.length; i++) {
+            threads[i] = new Thread(() -&gt; {
+                CASDemo2.increastAtomic();
+            });
+            threads[i].start();
+            threads[i].join();// join()：加入。当前 threads[i] 线程加入到线程组中，当前线程等待 threads[i]线程执行完了之后再执行
+        }
+        System.out.println(atomicI.get());
+    }
+}
+</code></pre>
+<p>反汇编：</p>
+<pre><code>javap -c CASDemo2
+</code></pre>
+<figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/atomicI.incrementAndGet.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">atomicI.incrementAndGet() 实现 i++ 只需一步操作</p>
+<h2 id="4-方法摘要">4. 方法摘要</h2>
+<figure data-type="image" tabindex="4"><img src="https://epitomm.github.io/post-images/atomic%E6%96%B9%E6%B3%95.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">java.util.concurrent.atomic</p>
+<figure data-type="image" tabindex="5"><img src="https://epitomm.github.io/post-images/AtomicInteger%E6%96%B9%E6%B3%95.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">AtomicInteger 方法摘要</p>
+<h2 id="5-原理">5. 原理</h2>
+<p>JUC下的atomic类都是通过CAS来实现的，下面就以AtomicInteger为例来阐述CAS的实现。如下：</p>
+<figure data-type="image" tabindex="6"><img src="https://epitomm.github.io/post-images/AtomicInteger%E7%B1%BB.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">AtomicInteger 类</p>
+<figure data-type="image" tabindex="7"><img src="https://epitomm.github.io/post-images/getUnsafe.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">JVM 调用底层指令实现 getUnsafe()</p>
+<figure data-type="image" tabindex="8"><img src="https://epitomm.github.io/post-images/incrementAndGet.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">incrementAndGet() 方法</p>
+<figure data-type="image" tabindex="9"><img src="https://epitomm.github.io/post-images/getAndAddInt.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">getAndAddInt() 方法</p>
+<pre><code class="language-java">public final native boolean compareAndSwapInt(Object var1, long var2, int var4, int var5);
+// var1：现在拿到的值
+// var2：期望的值
+// var4:最终改变的值
+// var5：最后改变了的值  
+</code></pre>
+<p>总结：CAS的原子性流程<br>
+<img src="https://epitomm.github.io/post-images/Unsafe.png" alt="图片" loading="lazy"></p>
+<p style = "text-align:center;font-family:楷体">Unsafe 的返回值是 Atomic::cmpchg(x, addr, e)</p>
+<figure data-type="image" tabindex="10"><img src="https://epitomm.github.io/post-images/Unsafe_2.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">Atomic::cmpchg(jint exchange_value, volatile jint* dest, jint com)</p>
+<p>incrementAndGet -&gt; unsafe.java -&gt; unsafe.cpp -&gt; 汇编 cmpxchg</p>
+<p>需要<strong>硬件支持</strong>汇编指令 cmpxchg</p>
+<p>Unsafe是CAS的核心类，Java无法直接访问底层操作系统，而是通过本地（native）方法来访问。不过尽管如此，JVM还是开了一个后门：Unsafe，它提供了硬件级别的原子操作。</p>
+<h2 id="6-缺点">6. 缺点</h2>
+<ul>
+<li>无法检测到中间值的变化：A(100) -&gt; B(110) -&gt; A(100)</li>
+</ul>
+<p>CAS需要检查操作值有没有发生改变，如果没有发生改变则更新。但是存在这样一种情况：如果一个值原来是A，变成了B，然后又变成了A，那么在CAS检查的时候会发现没有改变，但是实质上它已经发生了改变，这就是所谓的ABA问题。</p>
+<pre><code class="language-java">package luban;
+/**
+ * 无法检测到中间值的变化
+ */
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
+public class CASDemo4 {
+
+    private static AtomicInteger atomicI = new AtomicInteger(100);
+
+    public static void main(String[] args){
+        ExecutorService service = Executors.newCachedThreadPool();
+        service.execute(() -&gt; {
+            System.out.println(&quot;(1) 100 变为 110：&quot; + atomicI.compareAndSet(100,110));
+        });
+
+        service.execute(() -&gt; {
+            try {
+                TimeUnit.SECONDS.sleep(2);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            System.out.println(&quot;(2) 110 变为 100：&quot; + atomicI.compareAndSet(110,100));
+        });
+
+        service.execute(() -&gt; {
+            try {
+                TimeUnit.SECONDS.sleep(3);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            System.out.println(&quot;(3) 110 变为 100：&quot; + atomicI.compareAndSet(100,120));
+        });
+
+        service.shutdown();
+    }
+}
+</code></pre>
+<p>运行结果：</p>
+<pre><code>(1) 100 变为 110：true
+(2) 110 变为 100：true
+(3) 110 变为 100：true
+</code></pre>
+<h2 id="7-改进">7. 改进</h2>
+<p>类 AtomicStampedReference<V></p>
+<p>增加版本号声明：A1(100) -&gt; B2(110) -&gt; A3(100)</p>
+<pre><code class="language-java">package luban;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicStampedReference;
+
+public class CASDemo5 {
+
+    // 设置初值时，给定版本号
+    private static AtomicStampedReference asr = new AtomicStampedReference(100, 1);
+    public static void main(String[] args){
+        ExecutorService service = Executors.newCachedThreadPool();
+        service.execute(() -&gt; {
+            try {
+                TimeUnit.SECONDS.sleep(1);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            System.out.println(&quot;100 变为 110：&quot; + asr.compareAndSet(100,110,asr.getStamp(), asr.getStamp() + 1));
+            System.out.println(&quot;110 变成 100：&quot; +asr.compareAndSet(110,100,asr.getStamp(), asr.getStamp() + 1));
+        });
+        service.execute(() -&gt; {
+            // 得到版本号
+            int stamp = asr.getStamp();
+            try {
+                TimeUnit.SECONDS.sleep(2);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            System.out.println(asr.getStamp());
+            System.out.println(stamp);
+            System.out.println(&quot;100 变成 120：&quot; +asr.compareAndSet( 100,120,stamp, stamp  + 1));
+//            System.out.println(&quot;100 变成 120：&quot; +asr.compareAndSet( 100,120,asr.getStamp(), asr.getStamp()  + 1));
+        });
+    }
+}
+</code></pre>
+<p>运行结果：</p>
+<pre><code>100 变为 110：true
+110 变成 100：true
+3
+1
+100 变成 120：false
+</code></pre>
+<p>分析：第一个线程 sleep 2 秒后执行 set，所以第二个线程先 getStamp() 到的stamp 是初始化的，还未修改过的 stamp = 1；而第二个线程 sleep 后的 asr 得到的 stamp = 3，现有值与期望值不同，所以修改失败。<br>
+CAS 的应用场景：</p>
+<ul>
+<li>应用于简单的数据计算。</li>
+<li>适合线程冲突少的场景。</li>
+</ul>
+<h1 id="二-aqs">二、AQS</h1>
+<h2 id="1-概念-2">1. 概念</h2>
+<ul>
+<li>AbstractQueuedSynchronizer</li>
+<li>同步发生器</li>
+<li>构建 LOCK</li>
+<li>JUC：java.util.current</li>
+</ul>
+<h2 id="2-基本思想">2. 基本思想</h2>
+<ul>
+<li>通过内置得到 FIFO 同步队列来完成线程争夺资源的管理工作。</li>
+</ul>
+<h2 id="3-clh同步队列">3. CLH同步队列</h2>
+<figure data-type="image" tabindex="11"><img src="https://epitomm.github.io/post-images/CLH%E5%90%8C%E6%AD%A5%E9%98%9F%E5%88%97.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">CLH 同步队列</p>
+<pre><code>static final class Node {
+    /** Marker to indicate a node is waiting in shared mode */
+    static final Node SHARED = new Node(); // 共享
+    /** Marker to indicate a node is waiting in exclusive mode */
+    static final Node EXCLUSIVE = null; // 排他
+
+    /** waitStatus value to indicate thread has cancelled */
+    static final int CANCELLED =  1; // 因中断、完成 退出队列
+    /** waitStatus value to indicate successor's thread needs unparking */
+    static final int SIGNAL    = -1; // 节点的后继结点被阻塞
+    /** waitStatus value to indicate thread is waiting on condition */
+    static final int CONDITION = -2; // 条件阻塞
+    /**
+     * waitStatus value to indicate the next acquireShared should
+     * unconditionally propagate
+     */
+    static final int PROPAGATE = -3; // 共享模式下，头结点的状态
+</code></pre>
+<h1 id="三-自定义锁">三、自定义锁</h1>
+<ul>
+<li>AQS 写一个锁（Lock）
+<ul>
+<li>子类定义为非公共内部帮助器类（私有的内部类继承AQS），写锁的时候的一个帮助器，提供获取或和释放锁的功能。</li>
+</ul>
+</li>
+<li>方法
+<ul>
+<li>acquire(int arg)：以<strong>独占</strong>模式获取，忽略中断。</li>
+<li>acquireShared(int arg)：以<strong>共享</strong>模式获取，忽略中断。</li>
+</ul>
+</li>
+</ul>
+<pre><code class="language-java">public final void acquire(int arg) {
+    if (!tryAcquire(arg) &amp;&amp;
+        acquireQueued(addWaiter(Node.EXCLUSIVE), arg))
+        selfInterrupt();
+}
+</code></pre>
+<ul>
+<li>tryAcquire(int arg) ：尝试以独占模式获取对象状态。</li>
+<li>tryAcquireShared(int arg)：尝试以共享模式获取对象状态 。</li>
+</ul>
+<pre><code class="language-java">private Node addWaiter(Node mode) {
+    Node node = new Node(Thread.currentThread(), mode);
+    // Try the fast path of enq; backup to full enq on failure
+    Node pred = tail;
+    if (pred != null) {
+        node.prev = pred;
+        if (compareAndSetTail(pred, node)) {
+            pred.next = node;
+            return node;
+        }
+    }
+    enq(node);
+    return node;
+}
+</code></pre>
+<ul>
+<li>release(int arg)：以独占模式释放对象。</li>
+<li>releaseShared(int arg)：以共享模式释放对象。</li>
+</ul>
+<h2 id="实例">实例</h2>
+<figure data-type="image" tabindex="12"><img src="https://epitomm.github.io/post-images/Lock%E7%B1%BB%E6%96%B9%E6%B3%95.png" alt="图片" loading="lazy"></figure>
+<p style = "text-align:center;font-family:楷体">Lock 类的方法</p>
+<pre><code class="language-java">package luban;
+
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.AbstractQueuedSynchronizer;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+
+public class MyLock implements Lock {
+
+    private Helper helper = new Helper();
+
+    private class Helper extends AbstractQueuedSynchronizer{
+        // 获取锁
+        @Override
+        protected boolean tryAcquire(int arg) {
+            int state = getState();
+            if(state == 0){
+                // 利用 CAS 原理修改 state
+                if(compareAndSetState(0, arg)){
+                    // 设置当前线程占有资源
+                    setExclusiveOwnerThread(Thread.currentThread());
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // 释放锁
+        @Override
+        protected boolean tryRelease(int arg) {// arg:信号量
+            int state = getState() - arg;
+            boolean flag = false;
+            // 判断释放后是否为 0
+            if(state == 0){
+                setExclusiveOwnerThread(null);
+                setState(state);
+                return true;
+            }
+            setState(state);//不存在线程安全问题。重入性的问题，已经独占了资源state，其他线程不会干扰
+            return false;
+        }
+        public Condition newConditionObject(){
+            return new ConditionObject();
+        }
+    }
+    @Override
+    public void lock() {
+        helper.acquire(1);
+    }
+
+    @Override
+    public void lockInterruptibly() throws InterruptedException {
+        helper.acquireInterruptibly(1);
+    }
+
+    @Override
+    public boolean tryLock() {
+        return helper.tryAcquire(1);
+    }
+
+    @Override
+    public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
+        return helper.tryAcquireNanos(1, unit.toNanos(time));
+    }
+
+    @Override
+    public void unlock() {
+        helper.release(1);
+    }
+
+    @Override
+    public Condition newCondition() {
+        return helper.newConditionObject();
+    }
+}
+</code></pre>
+<ol>
+<li>不加锁的实现有问题</li>
+</ol>
+<pre><code class="language-java">package luban;
+import java.util.concurrent.TimeUnit;
+
+public class Demo {
+    private int m = 0;
+    private int next(){
+        try {
+            TimeUnit.SECONDS.sleep(1);
+            return m++;
+        } catch (InterruptedException e) {
+            throw new RuntimeException(&quot;ERROR&quot;);
+        }
+    }
+
+    public static void main(String[] args){
+        Demo demo = new Demo();
+        Thread[] th = new Thread[10];
+        for(int i = 0 ; i &lt; 10 ; i ++){
+            th[i] = new Thread(() -&gt; {
+                System.out.println(demo.next());
+            });
+            th[i].start();
+        }
+    }
+}
+</code></pre>
+<p>运行结果：</p>
+<pre><code>1
+7
+8
+6
+5
+0
+4
+3
+2
+0
+</code></pre>
+<ol start="2">
+<li>使用自定义锁的实现正确</li>
+</ol>
+<pre><code class="language-java">package luban;
+
+public class Demo01 {
+
+    private MyLock lock = new MyLock();
+
+    private int m = 0;
+
+    public int next(){
+        lock.lock();
+        try {
+            return m++;
+        } finally{
+            lock.unlock();
+        }
+    }
+
+    public static void main(String[] args){
+        Demo01 demo = new Demo01();
+        Thread[] th = new Thread[10];
+        for(int i = 0 ; i &lt; 10 ; i ++){
+            th[i] = new Thread(() -&gt; {
+                System.out.println(demo.next());
+            });
+            th[i].start();
+        }
+    }
+}
+</code></pre>
+<p>运行结果：</p>
+<pre><code>0
+4
+3
+2
+1
+5
+6
+7
+8
+9
+</code></pre>
+<p>上面实现的 MyLock 不具有可重入性。测试：</p>
+<pre><code class="language-java">package luban;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+public class Demo02 {
+
+    private MyLock lock = new MyLock();
+
+    private int m = 0;
+
+    public void a(){
+        lock.lock();
+        System.out.println(&quot;a&quot;);
+        b();
+        lock.unlock();
+    }
+    public void b(){
+        lock.lock();
+        System.out.println(&quot;b&quot;);
+        lock.unlock();
+    }
+
+    public int next(){
+        lock.lock();
+        try {
+            return m++;
+        } finally{
+            lock.unlock();
+        }
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        Demo02 demo = new Demo02();
+        ExecutorService service = Executors.newCachedThreadPool();
+        service.execute(() -&gt; {
+            demo.a();
+        });
+    }
+}
+</code></pre>
+<p>运行结果：</p>
+<pre><code>a
+（阻塞···）
+</code></pre>
+<h2 id="可重入性">可重入性</h2>
+<p>同一个锁对同一资源进行占有的时候，直接分配给这个线程。</p>
+<p>【占有锁的线程再次申请锁时仍可获取。获取一次，锁这个变量值(默认为 0) 加一。释放一次，锁这个变量值减一。锁这个变量值为 0 时，说明该锁没有被线程占用。】</p>
+<p>对 MyLock 代码进行修改，使其具有可重入性：</p>
+<pre><code class="language-java">package luban;
+
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.AbstractQueuedSynchronizer;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+
+public class MyLock implements Lock {
+
+    private Helper helper = new Helper();
+
+    private class Helper extends AbstractQueuedSynchronizer{
+        // 获取锁
+        @Override
+        protected boolean tryAcquire(int arg) {
+            int state = getState();
+            if(state == 0){
+                // 利用 CAS 原理修改 state
+                if(compareAndSetState(0, arg)){
+                    // 设置当前线程占有资源
+                    setExclusiveOwnerThread(Thread.currentThread());
+                    return true;
+                }
+            }else if(getExclusiveOwnerThread() == Thread.currentThread()){//可重入
+                setState(getState() + arg);
+                return true;
+            }
+            return false;
+        }
+
+        // 释放锁
+        @Override
+        protected boolean tryRelease(int arg) {// arg:信号量
+            int state = getState() - arg;
+            boolean flag = false;
+            // 判断释放后是否为 0
+            if(state == 0){
+                setExclusiveOwnerThread(null);
+                setState(state);
+                return true;
+            }
+            setState(state);//不存在线程安全问题。重入性的问题，已经独占了资源state，其他线程不会干扰
+            return false;
+        }
+
+        public Condition newConditionObject(){
+            return new ConditionObject();
+        }
+    }
+    @Override
+    public void lock() {
+        helper.acquire(1);
+    }
+
+    @Override
+    public void lockInterruptibly() throws InterruptedException {
+        helper.acquireInterruptibly(1);
+    }
+
+    @Override
+    public boolean tryLock() {
+        return helper.tryAcquire(1);
+    }
+
+    @Override
+    public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
+        return helper.tryAcquireNanos(1, unit.toNanos(time));
+    }
+
+    @Override
+    public void unlock() {
+        helper.release(1);
+    }
+
+    @Override
+    public Condition newCondition() {
+        return helper.newConditionObject();
+    }
+}
+</code></pre>
+<p>测试：</p>
+<pre><code class="language-java">package luban;
+
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+public class Demo02 {
+
+    private MyLock lock = new MyLock();
+
+    private int m = 0;
+
+    public void a(){
+        lock.lock();
+        System.out.println(&quot;a&quot;);
+        b();
+        lock.unlock();
+    }
+    public void b(){
+        lock.lock();
+        System.out.println(&quot;b&quot;);
+        lock.unlock();
+    }
+
+    public int next(){
+        lock.lock();
+        try {
+            return m++;
+        } finally{
+            lock.unlock();
+        }
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        Demo02 demo = new Demo02();
+        ExecutorService service = Executors.newCachedThreadPool();
+        service.execute(() -&gt; {
+            demo.a();
+        });
+        service.shutdown();
+    }
+}
+</code></pre>
+<p>运行结果：</p>
+<pre><code>a
+b
+</code></pre>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li><a href="#%E4%B8%80-cas">一、CAS</a>
+<ul>
+<li><a href="#1-%E6%A6%82%E5%BF%B5">1. 概念</a></li>
+<li><a href="#2-%E4%BD%9C%E7%94%A8%E5%8F%8A%E4%BC%98%E7%82%B9">2. 作用及优点</a></li>
+<li><a href="#3-%E5%AE%9E%E4%BE%8B">3. 实例</a></li>
+<li><a href="#4-%E6%96%B9%E6%B3%95%E6%91%98%E8%A6%81">4. 方法摘要</a></li>
+<li><a href="#5-%E5%8E%9F%E7%90%86">5. 原理</a></li>
+<li><a href="#6-%E7%BC%BA%E7%82%B9">6. 缺点</a></li>
+<li><a href="#7-%E6%94%B9%E8%BF%9B">7. 改进</a></li>
+</ul>
+</li>
+<li><a href="#%E4%BA%8C-aqs">二、AQS</a>
+<ul>
+<li><a href="#1-%E6%A6%82%E5%BF%B5-2">1. 概念</a></li>
+<li><a href="#2-%E5%9F%BA%E6%9C%AC%E6%80%9D%E6%83%B3">2. 基本思想</a></li>
+<li><a href="#3-clh%E5%90%8C%E6%AD%A5%E9%98%9F%E5%88%97">3. CLH同步队列</a></li>
+</ul>
+</li>
+<li><a href="#%E4%B8%89-%E8%87%AA%E5%AE%9A%E4%B9%89%E9%94%81">三、自定义锁</a>
+<ul>
+<li><a href="#%E5%AE%9E%E4%BE%8B">实例</a></li>
+<li><a href="#%E5%8F%AF%E9%87%8D%E5%85%A5%E6%80%A7">可重入性</a></li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://epitomm.github.io/post/java-bing-fa-bing-fa-suo-he-bing-fa-gong-ju/">
+              <h3 class="post-title">
+                Java 并发——并发锁和并发工具
+              </h3>
+            </a>
+          </div>
+        
+
+        
+          
+            <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+<script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+
+<div id="gitalk-container"></div>
+
+<script>
+
+  var gitalk = new Gitalk({
+    clientID: '974bd77fbbd52c2a0647',
+    clientSecret: '6344370ca1314dbd553f45e75a2121a160ef1c44',
+    repo: 'EpitomM.github.io',
+    owner: 'EpitomM',
+    admin: ['EpitomM'],
+    id: (location.pathname).substring(0, 49),      // Ensure uniqueness and length less than 50
+    distractionFreeMode: false  // Facebook-like distraction free mode
+  })
+
+  gitalk.render('gitalk-container')
+
+</script>
+
+          
+
+          
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/EpitomM/EpitomM.github.io" target="_blank">EpitomM</a>
+  <a class="rss" href="https://epitomm.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>
