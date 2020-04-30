@@ -1,0 +1,1329 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Spring IoC | SSM</title>
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1588260651743">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="Spring IoC | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="what is IOC
+控制反转（Inversion of Control，缩写为IOC），是面向对象编程中的一种设计原则，可以用来减低计算机代码之间的耦合度。其中最常见的方式叫做依赖注入（Dependency Injection，简称DI..." />
+    <meta name="keywords" content="Spring" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://epitomm.github.io">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1588260651743" alt="">
+  </a>
+  <h1 class="site-title">
+    SSM
+  </h1>
+  <p class="site-description">
+    热心善良的老学姐
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              Spring IoC
+            </h2>
+            <div class="post-info">
+              <span>
+                2020-04-30
+              </span>
+              <span>
+                44 min read
+              </span>
+              
+                <a href="https://epitomm.github.io/tag/A43qp3xVg/" class="post-tag">
+                  # Spring
+                </a>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <h1 id="what-is-ioc">what is IOC</h1>
+<p><strong>控制反转</strong>（Inversion of Control，缩写为<strong>IOC</strong>），是面向对象编程中的一种<strong>设计原则</strong>，可以用来减低计算机代码之间的耦合度。其中最常见的方式叫做依赖注入（Dependency Injection，简称<strong>DI</strong>），还有一种方式叫“依赖查找”（Dependency Lookup）</p>
+<h2 id="ioc-和-di-的关系">IOC 和 DI 的关系</h2>
+<p>IOC 是一种<strong>目标</strong>，DI 是实现 IOC 的<strong>技术手段</strong>。IOC 与 DI 的关系好似 ORM（对象关系映射） 和 Mybatis 的关系一样。</p>
+<h2 id="dependency-injection">Dependency Injection</h2>
+<ul>
+<li>依赖注入</li>
+</ul>
+<h3 id="关于什么是依赖">关于什么是依赖</h3>
+<pre><code class="language-java">// IndexService 依赖了 IndexDao 对象
+public class IndexServiceImpl implements IndexService{
+  private IndexDao indexDao;
+}
+</code></pre>
+<p><strong>当一个类中拥有一个类的属性，或者构造方法中传了一个值，就可以说：当前这个类依赖于这个属性，或者依赖于构造方法里传入的对象</strong>。</p>
+<p>Student 类中有一个 Address 类的属性，Student 类依赖于 Address 属性。</p>
+<p>Student 类的构造方法的参数中有一个 Address 类，Student 类依赖于构造方法里传入的 Address 对象。</p>
+<pre><code class="language-java">public class Student{
+  private String name;
+  private Integer age;
+  private Address address;
+  publci Student(String name,Integer age,Address address){
+    this.name = name;
+    this.age = age;
+    this.address = address;
+  }
+}
+
+public class Address{
+  private String province;
+  private String city;
+}
+</code></pre>
+<h1 id="为什么要使用-spring-ioc">为什么要使用 Spring IOC</h1>
+<h2 id="面向抽象编程">面向抽象编程</h2>
+<pre><code class="language-java">public class IndexServiceImpl implements IndexService{
+  public void test(){
+     // 这样的写法会造成高耦合
+     IndexDao indexDao = new IndexDaoImpl();
+  }
+}
+</code></pre>
+<p>假设有一天要对这个 IndexDao 进行一个代理，就不能通过 new 了，而是通过 Proxy.newXXX(); 就需要<strong>更改代码</strong>为：IndexDao indexDao = Proxy.newXXX(); <strong>一个类的产生不应该由程序员自己 new 出来</strong>。</p>
+<p>面向抽象编程正确写法：</p>
+<pre><code class="language-java">public class IndexServiceImpl implements IndexService{
+  private IndexDao indexDao;
+    public void test(){
+     indexDao.call();
+  }
+}
+</code></pre>
+<p>无论 IndexDao 是代理还是本身实现，它都叫做 IndexDao，如果有一天需要一个代理类的话，只需要产生一个代理类，并且把这个代理类的代理对象<strong>传递过来就可以了</strong>。如果有一天不需要这个代理对象了，只需要把这个对象 new 出来传过来就可以了。</p>
+<h2 id="如何传递过来呢">如何传递过来呢？</h2>
+<p>提供一个 <strong>setter</strong> 或<strong>构造方法</strong>把这个类传递过来。</p>
+<pre><code class="language-java">public class IndexServiceImpl implements IndexService{
+  // 1.setter 方法
+  // 2.构造方法，别人在 new 这个ServiceImpl 时就需要把具体的实现传进来
+    public IndexServiceImpl(IndexDao dao){
+  }
+}
+</code></pre>
+<h2 id="spring体系结构-ioc的位置">spring体系结构----IOC的位置</h2>
+<blockquote>
+<p><a href="https://spring.io/projects">https://spring.io/projects</a><br>
+Spring Framework<br>
+Provides core support for dependency injection, transaction management, web apps, data access, messaging and more.<br>
+提供了 DI、事务管理、web 开发和更多的核心支持<br>
+<a href="https://spring.io/projects/spring-framework">https://spring.io/projects/spring-framework</a><br>
+Features（特点）<br>
+Core technologies（核心技术）: dependency injection（DI）, events, resources, i18n, validation, data binding, type conversion, SpEL, AOP.<br>
+Testing: mock objects, TestContext framework, Spring MVC Test, WebTestClient.<br>
+Data Access: transactions, DAO support, JDBC, ORM, Marshalling XML.<br>
+Spring MVC and Spring WebFlux web frameworks.<br>
+Integration: remoting, JMS, JCA, JMX, email, tasks, scheduling, cache.<br>
+Languages: Kotlin, Groovy, dynamic languages.</p>
+</blockquote>
+<h2 id="容器">容器</h2>
+<p>在日常程序开发过程当中，我们推荐<strong>面向抽象</strong>编程，面向抽象编程会产生<strong>类的依赖</strong>，当然如果你够强大可以自己写一个<strong>管理的容器</strong>，但是既然spring以及实现了，并且spring如此优秀，我们仅仅需要学习spring框架便可。</p>
+<p>当我们有了一个管理对象的容器之后，<strong>类的产生过程交给了容器</strong>，至于我们自己的app则可以不需要去关系这些对象的产生了。</p>
+<h1 id="spring-实现-ioc-的思路和方法">Spring 实现 IOC 的思路和方法</h1>
+<p>Spring 实现 IOC 的思路是<strong>提供一些配置信息用来描述类之间的依赖关系，然后由容器去解析这些配置信息，继而维护好对象之间的依赖关系</strong>，前提是对象之间的依赖关系必须在类中定义好，比如 A.class 中有一个 B.class 的属性，那么我们可以理解为 A 依赖了 B。既然我们在类中已经定义了他们之间的依赖关系那么为什么还需要在配置文件中去描述和定义呢？</p>
+<h2 id="spring-实现-ioc-的思路大致可以拆分成-3-点">Spring 实现 IOC 的思路大致可以拆分成 3 点</h2>
+<ol>
+<li>应用程序中提供类，提供依赖关系（属性或者构造方法）</li>
+<li>把需要交给容器管理的<strong>对象</strong>通过配置信息告诉容器（xml、Annotation，JavaConfig）</li>
+<li>把各个类之间的<strong>依赖关系</strong>通过配置信息告诉容器</li>
+</ol>
+<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/SpringIOC.png" alt="图片" loading="lazy"></figure>
+<blockquote>
+<p>1、定义一个类 A，把类 A 和 类 B 的关系通过应用程序描述出来：类 A 中有一个类 B 的属性<br>
+2、将类 A、类 B 交给 Spring 容器进行管理：使用 <bean><br>
+3、在 xml 定义中描述类 A、类 B 之间的依赖关系</p>
+</blockquote>
+<h2 id="既然我们在类中已经定义了他们之间的依赖关系那么为什么还需要在配置文件中去描述和定义呢">既然我们在类中已经定义了他们之间的依赖关系那么为什么还需要在配置文件中去描述和定义呢？</h2>
+<p>类中定义了但是 Spring 感知不到你是否需要依赖注入</p>
+<p>配置这些信息的方法有三种分别是 xml，Annotation 和 JavaConfig</p>
+<p>维护的过程称为<strong>自动注入</strong>，自动注入的方法有两种：**构造方法 **和 <strong>setter</strong></p>
+<p>自动注入的值可以是对象，数组，map，list和常量比如字符串整形等</p>
+<h1 id="spring编程的风格">spring编程的风格</h1>
+<h2 id="schemal-based-xml">schemal-based-------xml</h2>
+<p><a href="https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#aop-schema-declaring-an-aspect">https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#aop-schema-declaring-an-aspect</a></p>
+<pre><code class="language-xml">&lt;aop:config&gt;
+    &lt;aop:aspect id=&quot;myAspect&quot; ref=&quot;aBean&quot;&gt;
+        ...
+    &lt;/aop:aspect&gt;
+&lt;/aop:config&gt;
+
+&lt;bean id=&quot;aBean&quot; class=&quot;...&quot;&gt;
+    ...
+&lt;/bean&gt;
+</code></pre>
+<h2 id="annotation-based-annotation">annotation-based-----annotation</h2>
+<p><a href="https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#aop-advice-before">https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#aop-advice-before</a></p>
+<pre><code class="language-java">import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Before;
+
+@Aspect
+public class BeforeExample {
+
+    @Before(&quot;com.xyz.myapp.SystemArchitecture.dataAccessOperation()&quot;)
+    public void doAccessCheck() {
+        // ...
+    }
+
+}
+</code></pre>
+<p><a href="https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#beans-required-annotation">https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#beans-required-annotation</a></p>
+<pre><code class="language-java">public class SimpleMovieLister {
+
+    private MovieFinder movieFinder;
+
+    @Required
+    public void setMovieFinder(MovieFinder movieFinder) {
+        this.movieFinder = movieFinder;
+    }
+
+    // ...
+}
+</code></pre>
+<h2 id="java-based-java-configuration">java-based----java Configuration</h2>
+<p><a href="https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#beans-java-basic-concepts">https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#beans-java-basic-concepts</a></p>
+<pre><code class="language-java">@Configuration
+public class AppConfig {
+
+    @Bean
+    public MyService myService() {
+        return new MyServiceImpl();
+    }
+}
+</code></pre>
+<h1 id="注入">注入</h1>
+<p>想看一部电影，可以有如下两种方法：</p>
+<p>① 输入 url 到迅雷，然后下载下来：<strong>依赖查找</strong>：输入一个 url 找到一个资源。</p>
+<p>② 下载一个播放器，输入我想要看的类型，就会自动推送这个类型的电影列表。</p>
+<p>IOC 也是如此，仅仅需要在代码中提供依赖关系，由容器维护好，自动把对象提供给我们使用，给的过程称之为<strong>注入</strong>。</p>
+<p>注入：提供一个 setter 方法或构造方法，Spring 就会把对象给我们。给我们的过程称为注入。</p>
+<blockquote>
+<p>Spring3 有接口注入，但是从 Spring4 开始就已经取消了。</p>
+</blockquote>
+<h2 id="spring注入详细配置字符串-数组等">spring注入详细配置（字符串、数组等）</h2>
+<p>参考文档：</p>
+<p><a href="https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#beans-factory-properties-detailed">https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#beans-factory-properties-detailed</a></p>
+<h3 id="字符串属性注入"><strong>字符串属性注入</strong></h3>
+<p>使用 value：<property name="str" value=""/></p>
+<pre><code class="language-java">package com.ssm.dao.impl;
+import com.ssm.dao.IndexDao;
+public class IndexDaoImpl implements IndexDao {
+    private String str=&quot;&quot;;
+    public void setStr(String str) {
+        this.str = str;
+    }
+    public String getStr() {
+        return str;
+    }
+    @Override
+    public void test() {
+        System.out.println(&quot;IndexDaoImpl...&quot;);
+    }
+}
+</code></pre>
+<pre><code class="language-xml">&lt;bean id=&quot;dao&quot; class=&quot;com.ssm.dao.impl.IndexDaoImpl&quot;&gt;
+    &lt;property name=&quot;str&quot; value=&quot;Hello world&quot;&gt;&lt;/property&gt;
+&lt;/bean&gt;
+</code></pre>
+<pre><code class="language-xml">&lt;bean id=&quot;myDataSource&quot; class=&quot;org.apache.commons.dbcp.BasicDataSource&quot; destroy-method=&quot;close&quot;&gt;
+    &lt;!-- results in a setDriverClassName (String) call --&gt;
+    &lt;property name=&quot;driverClassName&quot; value=&quot;com.mysql.jdbc.Driver&quot;/&gt;
+    &lt;property name=&quot;url&quot; value=&quot;jdbc:mysql://localhost:3306/mydb&quot;/&gt;
+    &lt;property name=&quot;username&quot; value=&quot;root&quot;/&gt;
+    &lt;property name=&quot;password&quot; value=&quot;masterkaoli&quot;/&gt;
+&lt;/bean&gt;
+</code></pre>
+<h3 id="内部-bean">内部 bean</h3>
+<p>原来是通过在 <property ref="xxx"/>，ref 引入外部 bean</p>
+<p>内部 bean 是 <property><bean>  ... </bean></property>，在 property 标签内部注入 bean</p>
+<pre><code class="language-xml">&lt;bean id=&quot;outer&quot; class=&quot;...&quot;&gt;
+    &lt;!-- instead of using a reference to a target bean, simply define the target bean inline --&gt;
+    &lt;property name=&quot;target&quot;&gt;
+        &lt;bean class=&quot;com.example.Person&quot;&gt; &lt;!-- this is the inner bean --&gt;
+            &lt;property name=&quot;name&quot; value=&quot;Fiona Apple&quot;/&gt;
+            &lt;property name=&quot;age&quot; value=&quot;25&quot;/&gt;
+        &lt;/bean&gt;
+    &lt;/property&gt;
+&lt;/bean&gt;
+</code></pre>
+<h3 id="collections">Collections</h3>
+<pre><code class="language-xml">&lt;bean id=&quot;moreComplexObject&quot; class=&quot;example.ComplexObject&quot;&gt;
+    &lt;!-- results in a setAdminEmails(java.util.Properties) call --&gt;
+    &lt;property name=&quot;adminEmails&quot;&gt;
+        &lt;props&gt;
+            &lt;prop key=&quot;administrator&quot;&gt;administrator@example.org&lt;/prop&gt;
+            &lt;prop key=&quot;support&quot;&gt;support@example.org&lt;/prop&gt;
+            &lt;prop key=&quot;development&quot;&gt;development@example.org&lt;/prop&gt;
+        &lt;/props&gt;
+    &lt;/property&gt;
+    &lt;!-- results in a setSomeList(java.util.List) call --&gt;
+    &lt;property name=&quot;someList&quot;&gt;
+        &lt;list&gt;
+            &lt;value&gt;a list element followed by a reference&lt;/value&gt;
+            &lt;ref bean=&quot;myDataSource&quot; /&gt;
+        &lt;/list&gt;
+    &lt;/property&gt;
+    &lt;!-- results in a setSomeMap(java.util.Map) call --&gt;
+    &lt;property name=&quot;someMap&quot;&gt;
+        &lt;map&gt;
+            &lt;entry key=&quot;an entry&quot; value=&quot;just some string&quot;/&gt;
+            &lt;entry key =&quot;a ref&quot; value-ref=&quot;myDataSource&quot;/&gt;
+        &lt;/map&gt;
+    &lt;/property&gt;
+    &lt;!-- results in a setSomeSet(java.util.Set) call --&gt;
+    &lt;property name=&quot;someSet&quot;&gt;
+        &lt;set&gt;
+            &lt;value&gt;just some string&lt;/value&gt;
+            &lt;ref bean=&quot;myDataSource&quot; /&gt;
+        &lt;/set&gt;
+    &lt;/property&gt;
+&lt;/bean&gt;
+</code></pre>
+<h3 id="xml-shortcut-with-the-p-namespace">XML Shortcut with the p-namespace</h3>
+<blockquote>
+<p>Spring supports extensible configuration formats with namespaces, which are based on an XML Schema definition. The beans configuration format discussed in this chapter is defined in an XML Schema document. However, the p-namespace is not defined in an XSD file and exists only in the core of Spring.</p>
+<p>Spring 支持带有名称空间的可扩展配置格式，这些名称空间基于XML模式定义。本章讨论的 bean 配置格式是在 XML 模式文档中定义的。但是，p-namespace 并没有在 XSD 文件中定义，它只存在于Spring 的核心中。</p>
+</blockquote>
+<p>1、在原有的基础上添加 xmlns:p=&quot;http://www.springframework.org/schema/p&quot; 命名空间</p>
+<p>2、<bean id="dao" class="com.ssm.dao.impl.IndexDaoImpl" p:str="Hello world"> 注入 等价于 原有的 <property name="str" value="Hello world"/>  注入。</p>
+<pre><code class="language-xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;beans xmlns=&quot;http://www.springframework.org/schema/beans&quot;
+       xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot;
+       xmlns:p=&quot;http://www.springframework.org/schema/p&quot;
+       xsi:schemaLocation=&quot;http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd&quot;&gt;
+
+    &lt;bean id=&quot;dao&quot; class=&quot;com.ssm.dao.impl.IndexDaoImpl&quot; p:str=&quot;Hello world&quot;&gt;
+&lt;!--        &lt;property name=&quot;str&quot; value=&quot;Hello world&quot;&gt;&lt;/property&gt;--&gt;
+    &lt;/bean&gt;
+&lt;/beans&gt;
+</code></pre>
+<h3 id="xml-shortcut-with-the-c-namespace">XML Shortcut with the c-namespace</h3>
+<p>如果类中定义了构造函数注入，但 bean 标签内没有声明 <constructor-arg> 就会产生 Caused by: java.lang.NoSuchMethodException: com.ssm.service.IndexService.<init>() 异常</p>
+<pre><code>&lt;bean id=&quot;service&quot; class=&quot;com.ssm.service.IndexService&quot;&gt;&lt;!--        &lt;constructor-arg ref=&quot;dao&quot;&gt;&lt;/constructor-arg&gt;--&gt;&lt;/bean&gt;
+</code></pre>
+<p>使用 c-namespace 注入：<br>
+1、添加 xmlns:c=&quot;http://www.springframework.org/schema/c&quot; 命名空间</p>
+<p>2、<bean id="service" class="com.ssm.service.IndexService" c:indexDao-ref="dao"> 注入 等价于 原来的     <bean id="service" class="com.ssm.service.IndexService">  <constructor-arg ref="dao"></constructor-arg>  </bean></p>
+<pre><code class="language-xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;beans xmlns=&quot;http://www.springframework.org/schema/beans&quot;
+       xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot;
+       xmlns:p=&quot;http://www.springframework.org/schema/p&quot;
+       xmlns:c=&quot;http://www.springframework.org/schema/c&quot;
+       xsi:schemaLocation=&quot;http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd&quot;&gt;
+
+    &lt;bean id=&quot;dao&quot; class=&quot;com.ssm.dao.impl.IndexDaoImpl&quot; p:str=&quot;Hello world&quot;&gt; 
+&lt;!--        &lt;property name=&quot;str&quot; value=&quot;Hello world&quot;&gt;&lt;/property&gt;--&gt;
+    &lt;/bean&gt;
+
+    &lt;bean id=&quot;service&quot; class=&quot;com.ssm.service.IndexService&quot; c:indexDao-ref=&quot;dao&quot;&gt;
+&lt;!--        &lt;constructor-arg ref=&quot;dao&quot;&gt;&lt;/constructor-arg&gt;--&gt;
+    &lt;/bean&gt;
+
+&lt;/beans&gt;
+</code></pre>
+<h2 id="spring-通过-setter-注入的应用实例">Spring 通过 setter 注入的应用实例</h2>
+<p>1、pom.xml 导入 spring 依赖</p>
+<pre><code class="language-xml">&lt;!-- ioc 90% 以上的内容 --&gt;
+&lt;dependency&gt;
+  &lt;groupId&gt;org.springframework&lt;/groupId&gt;
+  &lt;artifactId&gt;spring-context&lt;/artifactId&gt;
+  &lt;version&gt;5.0.9.RELEASE&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+<p>2、应用程序中提供类，提供依赖关系（属性或者构造方法）</p>
+<p>IndexDao 类：</p>
+<pre><code class="language-java">package com.ssm.dao;
+
+public interface IndexDao {
+    void test();
+}
+</code></pre>
+<p>IndexDaoImpl 类：</p>
+<pre><code class="language-java">package com.ssm.dao.impl;
+
+import com.ssm.dao.IndexDao;
+
+public class IndexDaoImpl implements IndexDao {
+
+    @Override
+    public void test() {
+        System.out.println(&quot;IndexDaoImpl...&quot;);
+    }
+}
+</code></pre>
+<p>IndexService 依赖 Index：</p>
+<p><strong>提供 setter 方法：</strong></p>
+<pre><code class="language-java">package com.ssm.service;
+
+import com.ssm.dao.IndexDao;
+
+public class IndexService {
+
+    private IndexDao indexDao;
+
+    public void service(){
+        indexDao.test();
+    }
+
+    // 提供 setter 方法
+    public void setIndexDao(IndexDao indexDao) {
+        this.indexDao = indexDao;
+    }
+}
+</code></pre>
+<p>3、把需要交给容器管理的对象通过配置信息告诉容器（xml、Annotation，JavaConfig）</p>
+<p>4、把各个类之间的依赖关系通过配置信息告诉容器</p>
+<pre><code class="language-xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;beans xmlns=&quot;http://www.springframework.org/schema/beans&quot;
+       xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot;
+       xsi:schemaLocation=&quot;http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd&quot;&gt;
+
+    &lt;bean id=&quot;dao&quot; class=&quot;com.ssm.dao.impl.IndexDaoImpl&quot;&gt;&lt;/bean&gt;
+
+    &lt;bean id=&quot;service&quot; class=&quot;com.ssm.service.IndexService&quot;&gt;
+        &lt;property name=&quot;indexDao&quot; ref=&quot;dao&quot;/&gt;
+    &lt;/bean&gt;
+
+&lt;/beans&gt;
+</code></pre>
+<p>5、测试</p>
+<pre><code class="language-java">package com.ssm.test;
+
+import com.ssm.service.IndexService;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+public class Test {
+    public static void main(String[] args) {
+        // ClassPathXmlApplicationContext：通过 ClassPath 下的 xml 初始化 Spring 应用环境
+        ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext(&quot;spring.xml&quot;);
+        IndexService service = (IndexService) context.getBean(&quot;service&quot;);
+        service.service();
+    }
+}
+</code></pre>
+<p>6、运行结果</p>
+<pre><code>IndexDaoImpl...注入的两种方法
+</code></pre>
+<h3 id="constructor-based-dependency-injection">Constructor-based Dependency Injection</h3>
+<p>构造方法注入参考文档：</p>
+<p><a href="https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#beans-constructor-injection">https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#beans-constructor-injection</a></p>
+<h4 id="构造方法注入实例">构造方法注入实例</h4>
+<pre><code class="language-java">public class IndexService {
+    private IndexDao indexDao;
+    public IndexService(IndexDao indexDao){
+        this.indexDao = indexDao;
+    }
+    public void service(){
+        indexDao.test();
+    }
+}
+</code></pre>
+<p>xml 文件：</p>
+<pre><code class="language-xml">&lt;bean id=&quot;dao&quot; class=&quot;com.ssm.dao.impl.IndexDaoImpl&quot;&gt;&lt;/bean&gt;
+&lt;bean id=&quot;service&quot; class=&quot;com.ssm.service.IndexService&quot;&gt;
+  &lt;constructor-arg ref=&quot;dao&quot;&gt;&lt;/constructor-arg&gt;
+&lt;/bean&gt;
+</code></pre>
+<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95%E6%B3%A8%E5%85%A5.png" alt="图片" loading="lazy"></figure>
+<h3 id="setter-based-dependency-injection">Setter-based Dependency Injection</h3>
+<p>setter参考文档：</p>
+<p><a href="https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#beans-setter-injection">https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#beans-setter-injection</a></p>
+<figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/setter%E6%B3%A8%E5%85%A5.png" alt="图片" loading="lazy"></figure>
+<h2 id="注解-xml-混合使用">注解 + xml 混合使用</h2>
+<p>1、xml 内 的ref 引用 dao</p>
+<pre><code class="language-xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;beans xmlns=&quot;http://www.springframework.org/schema/beans&quot;
+       xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot;
+       xmlns:p=&quot;http://www.springframework.org/schema/p&quot;
+       xmlns:c=&quot;http://www.springframework.org/schema/c&quot;
+       xsi:schemaLocation=&quot;http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd&quot;&gt;
+    &lt;bean id=&quot;service&quot; class=&quot;com.ssm.service.IndexService&quot; c:indexDao-ref=&quot;dao&quot;&gt;
+    &lt;/bean&gt;
+&lt;/beans&gt;
+</code></pre>
+<p>2、使用注解声明 dao：</p>
+<pre><code class="language-java">@Component(&quot;dao&quot;)
+public class IndexDaoImpl implements IndexDao {
+</code></pre>
+<p>3、报错：找不到 dao</p>
+<p>Caused by: org.springframework.beans.factory.NoSuchBeanDefinitionException: No bean named 'dao' available</p>
+<p>4、分析：没有开启注解、没有注解扫描</p>
+<h3 id="开启注解">开启注解：</h3>
+<p>1、xml 中添加 context 相关内容</p>
+<pre><code class="language-xml">xmlns:context=&quot;http://www.springframework.org/schema/context&quot;
+ xsi:schemaLocation=&quot;http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context
+       http://www.springframework.org/schema/context/spring-context.xsd&quot;
+</code></pre>
+<p>2、开启注解（现在 Spring 版本不写开启注解、只写注解扫描，也能实现功能）</p>
+<pre><code class="language-xml">&lt;context:annotation-config /&gt;
+</code></pre>
+<p>3、开启注解扫描</p>
+<pre><code class="language-xml">&lt;context:component-scan base-package=&quot;com.ssm&quot;/&gt;
+</code></pre>
+<p>将 service 的 bean 声明也使用注解，于是就可以删除 xml 中的 id 为 service 的 bean 标签了。</p>
+<pre><code class="language-java">@Service(value = &quot;service&quot;)
+public class IndexService {
+</code></pre>
+<p>完整代码：</p>
+<pre><code class="language-xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;beans xmlns=&quot;http://www.springframework.org/schema/beans&quot;
+       xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot;
+       xmlns:p=&quot;http://www.springframework.org/schema/p&quot;
+       xmlns:context=&quot;http://www.springframework.org/schema/context&quot;
+       xmlns:c=&quot;http://www.springframework.org/schema/c&quot;
+       xsi:schemaLocation=&quot;http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context
+       http://www.springframework.org/schema/context/spring-context.xsd&quot;&gt;
+    &lt;!-- 开启注解 --&gt;
+    &lt;context:annotation-config&gt;&lt;/context:annotation-config&gt;
+    &lt;!-- 开启注解扫描 --&gt;
+    &lt;context:component-scan base-package=&quot;com.ssm&quot;&gt;&lt;/context:component-scan&gt;
+&lt;/beans&gt;
+</code></pre>
+<p>4、测试，运行结果：</p>
+<pre><code>IndexDaoImpl...
+</code></pre>
+<p>总结：以上这种注解方式一定需要 xml，因为需要在 xml 内<strong>开启注解扫描</strong>。</p>
+<p>有没有办法删掉 xml 呢？答：JavaConfig 配置方式</p>
+<h2 id="javaconfig-配置方式">JavaConfig 配置方式</h2>
+<p>1、编写配置类</p>
+<pre><code class="language-java">package com.ssm.config;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.stereotype.Component;
+// 表明这是一个 xml 文件
+@Configuration
+// 扫描包
+@ComponentScan(&quot;com.ssm&quot;)      
+public class SpringConfig {
+}
+</code></pre>
+<p>2、修改测试类 Test</p>
+<pre><code class="language-java">package com.ssm.test;
+import com.ssm.config.SpringConfig;
+import com.ssm.service.IndexService;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+public class Test {
+    public static void main(String[] args) {
+        // AnnotationConfigApplicationContext：注解配置应用程序
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(SpringConfig.class);
+        IndexService service = (IndexService) context.getBean(&quot;service&quot;);
+        service.service();
+    }
+}
+</code></pre>
+<p>3、测试，运行结果：</p>
+<pre><code>IndexDaoImpl...
+</code></pre>
+<h2 id="javaconfig-xml-注解配置">JavaConfig + xml +注解配置</h2>
+<p>1、Sservice 的注入使用注解方式</p>
+<pre><code>@Service(&quot;service&quot;)
+public class IndexService {
+</code></pre>
+<p>2、Dao 的注入使用 xml 方式</p>
+<pre><code class="language-java">public class IndexDaoImpl implements IndexDao {
+</code></pre>
+<pre><code class="language-xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;beans xmlns=&quot;http://www.springframework.org/schema/beans&quot;
+       xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot;
+       xmlns:p=&quot;http://www.springframework.org/schema/p&quot;
+       xmlns:context=&quot;http://www.springframework.org/schema/context&quot;
+       xsi:schemaLocation=&quot;http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context
+       http://www.springframework.org/schema/context/spring-context.xsd&quot;&gt;
+    &lt;!-- 开启注解 --&gt;
+    &lt;context:annotation-config/&gt;
+    &lt;!-- 开启注解扫描 --&gt;
+    &lt;context:component-scan base-package=&quot;com.ssm&quot;/&gt;
+    &lt;bean id=&quot;dao&quot; class=&quot;com.ssm.dao.impl.IndexDaoImpl&quot; p:str=&quot;Hello world&quot;&gt;
+    &lt;/bean&gt;
+&lt;/beans&gt;
+</code></pre>
+<p>3、JavaConfig 配置类引入 xml 文件</p>
+<pre><code class="language-java">// 表明这是一个 xml 文件
+@Configuration
+// 扫描包
+@ComponentScan(&quot;com.ssm&quot;)
+// 引入 xml 配置文件
+@ImportResource(&quot;classpath:spring.xml&quot;)
+public class SpringConfig {
+}
+</code></pre>
+<p>4、测试类</p>
+<pre><code class="language-java">public class Test {
+    public static void main(String[] args) {
+        // AnnotationConfigApplicationContext：注解配置应用程序
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(SpringConfig.class);
+        IndexService service = (IndexService) context.getBean(&quot;service&quot;);
+        service.service();
+    }
+}
+</code></pre>
+<p>运行结果：</p>
+<pre><code>IndexDaoImpl...
+</code></pre>
+<h1 id="自动装配">自动装配</h1>
+<p>上面说过，IOC 的注入有两个地方需要提供依赖关系，一是类的定义中，二是在spring的配置中需要去描述。自动装配则把第二个取消了，即我们仅仅需要在类中提供依赖，继而把对象交给容器管理即可完成注入。</p>
+<p>在实际开发中，描述类之间的依赖关系通常是大篇幅的，如果使用自动装配则省去了很多配置，并且如果对象的依赖发生更新我们可以不需要去更新配置，但是也带来了一定的缺点</p>
+<h2 id="自动装配的优点">自动装配的优点</h2>
+<p>参考文档：</p>
+<p><a href="https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#beans-factory-autowire">https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#beans-factory-autowire</a></p>
+<blockquote>
+<p>The Spring container can autowire relationships between collaborating beans. You can let Spring resolve collaborators (other beans) automatically for your bean by inspecting the contents of the ApplicationContext. Autowiring has the following advantages:</p>
+</blockquote>
+<p>Spring容器可以自动创建协作 bean 之间的关系。通过检查 ApplicationContext 的内容，您可以让 Spring 为您的 bean 自动解析协作者(其他bean)。自动装配有以下优点:</p>
+<blockquote>
+<p>Autowiring can significantly reduce the need to specify properties or constructor arguments. (Other mechanisms such as a bean template discussed elsewhere in this chapter are also valuable in this regard.)</p>
+</blockquote>
+<p>自动装配可以大大减少指定属性或构造函数参数的需要。(本章其他地方讨论的其他机制，如bean模板，在这方面也很有价值。)</p>
+<blockquote>
+<p>Autowiring can update a configuration as your objects evolve. For example, if you need to add a dependency to a class, that dependency can be satisfied automatically without you needing to modify the configuration. Thus autowiring can be especially useful during development, without negating the option of switching to explicit wiring when the code base becomes more stable.</p>
+</blockquote>
+<p>自动装配可以随着对象的演化更新配置。例如，如果需要向类添加依赖，则可以自动更新该依赖，而不需要修改配置。因此，自动装配在开发过程中特别有用，当代码库变得更加稳定时，自动装配可以避免切换到显式连接的选项。</p>
+<pre><code class="language-xml">&lt;bean id=&quot;indexService&quot; class=&quot;com.ssm.service.IndexService&quot;&gt;
+    &lt;property name=&quot;indexDao&quot; ref=&quot;dao&quot;/&gt;
+&lt;/bean&gt;
+</code></pre>
+<p>分析：上述配置需要手动添加依赖，比如现在 IndexService 新增了依赖 helloDao：</p>
+<pre><code class="language-java">public class IndexService{
+  private IndexDao indexDao;
+  private HelloDao helloDao;
+}
+</code></pre>
+<p>就需要在 xml 的 <bean> 内增加 <property name="hello" ref="hello"/></p>
+<pre><code class="language-xml">&lt;bean id=&quot;indexService&quot; class=&quot;com.ssm.service.IndexService&quot;&gt;
+    &lt;property name=&quot;indexDao&quot; ref=&quot;dao&quot;/&gt;
+     &lt;property name=&quot;hello&quot; ref=&quot;hello&quot;/&gt;
+&lt;/bean&gt;
+</code></pre>
+<p>使用了自动装配后，就无须手动在 xml 中增加依赖进行维护了，<strong>自动装配可以自动更新该依赖，而不需要修改配置</strong>。</p>
+<h2 id="自动装配的缺点">自动装配的缺点</h2>
+<p>参考文档：</p>
+<p><a href="https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#beans-autowired-exceptions">https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#beans-autowired-exceptions</a></p>
+<p>作为我来讲，我觉得以上缺点都不是缺点</p>
+<h2 id="自动装配的方法">自动装配的方法</h2>
+<p>自动装配的方式参考文档：</p>
+<p><a href="https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#beans-factory-autowire">https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#beans-factory-autowire</a></p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left"><strong>Mode</strong></th>
+<th style="text-align:left"><strong>Explanation</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">no ( 不使用自动装配 )</td>
+<td style="text-align:left">(默认)没有自动装配。Bean 引用必须由 ref 元素定义。对于较大的部署，不建议更改默认设置，因为显式地指定协作者可以提供更好的控制和清晰度。在某种程度上，它记录了一个系统的结构。</td>
+</tr>
+<tr>
+<td style="text-align:left">byName</td>
+<td style="text-align:left">通过属性名自动装配。Spring 寻找与需要自动装配的属性同名的 bean。例如，如果一个 bean 定义被按名称设置为自动装配，并且它包含一个主属性(也就是说，它有一个setMaster(..)方法)，Spring 会查找一个名为master 的 bean 定义并使用它来设置属性。</td>
+</tr>
+<tr>
+<td style="text-align:left">byType</td>
+<td style="text-align:left">如果容器中恰好存在该属性类型的一个 bean，则允许自动获取该属性。如果存在多个异常，则抛出一个致命异常，这表明您不能为该 bean 使用byType 自动装配。如果没有匹配的 bean，则什么也不会发生(属性没有设置)。</td>
+</tr>
+<tr>
+<td style="text-align:left">constructor</td>
+<td style="text-align:left">类似于 byType，但适用于构造函数参数。如果容器中没有一个构造函数参数类型的 bean，则会引发致命错误。</td>
+</tr>
+</tbody>
+</table>
+<h3 id="bytype-自动装配实例">byType 自动装配实例</h3>
+<p>1、IndexService 依赖 IndexDao</p>
+<pre><code class="language-java">public class IndexService {
+    private IndexDao indexDao;
+    public void service(){
+        indexDao.test();
+    }
+    public void setIndexDao(IndexDao indexDao) {
+        this.indexDao = indexDao;
+    }
+}
+</code></pre>
+<p>2、使用自动装配：beans 标签内导入 default-autowire=&quot;byType&quot;</p>
+<pre><code class="language-xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;beans xmlns=&quot;http://www.springframework.org/schema/beans&quot;
+       xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot;
+       xmlns:context=&quot;http://www.springframework.org/schema/context&quot;
+       xsi:schemaLocation=&quot;http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context
+       http://www.springframework.org/schema/context/spring-context.xsd&quot;
+        default-autowire=&quot;byType&quot;&gt;
+
+    &lt;!-- 开启注解 --&gt;
+    &lt;context:annotation-config/&gt;
+    &lt;!-- 开启注解扫描 --&gt;
+    &lt;context:component-scan base-package=&quot;com.ssm&quot;/&gt;
+
+    &lt;bean id=&quot;dao&quot; class=&quot;com.ssm.dao.impl.IndexDaoImpl&quot;&gt;
+    &lt;/bean&gt;
+
+    &lt;!-- IndexService 内应该注入 IndexDao，但因为指定了自动装配，所以可以不显式通过 property 标签注入 IndexDao --&gt;
+    &lt;bean id=&quot;indexService&quot; class=&quot;com.ssm.service.IndexService&quot;&gt;
+&lt;!--        &lt;property name=&quot;indexDao&quot; ref=&quot;dao&quot;/&gt;--&gt;
+    &lt;/bean&gt;
+&lt;/beans&gt;
+</code></pre>
+<p>分析：IndexService 内应该注入 IndexDao，但因为通过 default-autowire=&quot;byType&quot; 指定了自动装配，所以可以不显式通过 property 标签注入 IndexDao。</p>
+<p>在扫描到 IndexService 类时，发现该类依赖了 IndexDao，发现它的类型是 IndexDao，到 Spring 容器中找类型或父类类型为 IndexDao 的，如果有，就把这个对象直接赋给 IndexService 中的 IndexDao。</p>
+<blockquote>
+<p>自动装配并不是完全不需要配置了，自动装配仍需要配置 bean，将类交给 Spring 容器管理，自动装配省略了类与类之间依赖的管理，比如类 A 依赖类 B，无需配置依赖关系了，Spring 会自动到容器中找到类 B 然后把它赋给类 A 的成员变量。</p>
+</blockquote>
+<figure data-type="image" tabindex="4"><img src="https://epitomm.github.io/post-images/%E8%87%AA%E5%8A%A8%E8%A3%85%E9%85%8D.png" alt="图片" loading="lazy"></figure>
+<h4 id="bytype-自动装配多个相同类型的问题">byType 自动装配多个相同类型的问题</h4>
+<p>当有多个相同类型时，会报错</p>
+<p>1、添加一个 IndexDaoImpl2 类</p>
+<pre><code class="language-java">public class IndexDaoImpl2 implements IndexDao {
+    @Override
+    public void test() {
+        System.out.println(&quot;IndexDaoImpl...2&quot;);
+    }
+}
+</code></pre>
+<p>2、把 IndexDaoImpl2 交给 Spring 容器管理，现在 Spring 容器内有两个 type = IndexDao 的类：IndexDaoImp、IndexDaoImpl2</p>
+<pre><code class="language-xml">&lt;bean id=&quot;dao2&quot; class=&quot;com.ssm.dao.impl.IndexDaoImpl2&quot;/&gt;
+</code></pre>
+<p>3、测试结果：</p>
+<p>Caused by: org.springframework.beans.factory.NoUniqueBeanDefinitionException: No qualifying bean of type 'com.ssm.dao.IndexDao' available: expected single matching bean but found 2: dao,dao2</p>
+<p>需要单个匹配，但是发现了两个：dao、dao2</p>
+<h3 id="byname-自动装配实例">byName 自动装配实例</h3>
+<p>1、beans 标签内指定 byName 自动装配：</p>
+<pre><code>default-autowire=&quot;byName&quot;
+</code></pre>
+<p>2、如果没有指定 <bean> 标签的 name 属性，name 默认为将 setIndexDao 的 set 去掉、第一个字母小写，即 name=indexDao</p>
+<pre><code class="language-java">public class IndexService {
+    private IndexDao indexDao;
+    public void service(){
+        indexDao.test();
+    }
+    public void setIndexDao(IndexDao indexDao) {
+        this.indexDao = indexDao;
+    }
+}
+</code></pre>
+<p>3、于是到 Spring 容器内找 name=indexDao 的，没有找到，报错 Exception in thread &quot;main&quot; java.lang.NullPointerException</p>
+<pre><code class="language-xml">&lt;bean id=&quot;dao&quot; class=&quot;com.ssm.dao.impl.IndexDaoImpl&quot;/&gt;
+&lt;bean id=&quot;dao2&quot; class=&quot;com.ssm.dao.impl.IndexDaoImpl2&quot;/&gt;
+</code></pre>
+<p>解决办法一：</p>
+<p>1、改变 set 方法的方法名：</p>
+<pre><code class="language-java">public void setDao(IndexDao indexDao) {
+    this.indexDao = indexDao;
+}
+</code></pre>
+<p>2、测试成功：</p>
+<pre><code>IndexDaoImpl...
+</code></pre>
+<p>解决方法二：</p>
+<p>1、set 方法不变</p>
+<pre><code>public void setIndexDao(IndexDao indexDao) {
+    this.indexDao = indexDao;
+ }
+</code></pre>
+<p>2、给 bean 标签添加 name 属性</p>
+<pre><code>&lt;bean id=&quot;dao2&quot; class=&quot;com.ssm.dao.impl.IndexDaoImpl2&quot; name=&quot;indexDao&quot;&gt;&lt;/bean&gt;
+</code></pre>
+<p>3、测试成功</p>
+<pre><code>IndexDaoImpl...2
+</code></pre>
+<h3 id="default-no-不使用自动装配">default = no 不使用自动装配</h3>
+<p>beans 标签内部增加如下说明：</p>
+<p>default-autowire=&quot;default&quot;</p>
+<p>default=autowire=&quot;no&quot;</p>
+<p>异常信息：Exception in thread &quot;main&quot; java.lang.NullPointerException</p>
+<p>其他都想手动装配，唯独 IndexService 想自动装配，就不能在 beans 标签内添加 default-autowire 了，可以<strong>为每一个属性单独指定一个 autowire</strong></p>
+<pre><code class="language-xml">&lt;bean id=&quot;indexService&quot; class=&quot;com.ssm.service.IndexService&quot; autowire=&quot;byType&quot;/&gt;
+</code></pre>
+<p>参考资料：<a href="https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#beans-stereotype-annotations">https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#beans-stereotype-annotations</a></p>
+<blockquote>
+<p>Spring provides further stereotype annotations: @Component, @Service, and @Controller. @Component is a generic stereotype for any Spring-managed component. @Repository, @Service, and @Controller are specializations of @Component for more specific use cases (in the persistence, service, and presentation layers, respectively). Therefore, you can annotate your component classes with @Component, but, by annotating them with @Repository, @Service, or @Controller instead, your classes are more properly suited for processing by tools or associating with aspects. For example, these stereotype annotations make ideal targets for pointcuts. @Repository, @Service, and @Controller can also carry additional semantics in future releases of the Spring Framework. Thus, if you are choosing between using @Component or @Service for your service layer, @Service is clearly the better choice. Similarly, as stated earlier, @Repository is already supported as a marker for automatic exception translation in your persistence layer.</p>
+</blockquote>
+<p>Spring提供了更多的的构造型注解:@Component， @Service，和@Controller。@Component 是任何spring管理组件的通用注解。@Repository、@Service和@Controller是@Component对更具体用例(分别在持久性、服务和表示层)的专门化。因此，您可以使用@Component来注释您的组件类，但是，通过使用@Repository、@Service或@Controller来注释它们，您的类更适合通过工具进行处理或与方面相关联。例如，这些构造型注释是切入点的理想目标。在Spring框架的未来版本中，@Repository、@Service和 @Controller 也可以包含额外的语义。因此，如果您在使用@Component或@Service作为服务层之间进行选择，那么@Service显然是更好的选择。类似地，如前所述，@Repository已经被支持作为持久层中自动异常转换的标记。</p>
+<h2 id="autowired-默认采用-bytype-注入">@Autowired 默认采用 byType 注入</h2>
+<p>1、JavaConfig 配置类</p>
+<ul>
+<li>声明这是一个注解类</li>
+<li>扫描包</li>
+</ul>
+<pre><code class="language-java">// 表明这是一个 xml 文件
+@Configuration
+// 注解扫描包
+@ComponentScan(&quot;com.ssm&quot;)
+public class SpringConfig {
+}
+</code></pre>
+<p>2、@Service 注解</p>
+<ul>
+<li>@Autowired注入 IndexDao</li>
+<li>setIndexDao 方法</li>
+</ul>
+<pre><code class="language-java">@Service
+public class IndexService {
+    @Autowired
+    private IndexDao indexDao;
+    public void service(){
+        indexDao.test();
+    }
+    public void setIndexDao(IndexDao indexDao) {
+        this.indexDao = indexDao;
+    }
+}
+</code></pre>
+<p>3、IndexDao 类型的 IndexDaoImpl 类</p>
+<pre><code class="language-java">@Repository
+public class IndexDaoImpl implements IndexDao {
+    @Override
+    public void test() {
+        System.out.println(&quot;IndexDaoImpl...&quot;);
+    }
+}
+</code></pre>
+<p>4、相同 IndexDao 类型的 IndexDaoImpl2</p>
+<pre><code class="language-java">@Repository
+public class IndexDaoImpl2 implements IndexDao {
+    @Override
+    public void test() {
+        System.out.println(&quot;IndexDaoImpl...2&quot;);
+    }
+}
+</code></pre>
+<p>5、测试类</p>
+<pre><code class="language-java">public class Test {
+    public static void main(String[] args) {
+        // AnnotationConfigApplicationContext：注解配置应用程序
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(SpringConfig.class);
+        IndexService service = (IndexService) context.getBean(&quot;indexService&quot;);
+        service.service();
+    }
+}
+</code></pre>
+<p>6、运行结果：</p>
+<p>Caused by: org.springframework.beans.factory.NoUniqueBeanDefinitionException: No qualifying bean of type 'com.ssm.dao.IndexDao' available: expected single matching bean but found 2: indexDaoImpl,indexDaoImpl2</p>
+<p>期望一个匹配的 IndexDao 类型的 bean，却发现了两个：indexDaoImpl、indexDaoImpl2</p>
+<p>7、分析</p>
+<p>@Autowired 注解默认使用的是 byType 自动装配方式。</p>
+<p>当执行 @Autowired 注入时，到 Spring 容器中找 IndexDao 类型或父类为 IndexDao 类型的，结果找到了 IndexDaoImpl、IndexDaoImpl2，注入失败。此时根据 byType 找到多个类，则根据 byName 注入（private IndexDao indexDao;）因为没有名为 indexDao 的组件，所以注入失败。</p>
+<p><strong>@Autowired 默认采用 byType 注入，如果 byType 找到多个，则根据 byName 注入</strong>，name 为属性名 indexDaoImpl2（private IndexDao indexDaoImpl2）。当根据 name 值注入时，仅与属性值有关，与 set 方法的方法名无关。</p>
+<pre><code class="language-java">@Service
+public class IndexService {
+    @Autowired
+    private IndexDao indexDaoImpl2;
+    public void service(){
+        indexDaoImpl2.test();
+    }
+    public void setIndexDao(IndexDao indexDao) {
+        this.indexDaoImpl2 = indexDao;
+    }
+}
+</code></pre>
+<p>Spring 容器中找到 name 为 indexDaoImpl2 的组件，注入成功</p>
+<pre><code class="language-java">@Repositorypublic class IndexDaoImpl2 implements IndexDao {
+</code></pre>
+<p>运行结果：</p>
+<pre><code>IndexDaoImpl...2
+</code></pre>
+<h2 id="resource-默认采用-byname-注入">@Resource 默认采用 byName 注入</h2>
+<pre><code class="language-java">@Resource
+private IndexDao indexDaoImpl2;
+</code></pre>
+<p>@Resource 模式采用 byName 注入，并且 name 的值为属性值 indexDaoImpl2，与 set 方法的名字无关。</p>
+<h2 id="spring-默认-bean-名称的生成策略">Spring 默认 bean 名称的生成策略</h2>
+<pre><code class="language-java">@Repository
+public class IndexDaoImpl implements IndexDao {
+</code></pre>
+<p>Spring 中如果不显式指定 bean 的名字，默认 bean 的名称为类名首字母变小写，即：indexDaoImpl</p>
+<p>参考资料：<a href="https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#beans-scanning-name-generator">https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#beans-scanning-name-generator</a></p>
+<blockquote>
+<p>When a component is autodetected as part of the scanning process, its bean name is generated by the BeanNameGenerator strategy known to that scanner. By default, any Spring stereotype annotation (@Component, @Repository, @Service, and @Controller) that contains a name value thereby provides that name to the corresponding bean definition.</p>
+</blockquote>
+<p>当一个组件作为扫描过程的一部分被自动检测时，它的bean名称由该扫描程序所知道的BeanNameGenerator策略生成。默认情况下，任何包含名称值的Spring构造型注释(@Component、@Repository、@Service和@Controller)都将该名称提供给相应的bean定义。</p>
+<blockquote>
+<p>If such an annotation contains no name value or for any other detected component (such as those discovered by custom filters), the default bean name generator returns the uncapitalized non-qualified class name. For example, if the following component classes were detected, the names would be myMovieLister and movieFinderImpl:</p>
+</blockquote>
+<p>如果这样的注释不包含名称值或任何其他检测到的组件(例如由自定义过滤器发现的组件)，则默认bean名称生成器将返回未大写的非限定类名。例如，如果检测到以下组件类，其名称将是myMovieLister和movieFinderImpl:</p>
+<pre><code class="language-java">@Service(&quot;myMovieLister&quot;)
+public class SimpleMovieLister {
+    // ...
+}
+</code></pre>
+<pre><code>@Repository
+public class MovieFinderImpl implements MovieFinder {
+    // ...
+}
+</code></pre>
+<blockquote>
+<p>If you do not want to rely on the default bean-naming strategy, you can provide a custom bean-naming strategy. First, implement the BeanNameGenerator interface, and be sure to include a default no-arg constructor. Then, provide the fully qualified class name when configuring the scanner, as the following example annotation and bean definition show.</p>
+</blockquote>
+<p>如果不希望依赖默认的 bean 命名策略，可以提供自定义 bean 命名策略。首先，实现BeanNameGenerator 接口，并确保包含一个默认的无参数构造函数。然后，在配置扫描程序时提供完全限定的类名，如下面的注释和 bean 定义示例所示。</p>
+<p>如果由于多个自动检测到的组件具有相同的非限定类名(即您可能需要配置一个BeanNameGenerator，该生成器默认为生成的bean名称的完全限定类名。从Spring Framework 5.2.3开始，FullyQualifiedAnnotationBeanNameGenerator位于包org.springframework.context中。注释可以用于这些目的。</p>
+<pre><code class="language-java">@Configuration
+@ComponentScan(basePackages = &quot;org.example&quot;, nameGenerator = MyNameGenerator.class)
+public class AppConfig {
+    // ...
+}
+</code></pre>
+<pre><code class="language-xml">&lt;beans&gt;
+    &lt;context:component-scan base-package=&quot;org.example&quot;
+        name-generator=&quot;org.example.MyNameGenerator&quot; /&gt;
+&lt;/beans&gt;
+</code></pre>
+<h1 id="spring懒加载">spring懒加载</h1>
+<p>官网已经解释的非常清楚了：</p>
+<p><a href="https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#beans-factory-lazy-init">https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#beans-factory-lazy-init</a></p>
+<blockquote>
+<p>By default, ApplicationContext implementations eagerly create and configure all singleton beans as part of the initialization process. Generally, this pre-instantiation is desirable, because errors in the configuration or surrounding environment are discovered immediately, as opposed to hours or even days later. When this behavior is not desirable, you can prevent pre-instantiation of a singleton bean by marking the bean definition as being lazy-initialized. A lazy-initialized bean tells the IoC container to create a bean instance when it is first requested, rather than at startup.</p>
+</blockquote>
+<p>默认情况下，ApplicationContext实现将创建和配置所有的单例 bean 作为初始化过程的一部分。通常，这种预实例化是可取的，因为配置或周围环境中的错误会立即被发现，而不是几小时甚至几天之后。当此行为不可取时，您可以通过将 bean 定义标记为延迟初始化来防止单例 bean 的预实例化。延迟初始化的bean 告诉 IoC 容器在第一次请求时创建 bean 实例，而不是在启动时。</p>
+<pre><code class="language-xml">&lt;bean id=&quot;lazy&quot; class=&quot;com.something.ExpensiveToCreateBean&quot; lazy-init=&quot;true&quot;/&gt;
+&lt;bean name=&quot;not.lazy&quot; class=&quot;com.something.AnotherBean&quot;/&gt;
+</code></pre>
+<p>您还可以使用 <beans/> 元素上的 default-lazy-init 属性来控制容器级别的延迟初始化，如下面的示例所示：</p>
+<figure data-type="image" tabindex="5"><img src="https://images-cdn.shimo.im/AL7NwUqEre0woKxB/image.png!thumbnail" alt="图片" loading="lazy"></figure>
+<h1 id="springbean的作用域">springbean的作用域</h1>
+<p>文档参考：</p>
+<p><a href="https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#beans-factory-scopes">https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#beans-factory-scopes</a></p>
+<figure data-type="image" tabindex="6"><img src="https://epitomm.github.io/post-images/SpringBean%E4%BD%9C%E7%94%A8%E5%9F%9F.png" alt="图片" loading="lazy"></figure>
+<h2 id="singleton">singleton</h2>
+<pre><code class="language-java">@Service@Scope(&quot;singleton&quot;)
+public class IndexService {
+</code></pre>
+<p>测试结果：</p>
+<pre><code>com.ssm.service.IndexService@5884a914
+IndexDaoImpl...2
+com.ssm.service.IndexService@5884a914
+</code></pre>
+<p>两次获得到的 Service 对象是同一个实例：单例。</p>
+<h2 id="prototype">prototype</h2>
+<pre><code class="language-java">@Service
+@Scope(&quot;prototype&quot;)
+public class IndexService {
+    @Autowired
+    private IndexDao indexDaoImpl2;
+    public void service(){
+        indexDaoImpl2.test();
+    }
+}
+</code></pre>
+<p>测试</p>
+<pre><code class="language-java">public class Test {
+    public static void main(String[] args) {
+        // AnnotationConfigApplicationContext：注解配置应用程序
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(SpringConfig.class);
+        IndexService service = (IndexService) context.getBean(&quot;indexService&quot;);
+        System.out.println(service);
+        service.service();
+        service = (IndexService) context.getBean(&quot;indexService&quot;);
+        System.out.println(service);
+    }
+}
+</code></pre>
+<p>结果：</p>
+<pre><code>com.ssm.service.IndexService@5884a914
+IndexDaoImpl...2
+com.ssm.service.IndexService@50378a4
+</code></pre>
+<p>两次得到的 Service 对象是两个对象：多例。</p>
+<h3 id="xml定义方式">xml定义方式</h3>
+<pre><code>&lt;bean id=&quot;accountService&quot; class=&quot;com.something.DefaultAccountService&quot; scope=&quot;singleton&quot;/&gt;
+</code></pre>
+<h3 id="annotation的定义方式">annotation的定义方式</h3>
+<pre><code class="language-java">@Service
+@Scope(&quot;prototype&quot;)
+public class IndexService {
+</code></pre>
+<h2 id="singleton-beans-with-prototype-bean-dependencies">Singleton Beans with Prototype-bean Dependencies</h2>
+<p>意思是在 Singleton 当中引用了一个 Prototype 的 bean 的时候引发的问题：</p>
+<p>在单例对象中引用多例 bean，这个多例 bean 就失去了意义。</p>
+<p>1、IndexService 单例</p>
+<pre><code class="language-java">@Service
+@Scope(&quot;singleton&quot;)
+public class IndexService {
+    @Autowired
+    private IndexDao indexDao;
+    public void service(){
+        System.out.println(this);
+        System.out.println(indexDao);
+    }
+}
+</code></pre>
+<p>2、IndexDao 多例</p>
+<pre><code class="language-java">@Repository
+@Scope(&quot;prototype&quot;)
+public class IndexDaoImpl implements IndexDao {
+</code></pre>
+<p>3、测试</p>
+<pre><code class="language-java">public class Test {
+    public static void main(String[] args) {
+        // AnnotationConfigApplicationContext：注解配置应用程序
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(SpringConfig.class);
+        IndexService service = (IndexService) context.getBean(&quot;indexService&quot;);
+        service.service();
+        System.out.println(&quot; - - - - - - - - - &quot;);
+        service = (IndexService) context.getBean(&quot;indexService&quot;);
+        service.service();
+        System.out.println(&quot; - - - - - - - - - &quot;);
+        service = (IndexService) context.getBean(&quot;indexService&quot;);
+        service.service();
+    }
+}
+</code></pre>
+<p>4、结果：</p>
+<pre><code>com.ssm.service.IndexService@4d14b6c2
+com.ssm.dao.impl.IndexDaoImpl@7e990ed7
+ - - - - - - - - - 
+com.ssm.service.IndexService@4d14b6c2
+com.ssm.dao.impl.IndexDaoImpl@7e990ed7
+ - - - - - - - - - 
+com.ssm.service.IndexService@4d14b6c2
+com.ssm.dao.impl.IndexDaoImpl@7e990ed7
+</code></pre>
+<p>5、分析：</p>
+<p>虽然 IndexDaoImpl 是多例的，但是 IndexDaoImpl 是 IndexService 的一个属性，而 IndexService 是单例的，就造成了每次打印的 IndexDaoImpl 都是一样的。</p>
+<p>解决方案一：</p>
+<p>1、通过实现 applicationcontext - ware 接口，并在每次 bean A 需要时调用容器的 getBean(“B”) 来请求(通常是一个新的)bean B实例，从而使 bean A 知道容器。</p>
+<pre><code class="language-java">@Service
+@Scope(&quot;singleton&quot;)
+public class IndexService implements ApplicationContextAware {
+    @Autowired
+    private IndexDao indexDao;
+    private ApplicationContext applicationContext;
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        this.applicationContext = applicationContext;
+    }
+    public void service(){
+        System.out.println(this);
+       System.out.println(applicationContext.getBean(&quot;indexDaoImpl&quot;));
+    }
+}
+</code></pre>
+<p>2、测试结果</p>
+<pre><code>com.ssm.service.IndexService@50378a4
+com.ssm.dao.impl.IndexDaoImpl@60f00693
+ - - - - - - - - - 
+com.ssm.service.IndexService@50378a4
+com.ssm.dao.impl.IndexDaoImpl@79207381
+ - - - - - - - - - 
+com.ssm.service.IndexService@50378a4
+com.ssm.dao.impl.IndexDaoImpl@491b9b8
+</code></pre>
+<p>3、分析：单例 IndexService 内引用多例的 IndexDaoImpl，多次获取 IndexDaoImpl，打印的是不同值。</p>
+<p>解决方案二：Lookup Method Injection</p>
+<p>1、使用 @Lookup 注解</p>
+<pre><code class="language-java">@Service
+@Scope(&quot;singleton&quot;)
+public abstract class IndexService {
+    @Lookup
+    public abstract IndexDao getIndexDao() ;
+    public void service(){
+        System.out.println(this);
+        System.out.println(getIndexDao());
+    }
+}
+</code></pre>
+<p>2、测试结果</p>
+<pre><code>com.ssm.service.IndexService$$EnhancerBySpringCGLIB$$8432b830@6b09fb41
+com.ssm.dao.impl.IndexDaoImpl@6f43c82
+ - - - - - - - - - 
+com.ssm.service.IndexService$$EnhancerBySpringCGLIB$$8432b830@6b09fb41
+com.ssm.dao.impl.IndexDaoImpl@5db6b9cd
+ - - - - - - - - - 
+com.ssm.service.IndexService$$EnhancerBySpringCGLIB$$8432b830@6b09fb41
+com.ssm.dao.impl.IndexDaoImpl@210ab13f
+</code></pre>
+<p>3、分析：单例 IndexService 内引用多例的 IndexDaoImpl，多次获取 IndexDaoImpl，打印的是不同值。</p>
+<p>官网引导我们参考<a href="https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#beans-factory-method-injection">https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#beans-factory-method-injection</a></p>
+<blockquote>
+<p>In most application scenarios, most beans in the container are singletons. When a singleton bean needs to collaborate with another singleton bean or a non-singleton bean needs to collaborate with another non-singleton bean, you typically handle the dependency by defining one bean as a property of the other. A problem arises when the bean lifecycles are different. Suppose singleton bean A needs to use non-singleton (prototype) bean B, perhaps on each method invocation on A. The container creates the singleton bean A only once, and thus only gets one opportunity to set the properties. The container cannot provide bean A with a new instance of bean B every time one is needed.</p>
+</blockquote>
+<p>在大多数应用程序场景中，容器中的大多数 bean 都是单例的。当一个单例 bean 需要与另一个单例 bean 协作，或者 一个非单例 bean 需要与另一个非单例 bean 协作时，通常通过将一个bean 定义为另一个 bean 的属性来处理依赖性。当 bean 的生命周期不同时，就会出现问题。假设单例 bean A 需要使用非单例(原型) bean B，可能是在 A 的每个方法调用上。<strong>容器只创建一次单例bean A</strong>，因此只有一次机会来设置属性。容器不能每次需要 bean B 的新实例时都向 bean A 提供一个。</p>
+<blockquote>
+<p>A solution is to forego some inversion of control. You can make bean A aware of the container by implementing the ApplicationContextAware interface, and by making a getBean(&quot;B&quot;) call to the container ask for (a typically new) bean B instance every time bean A needs it. The following example shows this approach:</p>
+</blockquote>
+<p>解决的办法是放弃一些控制反转。您可以通过实现 applicationcontext - ware 接口，并在每次 bean A 需要时调用容器的 getBean(“B”) 来请求(通常是一个新的)bean B实例，从而使 bean A 知道容器。下面的例子展示了这种方法:</p>
+<pre><code class="language-java">// a class that uses a stateful Command-style class to perform some processing
+package fiona.apple;
+
+// Spring-API imports
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
+
+public class CommandManager implements ApplicationContextAware {
+
+    private ApplicationContext applicationContext;
+
+    public Object process(Map commandState) {
+        // grab a new instance of the appropriate Command
+        Command command = createCommand();
+        // set the state on the (hopefully brand new) Command instance
+        command.setState(commandState);
+        return command.execute();
+    }
+
+    protected Command createCommand() {
+        // notice the Spring API dependency!
+        return this.applicationContext.getBean(&quot;command&quot;, Command.class);
+    }
+
+    public void setApplicationContext(
+            ApplicationContext applicationContext) throws BeansException {
+        this.applicationContext = applicationContext;
+    }
+}
+</code></pre>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li><a href="#what-is-ioc">what is IOC</a>
+<ul>
+<li><a href="#ioc-%E5%92%8C-di-%E7%9A%84%E5%85%B3%E7%B3%BB">IOC 和 DI 的关系</a></li>
+<li><a href="#dependency-injection">Dependency Injection</a>
+<ul>
+<li><a href="#%E5%85%B3%E4%BA%8E%E4%BB%80%E4%B9%88%E6%98%AF%E4%BE%9D%E8%B5%96">关于什么是依赖</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E4%BD%BF%E7%94%A8-spring-ioc">为什么要使用 Spring IOC</a>
+<ul>
+<li><a href="#%E9%9D%A2%E5%90%91%E6%8A%BD%E8%B1%A1%E7%BC%96%E7%A8%8B">面向抽象编程</a></li>
+<li><a href="#%E5%A6%82%E4%BD%95%E4%BC%A0%E9%80%92%E8%BF%87%E6%9D%A5%E5%91%A2">如何传递过来呢？</a></li>
+<li><a href="#spring%E4%BD%93%E7%B3%BB%E7%BB%93%E6%9E%84-ioc%E7%9A%84%E4%BD%8D%E7%BD%AE">spring体系结构----IOC的位置</a></li>
+<li><a href="#%E5%AE%B9%E5%99%A8">容器</a></li>
+</ul>
+</li>
+<li><a href="#spring-%E5%AE%9E%E7%8E%B0-ioc-%E7%9A%84%E6%80%9D%E8%B7%AF%E5%92%8C%E6%96%B9%E6%B3%95">Spring 实现 IOC 的思路和方法</a>
+<ul>
+<li><a href="#spring-%E5%AE%9E%E7%8E%B0-ioc-%E7%9A%84%E6%80%9D%E8%B7%AF%E5%A4%A7%E8%87%B4%E5%8F%AF%E4%BB%A5%E6%8B%86%E5%88%86%E6%88%90-3-%E7%82%B9">Spring 实现 IOC 的思路大致可以拆分成 3 点</a></li>
+<li><a href="#%E6%97%A2%E7%84%B6%E6%88%91%E4%BB%AC%E5%9C%A8%E7%B1%BB%E4%B8%AD%E5%B7%B2%E7%BB%8F%E5%AE%9A%E4%B9%89%E4%BA%86%E4%BB%96%E4%BB%AC%E4%B9%8B%E9%97%B4%E7%9A%84%E4%BE%9D%E8%B5%96%E5%85%B3%E7%B3%BB%E9%82%A3%E4%B9%88%E4%B8%BA%E4%BB%80%E4%B9%88%E8%BF%98%E9%9C%80%E8%A6%81%E5%9C%A8%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E4%B8%AD%E5%8E%BB%E6%8F%8F%E8%BF%B0%E5%92%8C%E5%AE%9A%E4%B9%89%E5%91%A2">既然我们在类中已经定义了他们之间的依赖关系那么为什么还需要在配置文件中去描述和定义呢？</a></li>
+</ul>
+</li>
+<li><a href="#spring%E7%BC%96%E7%A8%8B%E7%9A%84%E9%A3%8E%E6%A0%BC">spring编程的风格</a>
+<ul>
+<li><a href="#schemal-based-xml">schemal-based-------xml</a></li>
+<li><a href="#annotation-based-annotation">annotation-based-----annotation</a></li>
+<li><a href="#java-based-java-configuration">java-based----java Configuration</a></li>
+</ul>
+</li>
+<li><a href="#%E6%B3%A8%E5%85%A5">注入</a>
+<ul>
+<li><a href="#spring%E6%B3%A8%E5%85%A5%E8%AF%A6%E7%BB%86%E9%85%8D%E7%BD%AE%E5%AD%97%E7%AC%A6%E4%B8%B2-%E6%95%B0%E7%BB%84%E7%AD%89">spring注入详细配置（字符串、数组等）</a>
+<ul>
+<li><a href="#%E5%AD%97%E7%AC%A6%E4%B8%B2%E5%B1%9E%E6%80%A7%E6%B3%A8%E5%85%A5"><strong>字符串属性注入</strong></a></li>
+<li><a href="#%E5%86%85%E9%83%A8-bean">内部 bean</a></li>
+<li><a href="#collections">Collections</a></li>
+<li><a href="#xml-shortcut-with-the-p-namespace">XML Shortcut with the p-namespace</a></li>
+<li><a href="#xml-shortcut-with-the-c-namespace">XML Shortcut with the c-namespace</a></li>
+</ul>
+</li>
+<li><a href="#spring-%E9%80%9A%E8%BF%87-setter-%E6%B3%A8%E5%85%A5%E7%9A%84%E5%BA%94%E7%94%A8%E5%AE%9E%E4%BE%8B">Spring 通过 setter 注入的应用实例</a>
+<ul>
+<li><a href="#constructor-based-dependency-injection">Constructor-based Dependency Injection</a>
+<ul>
+<li><a href="#%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95%E6%B3%A8%E5%85%A5%E5%AE%9E%E4%BE%8B">构造方法注入实例</a></li>
+</ul>
+</li>
+<li><a href="#setter-based-dependency-injection">Setter-based Dependency Injection</a></li>
+</ul>
+</li>
+<li><a href="#%E6%B3%A8%E8%A7%A3-xml-%E6%B7%B7%E5%90%88%E4%BD%BF%E7%94%A8">注解 + xml 混合使用</a>
+<ul>
+<li><a href="#%E5%BC%80%E5%90%AF%E6%B3%A8%E8%A7%A3">开启注解：</a></li>
+</ul>
+</li>
+<li><a href="#javaconfig-%E9%85%8D%E7%BD%AE%E6%96%B9%E5%BC%8F">JavaConfig 配置方式</a></li>
+<li><a href="#javaconfig-xml-%E6%B3%A8%E8%A7%A3%E9%85%8D%E7%BD%AE">JavaConfig + xml +注解配置</a></li>
+</ul>
+</li>
+<li><a href="#%E8%87%AA%E5%8A%A8%E8%A3%85%E9%85%8D">自动装配</a>
+<ul>
+<li><a href="#%E8%87%AA%E5%8A%A8%E8%A3%85%E9%85%8D%E7%9A%84%E4%BC%98%E7%82%B9">自动装配的优点</a></li>
+<li><a href="#%E8%87%AA%E5%8A%A8%E8%A3%85%E9%85%8D%E7%9A%84%E7%BC%BA%E7%82%B9">自动装配的缺点</a></li>
+<li><a href="#%E8%87%AA%E5%8A%A8%E8%A3%85%E9%85%8D%E7%9A%84%E6%96%B9%E6%B3%95">自动装配的方法</a>
+<ul>
+<li><a href="#bytype-%E8%87%AA%E5%8A%A8%E8%A3%85%E9%85%8D%E5%AE%9E%E4%BE%8B">byType 自动装配实例</a>
+<ul>
+<li><a href="#bytype-%E8%87%AA%E5%8A%A8%E8%A3%85%E9%85%8D%E5%A4%9A%E4%B8%AA%E7%9B%B8%E5%90%8C%E7%B1%BB%E5%9E%8B%E7%9A%84%E9%97%AE%E9%A2%98">byType 自动装配多个相同类型的问题</a></li>
+</ul>
+</li>
+<li><a href="#byname-%E8%87%AA%E5%8A%A8%E8%A3%85%E9%85%8D%E5%AE%9E%E4%BE%8B">byName 自动装配实例</a></li>
+<li><a href="#default-no-%E4%B8%8D%E4%BD%BF%E7%94%A8%E8%87%AA%E5%8A%A8%E8%A3%85%E9%85%8D">default = no 不使用自动装配</a></li>
+</ul>
+</li>
+<li><a href="#autowired-%E9%BB%98%E8%AE%A4%E9%87%87%E7%94%A8-bytype-%E6%B3%A8%E5%85%A5">@Autowired 默认采用 byType 注入</a></li>
+<li><a href="#resource-%E9%BB%98%E8%AE%A4%E9%87%87%E7%94%A8-byname-%E6%B3%A8%E5%85%A5">@Resource 默认采用 byName 注入</a></li>
+<li><a href="#spring-%E9%BB%98%E8%AE%A4-bean-%E5%90%8D%E7%A7%B0%E7%9A%84%E7%94%9F%E6%88%90%E7%AD%96%E7%95%A5">Spring 默认 bean 名称的生成策略</a></li>
+</ul>
+</li>
+<li><a href="#spring%E6%87%92%E5%8A%A0%E8%BD%BD">spring懒加载</a></li>
+<li><a href="#springbean%E7%9A%84%E4%BD%9C%E7%94%A8%E5%9F%9F">springbean的作用域</a>
+<ul>
+<li><a href="#singleton">singleton</a></li>
+<li><a href="#prototype">prototype</a>
+<ul>
+<li><a href="#xml%E5%AE%9A%E4%B9%89%E6%96%B9%E5%BC%8F">xml定义方式</a></li>
+<li><a href="#annotation%E7%9A%84%E5%AE%9A%E4%B9%89%E6%96%B9%E5%BC%8F">annotation的定义方式</a></li>
+</ul>
+</li>
+<li><a href="#singleton-beans-with-prototype-bean-dependencies">Singleton Beans with Prototype-bean Dependencies</a></li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://epitomm.github.io/post/java-bing-fa-cas-he-aqs/">
+              <h3 class="post-title">
+                Java 并发——CAS 和 AQS
+              </h3>
+            </a>
+          </div>
+        
+
+        
+          
+            <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+<script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+
+<div id="gitalk-container"></div>
+
+<script>
+
+  var gitalk = new Gitalk({
+    clientID: '974bd77fbbd52c2a0647',
+    clientSecret: '6344370ca1314dbd553f45e75a2121a160ef1c44',
+    repo: 'EpitomM.github.io',
+    owner: 'EpitomM',
+    admin: ['EpitomM'],
+    id: (location.pathname).substring(0, 49),      // Ensure uniqueness and length less than 50
+    distractionFreeMode: false  // Facebook-like distraction free mode
+  })
+
+  gitalk.render('gitalk-container')
+
+</script>
+
+          
+
+          
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/EpitomM/EpitomM.github.io" target="_blank">EpitomM</a>
+  <a class="rss" href="https://epitomm.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>
