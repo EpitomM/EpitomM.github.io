@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://epitomm.github.io</id>
     <title>SSM</title>
-    <updated>2020-04-30T15:30:54.804Z</updated>
+    <updated>2020-04-30T15:38:58.330Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://epitomm.github.io"/>
     <link rel="self" href="https://epitomm.github.io/atom.xml"/>
@@ -11,7 +11,7 @@
     <icon>https://epitomm.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, SSM</rights>
     <entry>
-        <title type="html"><![CDATA[Spring IoC]]></title>
+        <title type="html"><![CDATA[spring-ioc 应用（一）]]></title>
         <id>https://epitomm.github.io/post/spring-ioc/</id>
         <link href="https://epitomm.github.io/post/spring-ioc/">
         </link>
@@ -103,7 +103,7 @@ Languages: Kotlin, Groovy, dynamic languages.</p>
 <li>把需要交给容器管理的<strong>对象</strong>通过配置信息告诉容器（xml、Annotation，JavaConfig）</li>
 <li>把各个类之间的<strong>依赖关系</strong>通过配置信息告诉容器</li>
 </ol>
-<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/SpringIOC.png" alt="图片" loading="lazy"></figure>
+<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/springIOC.png" alt="图片" loading="lazy"></figure>
 <blockquote>
 <p>1、定义一个类 A，把类 A 和 类 B 的关系通过应用程序描述出来：类 A 中有一个类 B 的属性<br>
 2、将类 A、类 B 交给 Spring 容器进行管理：使用 <bean><br>
