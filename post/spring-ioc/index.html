@@ -3,7 +3,7 @@
     <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>spring-ioc 应用（一） | SSM</title>
-<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1588261135469">
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1588307551861">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
 <link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
 <link rel="alternate" type="application/atom+xml" title="spring-ioc 应用（一） | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
@@ -22,7 +22,7 @@
       <div class="main-content">
         <div class="site-header">
   <a href="https://epitomm.github.io">
-  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1588261135469" alt="">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1588307551861" alt="">
   </a>
   <h1 class="site-title">
     SSM
@@ -82,7 +82,7 @@
                 2020-04-30
               </span>
               <span>
-                44 min read
+                49 min read
               </span>
               
                 <a href="https://epitomm.github.io/tag/A43qp3xVg/" class="post-tag">
@@ -1131,6 +1131,116 @@ public class CommandManager implements ApplicationContextAware {
     }
 }
 </code></pre>
+<h1 id="spring-生命周期的回调">Spring 生命周期的回调</h1>
+<h2 id="spring-生命周期的回调的实现方法">Spring 生命周期的回调的实现方法：</h2>
+<blockquote>
+<p>Initialization Callbacks AND Destruction Callbacks<br>
+The org.springframework.beans.factory.InitializingBean interface lets a bean perform initialization work after the container has set all necessary properties on the bean. The InitializingBean interface specifies a single method:</p>
+</blockquote>
+<p>org.springframework.beans.factory.InitializingBean 接口允许 bean 在容器设置了 bean 上所有必需的属性之后执行初始化工作。InitializingBean 接口指定了一个方法:</p>
+<pre><code class="language-java">void afterPropertiesSet() throws Exception;
+</code></pre>
+<p>1、创建一个 Dao 接口</p>
+<pre><code class="language-java">public interface IndexDao {
+    void test();
+}
+</code></pre>
+<p>2、接口实现类，实现 InitializingBean 接口，在调用构造方法后回调 afterPropertiesSet</p>
+<pre><code class="language-java">@Repository
+public class IndexDaoImpl implements IndexDao, InitializingBean {
+    public IndexDaoImpl(){
+        System.out.println(&quot;IndexDaoImpl...Constructor&quot;);
+    }
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        System.out.println(&quot;IndexDaoImpl...init&quot;);
+    }
+}
+</code></pre>
+<p>3、测试</p>
+<pre><code class="language-java">public class Test {
+    public static void main(String[] args) {
+        // AnnotationConfigApplicationContext：注解配置应用程序
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(SpringConfig.class);
+    }
+}
+</code></pre>
+<p>4、测试结果</p>
+<pre><code>IndexDaoImpl...Constructor
+IndexDaoImpl...init
+</code></pre>
+<p>5、分析<br>
+在调用构造方法初始化时回调 afterPropertiesSet 方法。</p>
+<blockquote>
+<p>Implementing the org.springframework.beans.factory.DisposableBean interface lets a bean get a callback when the container that contains it is destroyed. The DisposableBean interface specifies a single method:</p>
+</blockquote>
+<p>实现 org.springframework.beans.factory.DisposableBean 接口，当包含它的容器被销毁时，可处置bean 接口让 bean 获得一个回调。可处置 bean 接口指定了一个方法:</p>
+<pre><code class="language-java">void destroy() throws Exception;
+</code></pre>
+<pre><code class="language-java">@Repository
+public class IndexDaoImpl implements IndexDao, DisposableBean {
+    @Override
+    public void destroy() throws Exception {
+        System.out.println(&quot;IndexDaoImpl...destory&quot;);
+    }
+}
+</code></pre>
+<h3 id="default-initialization-and-destroy-methods">Default Initialization and Destroy Methods</h3>
+<blockquote>
+<p>When you write initialization and destroy method callbacks that do not use the Spring-specific InitializingBean and DisposableBean callback interfaces, you typically write methods with names such as init(), initialize(), dispose(), and so on. Ideally, the names of such lifecycle callback methods are standardized across a project so that all developers use the same method names and ensure consistency.</p>
+</blockquote>
+<p>当您编写不使用特定于 spring 的 InitializingBean 和 DisposableBean 回调接口的初始化和销毁方法回调时，您通常会编写具有 init()、initialize()、dispose() 等名称的方法。理想情况下，这样的生命周期回调方法的名称在整个项目中是标准化的，这样所有开发人员都可以使用相同的方法名称并确保一致性。</p>
+<blockquote>
+<p>You can configure the Spring container to “look” for named initialization and destroy callback method names on every bean. This means that you, as an application developer, can write your application classes and use an initialization callback called init(), without having to configure an init-method=&quot;init&quot; attribute with each bean definition. The Spring IoC container calls that method when the bean is created (and in accordance with the standard lifecycle callback contract described previously). This feature also enforces a consistent naming convention for initialization and destroy method callbacks.</p>
+</blockquote>
+<p>您可以将 Spring 容器配置为在每个bean上“查找”名为 initialization 和 destroy 的回调方法名。这意味着，作为应用程序开发人员，您可以编写应用程序类并使用名为 init() 的初始化回调，而不必为每个bean 定义配置 init-method=&quot;init&quot; 属性。在创建bean时，Spring IoC 容器调用该方法(并根据前面描述的标准生命周期回调契约)。该特性还强制对初始化和销毁方法回调使用一致的命名约定。</p>
+<blockquote>
+<p>Suppose that your initialization callback methods are named init() and your destroy callback methods are named destroy(). Your class then resembles the class in the following example:</p>
+</blockquote>
+<p>假设您的初始化回调方法命名为init()，而销毁回调方法命名为destroy()。你的类类似于下面例子中的类:</p>
+<pre><code class="language-java">public class DefaultBlogService implements BlogService {
+
+    private BlogDao blogDao;
+
+    public void setBlogDao(BlogDao blogDao) {
+        this.blogDao = blogDao;
+    }
+
+    // this is (unsurprisingly) the initialization callback method
+    public void init() {
+        if (this.blogDao == null) {
+            throw new IllegalStateException(&quot;The [blogDao] property must be set.&quot;);
+        }
+    }
+}
+</code></pre>
+<p>然后你可以在一个类似如下的bean中使用这个类:</p>
+<pre><code class="language-xml">&lt;beans default-init-method=&quot;init&quot;&gt;
+
+    &lt;bean id=&quot;blogService&quot; class=&quot;com.something.DefaultBlogService&quot;&gt;
+        &lt;property name=&quot;blogDao&quot; ref=&quot;blogDao&quot; /&gt;
+    &lt;/bean&gt;
+&lt;/beans&gt;
+</code></pre>
+<h3 id="combining-lifecycle-mechanisms">Combining Lifecycle Mechanisms</h3>
+<blockquote>
+<p>As of Spring 2.5, you have three options for controlling bean lifecycle behavior:</p>
+</blockquote>
+<p>从spring2.5开始，你有三个控制bean生命周期行为的选项:</p>
+<ul>
+<li>The InitializingBean and DisposableBean callback interfaces</li>
+<li>Custom init() and destroy() methods</li>
+<li>The @PostConstruct and @PreDestroy annotations. You can combine these mechanisms to control a given bean.</li>
+</ul>
+<pre><code class="language-java">@PostConstruct
+public void init(){
+    System.out.println(&quot;IndexDaoImpl...init&quot;);
+}
+</code></pre>
+<p>使用不同的初始化方法为同一个bean配置多个生命周期机制，调用方法如下:<br>
+1、Methods annotated with @PostConstruct<br>
+2、afterPropertiesSet() as defined by the InitializingBean callback interface<br>
+3、A custom configured init() method</p>
 
               </div>
               <div class="toc-container">
@@ -1227,6 +1337,16 @@ public class CommandManager implements ApplicationContextAware {
 </ul>
 </li>
 <li><a href="#singleton-beans-with-prototype-bean-dependencies">Singleton Beans with Prototype-bean Dependencies</a></li>
+</ul>
+</li>
+<li><a href="#spring-%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E7%9A%84%E5%9B%9E%E8%B0%83">Spring 生命周期的回调</a>
+<ul>
+<li><a href="#spring-%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E7%9A%84%E5%9B%9E%E8%B0%83%E7%9A%84%E5%AE%9E%E7%8E%B0%E6%96%B9%E6%B3%95">Spring 生命周期的回调的实现方法：</a>
+<ul>
+<li><a href="#default-initialization-and-destroy-methods">Default Initialization and Destroy Methods</a></li>
+<li><a href="#combining-lifecycle-mechanisms">Combining Lifecycle Mechanisms</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
