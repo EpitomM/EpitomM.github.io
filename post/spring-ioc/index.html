@@ -2,11 +2,11 @@
   <head>
     <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>spring-ioc 应用（一） | SSM</title>
-<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1588307551861">
+<title>spring-ioc 应用 | SSM</title>
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1588315229032">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
 <link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
-<link rel="alternate" type="application/atom+xml" title="spring-ioc 应用（一） | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
+<link rel="alternate" type="application/atom+xml" title="spring-ioc 应用 | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
 
 
@@ -22,7 +22,7 @@
       <div class="main-content">
         <div class="site-header">
   <a href="https://epitomm.github.io">
-  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1588307551861" alt="">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1588315229032" alt="">
   </a>
   <h1 class="site-title">
     SSM
@@ -75,14 +75,14 @@
         <div class="post-detail">
           <article class="post">
             <h2 class="post-title">
-              spring-ioc 应用（一）
+              spring-ioc 应用
             </h2>
             <div class="post-info">
               <span>
                 2020-04-30
               </span>
               <span>
-                49 min read
+                53 min read
               </span>
               
                 <a href="https://epitomm.github.io/tag/A43qp3xVg/" class="post-tag">
@@ -1241,6 +1241,131 @@ public void init(){
 1、Methods annotated with @PostConstruct<br>
 2、afterPropertiesSet() as defined by the InitializingBean callback interface<br>
 3、A custom configured init() method</p>
+<h1 id="其他">其他</h1>
+<h2 id="using-filters-to-customize-scanning">Using Filters to Customize Scanning</h2>
+<p><a href="https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#beans-scanning-filters">https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#beans-scanning-filters</a></p>
+<pre><code class="language-java">// 表明这是一个 xml 文件
+@Configuration
+// 注解扫描包
+@ComponentScan(value = &quot;com.ssm&quot;,excludeFilters = {@ComponentScan.Filter(type = FilterType.REGEX, pattern = &quot;com.ssm.service.*&quot;)})
+public class SpringConfig {
+</code></pre>
+<p>测试：</p>
+<pre><code class="language-java">public class Test {
+    public static void main(String[] args) {
+        // AnnotationConfigApplicationContext：注解配置应用程序
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(SpringConfig.class);
+        IndexService indexService = (IndexService) context.getBean(&quot;indexService&quot;);
+        indexService.service();
+
+    }
+}
+</code></pre>
+<p>Exception in thread &quot;main&quot; org.springframework.beans.factory.NoSuchBeanDefinitionException: No bean named 'indexService' available<br>
+分析：自定义扫描过滤 com.ssm.service.* ，于是无法扫描到 IndexService，因此报错没有名为 indexService 的 bean。</p>
+<h2 id="providing-qualifier-metadata-with-annotations">Providing Qualifier Metadata with Annotations</h2>
+<p>1、当有两个 IndexDao 的实现类时，</p>
+<pre><code class="language-java">@Repository
+public class IndexDaoImpl implements IndexDao{
+</code></pre>
+<pre><code class="language-java">@Repository
+public class IndexDaoImpl2 implements IndexDao {
+</code></pre>
+<p>2、Service 类使用 @Autowired 注入 IndexDao</p>
+<pre><code class="language-java">@Service
+public class IndexService {
+    @Autowired
+    IndexDao indexDao;
+</code></pre>
+<p>3、运行报错<br>
+Caused by: org.springframework.beans.factory.NoUniqueBeanDefinitionException: No qualifying bean of type 'com.ssm.dao.IndexDao' available: expected single matching bean but found 2: indexDaoImpl,indexDaoImpl2<br>
+4、分析<br>
+@Autowired 默认使用 byType 注入，结果发现了两个 IndexDao：IndexDaoImpl、IndexDaoImpl2，注入失败；于是采用 byName 注入（IndexDao indexDao;），在 Spring 容器中寻找 name = indexDao 的，没有找到（有名为 indexDaoImpl 和名为 indexDaoImpl2），注入失败。</p>
+<h3 id="解决方案一primary">解决方案一：@Primary</h3>
+<pre><code class="language-java">@Repository
+@Primary
+public class IndexDaoImpl implements IndexDao{
+</code></pre>
+<p>当向 IndexDaoImpl 类加入 @Primary 注解时，通过 byType 找到两个，于是注入 @Primary 注解修饰的类 IndexDaoImpl。</p>
+<h3 id="解决方案二qualifier">解决方案二：@Qualifier</h3>
+<p><a href="https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#beans-scanning-qualifiers">https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#beans-scanning-qualifiers</a></p>
+<pre><code class="language-java">@Service
+public class IndexService {
+
+    @Autowired
+    @Qualifier(&quot;indexDaoImpl2&quot;)
+    IndexDao indexDao;
+</code></pre>
+<h2 id="using-the-bean-annotation">Using the @Bean Annotation</h2>
+<p><a href="https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#beans-java-bean-annotation">https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#beans-java-bean-annotation</a></p>
+<blockquote>
+<p>@Bean is a method-level annotation and a direct analog of the XML <bean/> element. The annotation supports some of the attributes offered by <bean/>, such as: * init-method * destroy-method * autowiring * name.</p>
+</blockquote>
+<p>@Bean是方法级别的注释，是XML <bean/>元素的直接模拟。注释支持<bean/>提供的一些属性，比如:* init-method * destroy-method * autowiring * name。<br>
+1、pom.xml</p>
+<pre><code class="language-xml">&lt;dependencies&gt;
+  &lt;!-- spring-ioc --&gt;
+  &lt;dependency&gt;
+    &lt;groupId&gt;org.springframework&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-context&lt;/artifactId&gt;
+    &lt;version&gt;5.0.9.RELEASE&lt;/version&gt;
+  &lt;/dependency&gt;
+
+  &lt;!-- mybatis --&gt;
+  &lt;dependency&gt;
+    &lt;groupId&gt;org.mybatis&lt;/groupId&gt;
+    &lt;artifactId&gt;mybatis&lt;/artifactId&gt;
+    &lt;version&gt;3.4.6&lt;/version&gt;
+  &lt;/dependency&gt;
+
+  &lt;!-- spring-mybatis --&gt;
+  &lt;dependency&gt;
+    &lt;groupId&gt;org.mybatis&lt;/groupId&gt;
+    &lt;artifactId&gt;mybatis-spring&lt;/artifactId&gt;
+    &lt;version&gt;1.3.2&lt;/version&gt;
+  &lt;/dependency&gt;
+
+  &lt;!-- Spring 数据源 --&gt;
+  &lt;dependency&gt;
+    &lt;groupId&gt;org.springframework&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-jdbc&lt;/artifactId&gt;
+    &lt;version&gt;5.0.8.RELEASE&lt;/version&gt;
+  &lt;/dependency&gt;
+
+  &lt;!-- mysql --&gt;
+  &lt;dependency&gt;
+    &lt;groupId&gt;mysql&lt;/groupId&gt;
+    &lt;artifactId&gt;mysql-connector-java&lt;/artifactId&gt;
+    &lt;version&gt;5.1.6&lt;/version&gt;
+  &lt;/dependency&gt;
+
+&lt;/dependencies&gt;
+</code></pre>
+<p>2、@Bean 注解的使用</p>
+<pre><code class="language-java">// 表明这是一个 xml 文件
+@Configuration
+// 注解扫描包
+@ComponentScan(&quot;com.ssm&quot;)
+public class SpringConfig {
+
+    @Bean
+    public DataSource dataSource(){
+        DriverManagerDataSource dataSource = new DriverManagerDataSource();
+        dataSource.setDriverClassName(&quot;com.mysql.jdbc.Driver&quot;);
+        dataSource.setUsername(&quot;root&quot;);
+        dataSource.setPassword(&quot;123456&quot;);
+        dataSource.setUrl(&quot;jdbc:mysql://localhost:3306/test&quot;);
+        return dataSource;
+    }
+
+    @Bean
+    public SqlSessionFactoryBean sqlSessionFactoryBean(DataSource dataSource){
+        SqlSessionFactoryBean sqlSessionFactoryBean =  new SqlSessionFactoryBean();
+        sqlSessionFactoryBean.setDataSource(dataSource);
+        return sqlSessionFactoryBean;
+    }
+}
+</code></pre>
 
               </div>
               <div class="toc-container">
@@ -1347,6 +1472,18 @@ public void init(){
 <li><a href="#combining-lifecycle-mechanisms">Combining Lifecycle Mechanisms</a></li>
 </ul>
 </li>
+</ul>
+</li>
+<li><a href="#%E5%85%B6%E4%BB%96">其他</a>
+<ul>
+<li><a href="#using-filters-to-customize-scanning">Using Filters to Customize Scanning</a></li>
+<li><a href="#providing-qualifier-metadata-with-annotations">Providing Qualifier Metadata with Annotations</a>
+<ul>
+<li><a href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88%E4%B8%80primary">解决方案一：@Primary</a></li>
+<li><a href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88%E4%BA%8Cqualifier">解决方案二：@Qualifier</a></li>
+</ul>
+</li>
+<li><a href="#using-the-bean-annotation">Using the @Bean Annotation</a></li>
 </ul>
 </li>
 </ul>
