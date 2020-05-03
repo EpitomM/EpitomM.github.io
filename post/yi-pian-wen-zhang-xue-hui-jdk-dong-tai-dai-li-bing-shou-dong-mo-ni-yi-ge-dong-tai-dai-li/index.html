@@ -1,0 +1,935 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>一篇文章学会 JDK 动态代理并手动模拟一个动态代理 | SSM</title>
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1588518347522">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="一篇文章学会 JDK 动态代理并手动模拟一个动态代理 | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="什么是代理
+增强一个对象的功能
+买火车票，app就是一个代理，他代理了火车站；小区当中的代售窗口也是一个代理，代理了火车站。
+代理模式的引入
+1、UserDaoImpl 有一个查询数据库的方法：
+public class UserDaoIm..." />
+    <meta name="keywords" content="" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://epitomm.github.io">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1588518347522" alt="">
+  </a>
+  <h1 class="site-title">
+    SSM
+  </h1>
+  <p class="site-description">
+    热心善良的老学姐
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              一篇文章学会 JDK 动态代理并手动模拟一个动态代理
+            </h2>
+            <div class="post-info">
+              <span>
+                2020-05-03
+              </span>
+              <span>
+                18 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <h1 id="什么是代理"><strong>什么是代理</strong></h1>
+<p>增强一个对象的功能</p>
+<p>买火车票，app就是一个代理，他代理了火车站；小区当中的代售窗口也是一个代理，代理了火车站。</p>
+<h1 id="代理模式的引入">代理模式的引入</h1>
+<p>1、UserDaoImpl 有一个查询数据库的方法：</p>
+<pre><code class="language-java">public class UserDaoImpl{
+    public void query(){
+        System.out.println(&quot;假装查询数据库&quot;);
+    }
+}
+</code></pre>
+<p>2、测试类中调用这个方法</p>
+<pre><code class="language-java">public class Test {
+    public static void main(String[] args) {
+        UserDaoImpl userDao = new UserDaoImpl();
+        LogUtil.log();
+        userDao.query();
+    }
+}
+</code></pre>
+<p>3、现在有一个这样的需求：想要在每次执行 query() 时记录当前操作写到日志里面。写一个公共的日志方法 log()，那么把 LogUtil.log() 代码写到哪里呢？</p>
+<p>3.1 写到 query() 方法中：</p>
+<p>3.1.1 缺点：可能 UserDoImpl 是一个 jar，根本没有它的源码，无法进行修改。</p>
+<p>3.1.2 即使有源码，将 query() 改写成如下：破坏了单一职责。</p>
+<pre><code class="language-java">public void query(){
+  LogUtil.log();
+  // 进行数据库查询操作...
+  System.out.println(&quot;假装查询数据库&quot;); 
+}
+</code></pre>
+<p>单一职责：只做一件事。将日志操作写到 query() 里面破坏了类的封装性，职责就不单一了 。</p>
+<p>3.2 写到 Test 类中：  每次调用查询操作前记录当前时间。</p>
+<p>缺点：会调用很多次 query 方法，也就要写很多次 Logutil.log() 大量重复代码。</p>
+<p>3.3 引入代理模式</p>
+<h1 id="java实现的代理的两种办法"><strong>java实现的代理的两种办法</strong></h1>
+<h1 id="代理的名词">代理的名词</h1>
+<p>代理对象——增强后的对象</p>
+<p>目标对象——被增强的对象</p>
+<p>他们不是绝对的，会根据情况发生变化</p>
+<h1 id="静态代理">静态代理</h1>
+<h2 id="继承">继承</h2>
+<ul>
+<li>代理对象继承目标对象，重写需要增强的方法</li>
+<li>缺点：会代理类过多，非常复杂</li>
+</ul>
+<p>回到上襦代理模式引入的例子中：</p>
+<p>3.3 继承：自定义一个类<strong>继承</strong>原来需要添加日志的类 UserDaoImpl，在执行业务操作前添加日志打印语句。既解决了 jar 包无法修改源码的问题，又没有破坏单一职责原则。</p>
+<pre><code class="language-java">public class UserDaoLogImpl extends UserDaoImpl {
+    @Override
+    public void query() {
+        LogUtil.log();
+        super.query();
+    }
+}
+</code></pre>
+<p>测试类：</p>
+<pre><code class="language-java">public class Test {
+    public static void main(String[] args) {
+        UserDao userDao = new UserDaoLogImpl();
+        userDao.query();
+    }
+}
+</code></pre>
+<p>分析：如此得到了被增强后的 UserDaoImpl，可实现在 query() 前进行日志打印。</p>
+<p>UserDaoImpl：目标对象</p>
+<p>UserDaoLogImpl ：代理对象。</p>
+<p>代理对象和目标对象是相对而言的。UserDaoLogImpl 是代理对象，但是有一天它也有可能成为目标对象。</p>
+<p>4、有一个新需求：在 query 方法前添加一个权限验证。</p>
+<pre><code class="language-java">public class UserDaoPowerImpl extends UserDaoImpl {
+    @Override
+    public void query() {
+        LogUtil.log(&quot;power...&quot;);
+        super.query();
+    }
+}
+</code></pre>
+<p>5、有一个新需求：在 query 方法前添加一个时间记录。</p>
+<pre><code class="language-java">public class UserDaoTimerImpl extends UserDaoImpl {
+    @Override
+    public void query() {
+        LogUtil.log(&quot;timer...&quot;);
+        super.query();
+    }
+}
+</code></pre>
+<p>6、有一个新需求：在 query() 方法被调用前既实现日志打印、又实现记录当前时间的功能</p>
+<pre><code class="language-java">public class UserDaoTimeAndLogImpl extends UserDaoLogImpl {
+    @Override
+    public void query() {
+        // timer
+        LogUtil.log(&quot;timer...&quot;);
+        // logger &amp; query
+        super.query();
+    }
+}
+</code></pre>
+<p>运行结果：</p>
+<pre><code>timer...
+logger...
+假装查询数据库
+</code></pre>
+<p>7、新需求：在 query() 前先打印日志，然后再记录时间</p>
+<pre><code class="language-java">public class UserDaoLogAndTimeImpl extends UserDaoTimerImpl {
+    @Override
+    public void query() {
+        LogUtil.log(&quot;logger...&quot;);
+        // logger
+        super.query();
+    }
+}
+</code></pre>
+<p>运行结果：</p>
+<pre><code>logger...
+timer...
+假装查询数据库
+</code></pre>
+<p>只是改变了以一下日志记录顺序，就会增加一个新的类，不同的排列组合会造成代理类过多。</p>
+<h2 id="聚合">聚合</h2>
+<ul>
+<li>目标对象和代理对象实现同一个接口，代理对象当中要包含目标对象。</li>
+<li>缺点：也会产生类爆炸（UserDaoLog implements UserDao、OrderDaoLog implements OrderDao......），只不过比继承少一点点</li>
+<li>总结:如果在不确定的情况下，尽量不要去使用静态代理。因为一旦你写代码，就会产生类，一旦产生类就爆炸。</li>
+</ul>
+<p>1、声明一个接口：</p>
+<pre><code class="language-java">public interface UserDao {
+    void query();
+}
+</code></pre>
+<p>2、目标对象 UserDaoImpl 实现 UserDao 接口</p>
+<pre><code class="language-java">public class UserDaoImpl implements UserDao {
+    public void query(){
+        System.out.println(&quot;假装查询数据库&quot;);
+    }
+}
+</code></pre>
+<p>3、代理对象实现 UserDao 接口，代理对象 UserDaoLog 中包含目标对象 UserDaoImpl（测试类传参为目标对象类）</p>
+<pre><code class="language-java">public class UserDaoLog implements UserDao {
+    // 装饰者模式：写一个构造方法，通过传入一个目标对象指定代理/ 装饰具体的对象
+    UserDao dao;
+    public UserDaoLog(UserDao userDao){
+        this.dao = userDao;
+    }
+    @Override
+    public void query() {
+        LogUtil.log(&quot;logger...&quot;);
+        dao.query();
+        // 代理模式：new UserDaoImpl().query();UserDao不是传递进来的，是写死的。
+    }
+}
+</code></pre>
+<p>4、测试类</p>
+<pre><code class="language-java">public class Test {
+    public static void main(String[] args) {
+        UserDao target = new UserDaoImpl();
+        UserDao proxy = new UserDaoLog(target);
+        proxy.query();
+    }
+}
+</code></pre>
+<p>测试结果：</p>
+<pre><code>logger...
+假装查询数据库 
+</code></pre>
+<p>5、新需求：记录时间</p>
+<pre><code class="language-java">public class UserDaoTime implements UserDao {
+    UserDao dao;
+    public UserDaoTime(UserDao userDao){
+        this.dao = userDao;
+    }
+    @Override
+    public void query() {
+        LogUtil.log(&quot;timer...&quot;);
+        dao.query();
+    }
+}
+</code></pre>
+<p>测试类：</p>
+<pre><code class="language-java">public class Test {
+    public static void main(String[] args) {
+        UserDao target = new UserDaoImpl();
+        UserDao proxy = new UserDaoTime(target);
+        proxy.query();
+    }
+}
+</code></pre>
+<p>运行结果：</p>
+<pre><code>timer...
+假装查询数据库
+</code></pre>
+<p>6、新需求：完成对日志和时间的代理，无需新增一个类。只需将时间的代理对象作为目标对象，传递给日志代理对象即可。</p>
+<pre><code class="language-java">public class Test {
+    public static void main(String[] args) {
+        // time + logic(业务逻辑)
+        UserDao target = new UserDaoTime(new UserDaoImpl());
+        // log + time + logic
+        UserDao proxy = new UserDaoLog(target);
+        proxy.query();
+    }
+}
+</code></pre>
+<p>运行结果：</p>
+<pre><code>logger...
+timer...
+假装查询数据库
+</code></pre>
+<p>6、新需求：完成先打印时间，再记录日志的操作。无需新增类，只需修改测试类即可。</p>
+<pre><code class="language-java">public class Test {
+    public static void main(String[] args) {
+        UserDao target = new UserDaoLog(new UserDaoImpl());
+        UserDao proxy = new UserDaoTime(target);
+        proxy.query();
+    }
+}
+</code></pre>
+<p>运行结果：</p>
+<pre><code>timer...
+logger...
+假装查询数据库动态代理
+</code></pre>
+<h2 id="自己模拟的动态代理">自己模拟的动态代理</h2>
+<p>如何拿到一个对象？</p>
+<p>不需要手动 new 创 建类文件（因为一旦手动创建类文件，就会产生类爆炸），通过接口反射生成一个类文件，然后调用第三方的编译技术，动态编译这个产生的类文件成class文件，继而利用UrlclassLoader(因为这个动态产生的class不在工程当中所以需要使用UrlclassLoader)把这个动态编译的类加载到jvm当中，最后通过反射把这个类实例化。</p>
+<p>缺点：首先要生成文件</p>
+<p>缺点：动态编译文件 class</p>
+<p>缺点：需要一个URLclassloader</p>
+<p>软件性能的最终体现在IO操作</p>
+<p>file(.java) ---&gt; .class ---&gt; byte[] ---&gt; object(Class 类对象)  ---&gt; object.newInstance()</p>
+<h3 id="1准备一个接口">1.准备一个接口：</h3>
+<pre><code class="language-java">public interface TestDao {
+    String query(String s1, String s2);
+}
+</code></pre>
+<h3 id="2准备一个接口实现类">2.准备一个接口实现类：</h3>
+<pre><code class="language-java">public class TestDaoImpl implements TestDao {
+    @Override
+    public String query(String s1, String s2) {
+        System.out.println(&quot;查询数据库&quot;);
+        System.out.println(&quot;daoImpl...&quot; + s1 + &quot; &quot; + s2);
+        return s1 + &quot; &quot; + s2;
+    }
+}
+</code></pre>
+<h3 id="3模拟动态代理">3.模拟动态代理：</h3>
+<pre><code class="language-java">package com.ssm.util;
+
+import javax.tools.JavaCompiler;
+import javax.tools.StandardJavaFileManager;
+import javax.tools.ToolProvider;
+import java.io.*;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.net.URL;
+import java.net.URLClassLoader;
+import com.sun.jndi.toolkit.url.UrlUtil;
+
+public class ProxyUtil {
+
+    /**
+     * 如何产生一个对象？
+     *  content ---&gt; String
+     *  .java
+     *  .class
+     *  .new
+     * @param target：目标对象
+     * @return
+     */
+    public static Object newInstance(Object target) throws IOException, IllegalAccessException, InstantiationException, NoSuchMethodException, ClassNotFoundException, InvocationTargetException {
+        // targetInterface：目标对象的接口
+        Class targetInterface = target.getClass().getInterfaces()[0];
+
+        // 声明最终要返回的代理对象
+        Object proxy=null;
+        /**
+         * package com.ssm.proxyInter;
+         *
+         * import com.ssm.dao.UserDao;
+         *
+         * public class UserDaoLog implements UserDao {
+         *
+         *     private UserDao target;
+         *     public UserDaoLog(UserDao target){
+         *         this.target = target;
+         *     }
+         *     @Override
+         *     public void query(String p0, String p1) {
+         *         System.out.println(&quot;log...&quot;);
+         *         target.query(p0,p1);
+         *     }
+         * }
+         * 将上述代码逐行变成字符串
+         */
+        // 换行
+        String line = &quot;\n&quot;;
+        // 缩进
+        String tab = &quot;\t&quot;;
+        // 得到接口名 UserDao
+        String interfaceName = targetInterface.getSimpleName();
+        // 得到接口中的所有方法 query()
+        Method[] methods = targetInterface.getDeclaredMethods();
+        String content = &quot;&quot;;
+        String packageContent = &quot;package com.ssm;&quot; + line;
+        String importContent = &quot;import &quot; + targetInterface.getName() + &quot;;&quot; + line;
+        String classFirstLineContent = &quot;public class $Proxy implements &quot; +interfaceName+ &quot;{&quot; + line;
+        String fieldContent = tab + &quot;private &quot; + interfaceName + &quot; target;&quot; + line;
+        String constructorContent = tab + &quot;public $Proxy (&quot; + interfaceName + &quot; target){&quot; + line
+                + tab + tab + &quot;this.target = target; &quot;+ line
+                + tab +&quot;}&quot; + line;
+
+        // 参数内容：target.query(p0,p1);
+        String paramsContent = &quot;&quot;;
+        String methodContent = &quot;&quot;;
+        for (Method method : methods){
+            // 得到当前方法的返回类型
+            String returnType = method.getReturnType().getSimpleName();
+            // 得到当前方法的方法名
+            String methodName = method.getName();
+            // 得到方法的参数类型：如 String.class
+            Class[] args = method.getParameterTypes();
+            String argsContent = &quot;&quot;;
+            for (int i = 0 ; i &lt; args.length ; i++){
+                // 得到的是参数类型：如 String
+                String temp = args[i].getSimpleName();
+                // 最终构造成这个形式：String p0,String p1
+                argsContent += temp + &quot; p&quot; + i + &quot;,&quot;;
+                paramsContent += &quot;p&quot; + i + &quot;,&quot;;
+            }
+            // 截取掉最后一个多余的 ','
+            if(argsContent.length() &gt; 0){
+                argsContent = argsContent.substring(0,argsContent.lastIndexOf(&quot;,&quot;));
+                paramsContent = paramsContent.substring(0,paramsContent.lastIndexOf(&quot;,&quot;));
+            }
+            methodContent += tab + &quot;public &quot; + returnType + &quot; &quot; + methodName + &quot;(&quot; + argsContent + &quot;) {&quot; + line
+                    + tab + tab + &quot;System.out.println(\&quot;log\&quot;);&quot; + line;
+            // 判断是否有返回值
+            if(&quot;void&quot;.equals(returnType)){
+                methodContent += tab + tab + &quot;target.&quot; + methodName + &quot;(&quot; + paramsContent + &quot;);&quot; + line
+                        + tab + &quot;}&quot; + line;
+            }else {
+                methodContent += tab + tab + &quot; return target.&quot; + methodName + &quot;(&quot; + paramsContent + &quot;);&quot; + line
+                        + tab + &quot;}&quot; + line;
+            }
+
+        }
+
+        content = packageContent + importContent + classFirstLineContent + fieldContent + constructorContent + methodContent + &quot;}&quot;;
+
+        File file = new File(&quot;C:\\Users\\Only\\com\\ssm\\$Proxy.java&quot;);
+        if(!file.exists()){
+            file.createNewFile();
+        }
+        FileWriter fw = new FileWriter(file);
+        fw.write(content);
+        fw.flush();
+        fw.close();
+
+        // .java ---&gt; .class
+        JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+        StandardJavaFileManager fileMgr = compiler.getStandardFileManager(null, null, null);
+        Iterable units = fileMgr.getJavaFileObjects(file);
+        JavaCompiler.CompilationTask t = compiler.getTask(null, fileMgr, null, null, null, units);
+        t.call();
+        fileMgr.close();
+
+        // 通过反射得到构造函数 new 一个对象出来
+        URL[] urls = new URL[]{new URL(&quot;file:C:\\Users\\Only\\\\&quot;)};
+        URLClassLoader urlClassLoader = new URLClassLoader(urls);
+        Class clazz = urlClassLoader.loadClass(&quot;com.ssm.$Proxy&quot;);
+        Constructor constructor = clazz.getConstructor(targetInterface);
+        proxy = constructor.newInstance(target);
+
+        return proxy;
+    }
+}
+</code></pre>
+<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/%E6%A8%A1%E6%8B%9F%E5%8A%A8%E6%80%81%E4%BB%A3%E7%90%86.png" alt="图片" loading="lazy"></figure>
+<h3 id="4测试类">4.测试类</h3>
+<pre><code class="language-java">public class Test {
+    public static void main(String[] args) throws IOException, InvocationTargetException, NoSuchMethodException, ClassNotFoundException, InstantiationException, IllegalAccessException {
+        TestDao proxy = (TestDao) ProxyUtil.newInstance(new TestDaoImpl());
+        String res = proxy.query(&quot;hello&quot;, &quot;world&quot;);
+        System.out.println(&quot;res = &quot; + res);
+    }
+}
+</code></pre>
+<p>最终运行效果：</p>
+<pre><code class="language-java">log
+查询数据库
+daoImpl...hello world
+res = hello world
+</code></pre>
+<h2 id="代理逻辑动态实现而不是写死的-sout">代理逻辑动态实现，而不是写死的 sout</h2>
+<h3 id="1要代理的接口">1.要代理的接口</h3>
+<pre><code class="language-java">public interface TestDao {
+    String delete() throws Exception;
+}
+</code></pre>
+<h3 id="2目标对象">2.目标对象</h3>
+<pre><code class="language-java">public class TestDaoImpl implements TestDao {
+    @Override
+    public String delete() {
+        System.out.println(&quot;dao...delete&quot;);
+        return null;
+    }
+}
+</code></pre>
+<h3 id="3代理逻辑接口">3.代理逻辑接口</h3>
+<pre><code class="language-java">public interface CustomInvocationHandler {
+    Object invoke(Method method);
+}
+</code></pre>
+<h3 id="4代理逻辑具体实现">4.代理逻辑具体实现</h3>
+<pre><code class="language-java">package com.ssm.test;
+import com.ssm.dao.CustomInvocationHandler;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+public class TestCustomHandler implements CustomInvocationHandler {
+    private Object target;
+    public TestCustomHandler(Object target){
+        this.target = target;
+    }
+    @Override
+    public Object invoke(Method method) {
+        System.out.println(&quot;TestCustomHandler...&quot;);
+        try {
+            return method.invoke(target);
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+}
+</code></pre>
+<p>4.自定义动态代理</p>
+<pre><code class="language-java">package com.ssm.util;
+
+import javax.tools.JavaCompiler;
+import javax.tools.StandardJavaFileManager;
+import javax.tools.ToolProvider;
+import java.io.*;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.net.URL;
+import java.net.URLClassLoader;
+import com.ssm.dao.CustomInvocationHandler;
+import com.sun.jndi.toolkit.url.UrlUtil;
+public class ProxyUtil {
+    /**
+     * 如何产生一个对象？
+     *  content ---&gt; String
+     *  .java
+     *  .class
+     *  .new
+     * @return
+     */
+    public static Object newInstance(Class targetInterface, CustomInvocationHandler h) throws IOException, IllegalAccessException, InstantiationException, NoSuchMethodException, ClassNotFoundException, InvocationTargetException {
+        // targetInterface：目标对象的接口
+//        Class targetInterface = target.getClass().getInterfaces()[0];
+
+        // 声明最终要返回的代理对象
+        Object proxy=null;
+        /**
+         * package com.ssm.proxyInter;
+         *
+         * import com.ssm.dao.UserDao;
+         *
+         * public class UserDaoLog implements UserDao {
+         *
+         *     private UserDao target;
+         *     public UserDaoLog(UserDao target){
+         *         this.target = target;
+         *     }
+         *     @Override
+         *     public void query(String p0, String p1) {
+         *         System.out.println(&quot;log...&quot;);
+         *         target.query(p0,p1);
+         *     }
+         * }
+         * 将上述代码逐行变成字符串
+         */
+        // 换行
+        String line = &quot;\n&quot;;
+        // 缩进
+        String tab = &quot;\t&quot;;
+        // 得到接口名 UserDao
+        String interfaceName = targetInterface.getSimpleName();
+        // 得到接口中的所有方法 query()
+        Method[] methods = targetInterface.getDeclaredMethods();
+        String content = &quot;&quot;;
+        String packageContent = &quot;package com.ssm;&quot; + line;
+        String importContent = &quot;import &quot; + targetInterface.getName() + &quot;;&quot; + line
+                + &quot;import com.ssm.dao.CustomInvocationHandler;&quot; + line
+                + &quot;import java.lang.reflect.Method;&quot; + line;
+        String classFirstLineContent = &quot;public class $Proxy implements &quot; +interfaceName+ &quot;{&quot; + line;
+        String fieldContent = tab + &quot;private  CustomInvocationHandler h;&quot; + line;
+        String constructorContent = tab + &quot;public $Proxy (CustomInvocationHandler h){&quot; + line
+                + tab + tab + &quot;this.h = h; &quot;+ line
+                + tab +&quot;}&quot; + line;
+                
+        // 参数内容：target.query(p0,p1);
+        String paramsContent = &quot;&quot;;
+        String methodContent = &quot;&quot;;
+        for (Method method : methods){
+            // 得到当前方法的返回类型
+            String returnType = method.getReturnType().getSimpleName();
+            // 得到当前方法的方法名
+            String methodName = method.getName();
+            // 得到方法的参数类型：如 String.class
+            Class[] args = method.getParameterTypes();
+            String argsContent = &quot;&quot;;
+            for (int i = 0 ; i &lt; args.length ; i++){
+                // 得到的是参数类型：如 String
+                String temp = args[i].getSimpleName();
+                // 最终构造成这个形式：String p0,String p1
+                argsContent += temp + &quot; p&quot; + i + &quot;,&quot;;
+                paramsContent += &quot;p&quot; + i + &quot;,&quot;;
+            }
+            // 截取掉最后一个多余的 ','
+            if(argsContent.length() &gt; 0){
+                argsContent = argsContent.substring(0,argsContent.lastIndexOf(&quot;,&quot;));
+                paramsContent = paramsContent.substring(0,paramsContent.lastIndexOf(&quot;,&quot;));
+            }
+            methodContent += tab + &quot;public &quot; + returnType + &quot; &quot; + methodName + &quot;(&quot; + argsContent + &quot;) throws Exception {&quot; + line
+                    + tab + tab + &quot;Method method = Class.forName(\&quot;&quot; + targetInterface.getName() + &quot;\&quot;).getDeclaredMethod(\&quot;&quot; + methodName + &quot;\&quot;);&quot; + line
+                    + tab + tab + &quot;return (&quot;+ returnType +&quot;)h.invoke(method);&quot; + line
+                    + tab + &quot;}&quot; + line;
+        }
+
+        content = packageContent + importContent + classFirstLineContent + fieldContent + constructorContent + methodContent + &quot;}&quot;;
+
+        File file = new File(&quot;C:\\Users\\Only\\com\\ssm\\$Proxy.java&quot;);
+        if(!file.exists()){
+            file.createNewFile();
+        }
+        FileWriter fw = new FileWriter(file);
+        fw.write(content);
+        fw.flush();
+        fw.close();
+
+        // .java ---&gt; .class
+        JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+        StandardJavaFileManager fileMgr = compiler.getStandardFileManager(null, null, null);
+        Iterable units = fileMgr.getJavaFileObjects(file);
+        JavaCompiler.CompilationTask t = compiler.getTask(null, fileMgr, null, null, null, units);
+        t.call();
+        fileMgr.close();
+
+        // 通过反射得到构造函数 new 一个对象出来
+        URL[] urls = new URL[]{new URL(&quot;file:C:\\Users\\Only\\\\&quot;)};
+        URLClassLoader urlClassLoader = new URLClassLoader(urls);
+        Class clazz = urlClassLoader.loadClass(&quot;com.ssm.$Proxy&quot;);
+        Constructor constructor = clazz.getConstructor(CustomInvocationHandler.class);
+        proxy = constructor.newInstance(h);
+
+        return proxy;
+    }
+}
+</code></pre>
+<h3 id="5测试类">5.测试类</h3>
+<pre><code class="language-java">public class Test {
+    public static void main(String[] args) throws Exception {
+//         自定义动态代理
+        TestDao proxy = (TestDao) ProxyUtil.newInstance(TestDao.class, new TestCustomHandler(new TestDaoImpl()));
+        proxy.delete();
+    }
+}
+</code></pre>
+<p>运行结果：</p>
+<pre><code class="language-java">TestCustomHandler...
+dao...delete
+</code></pre>
+<h2 id="jdk动态代理">JDK动态代理</h2>
+<p>通过接口反射得到字节码 byte[] ，然后把字节码转成 class：native方法  openJDK  c++</p>
+<h3 id="1要代理的接口-2">1.要代理的接口</h3>
+<pre><code class="language-java">public interface TestDao {
+    String query(String s1, String s2) throws Exception;
+}
+</code></pre>
+<h3 id="2目标对象-2">2.目标对象</h3>
+<pre><code class="language-java">public class TestDaoImpl implements TestDao {
+    @Override
+    public String query(String s1, String s2) {
+        System.out.println(&quot;查询数据库&quot;);
+        System.out.println(&quot;daoImpl...&quot; + s1 + &quot; &quot; + s2);
+        return s1 + &quot; &quot; + s2;
+    } 
+}
+</code></pre>
+<h3 id="3代理的逻辑">3.代理的逻辑</h3>
+<pre><code class="language-java">package com.ssm.util;
+
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+
+public class TestInvocationHandler implements InvocationHandler {
+    Object target;
+
+    /**
+     *
+     * @param target 目标对象
+     */
+    public TestInvocationHandler(Object target){
+        this.target = target;
+    }
+    /**
+     *
+     * @param proxy 代理对象 $Proxy
+     * @param method 目标对象 TestDao
+     * @param args 目标方法的参数
+     * @return
+     * @throws Throwable
+     *
+     * 根据代理的逻辑执行：即打印 TestInvocationHandler...proxy
+     * 执行目标对象的方法 ，即 TestDao 的 query()
+     */
+    @Override
+    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        System.out.println(&quot;TestInvocationHandler...proxy&quot;);
+        return method.invoke(target,args);
+    }
+}
+</code></pre>
+<h3 id="4测试类-2">4.测试类</h3>
+<pre><code class="language-java">public class Test {
+    public static void main(String[] args) throws Exception {
+
+        /**
+         * JDK 动态代理
+         * 参数：要代理哪些接口；new Class[]{TestDao.class}：TestDao 下所有方法的代理。
+         *       代理的逻辑：new TestInvocationHandler(new TestDaoImpl())：在每个方法前打印 TestInvocationHandler...proxy
+         */
+        TestDao jdkProxy = (TestDao) Proxy.newProxyInstance(Test.class.getClassLoader(),
+                new Class[]{TestDao.class},
+                new TestInvocationHandler(new TestDaoImpl()));
+        String result = jdkProxy.query(&quot;hello&quot;, &quot;world&quot;);
+        System.out.println(&quot;result = &quot; + result);
+
+    }
+}
+</code></pre>
+<p>运行结果：</p>
+<pre><code class="language-java">TestInvocationHandler...proxy
+查询数据库
+daoImpl...hello world
+result = hello world
+</code></pre>
+<h3 id="jdk-动态代理分析">JDK 动态代理分析</h3>
+<p>JDK 动态代理：</p>
+<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/JDK%E5%8A%A8%E6%80%81%E4%BB%A3%E7%90%86%E4%BB%A3%E7%90%86%E5%AF%B9%E8%B1%A1.png" alt="图片" loading="lazy"></figure>
+<p>自定义动态代理：</p>
+<figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/%E8%87%AA%E5%AE%9A%E4%B9%89%E5%8A%A8%E6%80%81%E4%BB%A3%E7%90%86%E4%BB%A3%E7%90%86%E5%AF%B9%E8%B1%A1.png" alt="图片" loading="lazy"></figure>
+<h4 id="代理类">代理类</h4>
+<figure data-type="image" tabindex="4"><img src="https://epitomm.github.io/post-images/%E4%BB%A3%E7%90%86%E7%B1%BB.png" alt="图片" loading="lazy"></figure>
+<h4 id="得到代理类的构造方法">得到代理类的构造方法</h4>
+<figure data-type="image" tabindex="5"><img src="https://epitomm.github.io/post-images/%E5%BE%97%E5%88%B0%E4%BB%A3%E7%90%86%E7%B1%BB%E7%9A%84%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95.png" alt="图片" loading="lazy"></figure>
+<h4 id="使用代理类的构造方法-new-一个对象出来">使用代理类的构造方法 new 一个对象出来</h4>
+<figure data-type="image" tabindex="6"><img src="https://epitomm.github.io/post-images/%E4%BD%BF%E7%94%A8%E4%BB%A3%E7%90%86%E7%B1%BB%E7%9A%84%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95new%E4%B8%80%E4%B8%AA%E5%AF%B9%E8%B1%A1%E5%87%BA%E6%9D%A5.png" alt="图片" loading="lazy"></figure>
+<h4 id="class-cl-getproxyclass0loader-intfs">Class&lt;?&gt; cl = getProxyClass0(loader, intfs);</h4>
+<figure data-type="image" tabindex="7"><img src="https://epitomm.github.io/post-images/getProxyClass0.png" alt="图片" loading="lazy"></figure>
+<h4 id="public-v-getk-key-p-parameter">public V get(K key, P parameter) {</h4>
+<figure data-type="image" tabindex="8"><img src="https://epitomm.github.io/post-images/get.png" alt="图片" loading="lazy"></figure>
+<h4 id="debugger">debugger</h4>
+<figure data-type="image" tabindex="9"><img src="https://epitomm.github.io/post-images/debugger.png" alt="图片" loading="lazy"></figure>
+<h4 id="v-value-supplierget">V value = supplier.get();</h4>
+<figure data-type="image" tabindex="10"><img src="https://epitomm.github.io/post-images/suppiler.get.png" alt="图片" loading="lazy"></figure>
+<h4 id="public-synchronized-v-get">public synchronized V get() {</h4>
+<figure data-type="image" tabindex="11"><img src="https://epitomm.github.io/post-images/%E8%BF%94%E5%9B%9Evalue.png" alt="图片" loading="lazy"></figure>
+<h4 id="value-objectsrequirenonnullvaluefactoryapplykey-parameter">value = Objects.requireNonNull(valueFactory.apply(key, parameter))</h4>
+<figure data-type="image" tabindex="12"><img src="https://epitomm.github.io/post-images/requireNonNull.png" alt="图片" loading="lazy"></figure>
+<h4 id="public-class-applyclassloader-loader-class-interfaces">public Class<?> apply(ClassLoader loader, Class<?>[] interfaces) {</h4>
+<figure data-type="image" tabindex="13"><img src="https://epitomm.github.io/post-images/apply.png" alt="图片" loading="lazy"></figure>
+<h4 id="使用类加载器判断是否是同一个对象">使用类加载器判断是否是同一个对象</h4>
+<figure data-type="image" tabindex="14"><img src="https://epitomm.github.io/post-images/%E4%BD%BF%E7%94%A8%E7%B1%BB%E5%8A%A0%E8%BD%BD%E5%99%A8%E5%88%A4%E6%96%AD%E6%98%AF%E5%90%A6%E6%98%AF%E5%90%8C%E4%B8%80%E4%B8%AA%E5%AF%B9%E8%B1%A1.png" alt="图片" loading="lazy"></figure>
+<h4 id="判断接口的权限修饰符">判断接口的权限修饰符</h4>
+<figure data-type="image" tabindex="15"><img src="https://epitomm.github.io/post-images/%E5%88%A4%E6%96%AD%E6%8E%A5%E5%8F%A3%E7%9A%84%E6%9D%83%E9%99%90%E4%BF%AE%E9%A5%B0%E7%AC%A6.png" alt="图片" loading="lazy"></figure>
+<h4 id="string-proxyname-proxypkg-proxyclassnameprefix-num">String proxyName = proxyPkg + proxyClassNamePrefix + num;</h4>
+<figure data-type="image" tabindex="16"><img src="https://epitomm.github.io/post-images/proxyName.png" alt="图片" loading="lazy"></figure>
+<p>类名加上标识0，是为了防止并发情况下产生问题。</p>
+<h4 id="byte-proxyclassfile-proxygeneratorgenerateproxyclassproxyname-interfaces-accessflags">byte[] proxyClassFile = ProxyGenerator.generateProxyClass(proxyName, interfaces, accessFlags);</h4>
+<figure data-type="image" tabindex="17"><img src="https://epitomm.github.io/post-images/generateProxyClass.png" alt="图片" loading="lazy"></figure>
+<figure data-type="image" tabindex="18"><img src="https://epitomm.github.io/post-images/JDK%E4%BB%A3%E7%90%86%E8%BF%87%E7%A8%8B.png" alt="图片" loading="lazy"></figure>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li><a href="#%E4%BB%80%E4%B9%88%E6%98%AF%E4%BB%A3%E7%90%86"><strong>什么是代理</strong></a></li>
+<li><a href="#%E4%BB%A3%E7%90%86%E6%A8%A1%E5%BC%8F%E7%9A%84%E5%BC%95%E5%85%A5">代理模式的引入</a></li>
+<li><a href="#java%E5%AE%9E%E7%8E%B0%E7%9A%84%E4%BB%A3%E7%90%86%E7%9A%84%E4%B8%A4%E7%A7%8D%E5%8A%9E%E6%B3%95"><strong>java实现的代理的两种办法</strong></a></li>
+<li><a href="#%E4%BB%A3%E7%90%86%E7%9A%84%E5%90%8D%E8%AF%8D">代理的名词</a></li>
+<li><a href="#%E9%9D%99%E6%80%81%E4%BB%A3%E7%90%86">静态代理</a>
+<ul>
+<li><a href="#%E7%BB%A7%E6%89%BF">继承</a></li>
+<li><a href="#%E8%81%9A%E5%90%88">聚合</a></li>
+<li><a href="#%E8%87%AA%E5%B7%B1%E6%A8%A1%E6%8B%9F%E7%9A%84%E5%8A%A8%E6%80%81%E4%BB%A3%E7%90%86">自己模拟的动态代理</a>
+<ul>
+<li><a href="#1%E5%87%86%E5%A4%87%E4%B8%80%E4%B8%AA%E6%8E%A5%E5%8F%A3">1.准备一个接口：</a></li>
+<li><a href="#2%E5%87%86%E5%A4%87%E4%B8%80%E4%B8%AA%E6%8E%A5%E5%8F%A3%E5%AE%9E%E7%8E%B0%E7%B1%BB">2.准备一个接口实现类：</a></li>
+<li><a href="#3%E6%A8%A1%E6%8B%9F%E5%8A%A8%E6%80%81%E4%BB%A3%E7%90%86">3.模拟动态代理：</a></li>
+<li><a href="#4%E6%B5%8B%E8%AF%95%E7%B1%BB">4.测试类</a></li>
+</ul>
+</li>
+<li><a href="#%E4%BB%A3%E7%90%86%E9%80%BB%E8%BE%91%E5%8A%A8%E6%80%81%E5%AE%9E%E7%8E%B0%E8%80%8C%E4%B8%8D%E6%98%AF%E5%86%99%E6%AD%BB%E7%9A%84-sout">代理逻辑动态实现，而不是写死的 sout</a>
+<ul>
+<li><a href="#1%E8%A6%81%E4%BB%A3%E7%90%86%E7%9A%84%E6%8E%A5%E5%8F%A3">1.要代理的接口</a></li>
+<li><a href="#2%E7%9B%AE%E6%A0%87%E5%AF%B9%E8%B1%A1">2.目标对象</a></li>
+<li><a href="#3%E4%BB%A3%E7%90%86%E9%80%BB%E8%BE%91%E6%8E%A5%E5%8F%A3">3.代理逻辑接口</a></li>
+<li><a href="#4%E4%BB%A3%E7%90%86%E9%80%BB%E8%BE%91%E5%85%B7%E4%BD%93%E5%AE%9E%E7%8E%B0">4.代理逻辑具体实现</a></li>
+<li><a href="#5%E6%B5%8B%E8%AF%95%E7%B1%BB">5.测试类</a></li>
+</ul>
+</li>
+<li><a href="#jdk%E5%8A%A8%E6%80%81%E4%BB%A3%E7%90%86">JDK动态代理</a>
+<ul>
+<li><a href="#1%E8%A6%81%E4%BB%A3%E7%90%86%E7%9A%84%E6%8E%A5%E5%8F%A3-2">1.要代理的接口</a></li>
+<li><a href="#2%E7%9B%AE%E6%A0%87%E5%AF%B9%E8%B1%A1-2">2.目标对象</a></li>
+<li><a href="#3%E4%BB%A3%E7%90%86%E7%9A%84%E9%80%BB%E8%BE%91">3.代理的逻辑</a></li>
+<li><a href="#4%E6%B5%8B%E8%AF%95%E7%B1%BB-2">4.测试类</a></li>
+<li><a href="#jdk-%E5%8A%A8%E6%80%81%E4%BB%A3%E7%90%86%E5%88%86%E6%9E%90">JDK 动态代理分析</a>
+<ul>
+<li><a href="#%E4%BB%A3%E7%90%86%E7%B1%BB">代理类</a></li>
+<li><a href="#%E5%BE%97%E5%88%B0%E4%BB%A3%E7%90%86%E7%B1%BB%E7%9A%84%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95">得到代理类的构造方法</a></li>
+<li><a href="#%E4%BD%BF%E7%94%A8%E4%BB%A3%E7%90%86%E7%B1%BB%E7%9A%84%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95-new-%E4%B8%80%E4%B8%AA%E5%AF%B9%E8%B1%A1%E5%87%BA%E6%9D%A5">使用代理类的构造方法 new 一个对象出来</a></li>
+<li><a href="#class-cl-getproxyclass0loader-intfs">Class&lt;?&gt; cl = getProxyClass0(loader, intfs);</a></li>
+<li><a href="#public-v-getk-key-p-parameter">public V get(K key, P parameter) {</a></li>
+<li><a href="#debugger">debugger</a></li>
+<li><a href="#v-value-supplierget">V value = supplier.get();</a></li>
+<li><a href="#public-synchronized-v-get">public synchronized V get() {</a></li>
+<li><a href="#value-objectsrequirenonnullvaluefactoryapplykey-parameter">value = Objects.requireNonNull(valueFactory.apply(key, parameter))</a></li>
+<li><a href="#public-class-applyclassloader-loader-class-interfaces">public Class<?> apply(ClassLoader loader, Class<?>[] interfaces) {</a></li>
+<li><a href="#%E4%BD%BF%E7%94%A8%E7%B1%BB%E5%8A%A0%E8%BD%BD%E5%99%A8%E5%88%A4%E6%96%AD%E6%98%AF%E5%90%A6%E6%98%AF%E5%90%8C%E4%B8%80%E4%B8%AA%E5%AF%B9%E8%B1%A1">使用类加载器判断是否是同一个对象</a></li>
+<li><a href="#%E5%88%A4%E6%96%AD%E6%8E%A5%E5%8F%A3%E7%9A%84%E6%9D%83%E9%99%90%E4%BF%AE%E9%A5%B0%E7%AC%A6">判断接口的权限修饰符</a></li>
+<li><a href="#string-proxyname-proxypkg-proxyclassnameprefix-num">String proxyName = proxyPkg + proxyClassNamePrefix + num;</a></li>
+<li><a href="#byte-proxyclassfile-proxygeneratorgenerateproxyclassproxyname-interfaces-accessflags">byte[] proxyClassFile = ProxyGenerator.generateProxyClass(proxyName, interfaces, accessFlags);</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://epitomm.github.io/post/springaop-ying-yong/">
+              <h3 class="post-title">
+                SpringAOP 应用
+              </h3>
+            </a>
+          </div>
+        
+
+        
+          
+            <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+<script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+
+<div id="gitalk-container"></div>
+
+<script>
+
+  var gitalk = new Gitalk({
+    clientID: '974bd77fbbd52c2a0647',
+    clientSecret: '6344370ca1314dbd553f45e75a2121a160ef1c44',
+    repo: 'EpitomM.github.io',
+    owner: 'EpitomM',
+    admin: ['EpitomM'],
+    id: (location.pathname).substring(0, 49),      // Ensure uniqueness and length less than 50
+    distractionFreeMode: false  // Facebook-like distraction free mode
+  })
+
+  gitalk.render('gitalk-container')
+
+</script>
+
+          
+
+          
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/EpitomM/EpitomM.github.io" target="_blank">EpitomM</a>
+  <a class="rss" href="https://epitomm.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>
