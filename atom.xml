@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://epitomm.github.io</id>
     <title>SSM</title>
-    <updated>2020-05-04T02:15:03.489Z</updated>
+    <updated>2020-05-04T02:26:11.592Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://epitomm.github.io"/>
     <link rel="self" href="https://epitomm.github.io/atom.xml"/>
@@ -708,7 +708,7 @@ result = hello world
         <id>https://epitomm.github.io/post/springaop-ying-yong/</id>
         <link href="https://epitomm.github.io/post/springaop-ying-yong/">
         </link>
-        <updated>2020-05-01T07:55:56.000Z</updated>
+        <updated>2020-05-02T07:55:56.000Z</updated>
         <content type="html"><![CDATA[<h1 id="自定义注解">自定义注解</h1>
 <h2 id="xml-的作用">xml 的作用？</h2>
 <p>答：<strong>描述数据</strong>。<br>
