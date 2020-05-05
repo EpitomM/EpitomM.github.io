@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://epitomm.github.io</id>
     <title>SSM</title>
-    <updated>2020-05-04T02:26:11.592Z</updated>
+    <updated>2020-05-05T03:37:45.559Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://epitomm.github.io"/>
     <link rel="self" href="https://epitomm.github.io/atom.xml"/>
@@ -11,7 +11,535 @@
     <icon>https://epitomm.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, SSM</rights>
     <entry>
-        <title type="html"><![CDATA[一篇文章学会 JDK 动态代理并手动模拟一个动态代理]]></title>
+        <title type="html"><![CDATA[Spring系列（四）XML模拟SpringIOC]]></title>
+        <id>https://epitomm.github.io/post/spring-xi-lie-si-xml-mo-ni-springioc/</id>
+        <link href="https://epitomm.github.io/post/spring-xi-lie-si-xml-mo-ni-springioc/">
+        </link>
+        <updated>2020-05-05T03:28:50.000Z</updated>
+        <content type="html"><![CDATA[<p>先来回顾一下自定义动态代理中获取对象的方法：</p>
+<ul>
+<li>获得代理对象：TestDao proxy = (TestDao) ProxyUtil.newInstance(TestDao.class, new TestCustomHandler(new TestDaoImpl()));</li>
+<li>获得目标对象：TestDao target = new TestDaoImpl();<br>
+以上方式耦合度过高</li>
+</ul>
+<h1 id="spring-ioc-的思想">Spring IOC 的思想</h1>
+<p>工厂方法的好处，工厂方法控制了 proxy 对象的产生过程，现在这个对象的产生过程是由编码控制的，通过 newInstance() 控制的，但是如果使用工厂的话，工厂也可以控制类的产生过程：比如通过类名：TestDao proxy = Factory.getBean(&quot;testDao&quot;);由于可以做到自己控制，提出一种思想：注入，依赖查找查找名为 &quot;testDao&quot; 的 bean，<strong>对象的产生过程通过外部第三方容器注入给我</strong>，对于程序员来讲，编程的话，只需要写 TestDao testDao 即可，至于这个对象到底是什么东西，程序员无需关心，是由外部容器注入进来的，程序员正常编码即可，面向抽象编程这些方法都有，比如 testDao.query();</p>
+<h1 id="模拟-springaop">模拟 SpringAOP</h1>
+<p>实现将对象交给容器管理</p>
+<h2 id="userdao">UserDao</h2>
+<pre><code class="language-java">public interface UserDao {
+    void query();
+}
+</code></pre>
+<h2 id="userdaoimpl">UserDaoImpl</h2>
+<pre><code class="language-java">public class UserDaoImpl implements UserDao {
+    @Override
+    public void query() {
+        System.out.println(&quot;dao&quot;);
+    }
+}
+</code></pre>
+<h2 id="userservice">UserService</h2>
+<pre><code class="language-java">public interface UserService {
+    void find();
+}
+</code></pre>
+<h2 id="userserviceimpl">UserServiceImpl</h2>
+<pre><code class="language-java">public class UserServiceImpl implements UserService {
+
+    private UserDao userDao;
+
+    @Override
+    public void find() {
+        System.out.println(&quot;service...&quot;);
+        userDao.query();
+    }
+
+    public void setUserDao(UserDao userDao) {
+        this.userDao = userDao;
+    }
+}
+</code></pre>
+<h2 id="springxml">spring.xml</h2>
+<pre><code class="language-xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;!--
+    1.哪些类需要我（容器）来管理
+    2.怎么告诉我这些类：&lt;bean&gt;
+    3.怎么维护依赖关系：setter、constructor
+    4.怎么体现 setter：&lt;property&gt; 或者 constructor：&lt;constructor&gt;
+--&gt;
+&lt;beans&gt;
+
+    &lt;bean id=&quot;userDao&quot; class = &quot;com.ssm.dao.impl.UserDaoImpl&quot;&gt;&lt;/bean&gt;
+
+    &lt;bean id=&quot;userService&quot; class=&quot;com.ssm.service.impl.UserServiceImpl&quot;&gt;
+        &lt;!-- 注入：1.构造方法；
+        2.set方法：UserService 中有一个 setUserDao(UserDao userDao)  方法，
+        只要提供了 UserDao，容器自动调用 setUserDao() 方法给 UserService 内的 UserDao 赋值--&gt;
+        &lt;property name=&quot;userDao&quot; ref = &quot;userDao&quot;&gt;&lt;/property&gt;
+    &lt;/bean&gt;
+&lt;/beans&gt;
+</code></pre>
+<h2 id="解析-xml-的方式dom4j">解析 xml 的方式：dom4j。</h2>
+<p>dom4j 官网：<a href="https://dom4j.github.io/">https://dom4j.github.io/</a><br>
+导入 dom4j 依赖：</p>
+<pre><code class="language-xml">&lt;!-- https://mvnrepository.com/artifact/dom4j/dom4j --&gt;
+&lt;dependency&gt;
+  &lt;groupId&gt;dom4j&lt;/groupId&gt;
+  &lt;artifactId&gt;dom4j&lt;/artifactId&gt;
+  &lt;version&gt;1.6.1&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+<h2 id="将对象交给容器管理setter-方法注入">将对象交给容器管理（setter 方法注入）</h2>
+<p>解析 xml 文件，将 “对象名-对象类型” 放到 map 集合中。</p>
+<pre><code class="language-java">import org.dom4j.Attribute;
+import org.dom4j.Document;
+import org.dom4j.DocumentException;
+import org.dom4j.Element;
+import org.dom4j.io.SAXReader;
+
+import java.io.File;
+import java.lang.reflect.Field;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
+public class BeanFactory {
+
+    // 得到每个 bean 的 id、class 存到 map 中
+    Map&lt;String,Object&gt; map = new HashMap&lt;&gt;();
+
+    public BeanFactory(String xml){
+        parseXml(xml);
+    }
+
+    /**
+     * 解析 XML
+     */
+    public void parseXml(String xml){
+        // 获取要解析的 xml 的路径
+        File file = new File(this.getClass().getResource(&quot;/&quot;).getPath() + &quot;//&quot; + xml);
+        // 解析 xml
+        SAXReader reader = new SAXReader();
+        Document document = null;
+        try {
+            document = reader.read(file);
+            // 得到根目录
+            Element elementRoot = document.getRootElement();
+            // 获取根目录下的所有子目录
+            for (Iterator&lt;Element&gt; itFirst = elementRoot.elementIterator(); itFirst.hasNext();) {
+                /**
+                 * setup1.实例化对象
+                 */
+                // 得到第一个子元素：spring.xml 中的 &lt;bean&gt;
+                Element elementFirstChild = itFirst.next();
+                // 获得 bean 标签的 id 属性值
+                Attribute attributeId = elementFirstChild.attribute(&quot;id&quot;);
+                String beanName = attributeId.getValue();
+                // 获得 bean 标签的 class 属性值
+                Attribute attributeClass = elementFirstChild.attribute(&quot;class&quot;);
+                String clazzName = attributeClass.getValue();
+                Class clazz = Class.forName(clazzName);
+                Object object = clazz.newInstance();
+                /**
+                 * setup2.维护依赖关系
+                 *  (1)看这个对象有没有依赖（判断类是否有属性，然后再判断&lt;bean&gt;中是否有 name=&quot;属性值&quot;的&lt;property&gt;）
+                 *      如果有，则注入
+                 */
+                // 得到&lt;bean&gt;的子标签
+                for (Iterator&lt;Element&gt; itSecond = elementFirstChild.elementIterator(); itSecond.hasNext();) {
+                    // 得到 &lt;property name=&quot;userDao&quot; ref = &quot;userDao&quot;&gt;&lt;/property&gt;
+                    Element elementSecondChild = itSecond.next();
+                    if(&quot;property&quot;.equals(elementSecondChild.getName())){
+                        // 1.得到 ref 的 value（userDao），通过 value 得到对象（map中id=&quot;userDao&quot;）
+                        String refValue = elementSecondChild.attribute(&quot;ref&quot;).getValue();
+                        // 需要注入的对象 UserDao
+                        Object injetObject = map.get(refValue);
+                        // 2.得到 name 的值（userDao），然后根据它获取一个 Field 的对象（UserServiceImpl 中的 UserDao userDao）
+                        String nameValue = elementSecondChild.attribute(&quot;name&quot;).getValue();
+                        // 通过反射得到 Field 对象，即UserDao
+                        Field field = clazz.getDeclaredField(nameValue);
+                        field.setAccessible(true);
+                        // 相等于 UserService.setUserDao(userDao)
+                        // 两个参数：userService、UserDao
+                        // 3.通过 Field 的set 方法 set 这个对象
+                        field.set(object,injetObject);
+                    }
+
+                }
+                // 放到 map 中
+                map.put(beanName,object);
+            }
+        } catch (DocumentException | ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        } catch (NoSuchFieldException e) {
+            e.printStackTrace();
+        }
+        System.out.println(map);
+    }
+    public Object getBean(String beanName){
+        return map.get(beanName);
+    }
+}
+
+## 测试类
+```java
+public class Test {
+    public static void main(String[] args) {
+        BeanFactory beanFactory = new BeanFactory(&quot;spring.xml&quot;);
+        UserService userService = (UserService) beanFactory.getBean(&quot;userService&quot;);
+        userService.find();
+    }
+}
+</code></pre>
+<p>##运行结果：</p>
+<pre><code>{userDao=com.ssm.dao.impl.UserDaoImpl@4dd8dc3, userService=com.ssm.service.impl.UserServiceImpl@6d03e736}
+service...
+dao
+</code></pre>
+<h2 id="构造方法注入">构造方法注入</h2>
+<h3 id="userserviceimpluserdao-userdao-构造方法">UserServiceImpl(UserDao userDao) 构造方法</h3>
+<pre><code class="language-java">public class UserServiceImpl implements UserService {
+    private UserDao dao;
+    public UserServiceImpl(UserDao userDao){
+        this.dao = userDao;
+    }
+
+    @Override
+    public void find() {
+        System.out.println(&quot;service...&quot;);
+        dao.query();
+    }
+}
+</code></pre>
+<p>###spring.xml</p>
+<pre><code class="language-xml">    &lt;bean id=&quot;userService&quot; class=&quot;com.ssm.service.impl.UserServiceImpl&quot;&gt;
+        &lt;!-- 注入：1.构造方法；
+        2.set方法：UserService 中有一个 setUserDao(UserDao userDao)  方法，
+        只要提供了 UserDao，容器自动调用 setUserDao() 方法给 UserService 内的 UserDao 赋值
+        name=&quot;dao&quot; :private UserDao dao--&gt;
+&lt;!--        &lt;property name=&quot;dao&quot; ref = &quot;userDao&quot;&gt;&lt;/property&gt;--&gt;
+
+        &lt;!-- name=&quot;userDao&quot;：属性的名字：private UserDao dao;
+            ref=&quot;userDao&quot;:引入&lt;bean&gt;的 id 为 userDao 的对象--&gt;
+        &lt;constructor-arg name=&quot;dao&quot; ref=&quot;userDao&quot;&gt;&lt;/constructor-arg&gt;
+    &lt;/bean&gt;
+</code></pre>
+<p>###解析 xml 将对象放到 map 中</p>
+<pre><code class="language-java">public class BeanFactory {
+
+    // 得到每个 bean 的 id、class 存到 map 中
+    Map&lt;String,Object&gt; map = new HashMap&lt;&gt;();
+
+    public BeanFactory(String xml){
+        parseXml(xml);
+    }
+
+    /**
+     * 解析 XML
+     */
+    public void parseXml(String xml){
+        // 获取要解析的 xml 的路径
+        File file = new File(this.getClass().getResource(&quot;/&quot;).getPath() + &quot;//&quot; + xml);
+        // 解析 xml
+        SAXReader reader = new SAXReader();
+        Document document = null;
+        try {
+            document = reader.read(file);
+            // 得到根目录
+            Element elementRoot = document.getRootElement();
+            // 获取根目录下的所有子目录
+            for (Iterator&lt;Element&gt; itFirst = elementRoot.elementIterator(); itFirst.hasNext();) {
+                /**
+                 * setup1.实例化对象
+                 */
+                // 得到第一个子元素：spring.xml 中的 &lt;bean&gt;
+                Element elementFirstChild = itFirst.next();
+                // 获得 bean 标签的 id 属性值
+                Attribute attributeId = elementFirstChild.attribute(&quot;id&quot;);
+                String beanName = attributeId.getValue();
+                // 获得 bean 标签的 class 属性值
+                Attribute attributeClass = elementFirstChild.attribute(&quot;class&quot;);
+                String clazzName = attributeClass.getValue();
+                Class clazz = Class.forName(clazzName);
+                // 当使用构造方法注入时，就不能在这里 newInstance 了，因为没有默认构造方法了
+//                Object object = clazz.newInstance();
+                Object object = null;
+                /**
+                 * setup2.维护依赖关系
+                 *  (1)看这个对象有没有依赖（判断类是否有属性，然后再判断&lt;bean&gt;中是否有 name=&quot;属性值&quot;的&lt;property&gt;）
+                 *      如果有，则注入
+                 */
+                // 得到&lt;bean&gt;的子标签
+                for (Iterator&lt;Element&gt; itSecond = elementFirstChild.elementIterator(); itSecond.hasNext();) {
+                    // 得到 &lt;property name=&quot;userDao&quot; ref = &quot;userDao&quot;&gt;&lt;/property&gt;
+                    Element elementSecondChild = itSecond.next();
+                    // 如果使用 setter 方法注入
+                    if(&quot;property&quot;.equals(elementSecondChild.getName())){
+                        // 由于是 setter 注入，有一个默认构造方法，可以 newInstance()
+                        object = clazz.newInstance();
+                        // 1.得到 ref 的 value（userDao），通过 value 得到对象（map中id=&quot;userDao&quot;）
+                        String refValue = elementSecondChild.attribute(&quot;ref&quot;).getValue();
+                        // 需要注入的对象 UserDao
+                        Object injectObject = map.get(refValue);
+                        // 2.得到 name 的值（userDao），然后根据它获取一个 Field 的对象（UserServiceImpl 中的 UserDao userDao）
+                        String nameValue = elementSecondChild.attribute(&quot;name&quot;).getValue();
+
+                        // 3.通过 Field 的set 方法 set 这个对象
+                        // 通过反射得到 Field 对象，即UserDao
+                        Field field = clazz.getDeclaredField(nameValue);
+                        field.setAccessible(true);
+                        // 相等于 UserService.setUserDao(userDao)
+                        // 两个参数：userService、UserDao
+                        field.set(object,injectObject);
+                    }else {// 通过构造方法注入 UserDao
+                        // &lt;constructor-arg name=&quot;userDao&quot; ref=&quot;userDao&quot;&gt;&lt;/constructor-arg&gt;
+                        // 由于没有默认构造方法了，所以不可以 clazz.newInstance() 了
+                        // 1.得到 ref 的 value（userDao），通过 value 得到对象（map中id=&quot;userDao&quot;）
+                        String refValue = elementSecondChild.attribute(&quot;ref&quot;).getValue();
+                        // 需要注入的对象 UserDao
+                        Object injectObject = map.get(refValue);
+                        // 得到 UserDao 的类型
+                        Class injectObjectClazz = injectObject.getClass();
+                        // 2.得到 UserService 的构造方法
+                        Constructor constructor = clazz.getConstructor(injectObjectClazz.getInterfaces()[0]);
+                        //  public UserServiceImpl(UserDao userDao){
+                        object = constructor.newInstance(injectObject);
+
+                    }
+
+                }
+                // 放到 map 中
+                if(object == null){ //没有子标签，比如  &lt;bean id=&quot;userDao&quot; class = &quot;com.ssm.dao.impl.UserDaoImpl&quot;&gt;&lt;/bean&gt;
+                    object = clazz.newInstance();
+                }
+                map.put(beanName,object);
+            }
+        } catch (DocumentException | ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        } catch (NoSuchFieldException e) {
+            e.printStackTrace();
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        }
+        System.out.println(map);
+    }
+    public Object getBean(String beanName){
+        return map.get(beanName);
+    }
+}
+</code></pre>
+<h2 id="自动注入">自动注入</h2>
+<pre><code class="language-java">public class UserDaoImpl implements UserDao {
+    @Override
+    public void query() {
+        System.out.println(&quot;dao&quot;);
+    }
+}
+</code></pre>
+<pre><code class="language-java">public class UserDaoImpl2 implements UserDao {
+    @Override
+    public void query() {
+        System.out.println(&quot;dao2&quot;);
+    }
+}
+</code></pre>
+<p>UserServiceImpl 依赖 UserDao，但是既不提供构造方法，也不提供 setter。使用 byType 自动注入。</p>
+<pre><code class="language-java">public class UserServiceImpl implements UserService {
+    private UserDao userDao;
+    @Override
+    public void find() {
+        System.out.println(&quot;service...&quot;);
+        userDao.query();
+    }
+}
+</code></pre>
+<pre><code class="language-xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;beans default-autowire=&quot;byType&quot;&gt;
+    &lt;bean id=&quot;userDao&quot; class = &quot;com.ssm.dao.impl.UserDaoImpl&quot;&gt;&lt;/bean&gt;
+    &lt;bean id=&quot;userDao2&quot; class = &quot;com.ssm.dao.impl.UserDaoImpl2&quot;&gt;&lt;/bean&gt;
+
+    &lt;bean id=&quot;userService&quot; class=&quot;com.ssm.service.impl.UserServiceImpl&quot;&gt;&lt;/bean&gt;
+&lt;/beans&gt;
+</code></pre>
+<pre><code class="language-java">public class BeanFactory {
+
+    // 得到每个 bean 的 id、class 存到 map 中
+    Map&lt;String,Object&gt; map = new HashMap&lt;&gt;();
+
+    public BeanFactory(String xml)throws  SpringException{
+        parseXml(xml);
+    }
+
+    /**
+     * 解析 XML
+     */
+    public void parseXml(String xml) throws SpringException{
+        // 获取要解析的 xml 的路径
+        File file = new File(this.getClass().getResource(&quot;/&quot;).getPath() + &quot;//&quot; + xml);
+        // 解析 xml
+        SAXReader reader = new SAXReader();
+        Document document = null;
+        try {
+            document = reader.read(file);
+            // 得到根目录
+            Element elementRoot = document.getRootElement();
+            Attribute attribute = elementRoot.attribute(&quot;default-autowire&quot;);
+            // 记录是否有 default-autowire 自动注入属性
+            boolean flag = false;
+            if(attribute != null){
+                flag = true;
+            }
+            // 获取根目录下的所有子目录
+            for (Iterator&lt;Element&gt; itFirst = elementRoot.elementIterator(); itFirst.hasNext();) {
+                /**
+                 * setup1.实例化对象
+                 */
+                // 得到第一个子元素：spring.xml 中的 &lt;bean&gt;
+                Element elementFirstChild = itFirst.next();
+                // 获得 bean 标签的 id 属性值
+                Attribute attributeId = elementFirstChild.attribute(&quot;id&quot;);
+                String beanName = attributeId.getValue();
+                // 获得 bean 标签的 class 属性值
+                Attribute attributeClass = elementFirstChild.attribute(&quot;class&quot;);
+                String clazzName = attributeClass.getValue();
+                Class clazz = Class.forName(clazzName);
+                // 当使用构造方法注入时，就不能在这里 newInstance 了，因为没有默认构造方法了
+//                Object object = clazz.newInstance();
+                Object object = null;
+                /**
+                 * setup2.维护依赖关系
+                 *  (1)看这个对象有没有依赖（判断类是否有属性，然后再判断&lt;bean&gt;中是否有 name=&quot;属性值&quot;的&lt;property&gt;）
+                 *      如果有，则注入
+                 */
+                // 得到&lt;bean&gt;的子标签
+                for (Iterator&lt;Element&gt; itSecond = elementFirstChild.elementIterator(); itSecond.hasNext();) {
+                    // 得到 &lt;property name=&quot;userDao&quot; ref = &quot;userDao&quot;&gt;&lt;/property&gt;
+                    Element elementSecondChild = itSecond.next();
+                    // 如果使用 setter 方法注入
+                    if(&quot;property&quot;.equals(elementSecondChild.getName())){
+                        // 由于是 setter 注入，有一个默认构造方法，可以 newInstance()
+                        object = clazz.newInstance();
+                        // 1.得到 ref 的 value（userDao），通过 value 得到对象（map中id=&quot;userDao&quot;）
+                        String refValue = elementSecondChild.attribute(&quot;ref&quot;).getValue();
+                        // 需要注入的对象 UserDao
+                        Object injectObject = map.get(refValue);
+                        // 2.得到 name 的值（userDao），然后根据它获取一个 Field 的对象（UserServiceImpl 中的 UserDao userDao）
+                        String nameValue = elementSecondChild.attribute(&quot;name&quot;).getValue();
+
+                        // 3.通过 Field 的set 方法 set 这个对象
+                        // 通过反射得到 Field 对象，即UserDao
+                        Field field = clazz.getDeclaredField(nameValue);
+                        field.setAccessible(true);
+                        // 相等于 UserService.setUserDao(userDao)
+                        // 两个参数：userService、UserDao
+                        field.set(object,injectObject);
+                    }else {// 通过构造方法注入 UserDao
+                        // &lt;constructor-arg name=&quot;userDao&quot; ref=&quot;userDao&quot;&gt;&lt;/constructor-arg&gt;
+                        // 由于没有默认构造方法了，所以不可以 clazz.newInstance() 了
+                        // 1.得到 ref 的 value（userDao），通过 value 得到对象（map中id=&quot;userDao&quot;）
+                        String refValue = elementSecondChild.attribute(&quot;ref&quot;).getValue();
+                        // 需要注入的对象 UserDao
+                        Object injectObject = map.get(refValue);
+                        // 得到 UserDao 的类型
+                        Class injectObjectClazz = injectObject.getClass();
+                        // 2.得到 UserService 的构造方法
+                        Constructor constructor = clazz.getConstructor(injectObjectClazz.getInterfaces()[0]);
+                        //  public UserServiceImpl(UserDao userDao){
+                        object = constructor.newInstance(injectObject);
+
+                    }
+                }
+
+                // 手动装配 &gt; 自动装配。如果没有手动装配，就自动装配
+                if(object == null){
+                    // 如果配置了自动装配
+                    if(flag){
+                        if(&quot;byType&quot;.equals(attribute.getValue())){
+                            // 1.判断是否有依赖
+                            // 因为自动装配，所以&lt;bean&gt;没有&lt;property&gt;和&lt;constructor&gt;
+                            // 就需要判断 UserServiceImpl 类中是否有属性 UserDao，
+                            // 如果没有，就证明 UserServiceImpl 没有依赖；如果有，就证明 UserServiceImpl 有依赖
+                            Field[] fields = clazz.getDeclaredFields();
+                            for (Field field : fields) {
+                                // 2.得到属性的类型，比如 private UserDao dao;那么field.getType()=UserDao.class
+                                Class injectObjectClazz = field.getType();
+                                /**
+                                 * 由于是 byType，所以需要遍历 map 当中的所有对象，
+                                 * 判断对象的类型是不是和这个 injectObjectClazz 类型相同
+                                 */
+                                // 记录 byType 找到的个数：比如找到多少个 UserDaoImpl
+                                int count = 0;
+                                Object injectObject = null;
+                                for(String key : map.keySet()){
+                                    Class&lt;?&gt; temp = map.get(key).getClass().getInterfaces()[0];
+                                    if(temp.getName().equals(injectObjectClazz.getName())){
+                                        injectObject = map.get(key);
+                                        // 记录找到一个，因为可能找到多个
+                                        count++;
+                                    }
+                                }
+                                // 如果 byType 找到多个
+                                if(count &gt; 1){
+                                    throw new SpringException(&quot;需要一个对象，但是找到了两个对象&quot;);
+                                }else {
+                                    // 如果只找到一个 type，注入
+                                    field.setAccessible(true);
+                                    object = clazz.newInstance();
+                                    field.set(object, injectObject);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 放到 map 中
+                if(object == null){ //没有子标签，比如  &lt;bean id=&quot;userDao&quot; class = &quot;com.ssm.dao.impl.UserDaoImpl&quot;&gt;&lt;/bean&gt;
+                    object = clazz.newInstance();
+                }
+                map.put(beanName,object);
+            }
+        } catch (DocumentException | ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        } catch (NoSuchFieldException e) {
+            e.printStackTrace();
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        }
+        System.out.println(map);
+    }
+    public Object getBean(String beanName){
+        return map.get(beanName);
+    }
+}
+</code></pre>
+<p>运行结果：</p>
+<pre><code>Exception in thread &quot;main&quot; com.ssm.org.spring.util.SpringException: 需要一个对象，但是找到了两个对象
+	at com.ssm.org.spring.util.BeanFactory.parseXml(BeanFactory.java:137)
+	at com.ssm.org.spring.util.BeanFactory.&lt;init&gt;(BeanFactory.java:25)
+	at com.ssm.test.Test.main(Test.java:10)
+</code></pre>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[Spring系列（三）一篇文章学会 JDK 动态代理并手动模拟一个动态代理]]></title>
         <id>https://epitomm.github.io/post/yi-pian-wen-zhang-xue-hui-jdk-dong-tai-dai-li-bing-shou-dong-mo-ni-yi-ge-dong-tai-dai-li/</id>
         <link href="https://epitomm.github.io/post/yi-pian-wen-zhang-xue-hui-jdk-dong-tai-dai-li-bing-shou-dong-mo-ni-yi-ge-dong-tai-dai-li/">
         </link>
@@ -704,7 +1232,7 @@ result = hello world
 ]]></content>
     </entry>
     <entry>
-        <title type="html"><![CDATA[SpringAOP 应用]]></title>
+        <title type="html"><![CDATA[Spring系列（二）SpringAOP 应用]]></title>
         <id>https://epitomm.github.io/post/springaop-ying-yong/</id>
         <link href="https://epitomm.github.io/post/springaop-ying-yong/">
         </link>
@@ -1657,7 +2185,7 @@ public void before(){
 ]]></content>
     </entry>
     <entry>
-        <title type="html"><![CDATA[spring-ioc 应用]]></title>
+        <title type="html"><![CDATA[Spring系列（一）Spring IoC 应用]]></title>
         <id>https://epitomm.github.io/post/spring-ioc/</id>
         <link href="https://epitomm.github.io/post/spring-ioc/">
         </link>
@@ -6221,114 +6749,6 @@ admin@qq.com —— 代表某个人的 QQ 邮箱，admin@qq.com 也是一个 URI
 </ul>
 </li>
 </ul>
-]]></content>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[leetcode876. 链表的中间结点]]></title>
-        <id>https://epitomm.github.io/post/leetcode876-lian-biao-de-zhong-jian-jie-dian/</id>
-        <link href="https://epitomm.github.io/post/leetcode876-lian-biao-de-zhong-jian-jie-dian/">
-        </link>
-        <updated>2020-04-23T02:57:57.000Z</updated>
-        <content type="html"><![CDATA[<h2 id="问题描述">问题描述</h2>
-<p>给定一个带有头结点 head 的非空单链表，返回链表的中间结点。</p>
-<p>如果有两个中间结点，则返回第二个中间结点。</p>
-<h2 id="示例">示例</h2>
-<p>示例 1：</p>
-<p>输入：[1,2,3,4,5]<br>
-输出：此列表中的结点 3 (序列化形式：[3,4,5])<br>
-返回的结点值为 3 。 (测评系统对该结点序列化表述是 [3,4,5])。<br>
-注意，我们返回了一个 ListNode 类型的对象 ans，这样：<br>
-ans.val = 3, ans.next.val = 4, ans.next.next.val = 5, 以及 ans.next.next.next = NULL.</p>
-<p>示例 2：</p>
-<p>输入：[1,2,3,4,5,6]<br>
-输出：此列表中的结点 4 (序列化形式：[4,5,6])<br>
-由于该列表有两个中间结点，值分别为 3 和 4，我们返回第二个结点。</p>
-<p>提示：</p>
-<p>给定链表的结点数介于 1 和 100 之间。</p>
-<h2 id="方法一遍历两次链表">方法一：遍历两次链表</h2>
-<h3 id="问题分析">问题分析</h3>
-<ul>
-<li>
-<p>遍历链表，记录下链表长度 length。</p>
-</li>
-<li>
-<p>再遍历链表返回第 length/2 个节点。</p>
-</li>
-</ul>
-<h3 id="复杂度分析">复杂度分析</h3>
-<ul>
-<li>
-<p>时间复杂度：O(n)</p>
-</li>
-<li>
-<p>空间复杂度：O(1)</p>
-</li>
-</ul>
-<p>链表节点数为奇数个时：</p>
-<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/%E5%8D%95%E9%93%BE%E8%A1%A8%E4%B8%AD%E9%97%B4%E8%8A%82%E7%82%B9.png" alt="图片" loading="lazy"></figure>
-<p>链表节点数为偶数个时：</p>
-<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/%E5%8D%95%E9%93%BE%E8%A1%A8%E4%B8%AD%E9%97%B4%E8%8A%82%E7%82%B92.png" alt="图片" loading="lazy"></figure>
-<h3 id="代码">代码</h3>
-<pre><code>public class AlgoCasts {
-  public class ListNode {
-    int val;
-    ListNode next;
-    ListNode(int x) {
-      val = x;
-    }
-  }
-  // Time: O(n), Space: O(1)
-  public ListNode getMiddleNodeTwoPass(ListNode head) {
-    ListNode p = head;
-    int len = 0;
-    for (; p != null; p = p.next) ++len;
-    p = head;
-    for (int i = 0; i &lt; len/2; ++i) p = p.next;
-    return p;
-  }
-}
-</code></pre>
-<h2 id="方法二快慢指针">方法二：快慢指针</h2>
-<h3 id="问题分析-2">问题分析</h3>
-<p>快指针一次走两步，慢指针一次走一步，<strong>当快指针遍历完链表时，慢指针正好指向中间节点</strong>。</p>
-<h3 id="复杂度分析-2">复杂度分析</h3>
-<ul>
-<li>
-<p>时间复杂度：O(n)</p>
-</li>
-<li>
-<p>空间复杂度：O(1)</p>
-</li>
-</ul>
-<pre><code>while(fast != nul &amp;&amp; fast.next != null){
-  fast = fast.next.next; // 快指针移动两步
-  slow = slow.next; // 慢指针移动一步
-}  
-</code></pre>
-<p>链表节点数为奇数个时：<br>
-<img src="https://epitomm.github.io/post-images/%E9%93%BE%E8%A1%A8%E4%B8%AD%E9%97%B4%E8%8A%82%E7%82%B9_%E5%BF%AB%E6%85%A2%E6%8C%87%E9%92%881.png" alt="图片" loading="lazy"></p>
-<p>链表节点数为偶数个时：<br>
-<img src="https://epitomm.github.io/post-images/%E9%93%BE%E8%A1%A8%E4%B8%AD%E9%97%B4%E8%8A%82%E7%82%B9_%E5%BF%AB%E6%85%A2%E6%8C%87%E9%92%882.png" alt="图片" loading="lazy"></p>
-<h3 id="代码-2">代码</h3>
-<pre><code>public class AlgoCasts {
-  public class ListNode {
-    int val;
-    ListNode next;
-    ListNode(int x) {
-      val = x;
-    }
-  }
-  // Time: O(n), Space: O(1)
-  public ListNode getMiddleNodeOnePass(ListNode head) {
-    ListNode fast = head, slow = head;
-    while (fast != null &amp;&amp; fast.next != null) {
-      fast = fast.next.next;
-      slow = slow.next;
-    }
-    return slow;
-  }
-}
-</code></pre>
 ]]></content>
     </entry>
 </feed>
