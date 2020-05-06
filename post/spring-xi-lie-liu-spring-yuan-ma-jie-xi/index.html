@@ -1,0 +1,1369 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Spring系列（六）Spring源码解析 | SSM</title>
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1588775883709">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="Spring系列（六）Spring源码解析 | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="先来写一个简单的 spring 案例：
+1.准备一个接口和实现类
+public interface IndexDao {
+   void query();
+}
+
+接口实现类添加 @Reposity 表示把这个对象交给 Spring 管理
+@..." />
+    <meta name="keywords" content="" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://epitomm.github.io">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1588775883709" alt="">
+  </a>
+  <h1 class="site-title">
+    SSM
+  </h1>
+  <p class="site-description">
+    热心善良的老学姐
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              Spring系列（六）Spring源码解析
+            </h2>
+            <div class="post-info">
+              <span>
+                2020-05-06
+              </span>
+              <span>
+                32 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content">
+                <p>先来写一个简单的 spring 案例：</p>
+<p>1.准备一个接口和实现类</p>
+<pre><code class="language-java">public interface IndexDao {
+   void query();
+}
+</code></pre>
+<p>接口实现类添加 @Reposity 表示把这个对象交给 Spring 管理</p>
+<pre><code class="language-java">@Repository(&quot;indexDao&quot;)
+public class IndexDaoImpl implements IndexDao {
+
+   @Override
+   public void query() {
+      System.out.println(&quot;dao...模拟查询数据库&quot;);
+   }
+}
+</code></pre>
+<p>2.准备一个配置文件类</p>
+<pre><code class="language-java">// 表名这是一个配置类
+@Configuration
+// 扫描包
+@ComponentScan(&quot;com.ssm&quot;)
+public class AppConfig {
+}
+</code></pre>
+<p>3.准备一个简单的测试类：</p>
+<ul>
+<li>读取配置文件</li>
+<li>通过 getBean(&quot;xxx&quot;) 获得 Bean 对象</li>
+<li>调用 Bean 对象的方法</li>
+</ul>
+<pre><code class="language-java">public class Test {
+   public static void main(String[] args) {
+      // 把 Spring 所有前提环境准备好
+      // 1.读取配置文件
+      AnnotationConfigApplicationContext context =
+            new AnnotationConfigApplicationContext(AppConfig.class);
+      // 2.获得 Bean 对象 
+      IndexDao indexDao = context.getBean(IndexDao.class);
+      // 3.调用方法
+      indexDao.query();
+   }
+}
+</code></pre>
+<p>4.测试结果</p>
+<pre><code>dao...模拟查询数据库
+</code></pre>
+<h1 id="一-annotationconfigapplicationcontext-context-new-annotationconfigapplicationcontextappconfigclass">一、AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);</h1>
+<p>从测试类 Test 开始看，测试类的第 5 行读取配置文件：</p>
+<pre><code class="language-java">AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);
+</code></pre>
+<p>于是点进 AnnotationConfigApplicationContext(AppConfig.class); 构造方法如下：</p>
+<pre><code class="language-java">public AnnotationConfigApplicationContext(Class&lt;?&gt;... annotatedClasses) {
+   // 这里由于它有父类，故而会先调用父类的构造方法，然后才会调用自己的构造方法
+   // 在自己的构造方法中初始一个读取器和扫描器
+   this();
+   register(annotatedClasses);
+   refresh();
+}
+</code></pre>
+<p>AnnotationConfigApplicationContext 有父类：</p>
+<pre><code class="language-java">public class AnnotationConfigApplicationContext extends GenericApplicationContext implements AnnotationConfigRegistry {
+</code></pre>
+<p>分析 AnnotationConfigApplicationContext 的有参 Class&lt;?&gt;... 构造方法，一行行看，先看第 4 行代码：this()：调用本类的构造方法，但是由于 AnnotationConfigApplicationContext  有父类，于是<strong>先调用父类的构造方法</strong>，我们这里先看本类的构造方法。</p>
+<h2 id="11-annotationconfigapplicationcontext">1.1 AnnotationConfigApplicationContext()</h2>
+<p>第 7 行，创建了一个 AnnotatedBeanDefinitionReader 并赋值给 reader，那这个 reader 是什么呢？</p>
+<pre><code class="language-java">public AnnotationConfigApplicationContext() {
+   /**
+    * 父类的构造方法 super()
+    * 创建一个读取注解的 Bean 定义读取器：reader 能读取被加了注解的类
+    * 什么是 bean 定义？BeanDefinition
+    */
+   this.reader = new AnnotatedBeanDefinitionReader(this);
+   // 定义扫描器
+   this.scanner = new ClassPathBeanDefinitionScanner(this);
+}
+</code></pre>
+<h3 id="111-annotatedbeandefinitionreader">1.1.1 AnnotatedBeanDefinitionReader</h3>
+<p>reader 是一个 AnnotatedBeanDefinitionReader 类型的变量，顾名思义，reader 是一个读取器，并且 AnnotatedBeanDefinitionReader 是一个用来读取 “被加了注解的 BeanDefinition” 的读取器。那么 BeanDefinition 又是什么呢？</p>
+<pre><code class="language-java">/**
+ * 这个类顾名思义是一个 reader  读取器
+ * 读取什么呢？顾名思义读取 AnnotatedBeanDefinition，意思是读取一个被加了注解的 bean
+ * 这个类是构造方法中被实例化的
+ */
+private final AnnotatedBeanDefinitionReader reader;
+</code></pre>
+<p>从代码中也能看出：AnnotatedBeanDefinition（被注解的 BeanDefinition）继承了 BeanDefinition：</p>
+<pre><code class="language-java">public interface AnnotatedBeanDefinition extends BeanDefinition {
+</code></pre>
+<h4 id="1111-beandefinition">1.1.1.1 BeanDefinition</h4>
+<p>BeanDefinition描述了一个bean实例，它具有属性值，构造函数参数值以及具体实现所提供的更多信息。</p>
+<pre><code class="language-java">// Spring 当中用来描述 Bean 的一个接口
+public interface BeanDefinition extends AttributeAccessor, BeanMetadataElement {
+</code></pre>
+<p>我们可以想象这样一个需求：有一个 Java 类 User</p>
+<pre><code class="language-java">User{
+  private String name;
+  public void study(){
+    
+  }
+}
+</code></pre>
+<p>Java 中一切皆对象，一个 User 类也是一个对象，定义一个什么类来描述 User 类对象呢？</p>
+<p>答案就是 Class 类</p>
+<pre><code class="language-java">Class{
+  name;        // 全限定类名
+  SimpleName;  // User类名
+  Methods[];   // 类中的所有方法
+  Fields[];    // 类中的所有属性
+  
+  // 方法...
+  public Method[] getMethods(){
+    
+  }
+  public String getName(){
+    
+  }
+}
+</code></pre>
+<p>Java 中的类使用 Class 来描述；<strong>Spring 中的 Bean 使用 BeanDefinition 来描述</strong>。</p>
+<h4 id="1112-bean-的四种体现方法">1.1.1.2 Bean 的四种体现方法：</h4>
+<ul>
+<li>@Annotation
+<ul>
+<li>给一个类添加 @Component、@Service、@Repository 注解，就代表把该类交给 Spring 管理，Spring 就会创建一个 Bean。</li>
+</ul>
+</li>
+</ul>
+<pre><code class="language-java">@Repository
+public class IndexDaoImpl implements IndexDao{
+</code></pre>
+<ul>
+<li>xml
+<ul>
+<li>使用 <bean> 标签同样声明一个 Bean</li>
+</ul>
+</li>
+</ul>
+<pre><code class="language-xml">&lt;bean id=&quot;dao&quot; class=&quot;com.ssm.dao.impl.IndexDaoImpl&quot; /&gt;
+</code></pre>
+<ul>
+<li>@Bean
+<ul>
+<li>使用@Bean 注解也能声明一个 Bean</li>
+</ul>
+</li>
+</ul>
+<pre><code class="language-java">@Bean
+public SqlSessionFactoryBean sqlSessionFactoryBean(DataSource dataSource){
+    SqlSessionFactoryBean sqlSessionFactoryBean =  new SqlSessionFactoryBean();
+    sqlSessionFactoryBean.setDataSource(dataSource);
+    return sqlSessionFactoryBean;
+}
+</code></pre>
+<ul>
+<li>Spring 内部提供的 bean，因为自定义的 bean 是 Spring 扫描，然后把它放到容器中的，Spring 也会开发自己的 bean，不扫描也把它放到容器当中去。</li>
+</ul>
+<p>继续来看 AnnotationConfigApplicationContext 的这个带参 Class&lt;?&gt;... 构造方法，下面来看第 6 行，调用了 register 方法，并传参 annotatedClasses，在这个 Test 测试类中，这个 annotatedClasses 就是 AppConfig.class</p>
+<pre><code class="language-java">// annotatedClasses 在这里代表 AppConfig.class：存放了配置信息
+register(annotatedClasses);
+</code></pre>
+<h2 id="12-registerclass-annotatedclasses">1.2 register(Class&lt;?&gt;... annotatedClasses)</h2>
+<p>接下来点进这个 register(annotatedClasses); 方法，这里的主要代码就是第 20 行：this.reader.register(annotatedClasses); 调用 reader（前面通过 new AnnotatedBeanDefinitionReader(this); 初始化过了） 的 register方法</p>
+<pre><code class="language-java">/**
+ * 注册一个或多个要处理的带注解的类。
+ *     比如有新加的类可以用这个方法，但是注册之后需要手动调用 refresh() 方法去触发容器解析注解。
+ *
+ *   有两个意思：
+ *     它可以注册一个配置类：AnnotationConfigApplicationContext context =
+ *     new AnnotationConfigApplicationContext(AppConfig.class);
+ *     它还可以单独注册一个 bean：context.register(IndexService.class);
+ *
+ * &lt;p&gt;请注意，必须调用{@link #refresh（）}才能使上下文完全处理新类
+ * to fully process the new classes.
+ * @param annotatedClasses 一个或多个带注解的类,
+ * e.g. {@link Configuration @Configuration} classes
+ * @see #scan(String...)
+ * @see #refresh()
+ */
+public void register(Class&lt;?&gt;... annotatedClasses) {
+   Assert.notEmpty(annotatedClasses, &quot;At least one annotated class must be specified&quot;);
+   // 在this()构造方法中初始化了 reader，就是为了在这里调用
+   this.reader.register(annotatedClasses);
+}
+</code></pre>
+<p><strong>register(Class&lt;?&gt;... annotatedClasses)</strong></p>
+<p>于是我们点进去 reader.register(annotatedClasses); 发现这个 register 就是一个空壳方法，它有调用了 registerBean(annotatedClass); 这个方法。</p>
+<pre><code class="language-java">/**
+ * 这是一个空壳方法
+ *
+ * Register one or more annotated classes to be processed.
+ * &lt;p&gt;Calls to {@code register} are idempotent; adding the same
+ * annotated class more than once has no additional effect.
+ * @param annotatedClasses one or more annotated classes,
+ * e.g. {@link Configuration @Configuration} classes
+ */
+public void register(Class&lt;?&gt;... annotatedClasses) {
+   for (Class&lt;?&gt; annotatedClass : annotatedClasses) {
+      registerBean(annotatedClass);
+   }
+}
+</code></pre>
+<p><strong>registerBean</strong></p>
+<p>继续点进去 registerBean(annotatedClass);我们发现这个方法又调用了 doRegisterBean(annotatedClass, null, name, qualifiers); 这个方法，继续点进去</p>
+<pre><code class="language-java">/**
+ * Register a bean from the given bean class, deriving its metadata from
+ * class-declared annotations.
+ * @param annotatedClass the class of the bean
+ * @param name an explicit name for the bean
+ * @param qualifiers specific qualifier annotations to consider,
+ * in addition to qualifiers at the bean class level
+ */
+@SuppressWarnings(&quot;unchecked&quot;)
+public void registerBean(Class&lt;?&gt; annotatedClass, String name, Class&lt;? extends Annotation&gt;... qualifiers) {
+   doRegisterBean(annotatedClass, null, name, qualifiers);
+}
+</code></pre>
+<h3 id="121-doregisterbean">1.2.1 doRegisterBean</h3>
+<p>当传参一个单独的 Bean 时： AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(IndexDao.class);</p>
+<pre><code class="language-java">&lt;T&gt; void doRegisterBean(Class&lt;T&gt; annotatedClass, @Nullable Supplier&lt;T&gt; instanceSupplier, @Nullable String name,
+      @Nullable Class&lt;? extends Annotation&gt;[] qualifiers, BeanDefinitionCustomizer... definitionCustomizers) {
+
+   /**
+    *
+    * AnnotatedGenericBeanDefinition：被注解的 BeanDefinition(描述Bean)
+    * 将 bean 放入 map 中，bean 的 name 是 map 的 key，
+    * map 中的 value 为 AnnotatedGenericBeanDefinition 对象
+    */
+    // 因为 register 中传递过来的参数是带注解的 Bean，即此类的参数 annotatedClass，所以此处使用 AnnotatedGenericBeanDefinition（被注解的BeanDefinition）
+   AnnotatedGenericBeanDefinition abd = new AnnotatedGenericBeanDefinition(annotatedClass);
+   /**
+     * 判断这个类是否需要跳过解析
+     * 通过代码可以知道 Spring 判断是否跳过解析，主要判断有没有加注解
+     */
+    // 这个类如果没有加注解，就不需要解析。因为 AnnotatedGenericBeanDefinition 是为了注册被加了注解的；
+    // 如果这个类没有被加注解，就跳过不解析
+   if (this.conditionEvaluator.shouldSkip(abd.getMetadata())) {
+      return;
+   }
+
+   abd.setInstanceSupplier(instanceSupplier);
+   /**
+    * 得到类的作用域
+    *     如果是 context.register(SpringConfig.class);则作用域没有什么作用
+    *     注册单个类时需要，比如：context.register(IndexService.class);
+    */
+   ScopeMetadata scopeMetadata = this.scopeMetadataResolver.resolveScopeMetadata(abd);
+   /**
+    * 将类的作用域添加到数据结构中
+    * 如果参数为一个Bean，而不是 AppConfig.class 如 new AnnotationConfigApplicationContext(IndexDao.class); 将Bean 内容解析出来放到 AnnotatedGenericBeanDefinition 中
+    */
+   abd.setScope(scopeMetadata.getScopeName());
+   /**
+    * 生成类的名字通过 beanNameGenerator
+    */
+   String beanName = (name != null ? name : this.beanNameGenerator.generateBeanName(abd, this.registry));
+
+   /**
+    * 处理类当中的其他通用注解
+    * 分析源码可以知道它主要处理：Lazy、DependsOn、Primary、Role 等注解
+    * 处理完成之后 processCommonDefinitionAnnotation 中依然是把它添加到数据结构 AnnotatedGenericBeanDefinition 当中
+    */
+   AnnotationConfigUtils.processCommonDefinitionAnnotations(abd);
+   /**
+     * 如果在向容器注册注解 @Bean定义时，使用了额外的限定符注解则解析
+     * 关于 Qualifier 和 Primary 主要涉及到 Spring 的自动装配
+     * 这里需要注意的
+     *     beanName 和 qualifier 这个变量时 Annotation 类型的数组，里面不仅仅是 Qualifier 注解
+     *     理论上里面存的是一切注解，所以可以看到下面的代码 Spring 去循环了这个数组
+     *     然后依次判断注解当中是否包含了 Primary，是否包含了 Lazy
+     */
+   if (qualifiers != null) {
+      for (Class&lt;? extends Annotation&gt; qualifier : qualifiers) {
+         if (Primary.class == qualifier) {
+            abd.setPrimary(true);
+         }
+         else if (Lazy.class == qualifier) {
+            abd.setLazyInit(true);
+         }
+         else {
+            abd.addQualifier(new AutowireCandidateQualifier(qualifier));
+         }
+      }
+   }
+   for (BeanDefinitionCustomizer customizer : definitionCustomizers) {
+      customizer.customize(abd);
+   }
+    /**
+     * 这个 BeanDefinitionHolder 也是一个数据结构
+     * BeanDefinitionHolder 是一个 map，里面放了一个 (BeanDefinition，beanName)
+     */
+   BeanDefinitionHolder definitionHolder = new BeanDefinitionHolder(abd, beanName);
+   definitionHolder = AnnotationConfigUtils.applyScopedProxyMode(scopeMetadata, definitionHolder, this.registry);
+   /**
+     * 把上述的这个数据结构注册给 registry
+     * registry 就是 AnnotationConfigApplicationContext
+     * AnnotationConfigApplicationContext 在初始化的时候通过调用父类的构造方法实例化了一个 DefaultListableBeanFactory
+     * registerBeanDefinition 里面就是把 definitionHolder 这个数据结构包含的信息注册到 DefaultListableBeanFactory 这个工厂
+     */
+   BeanDefinitionReaderUtils.registerBeanDefinition(definitionHolder, this.registry);
+}
+</code></pre>
+<p>上述 deRegisterBean 方法的第 28-33 行，</p>
+<pre><code class="language-java">/**
+ * 得到类的作用域
+ *     如果是 context.register(SpringConfig.class);则作用域没有什么作用
+ *     注册单个类时需要，比如：context.register(IndexService.class);
+ */
+ScopeMetadata scopeMetadata = this.scopeMetadataResolver.resolveScopeMetadata(abd);
+/**
+ * 将类的作用域添加到数据结构中
+ */
+abd.setScope(scopeMetadata.getScopeName());
+</code></pre>
+<p>获取 Bean 的作用域并添加到 adb 中：</p>
+<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/%E8%8E%B7%E5%8F%96bean%E7%9A%84%E4%BD%9C%E7%94%A8%E5%9F%9F%E5%B9%B6%E6%B7%BB%E5%8A%A0%E5%88%B0adb%E4%B8%AD.png" alt="图片" loading="lazy"></figure>
+<h4 id="1211-processcommondefinitionannotations">1.2.1.1 processCommonDefinitionAnnotations</h4>
+<p>上述 deRegisterBean 方法的第 44 行，调用了 processCommonDefinitionAnnotations 方法，</p>
+<pre><code class="language-java">/**
+ * 处理类当中的其他通用注解
+ * 分析源码可以知道它主要处理：Lazy、DependsOn、Primary、Role 等注解
+ * 处理完成之后 processCommonDefinitionAnnotation 中依然是把它添加到数据结构 AnnotatedGenericBeanDefinition 当中
+ */
+AnnotationConfigUtils.processCommonDefinitionAnnotations(abd);
+</code></pre>
+<p>点进去，又调用了 processCommonDefinitionAnnotations 的重载方法：</p>
+<pre><code class="language-java">public static void processCommonDefinitionAnnotations(AnnotatedBeanDefinition abd) {
+   // 通过 abd.getMetadata() 获取元数据：@Scope、@DependsOn、@Qualifier、@Primary
+   processCommonDefinitionAnnotations(abd, abd.getMetadata());
+}
+</code></pre>
+<p>通过 processCommonDefinitionAnnotations 方法解析元数据</p>
+<pre><code class="language-java">static void processCommonDefinitionAnnotations(AnnotatedBeanDefinition abd, AnnotatedTypeMetadata metadata) {
+   AnnotationAttributes lazy = attributesFor(metadata, Lazy.class);
+   // 如果 lazy 不为空
+   if (lazy != null) {
+      // 把 lazy 的值拿出来，放到 abd(描述 Bean 对象的) 里面去
+      abd.setLazyInit(lazy.getBoolean(&quot;value&quot;));
+   }
+   else if (abd.getMetadata() != metadata) {
+      lazy = attributesFor(abd.getMetadata(), Lazy.class);
+      if (lazy != null) {
+         abd.setLazyInit(lazy.getBoolean(&quot;value&quot;));
+      }
+   }
+   
+   // 判断是否有@Primary注解，如果有，放到 abd(描述 Bean 对象的) 里面去
+   if (metadata.isAnnotated(Primary.class.getName())) {
+      abd.setPrimary(true);
+   }
+   // 判断是否有@DependsOn注解，如果有，放到 abd(描述 Bean 对象的) 里面去
+   AnnotationAttributes dependsOn = attributesFor(metadata, DependsOn.class);
+   if (dependsOn != null) {
+      abd.setDependsOn(dependsOn.getStringArray(&quot;value&quot;));
+   }
+
+   if (abd instanceof AbstractBeanDefinition) {
+      AbstractBeanDefinition absBd = (AbstractBeanDefinition) abd;
+      // 判断是否有@Role注解，如果有，放到 abd(描述 Bean 对象的) 里面去
+      AnnotationAttributes role = attributesFor(metadata, Role.class);
+      if (role != null) {
+         absBd.setRole(role.getNumber(&quot;value&quot;).intValue());
+      }
+      // 判断是否有@Description注解，如果有，放到 abd(描述 Bean 对象的) 里面去
+      AnnotationAttributes description = attributesFor(metadata, Description.class);
+      if (description != null) {
+         absBd.setDescription(description.getString(&quot;value&quot;));
+      }
+   }
+}
+</code></pre>
+<h4 id="1212-beandefinitionholder">1.2.1.2 BeanDefinitionHolder</h4>
+<p>上述 doRegisterBean 方法的73-74 行，定义了一个 BeanDefinitionHolder，BeanDefinitionHolder 类似一个 map，里面放了一个 (BeanDefinition，beanName)</p>
+<pre><code class="language-java">/**
+ * 这个 BeanDefinitionHolder 也是一个数据结构
+ * BeanDefinitionHolder 类似一个 map，里面放了一个 (BeanDefinition，beanName)
+ */
+BeanDefinitionHolder definitionHolder = new BeanDefinitionHolder(abd, beanName);
+definitionHolder = AnnotationConfigUtils.applyScopedProxyMode(scopeMetadata, definitionHolder, this.registry);
+</code></pre>
+<p>顾名思义，BeanDefinitionRegistry 是用来注册 BeanDefinition（Bean的定义）的：</p>
+<pre><code class="language-java">//用来注册Bean的定义 BeanDefinition
+private final BeanDefinitionRegistry registry;
+</code></pre>
+<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/BeanDefinitionRegistry.png" alt="图片" loading="lazy"></figure>
+<p>BeanDefinitionRegistry：将 BeanDifinition 放到 Spring 容器中</p>
+<p>点进去 registerBeanDefinition 这个方法，发现就是拿出 BeanDefinitionHolder 中的 BeanName 和 BeanDefinition，并把它注册到 registry 中：</p>
+<pre><code class="language-java">public static void registerBeanDefinition(
+      BeanDefinitionHolder definitionHolder, BeanDefinitionRegistry registry)
+      throws BeanDefinitionStoreException {
+
+   // 拿出 BeanDefinitionHolder 中的 BeanName 和 BeanDefinition 
+   String beanName = definitionHolder.getBeanName();
+   registry.registerBeanDefinition(beanName, definitionHolder.getBeanDefinition());
+
+   // 注册bean名称的别名（如果有）。
+   String[] aliases = definitionHolder.getAliases();
+   if (aliases != null) {
+      for (String alias : aliases) {
+         registry.registerAlias(beanName, alias);
+      }
+   }
+}
+</code></pre>
+<p>我们看第 7 行，真正的将 BeanName 和 BeanDefinition 注册到 registry 中，</p>
+<pre><code class="language-java">registry.registerBeanDefinition(beanName, definitionHolder.getBeanDefinition());
+</code></pre>
+<p>点进去 registerBeanDefinition 方法：</p>
+<h4 id="1213-registerbeandefinition">1.2.1.3 registerBeanDefinition</h4>
+<p>上述 deRegisterBean 方法的第 81 行，把 <strong>BeanDefinitionHolder</strong>注册给 registry：</p>
+<pre><code class="language-java">/**
+ * 把上述的这个数据结构注册给 registry
+ * registry 就是 AnnotationConfigApplicationContext
+ * AnnotationConfigApplicationContext 在初始化的时候通过调用父类的构造方法实例化了一个 DefaultListableBeanFactory
+ * registerBeanDefinition 里面就是把 definitionHolder 这个数据结构包含的信息注册到 DefaultListableBeanFactory 这个工厂
+ */
+BeanDefinitionReaderUtils.registerBeanDefinition(definitionHolder, this.registry);
+</code></pre>
+<p>点进 registerBeanDefinition 方法代码如下：</p>
+<pre><code class="language-java">public void registerBeanDefinition(String beanName, BeanDefinition beanDefinition)
+      throws BeanDefinitionStoreException {
+
+   this.beanFactory.registerBeanDefinition(beanName, beanDefinition);
+}
+</code></pre>
+<figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/beanDefinitionMap_put.png" alt="图片" loading="lazy"></figure>
+<p>this.beanDefinitionMap.put(beanName, beanDefinition);</p>
+<p>点进 registerBeanDefinition 方法如下，主要操作是：将 (beanName,beanDefiniton)放到map中，将 beanName 加入到 list 中：</p>
+<pre><code class="language-java">public void registerBeanDefinition(String beanName, BeanDefinition beanDefinition)
+      throws BeanDefinitionStoreException {
+
+   Assert.hasText(beanName, &quot;Bean name must not be empty&quot;);
+   Assert.notNull(beanDefinition, &quot;BeanDefinition must not be null&quot;);
+
+   if (beanDefinition instanceof AbstractBeanDefinition) {
+      try {
+         ((AbstractBeanDefinition) beanDefinition).validate();
+      }
+      catch (BeanDefinitionValidationException ex) {
+         throw new BeanDefinitionStoreException(beanDefinition.getResourceDescription(), beanName,
+               &quot;Validation of bean definition failed&quot;, ex);
+      }
+   }
+
+   BeanDefinition existingDefinition = this.beanDefinitionMap.get(beanName);
+   if (existingDefinition != null) {
+      if (!isAllowBeanDefinitionOverriding()) {
+         throw new BeanDefinitionStoreException(beanDefinition.getResourceDescription(), beanName,
+               &quot;Cannot register bean definition [&quot; + beanDefinition + &quot;] for bean '&quot; + beanName +
+               &quot;': There is already [&quot; + existingDefinition + &quot;] bound.&quot;);
+      }
+      else if (existingDefinition.getRole() &lt; beanDefinition.getRole()) {
+         // e.g. was ROLE_APPLICATION, now overriding with ROLE_SUPPORT or ROLE_INFRASTRUCTURE
+         if (logger.isWarnEnabled()) {
+            logger.warn(&quot;Overriding user-defined bean definition for bean '&quot; + beanName +
+                  &quot;' with a framework-generated bean definition: replacing [&quot; +
+                  existingDefinition + &quot;] with [&quot; + beanDefinition + &quot;]&quot;);
+         }
+      }
+      else if (!beanDefinition.equals(existingDefinition)) {
+         if (logger.isInfoEnabled()) {
+            logger.info(&quot;Overriding bean definition for bean '&quot; + beanName +
+                  &quot;' with a different definition: replacing [&quot; + existingDefinition +
+                  &quot;] with [&quot; + beanDefinition + &quot;]&quot;);
+         }
+      }
+      else {
+         if (logger.isDebugEnabled()) {
+            logger.debug(&quot;Overriding bean definition for bean '&quot; + beanName +
+                  &quot;' with an equivalent definition: replacing [&quot; + existingDefinition +
+                  &quot;] with [&quot; + beanDefinition + &quot;]&quot;);
+         }
+      }
+      this.beanDefinitionMap.put(beanName, beanDefinition);
+   }
+   else {
+      if (hasBeanCreationStarted()) {
+         // Cannot modify startup-time collection elements anymore (for stable iteration)
+         synchronized (this.beanDefinitionMap) {
+            // DefaultListableBeanFactory.beanDefinitionMap.put(beanName, beanDefinition)
+            this.beanDefinitionMap.put(beanName, beanDefinition);
+            List&lt;String&gt; updatedDefinitions = new ArrayList&lt;&gt;(this.beanDefinitionNames.size() + 1);
+            updatedDefinitions.addAll(this.beanDefinitionNames);
+            updatedDefinitions.add(beanName);
+            this.beanDefinitionNames = updatedDefinitions;
+            if (this.manualSingletonNames.contains(beanName)) {
+               Set&lt;String&gt; updatedSingletons = new LinkedHashSet&lt;&gt;(this.manualSingletonNames);
+               updatedSingletons.remove(beanName);
+               this.manualSingletonNames = updatedSingletons;
+            }
+         }
+      }
+      else {
+         // 将 (beanName,beanDefiniton)放到map中
+         this.beanDefinitionMap.put(beanName, beanDefinition);
+         // 将 beanName 加入到 list 中
+         this.beanDefinitionNames.add(beanName);
+         this.manualSingletonNames.remove(beanName);
+      }
+      this.frozenBeanDefinitionNames = null;
+   }
+
+   if (existingDefinition != null || containsSingleton(beanName)) {
+      resetBeanDefinition(beanName);
+   }
+   else if (isConfigurationFrozen()) {
+      clearByTypeCache();
+   }
+}
+</code></pre>
+<p>beanDefinitionNames 是一个 List 集合，将 Bean 定义的名字添加到这个 List 集合中：</p>
+<pre><code class="language-java">/** List of bean definition names, in registration order */
+private volatile List&lt;String&gt; beanDefinitionNames = new ArrayList&lt;&gt;(256);
+</code></pre>
+<p>上述第 67 行代码执行完毕</p>
+<pre><code class="language-java">this.beanDefinitionMap.put(beanName, beanDefinition);
+</code></pre>
+<p>map 中添加了 7 个对象，一个是自定义的 indexDao，其余 6 个是 Spring 在启动过程中自动添加的</p>
+<figure data-type="image" tabindex="4"><img src="https://epitomm.github.io/post-images/map%E6%B7%BB%E5%8A%A07%E4%B8%AA%E5%AF%B9%E8%B1%A1.png" alt="图片" loading="lazy"></figure>
+<h1 id="13-refresh">## 1.3 refresh()</h1>
+<ul>
+<li>初始化 Spring 的环境</li>
+</ul>
+<pre><code class="language-java">public void refresh() throws BeansException, IllegalStateException {
+   synchronized (this.startupShutdownMonitor) {
+      // Prepare this context for refreshing.
+      // 准备工作包括设置启动时间、是否激活标识位，初始化属性源（property source）配置（这里不属于 Bean 的生命周期内）
+      prepareRefresh();
+
+      // Tell the subclass to refresh the internal bean factory.
+      // 获取 DefaultListableBeanFactory
+      ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
+
+      // Prepare the bean factory for use in this context.
+      prepareBeanFactory(beanFactory);
+
+      try {
+         // Allows post-processing of the bean factory in context subclasses.
+         postProcessBeanFactory(beanFactory);
+
+         // Invoke factory processors registered as beans in the context.
+         invokeBeanFactoryPostProcessors(beanFactory);
+
+         // Register bean processors that intercept bean creation.
+         registerBeanPostProcessors(beanFactory);
+
+         // Initialize message source for this context.
+         initMessageSource();
+
+         // Initialize event multicaster for this context.
+         initApplicationEventMulticaster();
+
+         // Initialize other special beans in specific context subclasses.
+         onRefresh();
+
+         // Check for listener beans and register them.
+         registerListeners();
+
+         // Instantiate all remaining (non-lazy-init) singletons.
+         finishBeanFactoryInitialization(beanFactory);
+
+         // Last step: publish corresponding event.
+         finishRefresh();
+      }
+
+      catch (BeansException ex) {
+         if (logger.isWarnEnabled()) {
+            logger.warn(&quot;Exception encountered during context initialization - &quot; +
+                  &quot;cancelling refresh attempt: &quot; + ex);
+         }
+
+         // Destroy already created singletons to avoid dangling resources.
+         destroyBeans();
+
+         // Reset 'active' flag.
+         cancelRefresh(ex);
+
+         // Propagate exception to caller.
+         throw ex;
+      }
+
+      finally {
+         // Reset common introspection caches in Spring's core, since we
+         // might not ever need metadata for singleton beans anymore...
+         resetCommonCaches();
+      }
+   }
+}
+</code></pre>
+<p>先看上述 refresh() 的第 5 行，调用了 prepareRefresh() 方法：</p>
+<pre><code class="language-java">// 准备工作包括设置启动时间、是否激活标识位，初始化属性源（property source）配置（这里不属于 Bean 的生命周期内）
+prepareRefresh();
+</code></pre>
+<h3 id="131-preparerefresh">1.3.1 prepareRefresh()</h3>
+<pre><code class="language-java">protected void prepareRefresh() {
+   // Switch to active.
+   this.startupDate = System.currentTimeMillis();
+   this.closed.set(false);
+   this.active.set(true);
+
+   if (logger.isInfoEnabled()) {
+      logger.info(&quot;Refreshing &quot; + this);
+   }
+
+   // Initialize any placeholder property sources in the context environment.
+   // 这个方法目前没有子类去实现
+   // 估计 Spring 是期待后面的版本有子类去实现吧
+   initPropertySources();
+
+   // Validate that all properties marked as required are resolvable:
+   // see ConfigurablePropertyResolver#setRequiredProperties
+   // 获取 .properties 文件或者 @Profile 环境
+   getEnvironment().validateRequiredProperties();
+
+   // Store pre-refresh ApplicationListeners...
+   if (this.earlyApplicationListeners == null) {
+      this.earlyApplicationListeners = new LinkedHashSet&lt;&gt;(this.applicationListeners);
+   }
+   else {
+      // Reset local application listeners to pre-refresh state.
+      this.applicationListeners.clear();
+      this.applicationListeners.addAll(this.earlyApplicationListeners);
+   }
+
+   // Allow for the collection of early ApplicationEvents,
+   // to be published once the multicaster is available...
+   this.earlyApplicationEvents = new LinkedHashSet&lt;&gt;();
+}
+</code></pre>
+<p>看 prepareRefresh() 方法的第 14 行，调用了 initPropertySources()，这个方法目前没有子类去实现估计 Spring 是期待后面的版本有子类去实现吧：</p>
+<pre><code class="language-java">protected void initPropertySources() {
+   // For subclasses: do nothing by default.
+}```
+再来看 refresh() 的第 9 行
+```java
+// 告诉子类 refresh 内部 Bean工厂
+ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
+</code></pre>
+<h3 id="132-obtainfreshbeanfactory">1.3.2 obtainFreshBeanFactory()</h3>
+<pre><code class="language-java">protected ConfigurableListableBeanFactory obtainFreshBeanFactory() {
+   refreshBeanFactory();
+   ConfigurableListableBeanFactory beanFactory = getBeanFactory();
+   if (logger.isDebugEnabled()) {
+      logger.debug(&quot;Bean factory for &quot; + getDisplayName() + &quot;: &quot; + beanFactory);
+   }
+   return beanFactory;
+}
+</code></pre>
+<p>看 obtainFreshBeanFactory() 方法的第 3 行：</p>
+<pre><code class="language-java">ConfigurableListableBeanFactory beanFactory = getBeanFactory();
+</code></pre>
+<h4 id="1321-getbeanfactory">1.3.2.1 getBeanFactory()</h4>
+<p>返回 DefaultListableBeanFactory</p>
+<pre><code class="language-java">public final ConfigurableListableBeanFactory getBeanFactory() {
+   return this.beanFactory;
+}
+</code></pre>
+<p>beanFactory 是 DefaultListableBeanFactory  类型变量：</p>
+<pre><code class="language-java">/** Bean factory for this context */
+private final DefaultListableBeanFactory beanFactory;
+</code></pre>
+<p>再看 refresh() 的第 19 行：</p>
+<pre><code class="language-java">// Invoke factory processors registered as beans in the context.
+// 调用在上下文中注册为bean的工厂处理器。
+invokeBeanFactoryPostProcessors(beanFactory);
+</code></pre>
+<p>我们点进这个 invokeBeanFactoryPostProcessors(beanFactory); 方法看：</p>
+<h3 id="133-invokebeanfactorypostprocessors">1.3.3 invokeBeanFactoryPostProcessors</h3>
+<pre><code class="language-java">/**
+  * 实例化并调用所有已注册的BeanFactoryPostProcessor Bean，
+  * 遵循显式顺序（如果给定的话）。 
+  * 必须在单例实例化之前调用。
+  */
+protected void invokeBeanFactoryPostProcessors(ConfigurableListableBeanFactory beanFactory) {
+   PostProcessorRegistrationDelegate.invokeBeanFactoryPostProcessors(beanFactory, getBeanFactoryPostProcessors());
+
+   // Detect a LoadTimeWeaver and prepare for weaving, if found in the meantime
+   // (e.g. through an @Bean method registered by ConfigurationClassPostProcessor)
+   if (beanFactory.getTempClassLoader() == null &amp;&amp; beanFactory.containsBean(LOAD_TIME_WEAVER_BEAN_NAME)) {
+      beanFactory.addBeanPostProcessor(new LoadTimeWeaverAwareProcessor(beanFactory));
+      beanFactory.setTempClassLoader(new ContextTypeMatchClassLoader(beanFactory.getBeanClassLoader()));
+   }
+}
+</code></pre>
+<p>我们看上述 invokeBeanFactoryPostProcessors 方法中的第 7 行代码：</p>
+<pre><code class="language-java">PostProcessorRegistrationDelegate.invokeBeanFactoryPostProcessors(beanFactory, getBeanFactoryPostProcessors());
+</code></pre>
+<p>这个 invokeBeanFactoryPostProcessors 方法是非常重要的，也就是上面说的产生 7 个对象的过程，就是此段代码内实现的</p>
+<h1 id="spring-bean-的扩展有哪些">Spring Bean 的扩展有哪些</h1>
+<h2 id="aop">AOP</h2>
+<p>IndexDao 配置了 AOP，AOP 与 IndexDao 没有任何耦合</p>
+<p>AOP 通过 @AspectJ 配置通知、切点，与 IndexDao 没有任何耦合，那 AOP 是如何将 IndexDao 变成代理的呢？ ——Spring  Bean 的扩展（想让它成为 IndexDao，就成为 IndexDao；想让它成为代理类，就成为代理类）</p>
+<h2 id="beanpostprocessor">BeanPostProcessor</h2>
+<ul>
+<li>Bean 后置处理器</li>
+<li>BeanPostProcessor 接口，能够扩展 Spring</li>
+<li>所有 BeanPostProcessor 接口的实现类，本质上都是通过 BeanPostProcessor 进行扩展，属于Spring 扩展的一种方式</li>
+</ul>
+<pre><code class="language-java">@Repository(&quot;indexDao&quot;)
+public class IndexDaoImpl implements IndexDao {
+
+   public IndexDaoImpl(){
+      System.out.println(&quot;indexDao...constructor&quot;);
+   }
+
+   @PostConstruct
+   public void init(){
+      System.out.println(&quot;indexDao...init&quot;);
+   }
+
+   @Override
+   public void query() {
+      System.out.println(&quot;dao...模拟查询数据库&quot;);
+   }
+}
+</code></pre>
+<p>插手 Bean 的构建过程，将 Bean 变为代理对象并返回：</p>
+<pre><code class="language-java">@Component
+public class TestBeanPostProcessor implements BeanPostProcessor {
+   @Override
+   public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
+      if(beanName.equals(&quot;indexDao&quot;)){
+         System.out.println(&quot;BeforeInitialization...&quot;);
+      }
+      // 返回一个代理对象出去
+//    Proxy.newProxyInstance()
+      return bean;
+   }
+
+   @Override
+   public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+      if(beanName.equals(&quot;indexDao&quot;)){
+         System.out.println(&quot;AfterInitialization...&quot;);
+      }
+      return bean;
+   }
+}
+</code></pre>
+<p>运行结果：</p>
+<pre><code class="language-java">indexDao...constructor
+BeforeInitialization...
+indexDao...init
+AfterInitialization...
+dao...模拟查询数据库
+</code></pre>
+<h3 id="如何控制多个后置处理器的顺序">如何控制多个后置处理器的顺序：</h3>
+<ul>
+<li>后置处理器实现 PriorityOrdered 接口，重写 getOrder() 方法，值越小就越先执行</li>
+</ul>
+<pre><code class="language-java">@Component
+public class TestBeanPostProcessor implements BeanPostProcessor, PriorityOrdered {
+   @Override
+   public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
+      if(beanName.equals(&quot;indexDao&quot;)){
+         System.out.println(&quot;BeforeInitialization...&quot;);
+      }
+      // 返回一个代理对象出去
+//    Proxy.newProxyInstance()
+      return bean;
+   }
+
+   @Override
+   public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+      if(beanName.equals(&quot;indexDao&quot;)){
+         System.out.println(&quot;AfterInitialization...&quot;);
+      }
+      return bean;
+   }
+
+   @Override
+   public int getOrder() {
+      return 102;
+   }
+}
+</code></pre>
+<p>第二个后置处理器的定义，同样实现 PriorityOrdered 接口，重写 getOrder() 方法：</p>
+<pre><code class="language-java">@Component
+public class TestBeanPostProcessor2 implements BeanPostProcessor, PriorityOrdered {
+   @Override
+   public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
+      if(beanName.equals(&quot;indexDao&quot;)){
+         System.out.println(&quot;BeforeInitialization2...&quot;);
+      }
+      // 返回一个代理对象出去
+//    Proxy.newProxyInstance()
+      return bean;
+   }
+
+   @Override
+   public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+      if(beanName.equals(&quot;indexDao&quot;)){
+         System.out.println(&quot;AfterInitialization2...&quot;);
+      }
+      return bean;
+   }
+
+   @Override
+   public int getOrder() {
+      return 100;
+   }
+}
+</code></pre>
+<p>执行结果：</p>
+<pre><code>indexDao...constructor
+BeforeInitialization2...
+BeforeInitialization...
+indexDao...init
+AfterInitialization2...
+AfterInitialization...
+dao...模拟查询数据库
+</code></pre>
+<h2 id="beanfactorypostprocessor">BeanFactoryPostProcessor</h2>
+<p>Spring 工厂后置处理器</p>
+<h3 id="134-preparebeanfactorybeanfactory">1.3.4 prepareBeanFactory(beanFactory)</h3>
+<p>再来看 refresh() 的第 12 行： prepareBeanFactory(beanFactory);</p>
+<pre><code>// Prepare the bean factory for use in this context.
+prepareBeanFactory(beanFactory);
+</code></pre>
+<p>点进去 prepareBeanFactory(beanFactory) 代码如下：</p>
+<pre><code class="language-java">protected void prepareBeanFactory(ConfigurableListableBeanFactory beanFactory) {
+   // Tell the internal bean factory to use the context's class loader etc.
+   beanFactory.setBeanClassLoader(getClassLoader());
+   // bean 表达式解析器
+   beanFactory.setBeanExpressionResolver(new StandardBeanExpressionResolver(beanFactory.getBeanClassLoader()));
+   // 注册属性编辑器
+   beanFactory.addPropertyEditorRegistrar(new ResourceEditorRegistrar(this, getEnvironment()));
+
+   // Configure the bean factory with context callbacks.
+   // 使用上下文回调配置Bean工厂。
+   // 向 List 里面添加一个数据：添加一个后置管理器：ApplicationContextAwareProcessor 实现了 BeanPostProcessor接口：插手 Bean 的创建过程
+   beanFactory.addBeanPostProcessor(new ApplicationContextAwareProcessor(this));
+   beanFactory.ignoreDependencyInterface(EnvironmentAware.class);
+   beanFactory.ignoreDependencyInterface(EmbeddedValueResolverAware.class);
+   beanFactory.ignoreDependencyInterface(ResourceLoaderAware.class);
+   beanFactory.ignoreDependencyInterface(ApplicationEventPublisherAware.class);
+   beanFactory.ignoreDependencyInterface(MessageSourceAware.class);
+   beanFactory.ignoreDependencyInterface(ApplicationContextAware.class);
+
+   // BeanFactory interface not registered as resolvable type in a plain factory.
+   // MessageSource registered (and found for autowiring) as a bean.
+   beanFactory.registerResolvableDependency(BeanFactory.class, beanFactory);
+   beanFactory.registerResolvableDependency(ResourceLoader.class, this);
+   beanFactory.registerResolvableDependency(ApplicationEventPublisher.class, this);
+   beanFactory.registerResolvableDependency(ApplicationContext.class, this);
+
+   // Register early post-processor for detecting inner beans as ApplicationListeners.
+   beanFactory.addBeanPostProcessor(new ApplicationListenerDetector(this));
+
+   // Detect a LoadTimeWeaver and prepare for weaving, if found.
+   if (beanFactory.containsBean(LOAD_TIME_WEAVER_BEAN_NAME)) {
+      beanFactory.addBeanPostProcessor(new LoadTimeWeaverAwareProcessor(beanFactory));
+      // Set a temporary ClassLoader for type matching.
+      beanFactory.setTempClassLoader(new ContextTypeMatchClassLoader(beanFactory.getBeanClassLoader()));
+   }
+
+   // Register default environment beans.
+   if (!beanFactory.containsLocalBean(ENVIRONMENT_BEAN_NAME)) {
+      beanFactory.registerSingleton(ENVIRONMENT_BEAN_NAME, getEnvironment());
+   }
+   if (!beanFactory.containsLocalBean(SYSTEM_PROPERTIES_BEAN_NAME)) {
+      beanFactory.registerSingleton(SYSTEM_PROPERTIES_BEAN_NAME, getEnvironment().getSystemProperties());
+   }
+   if (!beanFactory.containsLocalBean(SYSTEM_ENVIRONMENT_BEAN_NAME)) {
+      beanFactory.registerSingleton(SYSTEM_ENVIRONMENT_BEAN_NAME, getEnvironment().getSystemEnvironment());
+   }
+}
+</code></pre>
+<p>看 prepareBeanFactory(ConfigurableListableBeanFactory beanFactory) 的第 12 行内容如下：</p>
+<pre><code class="language-java">// Configure the bean factory with context callbacks.
+// 使用上下文回调配置Bean工厂。
+// 向 List 里面添加一个数据：添加一个后置管理器：ApplicationContextAwareProcessor 实现了 BeanPostProcessor接口：插手 Bean 的创建过程
+beanFactory.addBeanPostProcessor(new ApplicationContextAwareProcessor(this));
+</code></pre>
+<p>向 List 里面添加一个数据：添加一个后置管理器：ApplicationContextAwareProcessor 实现了 BeanPostProcessor接口：插手 Bean 的创建过程：</p>
+<pre><code class="language-java">class ApplicationContextAwareProcessor implements BeanPostProcessor {
+</code></pre>
+<p>如果想了解 ApplicationContextAwareProcessor 类，就先来看一下它实现的父接口 BeanPostProcessor 类。</p>
+<h4 id="1341-beanpostprocessor">1.3.4.1 BeanPostProcessor</h4>
+<p>先来看一下 BeanPostProcessor 接口的结构，一共有两个方法：</p>
+<figure data-type="image" tabindex="5"><img src="https://epitomm.github.io/post-images/BeanPostProcessor.png" alt="图片" loading="lazy"></figure>
+<pre><code class="language-java">/**
+ * BeanPostProcessor 是 Spring 框架提供的一个扩展类点（Spring 扩展不止一个后置处理器，
+ * Spring 能够扩展一个类，它提供了很多后置处理器，但这个后置处理器都属于一种，还有其他办法）
+ * 通过实现 BeanPostProcessor 接口，程序员就可查收 bean 实例化的过程，从而减轻了 beanFactory 的负担
+ * 值得说明的是这个接口可以设置多个，会形成一个列表， 然后依次执行
+ * （自己写的后置处理器只需添加 @Component 即可，Spring就会自动扫描把它new出来然后添加到容器中。
+ * 但是 Spring 默认的怎么办？Spring 手动 set 添加到容器中） 
+ * 比如 AOP 就是在 bean 实例化后期间将切面逻辑织入 bean 实例中的
+ * AOP 也正是通过 BeanPostProcessor 和 IOC 容器建立起了联系
+ * （由 Spring 提供的默认的 PostProcessor，Spring 提供了很多默认的 PostProcessor，下面一一介绍这些实现类的功能）
+ * 可以演示一下 BeanPostProcessor 的使用方式（把动态代理和 IOC、AOP 结合起来使用）
+ *
+ * 在演示之前先来熟悉一下这个接口，是这个接口本身特别简单，但是它的实现类特别复杂。
+ * 可以看看 Spring 提供哪些默认的实现
+ * 查看类的关系图就可以知道 Spring 提供了以下的默认实现，由于实现类是在太多，所以只是解释几个常用的
+ * 1.ApplicationContextAwareProcessor（sacap）
+ *        acap 后置处理器的作用是：当应用程序定义的 Bean 实现 ApplicationContextAware 接口时注入 ApplicationContext 对象
+ *        当然这是他的第一个作业，它还有其他作用，这里就不一一举例了，可以参考源码
+ *        我们可以针对 ApplicationContextAwareProcessor 写一个例子
+ * 2.InitDestroyAnnotationBeanPostProcessor
+ *     用来处理自定义的初始化方法和销毁方法
+ *     Spring 中提供了三种自定义初始化和销毁方法分别是
+ *     ① 通过 @Bean 指定 inti method 和 destroy-method 属性
+ *     ② Ban 实现 InitializingBean 接口和显现 DisposableBean
+ *     ③ @PostConstruct：@PreDestroy
+ *     为什么 Spring 通过这三种方式都能完成对 bean 生命周期的回调呢？
+ *     可以通过 InitDestroyAnnotationBeanPostProcessor 的源码来解释
+ * 3.InstantiationAwareBeanPostProcessor
+ * 4.CommonAnnotationBeanPostProcessor
+ * 5.AutowiredAnnotationBeanPostProcessor
+ * 6.RequiredAnnotationBeanPostProcessor
+ * 7.BeanValidationPostProcessor
+ * 8.AbstractAutoProxyCreator：抽象自动代理创建器：AOP 创建一个代理
+ * ......
+ *
+ *
+ * Factory hook that allows for custom modification of new bean instances,
+ * e.g. checking for marker interfaces or wrapping them with proxies.
+ *
+ * &lt;p&gt;ApplicationContexts can autodetect BeanPostProcessor beans in their
+ * bean definitions and apply them to any beans subsequently created.
+ * Plain bean factories allow for programmatic registration of post-processors,
+ * applying to all beans created through this factory.
+ *
+ * &lt;p&gt;Typically, post-processors that populate beans via marker interfaces
+ * or the like will implement {@link #postProcessBeforeInitialization},
+ * while post-processors that wrap beans with proxies will normally
+ * implement {@link #postProcessAfterInitialization}.
+ *
+ * @author Juergen Hoeller
+ * @since 10.10.2003
+ * @see InstantiationAwareBeanPostProcessor
+ * @see DestructionAwareBeanPostProcessor
+ * @see ConfigurableBeanFactory#addBeanPostProcessor
+ * @see BeanFactoryPostProcessor
+ */
+public interface BeanPostProcessor {
+
+   /**
+    *
+    * 在 Bean 初始化之前执行
+    * Apply this BeanPostProcessor to the given new bean instance &lt;i&gt;before&lt;/i&gt; any bean
+    * initialization callbacks (like InitializingBean's {@code afterPropertiesSet}
+    * or a custom init-method). The bean will already be populated with property values.
+    * The returned bean instance may be a wrapper around the original.
+    * &lt;p&gt;The default implementation returns the given {@code bean} as-is.
+    * @param bean the new bean instance
+    * @param beanName the name of the bean
+    * @return the bean instance to use, either the original or a wrapped one;
+    * if {@code null}, no subsequent BeanPostProcessors will be invoked
+    * @throws org.springframework.beans.BeansException in case of errors
+    * @see org.springframework.beans.factory.InitializingBean#afterPropertiesSet
+    */
+   @Nullable
+   default Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
+      return bean;
+   }
+
+   /**
+    * 在 Bean 初始化之后执行
+    * Apply this BeanPostProcessor to the given new bean instance &lt;i&gt;after&lt;/i&gt; any bean
+    * initialization callbacks (like InitializingBean's {@code afterPropertiesSet}
+    * or a custom init-method). The bean will already be populated with property values.
+    * The returned bean instance may be a wrapper around the original.
+    * &lt;p&gt;In case of a FactoryBean, this callback will be invoked for both the FactoryBean
+    * instance and the objects created by the FactoryBean (as of Spring 2.0). The
+    * post-processor can decide whether to apply to either the FactoryBean or created
+    * objects or both through corresponding {@code bean instanceof FactoryBean} checks.
+    * &lt;p&gt;This callback will also be invoked after a short-circuiting triggered by a
+    * {@link InstantiationAwareBeanPostProcessor#postProcessBeforeInstantiation} method,
+    * in contrast to all other BeanPostProcessor callbacks.
+    * &lt;p&gt;The default implementation returns the given {@code bean} as-is.
+    * @param bean the new bean instance
+    * @param beanName the name of the bean
+    * @return the bean instance to use, either the original or a wrapped one;
+    * if {@code null}, no subsequent BeanPostProcessors will be invoked
+    * @throws org.springframework.beans.BeansException in case of errors
+    * @see org.springframework.beans.factory.InitializingBean#afterPropertiesSet
+    * @see org.springframework.beans.factory.FactoryBean
+    */
+   @Nullable
+   default Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+      return bean;
+   }
+
+}
+</code></pre>
+<p>AnnotationAwareAspectJAutoProxyCreator 并没有添加 @Component 注解，所以 Spring 不会扫描它</p>
+<pre><code class="language-java">@SuppressWarnings(&quot;serial&quot;)public class AnnotationAwareAspectJAutoProxyCreator extends AspectJAwareAdvisorAutoProxyCreator {
+</code></pre>
+<p>接下来再回回到 prepareBeanFactory(ConfigurableListableBeanFactory beanFactory) 的第 12 行内容如下：</p>
+<pre><code class="language-java">beanFactory.addBeanPostProcessor(new ApplicationContextAwareProcessor(this));
+</code></pre>
+<p>现在来看一下 addBeanPostProcessor() 方法的实现：</p>
+<h4 id="1342-addbeanpostprocessorbeanpostprocessor-beanpostprocessor">1.3.4.2 addBeanPostProcessor(BeanPostProcessor beanPostProcessor)</h4>
+<pre><code class="language-java">@Override
+public void addBeanPostProcessor(BeanPostProcessor beanPostProcessor) {
+   Assert.notNull(beanPostProcessor, &quot;BeanPostProcessor must not be null&quot;);
+   // Remove from old position, if any
+   this.beanPostProcessors.remove(beanPostProcessor);
+   // Track whether it is instantiation/destruction aware
+   if (beanPostProcessor instanceof InstantiationAwareBeanPostProcessor) {
+      this.hasInstantiationAwareBeanPostProcessors = true;
+   }
+   if (beanPostProcessor instanceof DestructionAwareBeanPostProcessor) {
+      this.hasDestructionAwareBeanPostProcessors = true;
+   }
+   // Add to end of list
+   this.beanPostProcessors.add(beanPostProcessor);
+}
+</code></pre>
+<p>看一下上述 addBeanPostProcessor 方法的第 14 行，向 beanPostProcessors 中添加了一个 beanPostProcessor，那么 beanPostProcessors  是什么呢？List<BeanPostProcessor> 集合</p>
+<pre><code class="language-java">/** BeanPostProcessors to apply in createBean */
+private final List&lt;BeanPostProcessor&gt; beanPostProcessors = new CopyOnWriteArrayList&lt;&gt;();
+</code></pre>
+<p><strong>postProcessBeforeInitialization</strong></p>
+<p>接下来看 ApplicationContextAwareProcessor 类是如何实现 postProcessBeforeInitialization 方法的：</p>
+<pre><code class="language-java">@Override
+@Nullable
+public Object postProcessBeforeInitialization(final Object bean, String beanName) throws BeansException {
+   AccessControlContext acc = null;
+
+   if (System.getSecurityManager() != null &amp;&amp;
+         (bean instanceof EnvironmentAware || bean instanceof EmbeddedValueResolverAware ||
+               bean instanceof ResourceLoaderAware || bean instanceof ApplicationEventPublisherAware ||
+               bean instanceof MessageSourceAware || bean instanceof ApplicationContextAware)) {
+      acc = this.applicationContext.getBeanFactory().getAccessControlContext();
+   }
+
+   if (acc != null) {
+      AccessController.doPrivileged((PrivilegedAction&lt;Object&gt;) () -&gt; {
+         invokeAwareInterfaces(bean);
+         return null;
+      }, acc);
+   }
+   else {
+      invokeAwareInterfaces(bean);
+   }
+
+   return bean;
+}
+</code></pre>
+<p>看上述 postProcessBeforeInitialization 方法的第 20 行，调用了 invokeAwareInterfaces(bean); 方法，具体实现如下：</p>
+<pre><code class="language-java">private void invokeAwareInterfaces(Object bean) {
+   // 判断这个 bean 是不是 Aware 接口
+   if (bean instanceof Aware) {
+      if (bean instanceof EnvironmentAware) {
+         ((EnvironmentAware) bean).setEnvironment(this.applicationContext.getEnvironment());
+      }
+      if (bean instanceof EmbeddedValueResolverAware) {
+         ((EmbeddedValueResolverAware) bean).setEmbeddedValueResolver(this.embeddedValueResolver);
+      }
+      // 判断这个 bean 是不是 ResourceLoaderAware 接口
+      if (bean instanceof ResourceLoaderAware) {
+         ((ResourceLoaderAware) bean).setResourceLoader(this.applicationContext);
+      }
+      if (bean instanceof ApplicationEventPublisherAware) {
+         ((ApplicationEventPublisherAware) bean).setApplicationEventPublisher(this.applicationContext);
+      }
+      if (bean instanceof MessageSourceAware) {
+         ((MessageSourceAware) bean).setMessageSource(this.applicationContext);
+      }
+      // Spring 帮助我们 set 了一个 applicationContext 对象
+      // 所以当我们自己的一个对象实现了 ApplicationContextAware 对象只需要提供 setter 就能得到 applicationContext
+      if (bean instanceof ApplicationContextAware) {
+         ((ApplicationContextAware) bean).setApplicationContext(this.applicationContext);
+      }
+   }
+}
+</code></pre>
+<h1 id="单例对象中有一个-prototype-属性会有问题如何解决">单例对象中有一个 prototype 属性会有问题，如何解决：</h1>
+<h2 id="repository">@Repository</h2>
+<pre><code class="language-java">@Repository
+@Scope(&quot;prototype&quot;)
+public class IndexDaoImpl implements IndexDao {
+</code></pre>
+<h2 id="lookup">@Lookup</h2>
+<pre><code class="language-java">@Service
+@Scope(&quot;singleton&quot;)
+public abstract class IndexService {
+    @Lookup
+    public abstract IndexDao getIndexDao() ;
+    public void service(){
+        System.out.println(this);
+        System.out.println(getIndexDao());
+    }
+}
+</code></pre>
+<h2 id="applicationcontextaware">ApplicationContextAware</h2>
+<p>implements ApplicationContextAware，重写 setApplicationContext 方法</p>
+<pre><code class="language-java">@Service
+@Scope(&quot;singleton&quot;)
+public class IndexService implements ApplicationContextAware {
+    @Autowired
+    private IndexDao indexDao;
+    private ApplicationContext applicationContext;
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        this.applicationContext = applicationContext;
+    }
+    public void service(){
+        System.out.println(this);
+        // 得到原型对象
+       System.out.println(applicationContext.getBean(&quot;indexDaoImpl&quot;));
+    }
+}
+</code></pre>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li><a href="#%E4%B8%80-annotationconfigapplicationcontext-context-new-annotationconfigapplicationcontextappconfigclass">一、AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);</a>
+<ul>
+<li><a href="#11-annotationconfigapplicationcontext">1.1 AnnotationConfigApplicationContext()</a>
+<ul>
+<li><a href="#111-annotatedbeandefinitionreader">1.1.1 AnnotatedBeanDefinitionReader</a>
+<ul>
+<li><a href="#1111-beandefinition">1.1.1.1 BeanDefinition</a></li>
+<li><a href="#1112-bean-%E7%9A%84%E5%9B%9B%E7%A7%8D%E4%BD%93%E7%8E%B0%E6%96%B9%E6%B3%95">1.1.1.2 Bean 的四种体现方法：</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#12-registerclass-annotatedclasses">1.2 register(Class&lt;?&gt;... annotatedClasses)</a>
+<ul>
+<li><a href="#121-doregisterbean">1.2.1 doRegisterBean</a>
+<ul>
+<li><a href="#1211-processcommondefinitionannotations">1.2.1.1 processCommonDefinitionAnnotations</a></li>
+<li><a href="#1212-beandefinitionholder">1.2.1.2 BeanDefinitionHolder</a></li>
+<li><a href="#1213-registerbeandefinition">1.2.1.3 registerBeanDefinition</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#13-refresh">## 1.3 refresh()</a><br>
+*
+<ul>
+<li><a href="#131-preparerefresh">1.3.1 prepareRefresh()</a></li>
+<li><a href="#132-obtainfreshbeanfactory">1.3.2 obtainFreshBeanFactory()</a>
+<ul>
+<li><a href="#1321-getbeanfactory">1.3.2.1 getBeanFactory()</a></li>
+</ul>
+</li>
+<li><a href="#133-invokebeanfactorypostprocessors">1.3.3 invokeBeanFactoryPostProcessors</a></li>
+</ul>
+</li>
+<li><a href="#spring-bean-%E7%9A%84%E6%89%A9%E5%B1%95%E6%9C%89%E5%93%AA%E4%BA%9B">Spring Bean 的扩展有哪些</a>
+<ul>
+<li><a href="#aop">AOP</a></li>
+<li><a href="#beanpostprocessor">BeanPostProcessor</a>
+<ul>
+<li><a href="#%E5%A6%82%E4%BD%95%E6%8E%A7%E5%88%B6%E5%A4%9A%E4%B8%AA%E5%90%8E%E7%BD%AE%E5%A4%84%E7%90%86%E5%99%A8%E7%9A%84%E9%A1%BA%E5%BA%8F">如何控制多个后置处理器的顺序：</a></li>
+</ul>
+</li>
+<li><a href="#beanfactorypostprocessor">BeanFactoryPostProcessor</a>
+<ul>
+<li><a href="#134-preparebeanfactorybeanfactory">1.3.4 prepareBeanFactory(beanFactory)</a>
+<ul>
+<li><a href="#1341-beanpostprocessor">1.3.4.1 BeanPostProcessor</a></li>
+<li><a href="#1342-addbeanpostprocessorbeanpostprocessor-beanpostprocessor">1.3.4.2 addBeanPostProcessor(BeanPostProcessor beanPostProcessor)</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#%E5%8D%95%E4%BE%8B%E5%AF%B9%E8%B1%A1%E4%B8%AD%E6%9C%89%E4%B8%80%E4%B8%AA-prototype-%E5%B1%9E%E6%80%A7%E4%BC%9A%E6%9C%89%E9%97%AE%E9%A2%98%E5%A6%82%E4%BD%95%E8%A7%A3%E5%86%B3">单例对象中有一个 prototype 属性会有问题，如何解决：</a>
+<ul>
+<li><a href="#repository">@Repository</a></li>
+<li><a href="#lookup">@Lookup</a></li>
+<li><a href="#applicationcontextaware">ApplicationContextAware</a></li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://epitomm.github.io/post/spring-xi-lie-wu-beanfactory-he-factorybean-de-qu-bie/">
+              <h3 class="post-title">
+                Spring系列（五）BeanFactory和FactoryBean的区别
+              </h3>
+            </a>
+          </div>
+        
+
+        
+          
+            <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+<script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+
+<div id="gitalk-container"></div>
+
+<script>
+
+  var gitalk = new Gitalk({
+    clientID: '974bd77fbbd52c2a0647',
+    clientSecret: '6344370ca1314dbd553f45e75a2121a160ef1c44',
+    repo: 'EpitomM.github.io',
+    owner: 'EpitomM',
+    admin: ['EpitomM'],
+    id: (location.pathname).substring(0, 49),      // Ensure uniqueness and length less than 50
+    distractionFreeMode: false  // Facebook-like distraction free mode
+  })
+
+  gitalk.render('gitalk-container')
+
+</script>
+
+          
+
+          
+        
+
+        <div class="site-footer">
+  Powered by <a href="https://github.com/EpitomM/EpitomM.github.io" target="_blank">EpitomM</a>
+  <a class="rss" href="https://epitomm.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>
