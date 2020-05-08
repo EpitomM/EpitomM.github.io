@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://epitomm.github.io</id>
     <title>SSM</title>
-    <updated>2020-05-08T10:13:30.533Z</updated>
+    <updated>2020-05-08T12:44:09.668Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://epitomm.github.io"/>
     <link rel="self" href="https://epitomm.github.io/atom.xml"/>
@@ -290,7 +290,7 @@ private volatile List&lt;String&gt; beanDefinitionNames = new ArrayList&lt;&gt;(
 <p>上述第 10 行代码，使用 new AnnotatedGenericBeanDefinition(annotatedClass); 的方式将一个普通的 annotatedClass(AppConfig.class) 转化成 AnnotatedGenericBeanDefinition。</p>
 <h3 id="212-registerbeandefinitiondefinitionholder-thisregistry">2.1.2 registerBeanDefinition(definitionHolder, this.registry);</h3>
 <p>上述代码第 80 行：</p>
-<pre><code class="language-plain">BeanDefinitionReaderUtils.registerBeanDefinition(definitionHolder, this.registry);
+<pre><code class="language-java">BeanDefinitionReaderUtils.registerBeanDefinition(definitionHolder, this.registry);
 </code></pre>
 <p>点进 registerBeanDefinition 方法：</p>
 <pre><code class="language-java">public static void registerBeanDefinition(
@@ -417,10 +417,10 @@ public void refresh() throws BeansException, IllegalStateException {
 }
 </code></pre>
 <p>上述代码第 3 行，添加一个类加载器：</p>
-<pre><code class="language-plain">beanFactory.setBeanClassLoader(getClassLoader());
+<pre><code class="language-java">beanFactory.setBeanClassLoader(getClassLoader());
 </code></pre>
 <p>上述代码第 5 行，添加 bean 表达式解析器，为了能够让 BeanFactory 去解析 bean 表达式</p>
-<pre><code class="language-plain">//bean 表达式解析器
+<pre><code class="language-java">//bean 表达式解析器
 beanFactory.setBeanExpressionResolver(new StandardBeanExpressionResolver(beanFactory.getBeanClassLoader()));
 // 注册属性编辑器
 </code></pre>
@@ -514,7 +514,7 @@ postProcessBeanFactory(beanFactory);
 }
 </code></pre>
 <p>因为 bean 默认是单例的，所以两次 context.getBean()获取的是同一个对象</p>
-<pre><code class="language-plain">dao...模拟查询数据库
+<pre><code class="language-java">dao...模拟查询数据库
 com.ssm.dao.impl.IndexDaoImpl@47fd17e3
 com.ssm.dao.impl.IndexDaoImpl@47fd17e3
 </code></pre>
@@ -529,7 +529,7 @@ com.ssm.dao.impl.IndexDaoImpl@47fd17e3
 }
 </code></pre>
 <p>打印效果：</p>
-<pre><code class="language-plain">dao...模拟查询数据库
+<pre><code class="language-java">dao...模拟查询数据库
 com.ssm.dao.impl.IndexDaoImpl@47fd17e3
 com.ssm.dao.impl.IndexDaoImpl@47fd17e3
 </code></pre>
@@ -555,14 +555,14 @@ com.ssm.dao.impl.IndexDaoImpl@47fd17e3
 }
 </code></pre>
 <p>即使 MyBeanFactoryProcessor 类并没有添加注解，但是通过 addBeanFactoryPostProcessor 结果显示 IndexDao 对象为原型的了：</p>
-<pre><code class="language-plain">dao...模拟查询数据库
+<pre><code class="language-java">dao...模拟查询数据库
 com.ssm.dao.impl.IndexDaoImpl@47fd17e3
 com.ssm.dao.impl.IndexDaoImpl@7cdbc5d3
 </code></pre>
 <p>结论：<strong>context.addBeanFactoryPostProcessor( new MyBeanFactoryProcessor()); 就称之为自定义的</strong>。<br>
 此时 getBeanFactoryPostProcessors() 执行后的结果 size 不为 0 了。</p>
 <figure data-type="image" tabindex="5"><img src="https://epitomm.github.io/post-images/getBeanFactoryPostProcessors_2.png" alt="图片" loading="lazy"></figure>
-<h3 id="352-invokebeanfactorypostprocessorsbeanfactory-getbeanfactorypostprocessors">**<em>3.5.2 <em><strong>invokeBeanFactoryPostProcessors(beanFactory</strong>, <strong><em><strong>getBeanFactoryPostProcessors</strong></em>())</strong>;</em></em></h3>
+<h3 id="352-invokebeanfactorypostprocessorsbeanfactory-getbeanfactorypostprocessors">3.5.2 invokeBeanFactoryPostProcessors(beanFactory, getBeanFactoryPostProcessors());</h3>
 <pre><code class="language-java">public static void invokeBeanFactoryPostProcessors(
       ConfigurableListableBeanFactory beanFactory, List&lt;BeanFactoryPostProcessor&gt; beanFactoryPostProcessors) {
    // Invoke BeanDefinitionRegistryPostProcessors first, if any.
@@ -700,9 +700,9 @@ com.ssm.dao.impl.IndexDaoImpl@7cdbc5d3
    beanFactory.clearMetadataCache();
 }
 </code></pre>
-<h4 id="3521-listbeanfactorypostprocessor-listbeandefinitionregistrypostprocessor">3.5.2.1  List**&lt;<strong>BeanFactoryPostProcessor</strong>&gt;、<strong>List</strong>&lt;<strong>BeanDefinitionRegistryPostProcessor</strong>&gt;**</h4>
+<h4 id="3521-listbeanfactorypostprocessor-listbeandefinitionregistrypostprocessor">3.5.2.1  List<BeanFactoryPostProcessor>、List<BeanDefinitionRegistryPostProcessor></h4>
 <p>看一下上述 10-12 行：</p>
-<pre><code class="language-plain">// 定义 List&lt;BeanFactoryPostProcessor&gt;
+<pre><code class="language-java">// 定义 List&lt;BeanFactoryPostProcessor&gt;
 List&lt;BeanFactoryPostProcessor&gt; regularPostProcessors = new ArrayList&lt;&gt;();
 // 定义 List&lt;BeanDefinitionRegistryPostProcessor&gt;
 List&lt;BeanDefinitionRegistryPostProcessor&gt; registryProcessors = new ArrayList&lt;&gt;();
@@ -993,7 +993,7 @@ public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) {
 </code></pre>
 <figure data-type="image" tabindex="8"><img src="https://epitomm.github.io/post-images/candidateIndicators.png" alt="图片" loading="lazy"></figure>
 <p>processConfigBeanDefinitions 方法的第 62 行：</p>
-<pre><code class="language-plain">parser.parse(candidates);
+<pre><code class="language-java">parser.parse(candidates);
 </code></pre>
 <p>点进这个 parse 方法：</p>
 <pre><code class="language-java">public void parse(Set&lt;BeanDefinitionHolder&gt; configCandidates) {

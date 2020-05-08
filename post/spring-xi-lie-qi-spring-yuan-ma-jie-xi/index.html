@@ -3,7 +3,7 @@
     <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Spring系列（七）Spring源码解析 | SSM</title>
-<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1588930531128">
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1588941846473">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
 <link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
 <link rel="alternate" type="application/atom+xml" title="Spring系列（七）Spring源码解析 | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
@@ -24,7 +24,7 @@
       <div class="main-content">
         <div class="site-header">
   <a href="https://epitomm.github.io">
-  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1588930531128" alt="">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1588941846473" alt="">
   </a>
   <h1 class="site-title">
     SSM
@@ -365,7 +365,7 @@ private volatile List&lt;String&gt; beanDefinitionNames = new ArrayList&lt;&gt;(
 <p>上述第 10 行代码，使用 new AnnotatedGenericBeanDefinition(annotatedClass); 的方式将一个普通的 annotatedClass(AppConfig.class) 转化成 AnnotatedGenericBeanDefinition。</p>
 <h3 id="212-registerbeandefinitiondefinitionholder-thisregistry">2.1.2 registerBeanDefinition(definitionHolder, this.registry);</h3>
 <p>上述代码第 80 行：</p>
-<pre><code class="language-plain">BeanDefinitionReaderUtils.registerBeanDefinition(definitionHolder, this.registry);
+<pre><code class="language-java">BeanDefinitionReaderUtils.registerBeanDefinition(definitionHolder, this.registry);
 </code></pre>
 <p>点进 registerBeanDefinition 方法：</p>
 <pre><code class="language-java">public static void registerBeanDefinition(
@@ -492,10 +492,10 @@ public void refresh() throws BeansException, IllegalStateException {
 }
 </code></pre>
 <p>上述代码第 3 行，添加一个类加载器：</p>
-<pre><code class="language-plain">beanFactory.setBeanClassLoader(getClassLoader());
+<pre><code class="language-java">beanFactory.setBeanClassLoader(getClassLoader());
 </code></pre>
 <p>上述代码第 5 行，添加 bean 表达式解析器，为了能够让 BeanFactory 去解析 bean 表达式</p>
-<pre><code class="language-plain">//bean 表达式解析器
+<pre><code class="language-java">//bean 表达式解析器
 beanFactory.setBeanExpressionResolver(new StandardBeanExpressionResolver(beanFactory.getBeanClassLoader()));
 // 注册属性编辑器
 </code></pre>
@@ -589,7 +589,7 @@ postProcessBeanFactory(beanFactory);
 }
 </code></pre>
 <p>因为 bean 默认是单例的，所以两次 context.getBean()获取的是同一个对象</p>
-<pre><code class="language-plain">dao...模拟查询数据库
+<pre><code class="language-java">dao...模拟查询数据库
 com.ssm.dao.impl.IndexDaoImpl@47fd17e3
 com.ssm.dao.impl.IndexDaoImpl@47fd17e3
 </code></pre>
@@ -604,7 +604,7 @@ com.ssm.dao.impl.IndexDaoImpl@47fd17e3
 }
 </code></pre>
 <p>打印效果：</p>
-<pre><code class="language-plain">dao...模拟查询数据库
+<pre><code class="language-java">dao...模拟查询数据库
 com.ssm.dao.impl.IndexDaoImpl@47fd17e3
 com.ssm.dao.impl.IndexDaoImpl@47fd17e3
 </code></pre>
@@ -630,14 +630,14 @@ com.ssm.dao.impl.IndexDaoImpl@47fd17e3
 }
 </code></pre>
 <p>即使 MyBeanFactoryProcessor 类并没有添加注解，但是通过 addBeanFactoryPostProcessor 结果显示 IndexDao 对象为原型的了：</p>
-<pre><code class="language-plain">dao...模拟查询数据库
+<pre><code class="language-java">dao...模拟查询数据库
 com.ssm.dao.impl.IndexDaoImpl@47fd17e3
 com.ssm.dao.impl.IndexDaoImpl@7cdbc5d3
 </code></pre>
 <p>结论：<strong>context.addBeanFactoryPostProcessor( new MyBeanFactoryProcessor()); 就称之为自定义的</strong>。<br>
 此时 getBeanFactoryPostProcessors() 执行后的结果 size 不为 0 了。</p>
 <figure data-type="image" tabindex="5"><img src="https://epitomm.github.io/post-images/getBeanFactoryPostProcessors_2.png" alt="图片" loading="lazy"></figure>
-<h3 id="352-invokebeanfactorypostprocessorsbeanfactory-getbeanfactorypostprocessors">**<em>3.5.2 <em><strong>invokeBeanFactoryPostProcessors(beanFactory</strong>, <strong><em><strong>getBeanFactoryPostProcessors</strong></em>())</strong>;</em></em></h3>
+<h3 id="352-invokebeanfactorypostprocessorsbeanfactory-getbeanfactorypostprocessors">3.5.2 invokeBeanFactoryPostProcessors(beanFactory, getBeanFactoryPostProcessors());</h3>
 <pre><code class="language-java">public static void invokeBeanFactoryPostProcessors(
       ConfigurableListableBeanFactory beanFactory, List&lt;BeanFactoryPostProcessor&gt; beanFactoryPostProcessors) {
    // Invoke BeanDefinitionRegistryPostProcessors first, if any.
@@ -775,9 +775,9 @@ com.ssm.dao.impl.IndexDaoImpl@7cdbc5d3
    beanFactory.clearMetadataCache();
 }
 </code></pre>
-<h4 id="3521-listbeanfactorypostprocessor-listbeandefinitionregistrypostprocessor">3.5.2.1  List**&lt;<strong>BeanFactoryPostProcessor</strong>&gt;、<strong>List</strong>&lt;<strong>BeanDefinitionRegistryPostProcessor</strong>&gt;**</h4>
+<h4 id="3521-listbeanfactorypostprocessor-listbeandefinitionregistrypostprocessor">3.5.2.1  List<BeanFactoryPostProcessor>、List<BeanDefinitionRegistryPostProcessor></h4>
 <p>看一下上述 10-12 行：</p>
-<pre><code class="language-plain">// 定义 List&lt;BeanFactoryPostProcessor&gt;
+<pre><code class="language-java">// 定义 List&lt;BeanFactoryPostProcessor&gt;
 List&lt;BeanFactoryPostProcessor&gt; regularPostProcessors = new ArrayList&lt;&gt;();
 // 定义 List&lt;BeanDefinitionRegistryPostProcessor&gt;
 List&lt;BeanDefinitionRegistryPostProcessor&gt; registryProcessors = new ArrayList&lt;&gt;();
@@ -1068,7 +1068,7 @@ public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) {
 </code></pre>
 <figure data-type="image" tabindex="8"><img src="https://epitomm.github.io/post-images/candidateIndicators.png" alt="图片" loading="lazy"></figure>
 <p>processConfigBeanDefinitions 方法的第 62 行：</p>
-<pre><code class="language-plain">parser.parse(candidates);
+<pre><code class="language-java">parser.parse(candidates);
 </code></pre>
 <p>点进这个 parse 方法：</p>
 <pre><code class="language-java">public void parse(Set&lt;BeanDefinitionHolder&gt; configCandidates) {
@@ -1575,9 +1575,9 @@ org.springframework.context.support.GenericApplicationContext-&gt;GenericApplica
 <li><a href="#35-invokebeanfactorypostprocessorsbeanfactory">3.5 invokeBeanFactoryPostProcessors(beanFactory);</a>
 <ul>
 <li><a href="#351-getbeanfactorypostprocessors">3.5.1 getBeanFactoryPostProcessors()</a></li>
-<li><a href="#352-invokebeanfactorypostprocessorsbeanfactory-getbeanfactorypostprocessors">**<em>3.5.2 <em><strong>invokeBeanFactoryPostProcessors(beanFactory</strong>, <strong><em><strong>getBeanFactoryPostProcessors</strong></em>())</strong>;</em></em></a>
+<li><a href="#352-invokebeanfactorypostprocessorsbeanfactory-getbeanfactorypostprocessors">3.5.2 invokeBeanFactoryPostProcessors(beanFactory, getBeanFactoryPostProcessors());</a>
 <ul>
-<li><a href="#3521-listbeanfactorypostprocessor-listbeandefinitionregistrypostprocessor">3.5.2.1  List**&lt;<strong>BeanFactoryPostProcessor</strong>&gt;、<strong>List</strong>&lt;<strong>BeanDefinitionRegistryPostProcessor</strong>&gt;**</a></li>
+<li><a href="#3521-listbeanfactorypostprocessor-listbeandefinitionregistrypostprocessor">3.5.2.1  List<BeanFactoryPostProcessor>、List<BeanDefinitionRegistryPostProcessor></a></li>
 <li><a href="#3522-getbeannamesfortype">3.5.2.2 getBeanNamesForType</a></li>
 <li><a href="#3523-invokebeandefinitionregistrypostprocessors">3.5.2.3 invokeBeanDefinitionRegistryPostProcessors</a></li>
 </ul>
