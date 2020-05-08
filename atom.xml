@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://epitomm.github.io</id>
     <title>SSM</title>
-    <updated>2020-05-07T09:03:48.975Z</updated>
+    <updated>2020-05-08T09:00:09.052Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://epitomm.github.io"/>
     <link rel="self" href="https://epitomm.github.io/atom.xml"/>
@@ -10,6 +10,1440 @@
     <logo>https://epitomm.github.io/images/avatar.png</logo>
     <icon>https://epitomm.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, SSM</rights>
+    <entry>
+        <title type="html"><![CDATA[Spring系列（七）——Spring源码解析]]></title>
+        <id>https://epitomm.github.io/post/spring-xi-lie-qi-spring-yuan-ma-jie-xi/</id>
+        <link href="https://epitomm.github.io/post/spring-xi-lie-qi-spring-yuan-ma-jie-xi/">
+        </link>
+        <updated>2020-05-08T08:47:27.000Z</updated>
+        <content type="html"><![CDATA[<pre><code class="language-java">public class Test {
+   public static void main(String[] args) {
+      // 把 Spring 所有前提环境准备好
+      // 1.准备工厂=DefaultListableBeanFactory
+      // 实例化一个 bdReader 和一个 scanner
+      AnnotationConfigApplicationContext context =
+            new AnnotationConfigApplicationContext();
+      // 把一个 class 转成 bd，最后 put 到 map
+      // map 位置 DefaultListableBeanFactory 的 beanDefinitionMap
+      context.register(AppConfig.class);
+      // 初始化 Spring 的环境
+      context.refresh();
+      IndexDao indexDao = context.getBean(IndexDaoImpl.class);
+      indexDao.query();
+   }
+}
+</code></pre>
+<h1 id="1new-annotationconfigapplicationcontext">1.new AnnotationConfigApplicationContext();</h1>
+<p>第 6 行代码，new AnnotationConfigApplicationContext(); 时，由于 AnnotationConfigApplicationContext 有父类</p>
+<pre><code class="language-java">public class AnnotationConfigApplicationContext extends GenericApplicationContext implements AnnotationConfigRegistry {
+</code></pre>
+<h2 id="11-genericapplicationcontext">1.1 GenericApplicationContext()</h2>
+<p>所以会先调用父类 GenericApplicationContext  的构造方法（上一篇文章中提到过），今天就从它父类的构造方法说起：实例化了一个 Bean 工厂，</p>
+<pre><code class="language-java">/**
+ * Create a new GenericApplicationContext.
+ * @see #registerBeanDefinition
+ * @see #refresh
+ */
+public GenericApplicationContext() {
+   // 实例化一个 Bean 工厂
+   this.beanFactory = new DefaultListableBeanFactory();
+}
+</code></pre>
+<h3 id="111-defaultlistablebeanfactory">1.1.1 DefaultListableBeanFactory</h3>
+<p>这个 Bean 工厂内到底有些什么属性呢，这里列举出几个常用重要属性：</p>
+<pre><code class="language-java">/** 从序列化ID映射到工厂实例 */
+private static final Map&lt;String, Reference&lt;DefaultListableBeanFactory&gt;&gt; serializableFactories =
+      new ConcurrentHashMap&lt;&gt;(8);
+/** 该工厂的可选ID，用于序列化 */
+// 可以理解为身份证号
+@Nullable
+private String serializationId;
+// 工厂中能够处理类的实例化顺序
+@Nullable
+private Comparator&lt;Object&gt; dependencyComparator;
+// map&lt;beanName,beanDefinition&gt;
+private final Map&lt;String, BeanDefinition&gt; beanDefinitionMap = new ConcurrentHashMap&lt;&gt;(256);
+/** List of bean definition names, in registration order */
+private volatile List&lt;String&gt; beanDefinitionNames = new ArrayList&lt;&gt;(256);
+</code></pre>
+<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/bean%E5%B7%A5%E5%8E%82.png" alt="图片" loading="lazy"></figure>
+<h2 id="12-annotationconfigapplicationcontext">1.2 AnnotationConfigApplicationContext()</h2>
+<p>调用完父类构造方法后，调用本类构造方法，即</p>
+<pre><code class="language-java">public AnnotationConfigApplicationContext() {
+   /**
+    * 父类的构造方法 super()
+    *创建一个读取注解的 Bean 定义读取器：reader 能读取被加了注解的类
+    * 什么是 bean 定义？BeanDefinition
+    */
+   this.reader = new AnnotatedBeanDefinitionReader(this);
+   // 定义扫描器
+   this.scanner = new ClassPathBeanDefinitionScanner(this);
+}
+</code></pre>
+<h3 id="121-thisreader-new-annotatedbeandefinitionreaderthis">1.2.1 this.reader = new AnnotatedBeanDefinitionReader(this);</h3>
+<p>我们来看上述代码第 7 行的参数为 this（AnnotatedBeanDefinitionReader），点进这个方法看到参数类型为 BeanDefinitionRegistry，也就是意味着 AnnotatedBeanDefinitionReader = BeanDefinitionRegistry</p>
+<pre><code class="language-java">public AnnotatedBeanDefinitionReader(BeanDefinitionRegistry registry) {
+   this(registry, getOrCreateEnvironment(registry));
+}
+</code></pre>
+<h4 id="1211-annotatedbeandefinitionreaderbeandefinitionregistry-registry-environment-environment">1.2.1.1 AnnotatedBeanDefinitionReader(BeanDefinitionRegistry registry, Environment environment)</h4>
+<p>这里调用了一个重载的构造方法</p>
+<pre><code class="language-java">public AnnotatedBeanDefinitionReader(BeanDefinitionRegistry registry, Environment environment) {
+   Assert.notNull(registry, &quot;BeanDefinitionRegistry must not be null&quot;);
+   Assert.notNull(environment, &quot;Environment must not be null&quot;);
+   this.registry = registry;
+   this.conditionEvaluator = new ConditionEvaluator(registry, environment, null);
+   AnnotationConfigUtils.registerAnnotationConfigProcessors(this.registry);
+}
+</code></pre>
+<p>看第 6 行点进去</p>
+<pre><code class="language-java">public static void registerAnnotationConfigProcessors(BeanDefinitionRegistry registry) {
+   registerAnnotationConfigProcessors(registry, null);
+}
+</code></pre>
+<p>在点进去第 2 行这个方法：</p>
+<pre><code class="language-java">public static Set&lt;BeanDefinitionHolder&gt; registerAnnotationConfigProcessors(
+      BeanDefinitionRegistry registry, @Nullable Object source) {
+   // 通过 registry 得到 Bean 工厂
+   DefaultListableBeanFactory beanFactory = unwrapDefaultListableBeanFactory(registry);
+   if (beanFactory != null) {
+      // AnnotationAwareOrderComparator 主要能解析 @Order 注解和 @Priority
+      if (!(beanFactory.getDependencyComparator() instanceof AnnotationAwareOrderComparator)) {
+         // ContextAnnotationAutowireCandidateResolver 提供处理器延迟加载的功能
+         beanFactory.setDependencyComparator(AnnotationAwareOrderComparator.INSTANCE);
+      }
+      if (!(beanFactory.getAutowireCandidateResolver() instanceof ContextAnnotationAutowireCandidateResolver)) {
+         beanFactory.setAutowireCandidateResolver(new ContextAnnotationAutowireCandidateResolver());
+      }
+   }
+   Set&lt;BeanDefinitionHolder&gt; beanDefs = new LinkedHashSet&lt;&gt;(8);
+   // BeanDefinition的注册，这里很重要，需要理解注册每个 bean 的类型
+   if (!registry.containsBeanDefinition(CONFIGURATION_ANNOTATION_PROCESSOR_BEAN_NAME)) {
+      // 需要注意的是 ConfigurationClassPostProcessor 的类型是 BeanDefinitionRegistryPostProcessor
+      // 而 BeanDefinitionRegistryPostProcessor 最终实现 BeanFactoryPostProcess
+      RootBeanDefinition def = new RootBeanDefinition(ConfigurationClassPostProcessor.class);
+      def.setSource(source);
+      beanDefs.add(registerPostProcessor(registry, def, CONFIGURATION_ANNOTATION_PROCESSOR_BEAN_NAME));
+   }
+   if (!registry.containsBeanDefinition(AUTOWIRED_ANNOTATION_PROCESSOR_BEAN_NAME)) {
+      RootBeanDefinition def = new RootBeanDefinition(AutowiredAnnotationBeanPostProcessor.class);
+      def.setSource(source);
+      beanDefs.add(registerPostProcessor(registry, def, AUTOWIRED_ANNOTATION_PROCESSOR_BEAN_NAME));
+   }
+   if (!registry.containsBeanDefinition(REQUIRED_ANNOTATION_PROCESSOR_BEAN_NAME)) {
+      RootBeanDefinition def = new RootBeanDefinition(RequiredAnnotationBeanPostProcessor.class);
+      def.setSource(source);
+      beanDefs.add(registerPostProcessor(registry, def, REQUIRED_ANNOTATION_PROCESSOR_BEAN_NAME));
+   }
+   // Check for JSR-250 support, and if present add the CommonAnnotationBeanPostProcessor.
+   if (jsr250Present &amp;&amp; !registry.containsBeanDefinition(COMMON_ANNOTATION_PROCESSOR_BEAN_NAME)) {
+      RootBeanDefinition def = new RootBeanDefinition(CommonAnnotationBeanPostProcessor.class);
+      def.setSource(source);
+      beanDefs.add(registerPostProcessor(registry, def, COMMON_ANNOTATION_PROCESSOR_BEAN_NAME));
+   }
+   // Check for JPA support, and if present add the PersistenceAnnotationBeanPostProcessor.
+   if (jpaPresent &amp;&amp; !registry.containsBeanDefinition(PERSISTENCE_ANNOTATION_PROCESSOR_BEAN_NAME)) {
+      RootBeanDefinition def = new RootBeanDefinition();
+      try {
+         def.setBeanClass(ClassUtils.forName(PERSISTENCE_ANNOTATION_PROCESSOR_CLASS_NAME,
+               AnnotationConfigUtils.class.getClassLoader()));
+      }
+      catch (ClassNotFoundException ex) {
+         throw new IllegalStateException(
+               &quot;Cannot load optional framework class: &quot; + PERSISTENCE_ANNOTATION_PROCESSOR_CLASS_NAME, ex);
+      }
+      def.setSource(source);
+      beanDefs.add(registerPostProcessor(registry, def, PERSISTENCE_ANNOTATION_PROCESSOR_BEAN_NAME));
+   }
+   
+   if (!registry.containsBeanDefinition(EVENT_LISTENER_PROCESSOR_BEAN_NAME)) {
+      RootBeanDefinition def = new RootBeanDefinition(EventListenerMethodProcessor.class);
+      def.setSource(source);
+      beanDefs.add(registerPostProcessor(registry, def, EVENT_LISTENER_PROCESSOR_BEAN_NAME));
+   }
+   if (!registry.containsBeanDefinition(EVENT_LISTENER_FACTORY_BEAN_NAME)) {
+      RootBeanDefinition def = new RootBeanDefinition(DefaultEventListenerFactory.class);
+      def.setSource(source);
+      beanDefs.add(registerPostProcessor(registry, def, EVENT_LISTENER_FACTORY_BEAN_NAME));
+   }
+   return beanDefs;
+}
+</code></pre>
+<p>上述代码第 24 行</p>
+<pre><code class="language-java">beanDefs.add(registerPostProcessor(registry, def, CONFIGURATION_ANNOTATION_PROCESSOR_BEAN_NAME));
+</code></pre>
+<pre><code class="language-java">private static BeanDefinitionHolder registerPostProcessor(
+      BeanDefinitionRegistry registry, RootBeanDefinition definition, String beanName) {
+   definition.setRole(BeanDefinition.ROLE_INFRASTRUCTURE);
+   registry.registerBeanDefinition(beanName, definition);
+   return new BeanDefinitionHolder(definition, beanName);
+}
+</code></pre>
+<p>上述第 6 行代码：通过 registry 的 registerBeanDefinition 方法将 &lt;beanName,definition&gt; 放到 map 中：</p>
+<h3 id="122-thisscanner-new-classpathbeandefinitionscannerthis">1.2.2 this.scanner = new ClassPathBeanDefinitionScanner(this);</h3>
+<p>继续看本类构造方法的第 9 行，能够扫描一个类，并且转换成 BeanDefinition</p>
+<pre><code class="language-java">public AnnotationConfigApplicationContext() {
+   /**
+    * 父类的构造方法 super()
+    *创建一个读取注解的 Bean 定义读取器：reader 能读取被加了注解的类
+    * 什么是 bean 定义？BeanDefinition
+    */
+   this.reader = new AnnotatedBeanDefinitionReader(this);
+   // 定义扫描器
+   this.scanner = new ClassPathBeanDefinitionScanner(this);
+}
+</code></pre>
+<h1 id="2contextregisterappconfigclass">2.context.register(AppConfig.class);</h1>
+<p>接下来看 Test 测试类的第 10 行：</p>
+<pre><code class="language-java">context.register(AppConfig.class);
+</code></pre>
+<p>点进 register 方法如下：</p>
+<pre><code class="language-java">public void register(Class&lt;?&gt;... annotatedClasses) {
+   Assert.notEmpty(annotatedClasses, &quot;At least one annotated class must be specified&quot;);
+   this.reader.register(annotatedClasses);
+}
+</code></pre>
+<p>第 3 行：调用 reader 的 register() 方法，将  AppConfig.class 这个普通的类交给 reader，由 reader 将它转化成 BeanDefinition。那么这个具体的 register 方法是如何实现的呢？点进去这个 register() 方法</p>
+<h2 id="21-doregisterbean">2.1 doRegisterBean</h2>
+<p>(中间省略两步代码)最终会到 doRegisterBean 方法：</p>
+<pre><code class="language-java">&lt;T&gt; void doRegisterBean(Class&lt;T&gt; annotatedClass, @Nullable Supplier&lt;T&gt; instanceSupplier, @Nullable String name,
+      @Nullable Class&lt;? extends Annotation&gt;[] qualifiers, BeanDefinitionCustomizer... definitionCustomizers) {
+   /**
+    *
+    * AnnotatedGenericBeanDefinition：被注解的 BeanDefinition(描述Bean)
+    * 将 bean 放入 map 中，bean 的 name 是 map 的 key，
+    * map 中的 value 为 AnnotatedGenericBeanDefinition 对象
+    */
+   AnnotatedGenericBeanDefinition abd = new AnnotatedGenericBeanDefinition(annotatedClass);
+   /**
+    * 判断这个类是否需要跳过解析
+    * 通过代码可以知道 Spring 判断是否跳过解析，主要判断有没有加注解
+    */
+   // 这个类如果没有加注解，就不需要解析。因为 AnnotatedGenericBeanDefinition 是为了注册被加了注解的；
+   // 如果这个类没有被加注解，就跳过不解析
+   if (this.conditionEvaluator.shouldSkip(abd.getMetadata())) {
+      return;
+   }
+   abd.setInstanceSupplier(instanceSupplier);
+   /**
+    * 得到类的作用域
+    *     如果是 context.register(SpringConfig.class);则作用域没有什么作用
+    *     注册单个类时需要，比如：context.register(IndexService.class);
+    */
+   ScopeMetadata scopeMetadata = this.scopeMetadataResolver.resolveScopeMetadata(abd);
+   /**
+    * 将类的作用域添加到数据结构中
+    */
+   abd.setScope(scopeMetadata.getScopeName());
+   /**
+    * 生成类的名字通过 beanNameGenerator
+    */
+   String beanName = (name != null ? name : this.beanNameGenerator.generateBeanName(abd, this.registry));
+   /**
+    * 处理类当中的其他通用注解
+    * 分析源码可以知道它主要处理：Lazy、DependsOn、Primary、Role 等注解
+    * 处理完成之后 processCommonDefinitionAnnotation 中依然是把它添加到数据结构 AnnotatedGenericBeanDefinition 当中
+    */
+   AnnotationConfigUtils.processCommonDefinitionAnnotations(abd);
+   /**
+    * 如果在向容器注册注解 @Bean定义时，使用了额外的限定符注解则解析
+    * 关于 Qualifier 和 Primary 主要涉及到 Spring 的自动装配
+    * 这里需要注意的
+    *     beanName 和 qualifier 这个变量时 Annotation 类型的数组，里面不仅仅是 Qualifier 注解
+    *     理论上里面存的是一切注解，所以可以看到下面的代码 Spring 去循环了这个数组
+    *     然后依次判断注解当中是否包含了 Primary，是否包含了 Lazy
+    */
+   if (qualifiers != null) {
+      for (Class&lt;? extends Annotation&gt; qualifier : qualifiers) {
+         if (Primary.class == qualifier) {
+            abd.setPrimary(true);
+         }
+         else if (Lazy.class == qualifier) {
+            abd.setLazyInit(true);
+         }
+         else {
+            abd.addQualifier(new AutowireCandidateQualifier(qualifier));
+         }
+      }
+   }
+   for (BeanDefinitionCustomizer customizer : definitionCustomizers) {
+      customizer.customize(abd);
+   }
+   /**
+    * 这个 BeanDefinitionHolder 也是一个数据结构
+    * BeanDefinitionHolder 是一个 map，里面放了一个 (BeanDefinition，beanName)
+    */
+   BeanDefinitionHolder definitionHolder = new BeanDefinitionHolder(abd, beanName);
+   definitionHolder = AnnotationConfigUtils.applyScopedProxyMode(scopeMetadata, definitionHolder, this.registry);
+   /**
+    * 把上述的这个数据结构注册给 registry
+    * registry 就是 AnnotationConfigApplicationContext
+    * AnnotationConfigApplicationContext 在初始化的时候通过调用父类的构造方法实例化了一个 DefaultListableBeanFactory
+    * registerBeanDefinition 里面就是把 definitionHolder 这个数据结构包含的信息注册到 DefaultListableBeanFactory 这个工厂
+    */
+   BeanDefinitionReaderUtils.registerBeanDefinition(definitionHolder, this.registry);
+}
+</code></pre>
+<p>为什么 deoRegisterBean 方法中要解析作用域、其他通用注解等信息？<br>
+因为如果 context.register(IndexServiceImpl.class); 参数是 Bean 时，则需要获取 Bean 具体信息然后封装成 BeanDefinition，注册进 map 中。</p>
+<h3 id="211-new-annotatedgenericbeandefinitionannotatedclass">2.1.1 new AnnotatedGenericBeanDefinition(annotatedClass);</h3>
+<p>上述第 10 行代码，使用 new AnnotatedGenericBeanDefinition(annotatedClass); 的方式将一个普通的 annotatedClass(AppConfig.class) 转化成 AnnotatedGenericBeanDefinition。</p>
+<h3 id="212-registerbeandefinitiondefinitionholder-thisregistry">2.1.2 registerBeanDefinition(definitionHolder, this.registry);</h3>
+<p>上述代码第 80 行：</p>
+<pre><code class="language-plain">BeanDefinitionReaderUtils.registerBeanDefinition(definitionHolder, this.registry);
+</code></pre>
+<p>点进 registerBeanDefinition 方法：</p>
+<pre><code class="language-java">public static void registerBeanDefinition(
+      BeanDefinitionHolder definitionHolder, BeanDefinitionRegistry registry)
+      throws BeanDefinitionStoreException {
+   // Register bean definition under primary name.
+   String beanName = definitionHolder.getBeanName();
+   registry.registerBeanDefinition(beanName, definitionHolder.getBeanDefinition());
+   // Register aliases for bean name, if any.
+   String[] aliases = definitionHolder.getAliases();
+   if (aliases != null) {
+      for (String alias : aliases) {
+         registry.registerAlias(beanName, alias);
+      }
+   }
+}
+</code></pre>
+<p>上述代码第 7 行，使用 registry 的 registerBeanDefinition 方法将 &lt;beanName,BeanDefinition&gt;注册到 map 中。<br>
+<img src="https://epitomm.github.io/post-images/registerBeanDefinition.png" alt="图片" loading="lazy"></p>
+<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/bean%E5%B7%A5%E5%8E%82_2.png" alt="图片" loading="lazy"></figure>
+<figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/register_2.png" alt="图片" loading="lazy"></figure>
+<h1 id="3contextrefresh">3.context.refresh()</h1>
+<pre><code class="language-java">@Override
+public void refresh() throws BeansException, IllegalStateException {
+   synchronized (this.startupShutdownMonitor) {
+      // Prepare this context for refreshing.
+      // 准备工作包括设置启动时间、是否激活标识位，初始化属性源（property source）配置
+      prepareRefresh();
+      // 告诉子类 refresh Bean 工厂
+      ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
+      // 用这个上下文准备 Bean 工厂
+      prepareBeanFactory(beanFactory);
+      try {
+         // Allows post-processing of the bean factory in context subclasses.
+         postProcessBeanFactory(beanFactory);
+         // Invoke factory processors registered as beans in the context.
+         invokeBeanFactoryPostProcessors(beanFactory);
+         // Register bean processors that intercept bean creation.
+         registerBeanPostProcessors(beanFactory);
+         // Initialize message source for this context.
+         initMessageSource();
+         // Initialize event multicaster for this context.
+         initApplicationEventMulticaster();
+         // Initialize other special beans in specific context subclasses.
+         onRefresh();
+         // Check for listener beans and register them.
+         registerListeners();
+         // Instantiate all remaining (non-lazy-init) singletons.
+         finishBeanFactoryInitialization(beanFactory);
+         // Last step: publish corresponding event.
+         finishRefresh();
+      }
+      catch (BeansException ex) {
+         if (logger.isWarnEnabled()) {
+            logger.warn(&quot;Exception encountered during context initialization - &quot; +
+                  &quot;cancelling refresh attempt: &quot; + ex);
+         }
+         // Destroy already created singletons to avoid dangling resources.
+         destroyBeans();
+         // Reset 'active' flag.
+         cancelRefresh(ex);
+         // Propagate exception to caller.
+         throw ex;
+      }
+      finally {
+         // Reset common introspection caches in Spring's core, since we
+         // might not ever need metadata for singleton beans anymore...
+         resetCommonCaches();
+      }
+   }
+}
+</code></pre>
+<h2 id="31-preparerefresh">3.1 prepareRefresh();</h2>
+<p>上述第6 行代码：<strong>准备工作包括设置启动时间、是否激活标识位，初始化属性源（property source）配置</strong></p>
+<h2 id="32-obtainfreshbeanfactory">3.2 obtainFreshBeanFactory();</h2>
+<p>上述第 9 行代码：得到 BeanFactory，因为需要对 BeanFactory 进行设置</p>
+<pre><code class="language-java">ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
+</code></pre>
+<h2 id="33-preparebeanfactorybeanfactory">3.3 prepareBeanFactory(beanFactory);</h2>
+<p>上述第 12 行代码：准备 Bean 工厂</p>
+<pre><code class="language-java">prepareBeanFactory(beanFactory);
+</code></pre>
+<p>点进这个 prepareBeanFactory 方法：</p>
+<pre><code class="language-java">protected void prepareBeanFactory(ConfigurableListableBeanFactory beanFactory) {
+   // Tell the internal bean factory to use the context's class loader etc.
+   beanFactory.setBeanClassLoader(getClassLoader());
+   // bean 表达式解析器
+   beanFactory.setBeanExpressionResolver(new StandardBeanExpressionResolver(beanFactory.getBeanClassLoader()));
+   // 注册属性编辑器
+   beanFactory.addPropertyEditorRegistrar(new ResourceEditorRegistrar(this, getEnvironment()));
+   // Configure the bean factory with context callbacks.
+   // 添加一个后置管理器：ApplicationContextAwareProcessor 实现了 BeanPostProcessor接口：插手 Bean 的创建过程
+   beanFactory.addBeanPostProcessor(new ApplicationContextAwareProcessor(this));
+   beanFactory.ignoreDependencyInterface(EnvironmentAware.class);
+   beanFactory.ignoreDependencyInterface(EmbeddedValueResolverAware.class);
+   beanFactory.ignoreDependencyInterface(ResourceLoaderAware.class);
+   beanFactory.ignoreDependencyInterface(ApplicationEventPublisherAware.class);
+   beanFactory.ignoreDependencyInterface(MessageSourceAware.class);
+   beanFactory.ignoreDependencyInterface(ApplicationContextAware.class);
+   // BeanFactory interface not registered as resolvable type in a plain factory.
+   // MessageSource registered (and found for autowiring) as a bean.
+   beanFactory.registerResolvableDependency(BeanFactory.class, beanFactory);
+   beanFactory.registerResolvableDependency(ResourceLoader.class, this);
+   beanFactory.registerResolvableDependency(ApplicationEventPublisher.class, this);
+   beanFactory.registerResolvableDependency(ApplicationContext.class, this);
+   // Register early post-processor for detecting inner beans as ApplicationListeners.
+   beanFactory.addBeanPostProcessor(new ApplicationListenerDetector(this));
+   // Detect a LoadTimeWeaver and prepare for weaving, if found.
+   if (beanFactory.containsBean(LOAD_TIME_WEAVER_BEAN_NAME)) {
+      beanFactory.addBeanPostProcessor(new LoadTimeWeaverAwareProcessor(beanFactory));
+      // Set a temporary ClassLoader for type matching.
+      beanFactory.setTempClassLoader(new ContextTypeMatchClassLoader(beanFactory.getBeanClassLoader()));
+   }
+   // Register default environment beans.
+   if (!beanFactory.containsLocalBean(ENVIRONMENT_BEAN_NAME)) {
+      beanFactory.registerSingleton(ENVIRONMENT_BEAN_NAME, getEnvironment());
+   }
+   if (!beanFactory.containsLocalBean(SYSTEM_PROPERTIES_BEAN_NAME)) {
+      beanFactory.registerSingleton(SYSTEM_PROPERTIES_BEAN_NAME, getEnvironment().getSystemProperties());
+   }
+   if (!beanFactory.containsLocalBean(SYSTEM_ENVIRONMENT_BEAN_NAME)) {
+      beanFactory.registerSingleton(SYSTEM_ENVIRONMENT_BEAN_NAME, getEnvironment().getSystemEnvironment());
+   }
+}
+</code></pre>
+<p>上述代码第 3 行，添加一个类加载器：</p>
+<pre><code class="language-plain">beanFactory.setBeanClassLoader(getClassLoader());
+</code></pre>
+<p>上述代码第 5 行，添加 bean 表达式解析器，为了能够让 BeanFactory 去解析 bean 表达式</p>
+<pre><code class="language-plain">//bean 表达式解析器
+beanFactory.setBeanExpressionResolver(new StandardBeanExpressionResolver(beanFactory.getBeanClassLoader()));
+// 注册属性编辑器
+</code></pre>
+<p>上述 12-17 行，添加了自动注入被忽略的列表：</p>
+<pre><code class="language-java">  beanFactory.ignoreDependencyInterface(EnvironmentAware.class);
+   beanFactory.ignoreDependencyInterface(EmbeddedValueResolverAware.class);
+   beanFactory.ignoreDependencyInterface(ResourceLoaderAware.class);
+   beanFactory.ignoreDependencyInterface(ApplicationEventPublisherAware.class);
+   beanFactory.ignoreDependencyInterface(MessageSourceAware.class);
+   beanFactory.ignoreDependencyInterface(ApplicationContextAware.class);   
+</code></pre>
+<p>上述代码第 27 行，添加了一个 ApplicationListenerDetector 后置处理器</p>
+<pre><code class="language-java">beanFactory.addBeanPostProcessor(new ApplicationListenerDetector(this));
+</code></pre>
+<h3 id="331-beanfactoryaddbeanpostprocessornew-applicationcontextawareprocessorthis">3.3.1 beanFactory.addBeanPostProcessor(new ApplicationContextAwareProcessor(this));</h3>
+<p>上述代码第 11 行，</p>
+<pre><code class="language-java">// 添加一个后置管理器：ApplicationContextAwareProcessor 实现了 BeanPostProcessor接口：插手 Bean 的创建过程
+beanFactory.addBeanPostProcessor(new ApplicationContextAwareProcessor(this));
+</code></pre>
+<p>点进去 (new ApplicationContextAwareProcessor(this)：</p>
+<pre><code class="language-java">public ApplicationContextAwareProcessor(ConfigurableApplicationContext applicationContext) {
+   this.applicationContext = applicationContext;
+   this.embeddedValueResolver = new EmbeddedValueResolver(applicationContext.getBeanFactory());
+}
+</code></pre>
+<p>在点进去看 beanFactory.addBeanPostProcessor(new ApplicationContextAwareProcessor(this));</p>
+<pre><code class="language-java">@Override
+public void addBeanPostProcessor(BeanPostProcessor beanPostProcessor) {
+   Assert.notNull(beanPostProcessor, &quot;BeanPostProcessor must not be null&quot;);
+   // Remove from old position, if any
+   this.beanPostProcessors.remove(beanPostProcessor);
+   // Track whether it is instantiation/destruction aware
+   if (beanPostProcessor instanceof InstantiationAwareBeanPostProcessor) {
+      this.hasInstantiationAwareBeanPostProcessors = true;
+   }
+   if (beanPostProcessor instanceof DestructionAwareBeanPostProcessor) {
+      this.hasDestructionAwareBeanPostProcessors = true;
+   }
+   // Add to end of list
+   this.beanPostProcessors.add(beanPostProcessor);
+}
+</code></pre>
+<p>上述 14 行 提到的 beanPostProcessors，是一个 List<BeanPostProcessor></p>
+<pre><code class="language-java">/** BeanPostProcessors to apply in createBean */
+private final List&lt;BeanPostProcessor&gt; beanPostProcessors = new CopyOnWriteArrayList&lt;&gt;();
+</code></pre>
+<h2 id="34-postprocessbeanfactorybeanfactory">3.4 postProcessBeanFactory(beanFactory);</h2>
+<p>看 refresh() 看 的第 16 行代码：</p>
+<pre><code class="language-java">// 这个方法在当前版本的 spring 是没有任何代码的
+// 可能 Spring 期待在后面的版本中去扩展吧
+postProcessBeanFactory(beanFactory);
+</code></pre>
+<h2 id="35-invokebeanfactorypostprocessorsbeanfactory">3.5 invokeBeanFactoryPostProcessors(beanFactory);</h2>
+<p>看 refresh() 看 的第 19 行代码：</p>
+<pre><code class="language-java">invokeBeanFactoryPostProcessors(beanFactory);
+</code></pre>
+<p>点进去这个代码：</p>
+<pre><code class="language-java">protected void invokeBeanFactoryPostProcessors(ConfigurableListableBeanFactory beanFactory) {
+   // 这个地方需要注意 getBeanFactoryPostProcessors() 是获取自定义的
+   PostProcessorRegistrationDelegate.invokeBeanFactoryPostProcessors(beanFactory, getBeanFactoryPostProcessors());
+   // Detect a LoadTimeWeaver and prepare for weaving, if found in the meantime
+   // (e.g. through an @Bean method registered by ConfigurationClassPostProcessor)
+   if (beanFactory.getTempClassLoader() == null &amp;&amp; beanFactory.containsBean(LOAD_TIME_WEAVER_BEAN_NAME)) {
+      beanFactory.addBeanPostProcessor(new LoadTimeWeaverAwareProcessor(beanFactory));
+      beanFactory.setTempClassLoader(new ContextTypeMatchClassLoader(beanFactory.getBeanClassLoader()));
+   }
+}
+</code></pre>
+<h3 id="351-getbeanfactorypostprocessors">3.5.1 getBeanFactoryPostProcessors()</h3>
+<p>看上述第 3 行代码中的 getBeanFactoryPostProcessors()：是获取自定义的（程序员自己写的，并且没有交给 Spring 管理的，就是没有加上 @Component 注解的）</p>
+<p>此时的代码 getBeanFactoryPostProcessors() 运行的结果 size=0。</p>
+<figure data-type="image" tabindex="4"><img src="https://epitomm.github.io/post-images/getBeanFactoryPostProcessors.png" alt="图片" loading="lazy"></figure>
+<p>接下来我们看看什么叫做自定义的？</p>
+<pre><code class="language-java">public class Test {
+   public static void main(String[] args) {
+      // 把 Spring 所有前提环境准备好
+      // 1.准备工厂=DefaultListableBeanFactory
+      // 实例化一个 bdReader 和一个 scanner
+      AnnotationConfigApplicationContext context =
+            new AnnotationConfigApplicationContext();
+      // 把一个 class 转成 bd，最后 put 到 map
+      // map 位置 DefaultListableBeanFactory 的 beanDefinitionMap
+      context.register(AppConfig.class);
+      // 初始化 Spring 的环境
+      context.refresh();
+      IndexDao indexDao = context.getBean(IndexDaoImpl.class);
+      indexDao.query();
+      System.out.println(indexDao);
+      System.out.println(context.getBean(IndexDaoImpl.class));
+   }
+}
+</code></pre>
+<p>因为 bean 默认是单例的，所以两次 context.getBean()获取的是同一个对象</p>
+<pre><code class="language-plain">dao...模拟查询数据库
+com.ssm.dao.impl.IndexDaoImpl@47fd17e3
+com.ssm.dao.impl.IndexDaoImpl@47fd17e3
+</code></pre>
+<p>插手 Bean 的初始化过程，将作用域设置为原型的：</p>
+<p>但由于代码未添加 @Component 注解，所以这个类不会生效</p>
+<pre><code class="language-java">public class MyBeanFactoryProcessor implements BeanFactoryPostProcessor {
+   @Override
+   public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
+      AnnotatedBeanDefinition annotatedBeanDefinition = (AnnotatedBeanDefinition) beanFactory.getBeanDefinition(&quot;indexDao&quot;);
+      annotatedBeanDefinition.setScope(&quot;prototype&quot;);
+   }
+}
+</code></pre>
+<p>打印效果：</p>
+<pre><code class="language-plain">dao...模拟查询数据库
+com.ssm.dao.impl.IndexDaoImpl@47fd17e3
+com.ssm.dao.impl.IndexDaoImpl@47fd17e3
+</code></pre>
+<p>在 refresh() 前 context.addBeanFactoryPostProcessor( new MyBeanFactoryProcessor());</p>
+<pre><code class="language-java">public class Test {
+   public static void main(String[] args) {
+      // 把 Spring 所有前提环境准备好
+      // 1.准备工厂=DefaultListableBeanFactory
+      // 实例化一个 bdReader 和一个 scanner
+      AnnotationConfigApplicationContext context =
+            new AnnotationConfigApplicationContext();
+      // 把一个 class 转成 bd，最后 put 到 map
+      // map 位置 DefaultListableBeanFactory 的 beanDefinitionMap
+      context.register(AppConfig.class);
+      context.addBeanFactoryPostProcessor( new MyBeanFactoryProcessor());
+      // 初始化 Spring 的环境
+      context.refresh();
+      IndexDao indexDao = context.getBean(IndexDaoImpl.class);
+      indexDao.query();
+      System.out.println(indexDao);
+      System.out.println(context.getBean(IndexDaoImpl.class));
+   }
+}
+</code></pre>
+<p>即使 MyBeanFactoryProcessor 类并没有添加注解，但是通过 addBeanFactoryPostProcessor 结果显示 IndexDao 对象为原型的了：</p>
+<pre><code class="language-plain">dao...模拟查询数据库
+com.ssm.dao.impl.IndexDaoImpl@47fd17e3
+com.ssm.dao.impl.IndexDaoImpl@7cdbc5d3
+</code></pre>
+<p>结论：<strong>context.addBeanFactoryPostProcessor( new MyBeanFactoryProcessor()); 就称之为自定义的</strong>。<br>
+此时 getBeanFactoryPostProcessors() 执行后的结果 size 不为 0 了。</p>
+<figure data-type="image" tabindex="5"><img src="https://epitomm.github.io/post-images/getBeanFactoryPostProcessors_2.png" alt="图片" loading="lazy"></figure>
+<h3 id="352-invokebeanfactorypostprocessorsbeanfactory-getbeanfactorypostprocessors">**<em>3.5.2 <em><strong>invokeBeanFactoryPostProcessors(beanFactory</strong>, <strong><em><strong>getBeanFactoryPostProcessors</strong></em>())</strong>;</em></em></h3>
+<pre><code class="language-java">public static void invokeBeanFactoryPostProcessors(
+      ConfigurableListableBeanFactory beanFactory, List&lt;BeanFactoryPostProcessor&gt; beanFactoryPostProcessors) {
+   // Invoke BeanDefinitionRegistryPostProcessors first, if any.
+   Set&lt;String&gt; processedBeans = new HashSet&lt;&gt;();
+   if (beanFactory instanceof BeanDefinitionRegistry) {
+      BeanDefinitionRegistry registry = (BeanDefinitionRegistry) beanFactory;
+      // 定义 List&lt;BeanFactoryPostProcessor&gt;
+      List&lt;BeanFactoryPostProcessor&gt; regularPostProcessors = new ArrayList&lt;&gt;();
+       // 定义 List&lt;BeanDefinitionRegistryPostProcessor&gt;
+      List&lt;BeanDefinitionRegistryPostProcessor&gt; registryProcessors = new ArrayList&lt;&gt;();
+      // 遍历 beanFactoryPostProcessors
+      for (BeanFactoryPostProcessor postProcessor : beanFactoryPostProcessors) {
+         // 判断如果 postProcessor 是 BeanDefinitionRegistryPostProcessor 类型，就添加到 registryProcessors 中
+         if (postProcessor instanceof BeanDefinitionRegistryPostProcessor) {
+            BeanDefinitionRegistryPostProcessor registryProcessor =
+                  (BeanDefinitionRegistryPostProcessor) postProcessor;
+            registryProcessor.postProcessBeanDefinitionRegistry(registry);
+            registryProcessors.add(registryProcessor);
+         }
+         // 否则，添加到 regularPostProcessors中
+         else {
+            regularPostProcessors.add(postProcessor);
+         }
+      }
+      // Do not initialize FactoryBeans here: We need to leave all regular beans
+      // uninitialized to let the bean factory post-processors apply to them!
+      // Separate between BeanDefinitionRegistryPostProcessors that implement
+      // PriorityOrdered, Ordered, and the rest.
+      // 这个 currentRegistryProcessors 放的是 Spring 内部自己实现了 BeanDefinitionRegistryPostProcessor 接口的对象
+      List&lt;BeanDefinitionRegistryPostProcessor&gt; currentRegistryProcessors = new ArrayList&lt;&gt;();
+      // First, invoke the BeanDefinitionRegistryPostProcessors that implement PriorityOrdered.
+      String[] postProcessorNames =
+            beanFactory.getBeanNamesForType(BeanDefinitionRegistryPostProcessor.class, true, false);
+            // 这个地方可以得到一个 BeanFactoryPostProcessor，因为是 Spring 默认在最开始自己注册的
+            // 为什么要在最开始注册这个呢？
+            // 因为 Spring 的工厂需要注解去扫描等等功能
+            // 而这些功能都是需要在 Spring 工厂初始化完成之前就执行
+            // 要么在工厂最开始的时候，要么在工厂初始化之中，反正不能在之后
+            // 因为如果在之后就没有意义，因为那个时候已经需要使用工厂了
+            // 所以这里 Spring 在一开始就注册了一个 BeanFactoryPostProcessor，用来插手 springFactory 的实例化过程
+            // 在这个地方断点可以知道这个类叫做 ConfigurationClassPostProcessor
+            // ConfigurationClassPostProcessor 那么这个类能干嘛呢？可以参考源码
+            // 下面对这个“插手 Spirng 工厂实例化过程”的类重点解释
+      for (String ppName : postProcessorNames) {
+         if (beanFactory.isTypeMatch(ppName, PriorityOrdered.class)) {
+            currentRegistryProcessors.add(beanFactory.getBean(ppName, BeanDefinitionRegistryPostProcessor.class));
+            processedBeans.add(ppName);
+         }
+      }
+      // 排序不重要，况且 currentRegistryProcessor 这里也只有一个数据
+      sortPostProcessors(currentRegistryProcessors, beanFactory);
+      // 合并 List，不重要（为什么要合并，因为有自定义的Spring自己的）
+      registryProcessors.addAll(currentRegistryProcessors);
+      // 最重要。注意这里是方法调用
+      invokeBeanDefinitionRegistryPostProcessors(currentRegistryProcessors, registry);
+      currentRegistryProcessors.clear();
+      // Next, invoke the BeanDefinitionRegistryPostProcessors that implement Ordered.
+      postProcessorNames = beanFactory.getBeanNamesForType(BeanDefinitionRegistryPostProcessor.class, true, false);
+      for (String ppName : postProcessorNames) {
+         if (!processedBeans.contains(ppName) &amp;&amp; beanFactory.isTypeMatch(ppName, Ordered.class)) {
+            currentRegistryProcessors.add(beanFactory.getBean(ppName, BeanDefinitionRegistryPostProcessor.class));
+            processedBeans.add(ppName);
+         }
+      }
+      sortPostProcessors(currentRegistryProcessors, beanFactory);
+      registryProcessors.addAll(currentRegistryProcessors);
+      invokeBeanDefinitionRegistryPostProcessors(currentRegistryProcessors, registry);
+      currentRegistryProcessors.clear();
+      // Finally, invoke all other BeanDefinitionRegistryPostProcessors until no further ones appear.
+      boolean reiterate = true;
+      while (reiterate) {
+         reiterate = false;
+         postProcessorNames = beanFactory.getBeanNamesForType(BeanDefinitionRegistryPostProcessor.class, true, false);
+         for (String ppName : postProcessorNames) {
+            if (!processedBeans.contains(ppName)) {
+               currentRegistryProcessors.add(beanFactory.getBean(ppName, BeanDefinitionRegistryPostProcessor.class));
+               processedBeans.add(ppName);
+               reiterate = true;
+            }
+         }
+         sortPostProcessors(currentRegistryProcessors, beanFactory);
+         registryProcessors.addAll(currentRegistryProcessors);
+         invokeBeanDefinitionRegistryPostProcessors(currentRegistryProcessors, registry);
+         currentRegistryProcessors.clear();
+      }
+      // Now, invoke the postProcessBeanFactory callback of all processors handled so far.
+      invokeBeanFactoryPostProcessors(registryProcessors, beanFactory);
+      invokeBeanFactoryPostProcessors(regularPostProcessors, beanFactory);
+   }
+   else {
+      // Invoke factory processors registered with the context instance.
+      invokeBeanFactoryPostProcessors(beanFactoryPostProcessors, beanFactory);
+   }
+   // Do not initialize FactoryBeans here: We need to leave all regular beans
+   // uninitialized to let the bean factory post-processors apply to them!
+   String[] postProcessorNames =
+         beanFactory.getBeanNamesForType(BeanFactoryPostProcessor.class, true, false);
+   // Separate between BeanFactoryPostProcessors that implement PriorityOrdered,
+   // Ordered, and the rest.
+   List&lt;BeanFactoryPostProcessor&gt; priorityOrderedPostProcessors = new ArrayList&lt;&gt;();
+   List&lt;String&gt; orderedPostProcessorNames = new ArrayList&lt;&gt;();
+   List&lt;String&gt; nonOrderedPostProcessorNames = new ArrayList&lt;&gt;();
+   for (String ppName : postProcessorNames) {
+      if (processedBeans.contains(ppName)) {
+         // skip - already processed in first phase above
+      }
+      else if (beanFactory.isTypeMatch(ppName, PriorityOrdered.class)) {
+         priorityOrderedPostProcessors.add(beanFactory.getBean(ppName, BeanFactoryPostProcessor.class));
+      }
+      else if (beanFactory.isTypeMatch(ppName, Ordered.class)) {
+         orderedPostProcessorNames.add(ppName);
+      }
+      else {
+         nonOrderedPostProcessorNames.add(ppName);
+      }
+   }
+   // First, invoke the BeanFactoryPostProcessors that implement PriorityOrdered.
+   sortPostProcessors(priorityOrderedPostProcessors, beanFactory);
+   invokeBeanFactoryPostProcessors(priorityOrderedPostProcessors, beanFactory);
+   // Next, invoke the BeanFactoryPostProcessors that implement Ordered.
+   List&lt;BeanFactoryPostProcessor&gt; orderedPostProcessors = new ArrayList&lt;&gt;();
+   for (String postProcessorName : orderedPostProcessorNames) {
+      orderedPostProcessors.add(beanFactory.getBean(postProcessorName, BeanFactoryPostProcessor.class));
+   }
+   sortPostProcessors(orderedPostProcessors, beanFactory);
+   invokeBeanFactoryPostProcessors(orderedPostProcessors, beanFactory);
+   // Finally, invoke all other BeanFactoryPostProcessors.
+   List&lt;BeanFactoryPostProcessor&gt; nonOrderedPostProcessors = new ArrayList&lt;&gt;();
+   for (String postProcessorName : nonOrderedPostProcessorNames) {
+      nonOrderedPostProcessors.add(beanFactory.getBean(postProcessorName, BeanFactoryPostProcessor.class));
+   }
+   invokeBeanFactoryPostProcessors(nonOrderedPostProcessors, beanFactory);
+   // Clear cached merged bean definitions since the post-processors might have
+   // modified the original metadata, e.g. replacing placeholders in values...
+   beanFactory.clearMetadataCache();
+}
+</code></pre>
+<h4 id="3521-listbeanfactorypostprocessor-listbeandefinitionregistrypostprocessor">3.5.2.1  List**&lt;<strong>BeanFactoryPostProcessor</strong>&gt;、<strong>List</strong>&lt;<strong>BeanDefinitionRegistryPostProcessor</strong>&gt;**</h4>
+<p>看一下上述 10-12 行：</p>
+<pre><code class="language-plain">// 定义 List&lt;BeanFactoryPostProcessor&gt;
+List&lt;BeanFactoryPostProcessor&gt; regularPostProcessors = new ArrayList&lt;&gt;();
+// 定义 List&lt;BeanDefinitionRegistryPostProcessor&gt;
+List&lt;BeanDefinitionRegistryPostProcessor&gt; registryProcessors = new ArrayList&lt;&gt;();
+</code></pre>
+<p>为什么定义两个 List？<br>
+自己定义的 BeanFactoryProcessor可以有两种方式：</p>
+<p>1.实现 BeanFactoryPostProcessor 接口</p>
+<p>2.实现BeanDefinitionRegistryPostProcessor接口</p>
+<p>因为 BeanDefinitionRegistryPostProcessor 实现了 BeanFactoryPostProcessor 接口</p>
+<p>于是可以猜想实现 bdrp 和实现 bfp 是能够完成不同的功能，</p>
+<p>因为 bdrp 是子类，子类肯定扩展了父类中的功能。</p>
+<p>父类 BeanFactoryPostProcessor  中有一个 postProcessBeanFactory 方法：</p>
+<pre><code class="language-java">@FunctionalInterface
+public interface BeanFactoryPostProcessor {
+   void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException;
+}
+</code></pre>
+<p>子类 BeanDefinitionRegistryPostProcessor  扩展了一个 postProcessBeanDefinitionRegistry() 方法：</p>
+<pre><code class="language-java">public interface BeanDefinitionRegistryPostProcessor extends BeanFactoryPostProcessor {
+   void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) throws BeansException;
+}
+</code></pre>
+<h4 id="3522-getbeannamesfortype">3.5.2.2 getBeanNamesForType</h4>
+<p>上述 invokeBeanFactoryPostProcessors 方法的第 37-54 行：</p>
+<pre><code class="language-java">String[] postProcessorNames =
+      beanFactory.getBeanNamesForType(BeanDefinitionRegistryPostProcessor.class, true, false);
+for (String ppName : postProcessorNames) {
+   if (beanFactory.isTypeMatch(ppName, PriorityOrdered.class)) {
+      currentRegistryProcessors.add(beanFactory.getBean(ppName, BeanDefinitionRegistryPostProcessor.class));
+      processedBeans.add(ppName);
+   }
+}
+</code></pre>
+<p>getBeanNamesForType：这个方法是 beanFactory 中的方法，顾名思义，这个方法能够得到通过类得到 bean名字，这里的 Type 指的是 bd 当中描述当前类的 Class 类型。<br>
+beanFactory.getBeanNamesForType(BeanDefinitionRegistryPostProcessor.class, true, false)：获取 Type 为 BeanDefinitionRegistryPostProcessor 对应的 bean 名字。</p>
+<p>我们先来查看当前工厂的 map 中有哪些&lt;beanName, beanDefinition&gt;，之前说过在执行 register() 时向容器内添加了 7 个对象，我们看到有一个 BeanClass 为 ConfigurationClassPostProcessor 的类</p>
+<figure data-type="image" tabindex="6"><img src="https://epitomm.github.io/post-images/ConfigurationClassPostProcessor.png" alt="图片" loading="lazy"></figure>
+<p>我们发现 ConfigurationClassPostProcessor 类实现了 BeanDefinitionRegistryPostProcessor 接口：</p>
+<pre><code class="language-java">public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPostProcessor,
+      PriorityOrdered, ResourceLoaderAware, BeanClassLoaderAware, EnvironmentAware {
+</code></pre>
+<p>所以 beanFactory.getBeanNamesForType(BeanDefinitionRegistryPostProcessor.class, true, false); 就把 ConfigurationClassPostProcessor  类（Spring 内部自己定义的）拿出来了。</p>
+<h4 id="3523-invokebeandefinitionregistrypostprocessors">3.5.2.3 invokeBeanDefinitionRegistryPostProcessors</h4>
+<p>上述 invokeBeanFactoryPostProcessors 方法的第 60 行：</p>
+<pre><code class="language-java">invokeBeanDefinitionRegistryPostProcessors(currentRegistryProcessors, registry);
+</code></pre>
+<p>我们点进这个 invokeBeanDefinitionRegistryPostProcessors 方法：</p>
+<pre><code class="language-java">private static void invokeBeanDefinitionRegistryPostProcessors(
+      Collection&lt;? extends BeanDefinitionRegistryPostProcessor&gt; postProcessors, BeanDefinitionRegistry registry) {
+   // 循环所有的 BeanDefinitionRegistryPostProcessor
+   for (BeanDefinitionRegistryPostProcessor postProcessor : postProcessors) {
+      postProcessor.postProcessBeanDefinitionRegistry(registry);
+   }
+}
+</code></pre>
+<p>上述代码第 5 行点进去：调用 BeanDefinitionRegistryPostProcessor<br>
+扩展父类的方法 postProcessBeanDefinitionRegistry()：</p>
+<pre><code class="language-java">@Override
+public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) {
+   int registryId = System.identityHashCode(registry);
+   if (this.registriesPostProcessed.contains(registryId)) {
+      throw new IllegalStateException(
+            &quot;postProcessBeanDefinitionRegistry already called on this post-processor against &quot; + registry);
+   }
+   if (this.factoriesPostProcessed.contains(registryId)) {
+      throw new IllegalStateException(
+            &quot;postProcessBeanFactory already called on this post-processor against &quot; + registry);
+   }
+   this.registriesPostProcessed.add(registryId);
+   processConfigBeanDefinitions(registry);
+}
+</code></pre>
+<p>上述代码第 14 行点进去：</p>
+<pre><code class="language-java">public void processConfigBeanDefinitions(BeanDefinitionRegistry registry) {
+   // app 提供的 bean
+   List&lt;BeanDefinitionHolder&gt; configCandidates = new ArrayList&lt;&gt;();
+   // 获取容器中注册的所有 bean 名字
+   String[] candidateNames = registry.getBeanDefinitionNames();
+   // 依次取出每个&lt;beanName,beanDefinition&gt;
+   for (String beanName : candidateNames) {
+      BeanDefinition beanDef = registry.getBeanDefinition(beanName);
+      // 判断当前 bean 是否被处理过：使用 isFullConfigurationClass 来标识
+      if (ConfigurationClassUtils.isFullConfigurationClass(beanDef) ||
+            ConfigurationClassUtils.isLiteConfigurationClass(beanDef)) {
+         // 如果 BeanDefinition 中的 configurationClass 属性为 full 或者 lite，则意味着已经处理过了，直接跳过
+         // 这里需要结合下面的代码才能理解
+         if (logger.isDebugEnabled()) {
+            logger.debug(&quot;Bean definition has already been processed as a configuration class: &quot; + beanDef);
+         }
+      }
+      // 判断这个 BeanDefinition 是否包含了 @Configuration、@Service 注解
+      else if (ConfigurationClassUtils.checkConfigurationClassCandidate(beanDef, this.metadataReaderFactory)) {
+         configCandidates.add(new BeanDefinitionHolder(beanDef, beanName));
+      }
+   }
+   // Return immediately if no @Configuration classes were found
+   if (configCandidates.isEmpty()) {
+      return;
+   }
+    
+   // 排序，根据 order，不重要
+   // Sort by previously determined @Order value, if applicable
+   configCandidates.sort((bd1, bd2) -&gt; {
+      int i1 = ConfigurationClassUtils.getOrder(bd1.getBeanDefinition());
+      int i2 = ConfigurationClassUtils.getOrder(bd2.getBeanDefinition());
+      return Integer.compare(i1, i2);
+   });
+   // Detect any custom bean name generation strategy supplied through the enclosing application context
+   SingletonBeanRegistry sbr = null;
+   // 如果 BeanDefinitionRegistry 是 SingletonBeanRegistry 子类的话
+   // 由于会将 registry 强转为 SingletonBeanRegistry
+   if (registry instanceof SingletonBeanRegistry) {
+      sbr = (SingletonBeanRegistry) registry;
+      if (!this.localBeanNameGeneratorSet) {
+         BeanNameGenerator generator = (BeanNameGenerator) sbr.getSingleton(CONFIGURATION_BEAN_NAME_GENERATOR);
+         // SingletonBeanRegistry 中有 id 为 org.springframework.context.annotation.internalConfigurationBeanNameGenerator
+         // 如果有则利用它的，否则则使用 Spring 默认的
+         if (generator != null) {
+            this.componentScanBeanNameGenerator = generator;
+            this.importBeanNameGenerator = generator;
+         }
+      }
+   }
+   if (this.environment == null) {
+      this.environment = new StandardEnvironment();
+   }
+   // Parse each @Configuration class
+   // 实例化 ConfigurationClassParser 为了解析各个配置类
+   ConfigurationClassParser parser = new ConfigurationClassParser(
+         this.metadataReaderFactory, this.problemReporter, this.environment,
+         this.resourceLoader, this.componentScanBeanNameGenerator, registry);
+         
+   // 实例化 2 个 set，candidates 用于将之前加入的 configCandidates 进行去重
+   // 因为可能有多个配置类重复了
+   // alreadyParsed 用户判断是否处理过
+   Set&lt;BeanDefinitionHolder&gt; candidates = new LinkedHashSet&lt;&gt;(configCandidates);
+   Set&lt;ConfigurationClass&gt; alreadyParsed = new HashSet&lt;&gt;(configCandidates.size());
+   do {
+      parser.parse(candidates);
+      parser.validate();
+      Set&lt;ConfigurationClass&gt; configClasses = new LinkedHashSet&lt;&gt;(parser.getConfigurationClasses());
+      configClasses.removeAll(alreadyParsed);
+      // Read the model and create bean definitions based on its content
+      if (this.reader == null) {
+         this.reader = new ConfigurationClassBeanDefinitionReader(
+               registry, this.sourceExtractor, this.resourceLoader, this.environment,
+               this.importBeanNameGenerator, parser.getImportRegistry());
+      }
+      // 把扫描出来的 bean 对应的 beanDefinitions 添加到 factory 的 map 当中
+      this.reader.loadBeanDefinitions(configClasses);
+      alreadyParsed.addAll(configClasses);
+      candidates.clear();
+      if (registry.getBeanDefinitionCount() &gt; candidateNames.length) {
+         String[] newCandidateNames = registry.getBeanDefinitionNames();
+         Set&lt;String&gt; oldCandidateNames = new HashSet&lt;&gt;(Arrays.asList(candidateNames));
+         Set&lt;String&gt; alreadyParsedClasses = new HashSet&lt;&gt;();
+         for (ConfigurationClass configurationClass : alreadyParsed) {
+            alreadyParsedClasses.add(configurationClass.getMetadata().getClassName());
+         }
+         for (String candidateName : newCandidateNames) {
+            if (!oldCandidateNames.contains(candidateName)) {
+               BeanDefinition bd = registry.getBeanDefinition(candidateName);
+               if (ConfigurationClassUtils.checkConfigurationClassCandidate(bd, this.metadataReaderFactory) &amp;&amp;
+                     !alreadyParsedClasses.contains(bd.getBeanClassName())) {
+                  candidates.add(new BeanDefinitionHolder(bd, candidateName));
+               }
+            }
+         }
+         candidateNames = newCandidateNames;
+      }
+   }
+   while (!candidates.isEmpty());
+   // Register the ImportRegistry as a bean in order to support ImportAware @Configuration classes
+   if (sbr != null &amp;&amp; !sbr.containsSingleton(IMPORT_REGISTRY_BEAN_NAME)) {
+      sbr.registerSingleton(IMPORT_REGISTRY_BEAN_NAME, parser.getImportRegistry());
+   }
+   if (this.metadataReaderFactory instanceof CachingMetadataReaderFactory) {
+      // Clear cache in externally provided MetadataReaderFactory; this is a no-op
+      // for a shared cache since it'll be cleared by the ApplicationContext.
+      ((CachingMetadataReaderFactory) this.metadataReaderFactory).clearCache();
+   }
+}
+</code></pre>
+<figure data-type="image" tabindex="7"><img src="https://epitomm.github.io/post-images/candidateNames.png" alt="图片" loading="lazy"></figure>
+<p>上述 processConfigBeanDefinitions 方法第 18-21 行：</p>
+<pre><code class="language-java">      // 判断这个 BeanDefinition 是否包含了 @Configuration、@Service 注解
+      else if (ConfigurationClassUtils.checkConfigurationClassCandidate(beanDef, this.metadataReaderFactory)) {
+         configCandidates.add(new BeanDefinitionHolder(beanDef, beanName));
+      }      
+</code></pre>
+<p>checkConfigurationClassCandidate<br>
+先来看上述第二行调用 checkConfigurationClassCandidate 方法判断是否加了 @Configuration 注解，checkConfigurationClassCandidate 方法如下：</p>
+<pre><code class="language-java">public static boolean checkConfigurationClassCandidate(BeanDefinition beanDef, MetadataReaderFactory metadataReaderFactory) {
+   String className = beanDef.getBeanClassName();
+   if (className == null || beanDef.getFactoryMethodName() != null) {
+      return false;
+   }
+   AnnotationMetadata metadata;
+   if (beanDef instanceof AnnotatedBeanDefinition &amp;&amp;
+         className.equals(((AnnotatedBeanDefinition) beanDef).getMetadata().getClassName())) {
+      // Can reuse the pre-parsed metadata from the given BeanDefinition...
+      // 如果 BeanDefinition 是 AnnotatedBeanDefinition 的实例，并且 className 和 BeanDefinition 中的元数据的类名相同
+      // 则直接从 BeanDefinition 获得元数据Metadata
+      metadata = ((AnnotatedBeanDefinition) beanDef).getMetadata();
+   }
+   else if (beanDef instanceof AbstractBeanDefinition &amp;&amp; ((AbstractBeanDefinition) beanDef).hasBeanClass()) {
+      // Check already loaded Class if present...
+      // since we possibly can't even load the class file for this Class.
+      Class&lt;?&gt; beanClass = ((AbstractBeanDefinition) beanDef).getBeanClass();
+      metadata = new StandardAnnotationMetadata(beanClass, true);
+   }
+   else {
+      try {
+         MetadataReader metadataReader = metadataReaderFactory.getMetadataReader(className);
+         metadata = metadataReader.getAnnotationMetadata();
+      }
+      catch (IOException ex) {
+         if (logger.isDebugEnabled()) {
+            logger.debug(&quot;Could not find class file for introspecting configuration annotations: &quot; + className, ex);
+         }
+         return false;
+      }
+   }
+  
+   // 判断当前这个 bd 中存在的类是不是加了 @Configuration 注解
+   if (isFullConfigurationCandidate(metadata)) {
+      // 如果存在 Configuration 注解，则为 BeanDefinition 设置 configurationClass 属性为 FULL，结合 processConfigBeanDefinitions 方法的第 10 行，使用 isFullConfigurationClass 判断是否处理过
+      beanDef.setAttribute(CONFIGURATION_CLASS_ATTRIBUTE, CONFIGURATION_CLASS_FULL);
+   }
+   // 判断是否加了以下注解，摘录 isLiteConfigurationCandidate 的源码
+   // candidateIndicators.add(Component.class.getName());
+   // candidateIndicators.add(ComponentScan.class.getName());
+   // candidateIndicators.add(Import.class.getName());
+   // candidateIndicators.add(ImportResource.class.getName());
+   else if (isLiteConfigurationCandidate(metadata)) {
+      beanDef.setAttribute(CONFIGURATION_CLASS_ATTRIBUTE, CONFIGURATION_CLASS_LITE);
+   }
+   else {
+      return false;
+   }
+   // It's a full or lite configuration candidate... Let's determine the order value, if any.
+   // 得到排序：如果有多个加了 @Configuration 的类，根据 @Order进行排序决定解析顺序
+   Integer order = getOrder(metadata);
+   if (order != null) {
+      beanDef.setAttribute(ORDER_ATTRIBUTE, order);
+   }
+   return true;
+}
+</code></pre>
+<p>上述代码第 35 行，判断当前这个 bd 中存在的类是不是加了 @Configuration 注解：</p>
+<pre><code class="language-java">public static boolean isFullConfigurationCandidate(AnnotationMetadata metadata) {
+   return metadata.isAnnotated(Configuration.class.getName());
+}
+</code></pre>
+<p>上述 checkConfigurationClassCandidate 方法第 44-46 行，判断是否加了其他注解</p>
+<pre><code class="language-java">// 判断是否加了以下注解，摘录 isLiteConfigurationCandidate 的源码
+// candidateIndicators.add(Component.class.getName());
+// candidateIndicators.add(ComponentScan.class.getName());
+// candidateIndicators.add(Import.class.getName());
+// candidateIndicators.add(ImportResource.class.getName());
+  else if (isLiteConfigurationCandidate(metadata)) {
+      beanDef.setAttribute(CONFIGURATION_CLASS_ATTRIBUTE, CONFIGURATION_CLASS_LITE);
+  }
+</code></pre>
+<p>点进 isLiteConfigurationCandidate 方法如下：</p>
+<pre><code class="language-java">public static boolean isLiteConfigurationCandidate(AnnotationMetadata metadata) {
+   // Do not consider an interface or an annotation...
+   if (metadata.isInterface()) {
+      return false;
+   }
+   // Any of the typical annotations found?
+   for (String indicator : candidateIndicators) {
+      if (metadata.isAnnotated(indicator)) {
+         return true;
+      }
+   }
+   // Finally, let's look for @Bean methods...
+   try {
+      return metadata.hasAnnotatedMethods(Bean.class.getName());
+   }
+   catch (Throwable ex) {
+      if (logger.isDebugEnabled()) {
+         logger.debug(&quot;Failed to introspect @Bean methods on class [&quot; + metadata.getClassName() + &quot;]: &quot; + ex);
+      }
+      return false;
+   }
+}
+</code></pre>
+<figure data-type="image" tabindex="8"><img src="https://epitomm.github.io/post-images/candidateIndicators.png" alt="图片" loading="lazy"></figure>
+<p>processConfigBeanDefinitions 方法的第 62 行：</p>
+<pre><code class="language-plain">parser.parse(candidates);
+</code></pre>
+<p>点进这个 parse 方法：</p>
+<pre><code class="language-java">public void parse(Set&lt;BeanDefinitionHolder&gt; configCandidates) {
+   this.deferredImportSelectors = new LinkedList&lt;&gt;();
+   // 根据 BeanDefinition 的类型做不同的处理，一般都会调用 ConfigurationClassParse#parse 进行解析
+   for (BeanDefinitionHolder holder : configCandidates) {
+      BeanDefinition bd = holder.getBeanDefinition();
+      try {
+         // 判断这个 bd 是否被加了注解
+         if (bd instanceof AnnotatedBeanDefinition) {
+            parse(((AnnotatedBeanDefinition) bd).getMetadata(), holder.getBeanName());
+         }
+         else if (bd instanceof AbstractBeanDefinition &amp;&amp; ((AbstractBeanDefinition) bd).hasBeanClass()) {
+            parse(((AbstractBeanDefinition) bd).getBeanClass(), holder.getBeanName());
+         }
+         else {
+            parse(bd.getBeanClassName(), holder.getBeanName());
+         }
+      }
+      catch (BeanDefinitionStoreException ex) {
+         throw ex;
+      }
+      catch (Throwable ex) {
+         throw new BeanDefinitionStoreException(
+               &quot;Failed to parse configuration class [&quot; + bd.getBeanClassName() + &quot;]&quot;, ex);
+      }
+   }
+   processDeferredImportSelectors();
+}
+</code></pre>
+<p>再点进上述代码第 9 行的 parse 方法：</p>
+<pre><code class="language-java">protected final void parse(AnnotationMetadata metadata, String beanName) throws IOException {
+   processConfigurationClass(new ConfigurationClass(metadata, beanName));
+}
+</code></pre>
+<p>上述代码第二行调用了 processConfigurationClass 方法，点进去：</p>
+<pre><code class="language-java">protected void processConfigurationClass(ConfigurationClass configClass) throws IOException {
+   // 判断是否应该跳过解析
+   if (this.conditionEvaluator.shouldSkip(configClass.getMetadata(), ConfigurationPhase.PARSE_CONFIGURATION)) {
+      return;
+   }
+   // 处理 Imported 的情况
+   ConfigurationClass existingClass = this.configurationClasses.get(configClass);
+   if (existingClass != null) {
+      if (configClass.isImported()) {
+         if (existingClass.isImported()) {
+            existingClass.mergeImportedBy(configClass);
+         }
+         // Otherwise ignore new imported config class; existing non-imported class overrides it.
+         return;
+      }
+      else {
+         // Explicit bean definition found, probably replacing an import.
+         // Let's remove the old one and go with the new one.
+         this.configurationClasses.remove(configClass);
+         this.knownSuperclasses.values().removeIf(configClass::equals);
+      }
+   }
+   // Recursively process the configuration class and its superclass hierarchy.
+   SourceClass sourceClass = asSourceClass(configClass);
+   do {
+      sourceClass = doProcessConfigurationClass(configClass, sourceClass);
+   }
+   while (sourceClass != null);
+   
+   // 一个 map，用来存放扫描出来的 bean（注意这里的 bean 不是对象，仅仅是 bean 的信息，因为还没到实例化）
+   this.configurationClasses.put(configClass, configClass);
+}
+</code></pre>
+<p>doProcessConfigurationClass</p>
+<p>看上述第 28 行：</p>
+<pre><code class="language-java">sourceClass = doProcessConfigurationClass(configClass, sourceClass);
+</code></pre>
+<p>点进这个 doProcessConfigurationClass 方法：</p>
+<pre><code class="language-java">@Nullable
+protected final SourceClass doProcessConfigurationClass(ConfigurationClass configClass, SourceClass sourceClass)
+      throws IOException {
+   // Recursively process any member (nested) classes first
+   // 处理内部类
+   processMemberClasses(configClass, sourceClass);
+   // Process any @PropertySource annotations
+   for (AnnotationAttributes propertySource : AnnotationConfigUtils.attributesForRepeatable(
+         sourceClass.getMetadata(), PropertySources.class,
+         org.springframework.context.annotation.PropertySource.class)) {
+      if (this.environment instanceof ConfigurableEnvironment) {
+         processPropertySource(propertySource);
+      }
+      else {
+         logger.warn(&quot;Ignoring @PropertySource annotation on [&quot; + sourceClass.getMetadata().getClassName() +
+               &quot;]. Reason: Environment must implement ConfigurableEnvironment&quot;);
+      }
+   }
+   // Process any @ComponentScan annotations
+   Set&lt;AnnotationAttributes&gt; componentScans = AnnotationConfigUtils.attributesForRepeatable(
+         sourceClass.getMetadata(), ComponentScans.class, ComponentScan.class);
+   if (!componentScans.isEmpty() &amp;&amp;
+         !this.conditionEvaluator.shouldSkip(sourceClass.getMetadata(), ConfigurationPhase.REGISTER_BEAN)) {
+      for (AnnotationAttributes componentScan : componentScans) {
+         // The config class is annotated with @ComponentScan -&gt; perform the scan immediately
+         Set&lt;BeanDefinitionHolder&gt; scannedBeanDefinitions =
+               this.componentScanParser.parse(componentScan, sourceClass.getMetadata().getClassName());
+         // Check the set of scanned definitions for any further config classes and parse recursively if needed
+         for (BeanDefinitionHolder holder : scannedBeanDefinitions) {
+            BeanDefinition bdCand = holder.getBeanDefinition().getOriginatingBeanDefinition();
+            if (bdCand == null) {
+               bdCand = holder.getBeanDefinition();
+            }
+            if (ConfigurationClassUtils.checkConfigurationClassCandidate(bdCand, this.metadataReaderFactory)) {
+               parse(bdCand.getBeanClassName(), holder.getBeanName());
+            }
+         }
+      }
+   }
+   // Process any @Import annotations
+   processImports(configClass, sourceClass, getImports(sourceClass), true);
+   // Process any @ImportResource annotations
+   AnnotationAttributes importResource =
+         AnnotationConfigUtils.attributesFor(sourceClass.getMetadata(), ImportResource.class);
+   if (importResource != null) {
+      String[] resources = importResource.getStringArray(&quot;locations&quot;);
+      Class&lt;? extends BeanDefinitionReader&gt; readerClass = importResource.getClass(&quot;reader&quot;);
+      for (String resource : resources) {
+         String resolvedResource = this.environment.resolveRequiredPlaceholders(resource);
+         configClass.addImportedResource(resolvedResource, readerClass);
+      }
+   }
+   // Process individual @Bean methods
+   Set&lt;MethodMetadata&gt; beanMethods = retrieveBeanMethodMetadata(sourceClass);
+   for (MethodMetadata methodMetadata : beanMethods) {
+      configClass.addBeanMethod(new BeanMethod(methodMetadata, configClass));
+   }
+   // Process default methods on interfaces
+   processInterfaces(configClass, sourceClass);
+   // Process superclass, if any
+   if (sourceClass.getMetadata().hasSuperClass()) {
+      String superclass = sourceClass.getMetadata().getSuperClassName();
+      if (superclass != null &amp;&amp; !superclass.startsWith(&quot;java&quot;) &amp;&amp;
+            !this.knownSuperclasses.containsKey(superclass)) {
+         this.knownSuperclasses.put(superclass, configClass);
+         // Superclass found, return its annotation metadata and recurse
+         return sourceClass.getSuperClass();
+      }
+   }
+   // No superclass -&gt; processing is complete
+   return null;
+}
+</code></pre>
+<p>上述代码第 23-24 行，获得带有 @ComponentScan 注解的类<br>
+<img src="https://epitomm.github.io/post-images/ComponentScan.png" alt="图片" loading="lazy"></p>
+<p>上述代码第 30 行：</p>
+<pre><code class="language-java">this.componentScanParser.parse(componentScan, sourceClass.getMetadata().getClassName());
+</code></pre>
+<p>再点进去这个 parse 方法：真正解析扫描包的</p>
+<pre><code class="language-java">public Set&lt;BeanDefinitionHolder&gt; parse(AnnotationAttributes componentScan, final String declaringClass) {
+   ClassPathBeanDefinitionScanner scanner = new ClassPathBeanDefinitionScanner(this.registry,
+         componentScan.getBoolean(&quot;useDefaultFilters&quot;), this.environment, this.resourceLoader);
+   
+   // 看有没有自定义外部 Bean 生命器
+   Class&lt;? extends BeanNameGenerator&gt; generatorClass = componentScan.getClass(&quot;nameGenerator&quot;);
+   boolean useInheritedGenerator = (BeanNameGenerator.class == generatorClass);
+   scanner.setBeanNameGenerator(useInheritedGenerator ? this.beanNameGenerator :
+         BeanUtils.instantiateClass(generatorClass));
+   // 判断这个类是不是代理的
+   ScopedProxyMode scopedProxyMode = componentScan.getEnum(&quot;scopedProxy&quot;);
+   if (scopedProxyMode != ScopedProxyMode.DEFAULT) {
+      scanner.setScopedProxyMode(scopedProxyMode);
+   }
+   else {
+      Class&lt;? extends ScopeMetadataResolver&gt; resolverClass = componentScan.getClass(&quot;scopeResolver&quot;);
+      scanner.setScopeMetadataResolver(BeanUtils.instantiateClass(resolverClass));
+   }
+   scanner.setResourcePattern(componentScan.getString(&quot;resourcePattern&quot;));
+   for (AnnotationAttributes filter : componentScan.getAnnotationArray(&quot;includeFilters&quot;)) {
+      for (TypeFilter typeFilter : typeFiltersFor(filter)) {
+         scanner.addIncludeFilter(typeFilter);
+      }
+   }
+   for (AnnotationAttributes filter : componentScan.getAnnotationArray(&quot;excludeFilters&quot;)) {
+      for (TypeFilter typeFilter : typeFiltersFor(filter)) {
+         scanner.addExcludeFilter(typeFilter);
+      }
+   }
+   boolean lazyInit = componentScan.getBoolean(&quot;lazyInit&quot;);
+   if (lazyInit) {
+      scanner.getBeanDefinitionDefaults().setLazyInit(true);
+   }
+   Set&lt;String&gt; basePackages = new LinkedHashSet&lt;&gt;();
+   String[] basePackagesArray = componentScan.getStringArray(&quot;basePackages&quot;);
+   for (String pkg : basePackagesArray) {
+      String[] tokenized = StringUtils.tokenizeToStringArray(this.environment.resolvePlaceholders(pkg),
+            ConfigurableApplicationContext.CONFIG_LOCATION_DELIMITERS);
+      Collections.addAll(basePackages, tokenized);
+   }
+   for (Class&lt;?&gt; clazz : componentScan.getClassArray(&quot;basePackageClasses&quot;)) {
+      basePackages.add(ClassUtils.getPackageName(clazz));
+   }
+   if (basePackages.isEmpty()) {
+      basePackages.add(ClassUtils.getPackageName(declaringClass));
+   }
+    
+   // 得到 excludeFilter 设置的排除扫描的包
+   scanner.addExcludeFilter(new AbstractTypeHierarchyTraversingFilter(false, false) {
+      @Override
+      protected boolean matchClassName(String className) {
+         return declaringClass.equals(className);
+      }
+   });
+   return scanner.doScan(StringUtils.toStringArray(basePackages));
+}
+</code></pre>
+<p>上述代码第 60 行的 doScan 方法：</p>
+<pre><code class="language-java">protected Set&lt;BeanDefinitionHolder&gt; doScan(String... basePackages) {
+   Assert.notEmpty(basePackages, &quot;At least one base package must be specified&quot;);
+   Set&lt;BeanDefinitionHolder&gt; beanDefinitions = new LinkedHashSet&lt;&gt;();
+   for (String basePackage : basePackages) {
+      // 扫表 basePackage 路径下的 java 文件
+      // 并把它转成 BeanDefinition 类型
+      Set&lt;BeanDefinition&gt; candidates = findCandidateComponents(basePackage);
+      for (BeanDefinition candidate : candidates) {
+         // 解析 scope 属性
+         ScopeMetadata scopeMetadata = this.scopeMetadataResolver.resolveScopeMetadata(candidate);
+         candidate.setScope(scopeMetadata.getScopeName());
+         String beanName = this.beanNameGenerator.generateBeanName(candidate, this.registry);
+         if (candidate instanceof AbstractBeanDefinition) {
+            // 如果这个类是 AbstractBeanDefinition 的子类
+            // 则为它设置默认值，比如 alzy，init destroy
+            postProcessBeanDefinition((AbstractBeanDefinition) candidate, beanName);
+         }
+         if (candidate instanceof AnnotatedBeanDefinition) {
+            // 检查并且处理常用的注解
+            // 这里的处理主要是指把常用注解的值设置到 AnnotatedBeanDefinition 当中
+            // 当前前提是这个类必须是 AnnotatedBeanDefinition 类型的，说白了就是加了注解的类
+            AnnotationConfigUtils.processCommonDefinitionAnnotations((AnnotatedBeanDefinition) candidate);
+         }
+         if (checkCandidate(beanName, candidate)) {
+            BeanDefinitionHolder definitionHolder = new BeanDefinitionHolder(candidate, beanName);
+            definitionHolder =
+                  AnnotationConfigUtils.applyScopedProxyMode(scopeMetadata, definitionHolder, this.registry);
+            beanDefinitions.add(definitionHolder);
+            // 就是在这个方法中，将扫描包的 Bean 添加到 map 中
+            registerBeanDefinition(definitionHolder, this.registry);
+         }
+      }
+   }
+   return beanDefinitions;
+}
+</code></pre>
+<p>上述代码第 7 行：</p>
+<pre><code class="language-java">public Set&lt;BeanDefinition&gt; findCandidateComponents(String basePackage) {
+   if (this.componentsIndex != null &amp;&amp; indexSupportsIncludeFilters()) {
+      return addCandidateComponentsFromIndex(this.componentsIndex, basePackage);
+   }
+   else {
+      return scanCandidateComponents(basePackage);
+   }
+}
+</code></pre>
+<p>上述代码第 6 行：</p>
+<pre><code class="language-java">private Set&lt;BeanDefinition&gt; scanCandidateComponents(String basePackage) {
+   Set&lt;BeanDefinition&gt; candidates = new LinkedHashSet&lt;&gt;();
+   try {
+      String packageSearchPath = ResourcePatternResolver.CLASSPATH_ALL_URL_PREFIX +
+            resolveBasePackage(basePackage) + '/' + this.resourcePattern;
+      Resource[] resources = getResourcePatternResolver().getResources(packageSearchPath);
+      boolean traceEnabled = logger.isTraceEnabled();
+      boolean debugEnabled = logger.isDebugEnabled();
+      for (Resource resource : resources) {
+         if (traceEnabled) {
+            logger.trace(&quot;Scanning &quot; + resource);
+         }
+         if (resource.isReadable()) {
+            try {
+               MetadataReader metadataReader = getMetadataReaderFactory().getMetadataReader(resource);
+               if (isCandidateComponent(metadataReader)) {
+                  ScannedGenericBeanDefinition sbd = new ScannedGenericBeanDefinition(metadataReader);
+                  sbd.setSource(resource);
+                  if (isCandidateComponent(sbd)) {
+                     if (debugEnabled) {
+                        logger.debug(&quot;Identified candidate component class: &quot; + resource);
+                     }
+                     candidates.add(sbd);
+                  }
+                  else {
+                     if (debugEnabled) {
+                        logger.debug(&quot;Ignored because not a concrete top-level class: &quot; + resource);
+                     }
+                  }
+               }
+               else {
+                  if (traceEnabled) {
+                     logger.trace(&quot;Ignored because not matching any filter: &quot; + resource);
+                  }
+               }
+            }
+            catch (Throwable ex) {
+               throw new BeanDefinitionStoreException(
+                     &quot;Failed to read candidate component class: &quot; + resource, ex);
+            }
+         }
+         else {
+            if (traceEnabled) {
+               logger.trace(&quot;Ignored because not readable: &quot; + resource);
+            }
+         }
+      }
+   }
+   catch (IOException ex) {
+      throw new BeanDefinitionStoreException(&quot;I/O failure during classpath scanning&quot;, ex);
+   }
+   return candidates;
+}
+</code></pre>
+<p><img src="https://epitomm.github.io/post-images/parse%E5%89%8D.png" alt="图片" loading="lazy"><br>
+<img src="https://epitomm.github.io/post-images/parse%E5%90%8E.png" alt="图片" loading="lazy"></p>
+<p>![图片](C:\Users\Only\Downloads\Spring源码解析 (1).png)</p>
+<h1 id="spring-bean-的扩展">Spring Bean 的扩展</h1>
+<h2 id="beandefinitionregistrypostprocessor">BeanDefinitionRegistryPostProcessor</h2>
+<p>//实例化一个工厂DefaultListableBeanFactory</p>
+<p>org.springframework.context.support.GenericApplicationContext-&gt;GenericApplicationContext()</p>
+<p>1、实例化一个AnnotatedBeanDefinitionReader</p>
+<pre><code>2、ClassPathBeanDefinitionScanner，能够扫描我们bd,能够扫描一个类，并且转换成bd
+
+org.springframework.context.annotation.AnnotationConfigApplicationContext#AnnotationConfigApplicationContext()
+
+	委托AnnotationConfigUtils
+
+	org.springframework.context.annotation.AnnotatedBeanDefinitionReader#AnnotatedBeanDefinitionReader()
+</code></pre>
+<p>​</p>
+<pre><code>		org.springframework.context.annotation.AnnotationConfigUtils#registerAnnotationConfigProcessors()
+</code></pre>
+<p>​</p>
+<pre><code>			1、添加AnnotationAwareOrderComparator类的对象，主要去排序
+
+			2、ContextAnnotationAutowireCandidateResolver
+
+			3、往BeanDefinitionMap注册一个ConfigurationClassPostProcessor?  org.springframework.context.annotation.internalConfigurationAnnotationProcessor
+
+				why?因为需要在invokeBeanFactoryPostProcessors
+
+				invokeBeanFactoryPostProcessors主要是在spring的beanFactory初始化的过程中去做一些事情，怎么来做这些事情呢？
+
+				委托了多个实现了BeanDefinitionRegistryPostProcessor或者BeanFactoryProcessor接口的类来做这些事情,有自定义的也有spring内部的
+
+				其中ConfigurationClassPostProcessor就是一个spring内部的BeanDefinitionRegistryPostProcessor
+
+				因为如果你不添加这里就没有办法委托ConfigurationClassPostProcessor做一些功能
+
+				到底哪些功能？参考下面的注释
+
+			4、RequiredAnnotationBeanPostProcessor
+
+			.......
+
+			org.springframework.context.annotation.AnnotationConfigUtils#registerAnnotationConfigProcessors()
+
+				//往BeanDefinitionMap注册
+
+				org.springframework.context.annotation.AnnotationConfigUtils#registerPostProcessor
+
+					//准备好bean工厂，实例化对象
+
+					org.springframework.context.support.AbstractApplicationContext#refresh
+
+					//准备工作包括设置启动时间，是否激活标识位， 初始化属性源(property source)配置
+
+						org.springframework.context.support.AbstractApplicationContext#prepareRefresh
+
+							//得到beanFactory?因为需要对beanFactory进行设置
+
+							org.springframework.context.support.AbstractApplicationContext#obtainFreshBeanFactory
+
+								//准备bean工厂
+
+								1、添加一个类加载器
+
+								2、添加bean表达式解释器，为了能够让我们的beanFactory去解析bean表达式
+
+								3、添加一个后置处理器ApplicationContextAwareProcessor
+
+								4、添加了自动注入别忽略的列表
+
+								5、。。。。。。
+
+								6、添加了一个ApplicationListenerDetector后置处理器（自行百度）
+
+								org.springframework.context.support.AbstractApplicationContext#prepareBeanFactory
+
+									目前没有任何实现
+
+									org.springframework.context.support.AbstractApplicationContext#postProcessBeanFactory
+
+										1、getBeanFactoryPostProcessors()得到自己定义的（就是程序员自己写的，并且没有交给spring管理，就是没有加上@Component）
+
+										2、得到spring内部自己维护的BeanDefinitionRegistryPostProcessor
+
+										org.springframework.context.support.AbstractApplicationContext#invokeBeanFactoryPostProcessors
+
+											//调用这个方法
+
+											//循环所有的BeanDefinitionRegistryPostProcessor
+
+											//该方法内部postProcessor.postProcessBeanDefinitionRegistry
+
+											org.springframework.context.support.PostProcessorRegistrationDelegate#invokeBeanDefinitionRegistryPostProcessors
+
+												//调用扩展方法postProcessBeanDefinitionRegistry
+
+												org.springframework.beans.factory.support.BeanDefinitionRegistryPostProcessor#postProcessBeanDefinitionRegistry
+
+													//拿出的所有bd，然后判断bd时候包含了@Configuration、@Import，@Compent。。。注解
+
+													org.springframework.context.annotation.ConfigurationClassPostProcessor#processConfigBeanDefinitions
+
+														1、的到bd当中描述的类的元数据（类的信息）
+
+														2、判断是不是加了@Configuration   metadata.isAnnotated(Configuration.class.getName())
+
+														3、如果加了@Configuration，添加到一个set当中,把这个set传给下面的方法去解析
+
+														org.springframework.context.annotation.ConfigurationClassUtils#checkConfigurationClassCandidate
+
+														//扫描包
+</code></pre>
+<p>​</p>
+<pre><code>														org.springframework.context.annotation.ConfigurationClassParser#parse(java.util.Set&lt;org.springframework.beans.factory.config.BeanDefinitionHolder&gt;)
+</code></pre>
+<p>​</p>
+<pre><code>															org.springframework.context.annotation.ConfigurationClassParser#parse(org.springframework.core.type.AnnotationMetadata, java.lang.String)
+
+																//就行了一个类型封装
+
+																org.springframework.context.annotation.ConfigurationClassParser#processConfigurationClass
+
+																1、处理内部类 一般不会写内部类
+
+																org.springframework.context.annotation.ConfigurationClassParser#doProcessConfigurationClass
+
+																	//解析扫描的一些基本信息，比如是否过滤，比如是否加入新的包。。。。。
+
+																	org.springframework.context.annotation.ComponentScanAnnotationParser#parse
+
+																		org.springframework.context.annotation.ClassPathBeanDefinitionScanner#doScan
+
+																		org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider#findCandidateComponents
+
+																			org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider#scanCandidateComponents
+</code></pre>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[Spring系列（六）Spring源码解析]]></title>
         <id>https://epitomm.github.io/post/spring-xi-lie-liu-spring-yuan-ma-jie-xi/</id>
@@ -828,6 +2262,7 @@ dao...模拟查询数据库
 </code></pre>
 <h2 id="beanfactorypostprocessor">BeanFactoryPostProcessor</h2>
 <p>Spring 工厂后置处理器</p>
+<h2 id="beandefinitionregistrypostprocessor">BeanDefinitionRegistryPostProcessor</h2>
 <h3 id="134-preparebeanfactorybeanfactory">1.3.4 prepareBeanFactory(beanFactory)</h3>
 <p>再来看 refresh() 的第 12 行： prepareBeanFactory(beanFactory);</p>
 <pre><code>// Prepare the bean factory for use in this context.
@@ -6232,495 +7667,6 @@ Ocsp：在线证书状态协议，维护服务器和其他网络资源安全性�
 <blockquote>
 <p>https 是为了解决中间人攻击，假设在 https 页面中加载了 http 资源，http 资源还是有劫持的风险，客户端、局域网的风险也很大，恶意插件、木马、路由器、DNS 也都非常脆弱。HTTPS 能够在绝大部分下保证互联网访问数据传输的安全性。</p>
 </blockquote>
-]]></content>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[HTTP 系列（三）熟悉 HTTP 协议结构和通讯原理]]></title>
-        <id>https://epitomm.github.io/post/http-xi-lie-san-shou-xi-http-xie-yi-jie-gou-he-tong-xun-yuan-li/</id>
-        <link href="https://epitomm.github.io/post/http-xi-lie-san-shou-xi-http-xie-yi-jie-gou-he-tong-xun-yuan-li/">
-        </link>
-        <updated>2020-04-27T04:12:38.000Z</updated>
-        <content type="html"><![CDATA[<h1 id="http-协议之身份认证">HTTP 协议之身份认证</h1>
-<h2 id="身份认证信息">身份认证信息</h2>
-<ul>
-<li>密码</li>
-</ul>
-<blockquote>
-<p>只有本人才知道的字符串信息</p>
-</blockquote>
-<ul>
-<li>动态令牌</li>
-</ul>
-<blockquote>
-<p>仅限本人持有的设备内显示的一次性密码</p>
-</blockquote>
-<ul>
-<li>数字证书</li>
-</ul>
-<blockquote>
-<p>只有本人终端持有的信息</p>
-</blockquote>
-<ul>
-<li>生物认证</li>
-</ul>
-<blockquote>
-<p>指纹、虹膜</p>
-</blockquote>
-<ul>
-<li>IC 卡等</li>
-</ul>
-<blockquote>
-<p>仅限本人持有的</p>
-</blockquote>
-<blockquote>
-<p>身份认证信息时用来核对只有登陆者本人才知道、拥有的信息内容，但是即便对方是假冒用户，只要能够通过用户认证，HTTP 服务器就会默认这是出自于本人的行为。因此掌控机密性的密码不能让其他人得到，更不能轻易被破解。</p>
-</blockquote>
-<h2 id="常见认证方式">常见认证方式</h2>
-<ul>
-<li>BASIC 认证（基本认证）</li>
-<li>DIGEST 认证（摘要认证）</li>
-<li>SSL 客户端认证</li>
-<li>FormBase 认证（基于表单认证）</li>
-</ul>
-<h2 id="basic-认证">BASIC 认证</h2>
-<h3 id="什么是-basic-认证">什么是 BASIC 认证</h3>
-<ul>
-<li>从 HTTP1.0 就定义的一种认证方式，现在仍有一部分网站在使用。</li>
-</ul>
-<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/BASIC%E8%AE%A4%E8%AF%81.png" alt="图片" loading="lazy"></figure>
-<ul>
-<li>WEB 服务器与通信客户端之间进行的统一认证方式。</li>
-</ul>
-<h3 id="basic-认证过程">BASIC 认证过程</h3>
-<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/BASIC%E8%AE%A4%E8%AF%81%E8%BF%87%E7%A8%8B.png" alt="图片" loading="lazy"></figure>
-<ul>
-<li>客户端发送需要 BASIC 认证的请求资源</li>
-<li>当请求的资源需要 BASIC 认证时，服务器会随状态码 401 返回一个 Authorization Required，告诉客户端需要身份认证</li>
-<li>接收到状态码 401 的客户端为了通过 BASIC 认证，需要将用户名、密码发送给服务器，发送的字符和内容形式为是用户名和密码，中间用 “：” 拼接，将其经过 Base64 的编码后写入到首部字段 Authorization，并在前面加上“Basic ”，表明要执行的是 Basic 认证，发送给服务器。</li>
-<li>服务器端接收到包含首部字段 Authorization 的请求后，会去认证信息的正确性，如果验证通过，返回包含 Request URI 的资源响应，返回的是 200；如果认证失败，继续返回 401，表示认证未通过。</li>
-</ul>
-<blockquote>
-<p>BASIC 认证虽然采用 Base64 的编码方式，但是这不是加密处理，不需要任何附加信息就可以对 Base64 进行解码，由于明文解码后就是用户名和密码，在 HTTP 这样非加密通信的线路上，进行 BASIC 认证的过程中，如果不小心被别人窃听了，被盗的可能性就会非常大。<br>
-BASIC 认证在使用上不够便捷灵活，而且不安全，所以并不常用。</p>
-</blockquote>
-<h2 id="digest-认证">DIGEST 认证</h2>
-<h3 id="什么是digest认证">什么是DIGEST认证？</h3>
-<ul>
-<li>为弥补BASIC认证存在的弱点，从HTTP/1.1起就有了DIGEST认证。</li>
-<li>DIGEST 认证同样使用质询/响应的方式，但不会像BASIC认证那样直接发送明文密码。</li>
-</ul>
-<blockquote>
-<p>质询-响应方式：一方先发送认证要求给另一方，使用从另一方接收到的质询码，计算生成响应码，最后将响应码返回给对方进行认证。<br>
-因为发送给对方的只是响应摘要，以及由质询码产生的计算结果，所以比 BASIC 认证多了一层保护，密码泄露的可能性也就降低了。</p>
-</blockquote>
-<h3 id="digest-认证过程">DIGEST 认证过程</h3>
-<figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/DIGEST%E8%AE%A4%E8%AF%81%E8%BF%87%E7%A8%8B.png" alt="图片" loading="lazy"></figure>
-<ul>
-<li>客户端发送需要 DIGEST 认证的请求</li>
-<li>服务端返回状态码 401，同时里面包含一个头部字段，包含质询-响应认证方式所需要的临时质询码，质询码是一个随机数 nonce，一次返回都是 401 响应生成的任意随机的 Base64 编码的字符串，多数情况下，由一串数字、或一串字符或一串其他的组成</li>
-<li>接收到 401 状态码的客户端返回的响应中包含 DIGEST 认证必须要的头部字段 Authorization，包含这些信息：Digest username=&quot;xxx&quot;, realm=&quot;DIGEST&quot;, nonce=&quot;xxxxx&quot;, url=&quot;&quot;, response=&quot;&quot; ，其中 realm 和 nonce 就是从服务器端接收和响应的字段。username 是 realm 限定范围内可进行认证的内容，response 存放经过 MD5 算法运算生成的密码字符串。</li>
-<li>服务器接收到包含首部字段的 Authorization，服务器端接收到这个请求会确认认证信息的正确性</li>
-</ul>
-<blockquote>
-<p>DIGEST 认证提供了高于 BASIC 认证的安全等级，但是和 HTTPS 客户端认证相比还是很弱。DIGEST 认证提供了 <strong>“防止密码被窃听</strong>” 的保护机制，但是并不存在 “<strong>防止用户伪装</strong>” 的保护机制。DIGEST 认证和 BASIC 认证一样，使用上不那么便捷灵活，安全性不够，适用范围有限。<br>
-使用用户名、密码的认证方式，只要二者的内容正确就可以认为是本人的行为，但是如果用户名和密码被盗，就很有可能<strong>被第三方冒充</strong>。所以利用 SSL 客户端认证，就可以避免这种情况的发生。</p>
-</blockquote>
-<h2 id="ssl客户端认证">SSL客户端认证</h2>
-<ul>
-<li>SSL 客户端认证是借由HTTPS的客户端<strong>证书</strong>完成认证的方式。凭借客户端证书认证，服务器可确认访问是否来自已登录的客户端。</li>
-</ul>
-<blockquote>
-<p>银行网银：先输入用户名、密码，输入正确后下载它们的证书，下载好之后，以后每次登录会把证书也通过 HTTP 报文的方式发给服务器，开始通信。<br>
-细节过程：①当服务器接收到需要认证资源的请求，服务器给客户端发送一个报文要求客户端提供客户端证书，②用户选择将发送的客户端证书后，客户端会把客户端证书信息以报文方式发送给服务器，③服务器验证客户端证书，验证通过后，就可以领取证书内客户端的公开秘钥，然后开始 HTTPS 的加密通信。</p>
-</blockquote>
-<h2 id="基于表单的认证">基于表单的认证</h2>
-<ul>
-<li>基于表单的认证方法并不是在HTTP协议中定义的。</li>
-<li>使用由Web应用程序各自实现基于表单的认证方式。</li>
-<li>通过Cookie和Session的方式来保持用户的状态。</li>
-</ul>
-<h1 id="http-的长连接与短连接">HTTP 的长连接与短连接</h1>
-<blockquote>
-<p>资源消耗的优化：长连接。<br>
-连接好比从 A 地到 B 地的交通方式，想从 A 地到 B 地，打车过去，这样是一个短连接，就连通了一下，没办法让更多的人上车；后来发现从 A 去 B 的人很多，于是开通了一条地铁线，建立了一条长连接，很多人都可以复用这个连接。<br>
-能一次性节约很多资源的、服务很多次的是长连接。</p>
-</blockquote>
-<ul>
-<li>HTTP协议是基于请求/响应模式的，因此只要服务端给了响应，本次HTTP请求就结束了。</li>
-<li>HTTP的长连接和短连接本质上是<strong>TCP长连接和短连接</strong>。</li>
-</ul>
-<blockquote>
-<p>HTTP 协议是应用层协议，传输层使用的是 TCP 协议，网络层使用的是IP 协议，IP 协议主要解决网络路由、寻址的问题， TCP 协议解决的是如何在 IP 层之上可靠的传递数据包，使得在接收端能收到发送方发送的所有包，并且顺序与发出顺序一致。<br>
-HTTP 分成长连接和短连接，本质上就是 TCP 连接。TCP 连接是一个双向通道，可以保持一段时间不关闭，因此 TCP 连接才有真正的长连接和短连接。</p>
-</blockquote>
-<ul>
-<li>HTTP/1.0中，默认使用的是<strong>短连接</strong>。也就是说，浏览器和服务器每进行一次HTTP操作，就建立一次连接，结束就中断。</li>
-</ul>
-<blockquote>
-<p>如果客户端浏览器访问某个 html，该 html 内包含其他 js、css、img 资源，当浏览器每遇到一个 web 资源，就会建立一个 HTTP 会话。</p>
-</blockquote>
-<ul>
-<li>HTTP/1.1起，默认使用<strong>长连接</strong>，用以保持连接特性。</li>
-</ul>
-<figure data-type="image" tabindex="4"><img src="https://epitomm.github.io/post-images/HTTP%E9%95%BF%E8%BF%9E%E6%8E%A5.png" alt="图片" loading="lazy"></figure>
-<blockquote>
-<p>使用长连接的情况时，当一个网页打开完成后，客户端和服务器之间用于传输 HTTP 数据的 TCP 连接不会关闭，如果客户端再次访问这个服务器上的网页，会继续使用这一条已经建立的连接，这个 keep-alive 不会永久保持连接，有一个保持时间，在不同的服务器软件可以设置。</p>
-</blockquote>
-<ul>
-<li>短连接：</li>
-</ul>
-<p>建立连接一数据传输一关闭连接..建立连接一数据传输一关闭连接</p>
-<blockquote>
-<p>客户端向服务器发送连接请求，Server 接到请求，双方建立连接，客户端向 Server 发送消息，Server 回应 Client，一次读写就完成了，这时候双方任何一个都可以发起 close 关闭的操作，一般都是 Client 先发起 close。短连接一般只会在 Client-Server 间传递一次读写操作。</p>
-</blockquote>
-<ul>
-<li>长连接：</li>
-</ul>
-<p>建立连接—数据传输…（保持连接）.…数据传输——关闭连接</p>
-<blockquote>
-<p>Client 向 Server 发起连接请求，Server 接受 Client 的请求，双方建立连接，Client 与 Server 完成一次读写之后，它们之间的连接不会主动关闭，后续的读写操作会继续使用这个连接。<br>
-短连接对于服务器来说，它的管理较为简单，存在的连接都是有用的连接，不需要额外的控制手段，但如果客户请求频繁，将在 TCP 建立和关闭的操作上浪费时间也浪费带宽，响应的反应速度就会变慢，客户体验感不好。<br>
-长连接可以省去较多的 TCP 连接和关闭的时间，减少浪费、节约时间，对于频繁请求资源的客户来说，比较适合使用长连接。在长连接的应用场景下， Client 端一般不会主动关闭连接，与短连接不同，Client 与 Server 之间的连接如果一直不关闭的话，就会存在问题：随着客户端连接越来越多，Server 承受不住，这时 Server 端需要采取一些策略，比如说，关闭一些长时间没有读写事件发生的连接，可以避免一些恶意连接导致 Server 端服务受损。</p>
-</blockquote>
-<h1 id="http-中介之代理">HTTP 中介之代理</h1>
-<figure data-type="image" tabindex="5"><img src="https://epitomm.github.io/post-images/HTTP%E4%B8%AD%E4%BB%8B%E4%B9%8B%E4%BB%A3%E7%90%86.png" alt="图片" loading="lazy"></figure>
-<blockquote>
-<p>一般情况下是客户端直接与服务器连接，但是出于不方便或是其他的特殊原因，可能会通过一个中间人与服务器连接。这个中间人就叫做 <strong>web 代理</strong>，这个中间人<strong>既是客户端、又是服务端</strong>，对于服务器来说，由于请求是从代理访问过来的，所以在这个过程中，代理起到了客户端的作用；而对于真正的客户端来说，请求是发给代理的，所以代理起到了服务器的作用。</p>
-</blockquote>
-<h2 id="代理的作用">代理的作用</h2>
-<ul>
-<li>抓包</li>
-</ul>
-<blockquote>
-<p>为了能够更好的分析 HTTP 请求，或者达到安全措施的目的，只有使用代理才可以更好的对客户端的数据包进行拦截，在这里代理的名字有另外一种叫法：拦截服务器</p>
-</blockquote>
-<ul>
-<li>FQ</li>
-</ul>
-<blockquote>
-<p>如果想通过计算机访问 facebook，由于长城防火墙屏蔽了 facebook、YouTube 这些网站，不可直接访问，就要通过代理翻墙。</p>
-</blockquote>
-<figure data-type="image" tabindex="6"><img src="https://epitomm.github.io/post-images/FQ.png" alt="图片" loading="lazy"></figure>
-<ul>
-<li>匿名访问</li>
-</ul>
-<blockquote>
-<p>HTTP 协议本身具有匿名性，HTTP 代理服务器通过删除 HTTP 报文中的身份特性，比如客户端的 IP 地址、Cookie、会话 ID 等，从而对远端的服务器隐藏原始用户的 IP 地址以及其他细节，同时 HTTP 代理服务器上也不会记录原始用户访问记录，就使得代理上网的客户可以在更加安全隐秘的环境中访问网络。</p>
-</blockquote>
-<ul>
-<li>过滤器</li>
-</ul>
-<figure data-type="image" tabindex="7"><img src="https://epitomm.github.io/post-images/%E8%BF%87%E6%BB%A4%E5%99%A8.png" alt="图片" loading="lazy"></figure>
-<blockquote>
-<p>HTTP 协议并不知道在访问网络的是谁，即便是个小朋友登上父母的账号进行访问，认证起来我们也认为他就是他的父母。通过代理服务器进行分析和部分请求的拦截，进一步加强对网络的控制。</p>
-</blockquote>
-<h1 id="http-中介之网关">HTTP 中介之网关</h1>
-<ul>
-<li>网关可以作为某种翻译器使用，它抽象出了一种能够到达资源的方法。网关是资源和应用程序之间的粘合剂。</li>
-<li>网关扮演的是“协议转换器”的角色。</li>
-</ul>
-<figure data-type="image" tabindex="8"><img src="https://epitomm.github.io/post-images/HTTP%E4%B8%AD%E4%BB%8B%E4%B9%8B%E7%BD%91%E5%85%B3.png" alt="图片" loading="lazy"></figure>
-<blockquote>
-<p>代理连接的是两个或多个使用相同协议的应用程序。<br>
-网关连接的是两个或多个使用不同协议的端点，网关扮演的是 “<strong>协议转换器</strong>” 的角色，网关可以向数据库发送查询数据、发邮件、生成动态内容。</p>
-</blockquote>
-<h2 id="web-网关">WEB 网关</h2>
-<ul>
-<li>Web网关在一侧使用HTTP协议，在另一侧使用另一种协议。</li>
-</ul>
-<p>&lt;客户端协议&gt;/&lt;服务器端协议&gt;</p>
-<p>①（HTTP/）服务器端网关：通过HTTP协议与客户端对话，通过其他协议与服务器通信。</p>
-<blockquote>
-<p>发邮件就是服务器端网关，客户端是 HTTP 协议，邮件服务器是 SMTP 协议</p>
-</blockquote>
-<p>②（/HTTP）客户端网关：通过其他协议与客户端对话，通过HTTP协议与服务器通信。</p>
-<h2 id="常见的网关类型">常见的网关类型</h2>
-<ul>
-<li>（HTTP/*）服务器端Web网关</li>
-</ul>
-<blockquote>
-<p>客户端发送 HTTP 请求，服务器端 web网关会把这个请求转换为其他协议与服务器进行连接，完成获取资源后，会将对象放在一条 HTTP 响应中，发送给客户端：发邮件。</p>
-</blockquote>
-<ul>
-<li>（HTTP/HTTPS）服务器端安全网关</li>
-</ul>
-<blockquote>
-<p>客户端发送 HTTP 请求，网关自动进行加密，加密来自客户端的请求，然后再发送给服务器，为了安全问题。</p>
-</blockquote>
-<ul>
-<li>（HTTPS/HTTP）客户端安全加速器网关</li>
-</ul>
-<blockquote>
-<p>客户端发送的请求是经过加密的安全的 HTTPS ，通过网关进行解密后再向 web 服务器发送普通的 HTTP 请求。</p>
-</blockquote>
-<ul>
-<li>资源网关</li>
-</ul>
-<blockquote>
-<p>客户端通过 HTTP 连接到应用程序的服务器，服务器并不回送文件，而是将请求通过网关 API 发送给运行在服务器上的应用程序，应用程序将请求资源回送给客户端。</p>
-</blockquote>
-<h1 id="http-缓存">HTTP 缓存</h1>
-<h2 id="为什么要使用http缓存">为什么要使用HTTP缓存？</h2>
-<p>请求一次服务器，请求头大小 1KB，响应头大小 1KB，请求的文件大小 10KB，一次请求的流量就是 12KB，10 次就是 120KB，n 次请求就是 12*n KB。</p>
-<ul>
-<li><strong>客户端</strong>每次都要请求服务器，浪费<strong>流量</strong>。</li>
-<li><strong>服务器</strong>每次都提供查找、下载，请求用户基数如果太大，服务器就会存在很大<strong>压力</strong>。</li>
-<li><strong>客户端</strong>每次请求完都要进行页面渲染，<strong>用户体验差</strong>。</li>
-</ul>
-<p>是否可以将请求的文件存放起来使用：HTTP 缓存。</p>
-<h2 id="缓存的内容又是什么">缓存的内容又是什么？</h2>
-<p>主要针对样式：CSS、JS、图片这一系列更新频率不大的<strong>静态文件</strong>进行缓存。</p>
-<blockquote>
-<p>缓存是通过什么实现的？请求头-响应头</p>
-</blockquote>
-<h2 id="http缓存头部字段">HTTP缓存头部字段</h2>
-<ul>
-<li>Cache-Control请求/响应头，缓存控制字段</li>
-</ul>
-<blockquote>
-<p>控制 HTTP 缓存的最高指令，要不要缓存也是 Cache-Control 说了算。</p>
-</blockquote>
-<p>no-store：所有内容都不缓存。</p>
-<p>no-cache：缓存，但是浏览器使用缓存前，都会请求服务器判断缓存资源是否是最新。</p>
-<p>max-age=X（单位秒）请求缓存后的X秒不再发起请求。</p>
-<p>s-maxage=X（单位秒）代理服务器请求源站缓存后的X秒不再发起请求，只对CDN缓存有效。</p>
-<p>public：客户端和代理服务器（CDN）都可缓存。</p>
-<p>private：只有客户端可以缓存。</p>
-<ul>
-<li>Expires</li>
-</ul>
-<p>响应头，代表资源过期时间，由服务器返回提供，是http1.0的属性，在与max-age共存的情况下，优先级要低。</p>
-<ul>
-<li>Last-Modified</li>
-</ul>
-<p>响应头，资源最新修改时间，由服务器告诉浏览器。</p>
-<ul>
-<li>if-Modified-Since</li>
-</ul>
-<p>请求头，资源最新修改时间，由浏览器告诉服务器，和Last-Modified是一对，它两会进行对比。</p>
-<ul>
-<li>Etag</li>
-</ul>
-<p>响应头，资源标识，由服务器告诉浏览器。</p>
-<ul>
-<li>if-None-Match</li>
-</ul>
-<p>请求头，缓存资源标识，由浏览器告诉服务器（其实就是上次服务器给的Etag），和Etag是一对，它两会进行对比。</p>
-<h2 id="http缓存工作方式">HTTP缓存工作方式</h2>
-<h3 id="expires">Expires</h3>
-<ul>
-<li>场景一：让服务器与浏览器约定一个文件过期时间一Expires</li>
-</ul>
-<figure data-type="image" tabindex="9"><img src="https://epitomm.github.io/post-images/Expires.png" alt="图片" loading="lazy"></figure>
-<blockquote>
-<p>① 第一次请求时，浏览器向服务器请求一个 f.js 文件<br>
-② 服务器说文件给你，我们约定一个时间，通过响应头返回一个 Expires 过期约定时间，同时返回了 f.js<br>
-③ 后续请求浏览器先对比当前时间是否已经大于 Expires，判断缓存的文件是否超过了约定的过期时间，时间没过的话，不发起请求，直接使用本地缓存；时间过期了，就发起请求，再返回到步骤 ①。<br>
-假设 Expires 已经过期，浏览器请求服务器，但是 f.js 并未改变，如何避免这时发起请求呢？</p>
-</blockquote>
-<h3 id="last-modified-与-if-modified-since">Last-Modified 与 if-Modified-Since</h3>
-<ul>
-<li>场景二：让服务器与浏览器在约定文件过期时间的基础上，再加一个文件最新修改时间的对比——Last-Modified 与 if-Modified-Since</li>
-</ul>
-<figure data-type="image" tabindex="10"><img src="https://epitomm.github.io/post-images/Last-Modified.png" alt="图片" loading="lazy"></figure>
-<blockquote>
-<p>① 浏览器向服务器请求 f.js，并要一个过期时间<br>
-② 服务器返回给浏览器 f.js 和 一个过期时间，再给一个文件最新修改时间 Last-Modified，通过设置响应头返回给浏览器，文件过期后，双方核对文件修改时间<br>
-后续浏览器可能有如下三种情况：</p>
-<ol>
-<li>Expires 还未过期，浏览器使用本地缓存</li>
-<li>Expires 过期，浏览器请求服务器时带上文件最新修改时间，在请求头里面加上 if-Modified-Since，也就是上次请求服务器返回的 Last-Modified，把这个值又带回去。服务器把这个 if-Modified-Since（请求头里的文件最近修改时间） 和 服务器上的文件最新修改时间 Last-Modified 作对比，如果两个值不相等，服务器查找最新的 f.js + Expires + Last-Modified 返回给浏览器；如果相等，服务器返回状态码 304：文件未修改过，你还是用你的本地缓存吧。</li>
-</ol>
-</blockquote>
-<figure data-type="image" tabindex="11"><img src="https://epitomm.github.io/post-images/Last-Modified_2.png" alt="图片" loading="lazy"></figure>
-<blockquote>
-<p>浏览器端可以随意修改 Expires，很极端的情况下，Last-Modified 只能精确到秒，假设文件在 1秒 内发生变化，Last-Modified 无法感知这个文件的变化，这样情况下，浏览器永远无法拿到最新文件。</p>
-</blockquote>
-<h3 id="etag与lf-none-match">Etag与lf-None-Match</h3>
-<ul>
-<li>场景三：让服务器与浏览器在过期时间Expires+Last-Modified的基础上，增加一个文件内容唯一对比标记——Etag与lf-None-Match。Expires不稳定，再加入一个max-age来加以代替。</li>
-</ul>
-<figure data-type="image" tabindex="12"><img src="https://epitomm.github.io/post-images/Etag.png" alt="图片" loading="lazy"></figure>
-<blockquote>
-<p>① 浏览器请求 f.js<br>
-② 服务器将 f.js + max-age(过期时间) + Last-Modified + Etag（文件内容的唯一标识）<br>
-③ 浏览器 60s 内不发起请求，直接使用本地缓存，<br>
-max-age=60代表成功缓存后的 60s 内不再向服务器发起请求，与 Expires 相似，但 max-age 优先级比 Expires 高，max-age 存在时 Expires 就没用了。</p>
-<blockquote>
-<p>④ 60s 后，浏览器带上 If-Modified-Since 和 If-None-Match 向服务器发起请求，服务器对比 If-None-Match 与服务器端的 Etag，这时候尽管给出了 If-Modified-Since，但是不会再对比 If-Modified-Since 和 Last-Modified 了，因为 Etag 优先级比 Last-Modified 高，Etag 就是为了解决 1s 内文件发生改变的问题。如果 If-None-Match 与 Etag 不相等，说明 f.js 这个内容被修改过，服务器返回给浏览器最新的 f.js + 全新的 Etag + max-age +Last-Modified（没什么用了，优先级 &lt; Etag） + Expires（没什么用了，优先级&lt;max-age）；如果 Etag 与 If-None-Match 相等，返回 304 告诉浏览器继续使用之前的本地缓存。</p>
-</blockquote>
-</blockquote>
-<figure data-type="image" tabindex="13"><img src="https://epitomm.github.io/post-images/Etag_2.png" alt="图片" loading="lazy"></figure>
-<blockquote>
-<p>max-age 或 Expires 不过期的时候，浏览器没有办法主动感知服务器的文件变化。<br>
-如果服务端改变了文件，怎样让客户端知道呢？</p>
-</blockquote>
-<h2 id="缓存改进方案">缓存改进方案</h2>
-<h3 id="md5hash缓存">md5/hash缓存</h3>
-<p>通过不缓存html，为静态文件添加MD5或者hash标识，解决浏览器无法跳过缓存过期时间主动感知文件变化的问题。</p>
-<blockquote>
-<p>HTTP 缓存方案：服务器与浏览器的文件修改时间对比，文件内容标识对比，前提的基础都是建立在两者文件路径完全相同的基础上，请求的都是 f.js，这才能够解读这样的缓存，但是如果第一次要获取的名字是 f-hash1.js，下一次文件修改了就变成了 f-hash2.js，这是两个完全不同的文件。<br>
-浏览器第一次加载页面，请求并缓存了 f-hash1,js，第二次加载同样一个地方文件指向 f-hash2.js，浏览器不会询问缓存了，因为本地没有这个缓存，浏览器会直接重新请求 f-hash2.js，因为这就是两个不同的文件。<br>
-通过这种方式就可以解决过期时间没到，浏览器无法主动请求服务器的问题，只需要在在项目每次发布迭代的时候，将修改过的静态文件添加不同的 MD5 或者 hash 标识即可。</p>
-</blockquote>
-<h3 id="cdn缓存">CDN缓存</h3>
-<p>CDN是构建在网络之上的内容分发网络，依靠部署在各地的边缘服务器，通过中心平台的负载均衡、内容分发、调度等功能模块，使用户就近获取所需内容，降低网络拥塞，提高用户访问响应速度和命中率。</p>
-<blockquote>
-<p>假设多年前，我们所在的城市只有一个火车站，每次春运整个城市的人都得去这个火车站买票， 人流量及购票需求激增，为了缓解这个问题，城市的不同区都出现了火车票的代售点，这样每个区的人都可以就近买票，火车站总站的压力大大减轻。<br>
-可以把每个区的售票点称之为 CDN 节点，也就是前面所说的 代理服务器，简而言之，可以把 CDN 理解成浏览器与服务器之间的临时站点，它会替服务器处理部分浏览器请求，从而减轻总服务器上的压力。静态资源也是一样的，可以分成多个临时站点来存储。<br>
-把 CDN 的价值归纳为：<br>
-①通过分流大大减轻了原站（服务器端）的压力。<br>
-②解决了跨地区访问问题（就近站点访问）。</p>
-</blockquote>
-<h3 id="cdn-缓存工作方式">CDN 缓存工作方式</h3>
-<ul>
-<li>第一次请求</li>
-</ul>
-<figure data-type="image" tabindex="14"><img src="https://epitomm.github.io/post-images/CDN%E7%BC%93%E5%AD%98%E7%AC%AC%E4%B8%80%E6%AC%A1%E8%AF%B7%E6%B1%82.png" alt="图片" loading="lazy"></figure>
-<ul>
-<li>后续请求</li>
-</ul>
-<figure data-type="image" tabindex="15"><img src="https://epitomm.github.io/post-images/CDN%E7%BC%93%E5%AD%98%E5%90%8E%E7%BB%AD%E8%AF%B7%E6%B1%82.png" alt="图片" loading="lazy"></figure>
-<p>可能出现以下几种情况：</p>
-<p>① CDN 节点自己缓存的文件还没过期，于是返回 304 给浏览器，打回了这次请求</p>
-<p>② CND 节点发现自己缓存的文件过期了，为了保险起见，自己发送请求给服务器，成功拿回最新数据，然后交还给浏览器。</p>
-<p>CND 缓存的问题和 HTTP 缓存的问题一样，CDN 缓存时间不过期，浏览器始终被拦截，无法拿到最新的文件。回归 HTTP 缓存本身，缓存本身针对于更新频率不高的静态文件，CDN 缓存提供了分流、访问加速等。</p>
-<p>CDN 与 HTTP 缓存不一样的是：CDN 类似于一个平台，可以通过登录手动更新 CDN 缓存，变相解决了浏览器缓存无法手动控制的问题。</p>
-<h2 id="浏览器操作对http缓存的影响">浏览器操作对HTTP缓存的影响</h2>
-<table>
-<thead>
-<tr>
-<th style="text-align:left"><strong>用户操作</strong></th>
-<th style="text-align:left"><strong>Expires/Cache-Control</strong></th>
-<th style="text-align:left"><strong>Last-Modihed/Etag</strong></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left">地址栏回车</td>
-<td style="text-align:left">有效</td>
-<td style="text-align:left">有效</td>
-</tr>
-<tr>
-<td style="text-align:left">页面链接跳转</td>
-<td style="text-align:left">有效</td>
-<td style="text-align:left">有效</td>
-</tr>
-<tr>
-<td style="text-align:left">新开窗口</td>
-<td style="text-align:left">有效</td>
-<td style="text-align:left">有效</td>
-</tr>
-<tr>
-<td style="text-align:left">前进、后退</td>
-<td style="text-align:left">有效</td>
-<td style="text-align:left">有效</td>
-</tr>
-<tr>
-<td style="text-align:left">F5刷新</td>
-<td style="text-align:left">无效</td>
-<td style="text-align:left">有效</td>
-</tr>
-<tr>
-<td style="text-align:left">Ctrl+F5刷新</td>
-<td style="text-align:left">无效</td>
-<td style="text-align:left">无效</td>
-</tr>
-</tbody>
-</table>
-<h1 id="内容协商机制">内容协商机制</h1>
-<blockquote>
-<p>访问谷歌，同一个 URL，在国内打开谷歌是中文，在国外打开是英文的。</p>
-</blockquote>
-<ul>
-<li>指客户端和服务器端就响应的资源内容进行交涉，然后提供给客户端最为适合的资源。内容协商会以响应资源的语言，字符集，编码方式等作为判断的基准。</li>
-</ul>
-<h2 id="内容协商方式">内容协商方式</h2>
-<ul>
-<li>客户端驱动</li>
-</ul>
-<p>客户端发起请求，服务器发送可选项列表，客户端作出选择后在发送第二次请求。</p>
-<ul>
-<li>服务器驱动</li>
-</ul>
-<p>服务器检查客户端的请求头部集并决定提供哪个版本的页面。</p>
-<ul>
-<li>透明协商</li>
-</ul>
-<p>某个中间设备（通常是缓存代理）代表客户端进行协商。</p>
-<h2 id="服务器驱动内容协商-请求首部集">服务器驱动内容协商-请求首部集</h2>
-<ul>
-<li>Accept：告知服务器发送何种媒体类型</li>
-<li>Accept-Language：告知服务器发送何种语言</li>
-<li>Accept-Charset：告知服务器发送何种字符集</li>
-<li>Accept-Encoding：告知服务器采用何种编码</li>
-</ul>
-<h2 id="服务器驱动内容协商-请求首部集-2">服务器驱动内容协商-请求首部集</h2>
-<ul>
-<li>Content-Type</li>
-<li>Content-Language</li>
-<li>Content-Type</li>
-<li>Content-Encoding</li>
-</ul>
-<h2 id="服务器驱动内容协商-近似匹配">服务器驱动内容协商-近似匹配</h2>
-<blockquote>
-<p>客户端的 Accept-Language 指的是西班牙语，服务器端只有英语和法语，这个客户端希望在没有西班牙语的时候优先返回英语。这就意味着需要一种 HTTP 机制更详细的描述偏好：近似匹配方式。</p>
-</blockquote>
-<p>Accept-Language:en; q=0.5, fr; q=0.0, nl; q=1.0, tr; q=0.0</p>
-<blockquote>
-<p>上述首部表示用户最愿意接受 nl：荷兰语(nl; q=1.0)；其次，如果没有荷兰语的话，英文也行：en;q=0.5；不接受法语：fr;q=0.0 ，不接受土耳其语：tr;q=0.0</p>
-</blockquote>
-<p>q 值的范围是 0-1，不代表所有权重和为 1，不是权重的概念，只是优先级的概念。</p>
-<blockquote>
-<p>如果服务端既没有 nl 也没有 en，服务器端猜测，服务器端设置默认值。</p>
-</blockquote>
-<h2 id="断点续传和多线程下载">断点续传和多线程下载</h2>
-<ul>
-<li>断点续传？多线程下载？</li>
-</ul>
-<blockquote>
-<p>下载文件时，下载到一半，突然网络不太好，下载中断了；<br>
-或者主动暂停下载；<br>
-用迅雷下载一个大文件，会分成好多块分开下载。<br>
-上述叫断点续传。</p>
-<ul>
-<li>HTTP是通过在Header里两个参数实现的，客户端发请求时对应的是Range，服务器端响应时对应的是Content-Range。<br>
-不论是断点续传还是迅雷的多线程分块下载，如果续传成功，返回 206，如果文件有变动，返回 200 和新文件的内容。</li>
-</ul>
-</blockquote>
-<p>Range</p>
-<ul>
-<li>用于请求头中，指定第一个字节的位置和最后一个字节的位置，一般格式：</li>
-<li>Range:（unit=first byte pos）-[last byte pos] 左开右闭区间
-<ul>
-<li>Range:bytes=0-499</li>
-<li>Range:bytes=500-999</li>
-<li>Range:bytes=-500  后 500 个字节的内容</li>
-<li>imooc Range:bytes=500-   从第 500 字节开始，到文件结束部分</li>
-<li>Range:bytes=500-600,601-999</li>
-</ul>
-</li>
-</ul>
-<p>Content-Range</p>
-<ul>
-<li>用于响应头中，在发出带 Range的请求后，服务器会在Content-Range 头部返回当前接受的范围和文件总大小。一般格式：
-<ul>
-<li>Content-Range:bytes（unit first byte pos）-[last byte pos]/[entity legth]</li>
-</ul>
-</li>
-<li>而在响应完成后，返回的响应头内容也不同：
-<ul>
-<li>HTTP/1.1200 Ok（不使用断点续传方式）</li>
-<li>HTTP/1.1 206 Partial Content（使用断点续传方式）</li>
-</ul>
-</li>
-</ul>
-<h2 id="断点续传过程">断点续传过程</h2>
-<p>1.客户端下载一个1024K的文件，已经下载了其中512K。</p>
-<p>2.网络中断，客户端请求续传，因此需要在HTTP头中申明本次需要续传的片段：Range:bytes=512000-</p>
-<p>这个头通知服务端从文件的512K位置开始传输文件。</p>
-<p>3.服务端收到断点续传请求，从文件的512K位置开始传输，并且在HTTP头中增加：</p>
-<p>Content-Range:bytes 512000-/1024000并且此时服务端返回的HTTP状态码应该是206，而不是200。</p>
 ]]></content>
     </entry>
 </feed>

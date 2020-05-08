@@ -3,7 +3,7 @@
     <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Spring系列（六）Spring源码解析 | SSM</title>
-<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1588842223995">
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1588928402227">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
 <link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
 <link rel="alternate" type="application/atom+xml" title="Spring系列（六）Spring源码解析 | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
@@ -28,7 +28,7 @@ public interface IndexDao {
       <div class="main-content">
         <div class="site-header">
   <a href="https://epitomm.github.io">
-  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1588842223995" alt="">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1588928402227" alt="">
   </a>
   <h1 class="site-title">
     SSM
@@ -907,6 +907,7 @@ dao...模拟查询数据库
 </code></pre>
 <h2 id="beanfactorypostprocessor">BeanFactoryPostProcessor</h2>
 <p>Spring 工厂后置处理器</p>
+<h2 id="beandefinitionregistrypostprocessor">BeanDefinitionRegistryPostProcessor</h2>
 <h3 id="134-preparebeanfactorybeanfactory">1.3.4 prepareBeanFactory(beanFactory)</h3>
 <p>再来看 refresh() 的第 12 行： prepareBeanFactory(beanFactory);</p>
 <pre><code>// Prepare the bean factory for use in this context.
@@ -1250,7 +1251,8 @@ public class IndexService implements ApplicationContextAware {
 <li><a href="#%E5%A6%82%E4%BD%95%E6%8E%A7%E5%88%B6%E5%A4%9A%E4%B8%AA%E5%90%8E%E7%BD%AE%E5%A4%84%E7%90%86%E5%99%A8%E7%9A%84%E9%A1%BA%E5%BA%8F">如何控制多个后置处理器的顺序：</a></li>
 </ul>
 </li>
-<li><a href="#beanfactorypostprocessor">BeanFactoryPostProcessor</a>
+<li><a href="#beanfactorypostprocessor">BeanFactoryPostProcessor</a></li>
+<li><a href="#beandefinitionregistrypostprocessor">BeanDefinitionRegistryPostProcessor</a>
 <ul>
 <li><a href="#134-preparebeanfactorybeanfactory">1.3.4 prepareBeanFactory(beanFactory)</a>
 <ul>
