@@ -3,7 +3,7 @@
     <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Spring系列（八）Spring源码解析 | SSM</title>
-<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1589011773509">
+<link rel="shortcut icon" href="https://epitomm.github.io/favicon.ico?v=1589017479735">
 <link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
 <link rel="stylesheet" href="https://epitomm.github.io/styles/main.css">
 <link rel="alternate" type="application/atom+xml" title="Spring系列（八）Spring源码解析 | SSM - Atom Feed" href="https://epitomm.github.io/atom.xml">
@@ -24,7 +24,7 @@
       <div class="main-content">
         <div class="site-header">
   <a href="https://epitomm.github.io">
-  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1589011773509" alt="">
+  <img class="avatar" src="https://epitomm.github.io/images/avatar.png?v=1589017479735" alt="">
   </a>
   <h1 class="site-title">
     SSM
@@ -456,7 +456,7 @@ public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) {
 </code></pre>
 <h4 id="2221-processconfigbeandefinitions">2.2.2.1 processConfigBeanDefinitions</h4>
 <p>点进上述第 14 行代码：</p>
-<pre><code class="language-plain">public void processConfigBeanDefinitions(BeanDefinitionRegistry registry) {
+<pre><code class="language-java">public void processConfigBeanDefinitions(BeanDefinitionRegistry registry) {
    // app 提供的 bean：每扫描到添加了 @Configuraion 注解的类就添加到这个 set 集合中
    List&lt;BeanDefinitionHolder&gt; configCandidates = new ArrayList&lt;&gt;();
    // 获取容器中注册的所有 bean 名字
@@ -1007,7 +1007,7 @@ CardDao cardDao;</p>
 }
 </code></pre>
 <p>3.输出结果：</p>
-<pre><code class="language-plain">handler...
+<pre><code>handler...
 </code></pre>
 <p>4.分析：<br>
 通过 JDK 动态代理生成一个对象，执行代理方法时打印了 handler...</p>
@@ -1069,7 +1069,7 @@ public class AppConfig{
 }
 </code></pre>
 <p>5、测试结果：</p>
-<pre><code class="language-plain">handler...
+<pre><code>handler...
 Caused by: org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'cardDao': Unsatisfied dependency expressed through constructor parameter 0; nested exception is org.springframework.beans.factory.NoSuchBeanDefinitionException: No qualifying bean of type 'java.lang.reflect.InvocationHandler' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {}
 </code></pre>
 <p>6、分析<br>
@@ -1094,7 +1094,7 @@ Caused by: org.springframework.beans.factory.UnsatisfiedDependencyException: Err
     }
 }
 </code></pre>
-<pre><code class="language-plain">Caused by: org.springframework.beans.BeanInstantiationException: Failed to instantiate [com.ssm.dao.CardDao]: Specified class is an interface
+<pre><code>Caused by: org.springframework.beans.BeanInstantiationException: Failed to instantiate [com.ssm.dao.CardDao]: Specified class is an interface
 </code></pre>
 <p>根据 beanName=&quot;cardDao&quot; 取出 BeanDefinition，当执行完上述第 5 行代码后，取出的 BeanDefinition 类型为 CardDao 接口，接口不能实例化。<br>
 所以需要将一个代理对象放入 map 中，{ beanName=&quot;dao&quot;, BeanDefinition={beanClass=$Proxy01.class; ...} }</p>
@@ -1165,7 +1165,7 @@ public class AppConfig{
 }
 </code></pre>
 <p>测试结果：</p>
-<pre><code class="language-plain">select * from t1 where a=#{number}
+<pre><code>select * from t1 where a=#{number}
 proxy
 </code></pre>
 <h1 id="mybatis">MyBatis</h1>

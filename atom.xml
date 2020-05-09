@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://epitomm.github.io</id>
     <title>SSM</title>
-    <updated>2020-05-09T08:09:36.875Z</updated>
+    <updated>2020-05-09T09:44:43.688Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://epitomm.github.io"/>
     <link rel="self" href="https://epitomm.github.io/atom.xml"/>
@@ -381,7 +381,7 @@ public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) {
 </code></pre>
 <h4 id="2221-processconfigbeandefinitions">2.2.2.1 processConfigBeanDefinitions</h4>
 <p>点进上述第 14 行代码：</p>
-<pre><code class="language-plain">public void processConfigBeanDefinitions(BeanDefinitionRegistry registry) {
+<pre><code class="language-java">public void processConfigBeanDefinitions(BeanDefinitionRegistry registry) {
    // app 提供的 bean：每扫描到添加了 @Configuraion 注解的类就添加到这个 set 集合中
    List&lt;BeanDefinitionHolder&gt; configCandidates = new ArrayList&lt;&gt;();
    // 获取容器中注册的所有 bean 名字
@@ -932,7 +932,7 @@ CardDao cardDao;</p>
 }
 </code></pre>
 <p>3.输出结果：</p>
-<pre><code class="language-plain">handler...
+<pre><code>handler...
 </code></pre>
 <p>4.分析：<br>
 通过 JDK 动态代理生成一个对象，执行代理方法时打印了 handler...</p>
@@ -994,7 +994,7 @@ public class AppConfig{
 }
 </code></pre>
 <p>5、测试结果：</p>
-<pre><code class="language-plain">handler...
+<pre><code>handler...
 Caused by: org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'cardDao': Unsatisfied dependency expressed through constructor parameter 0; nested exception is org.springframework.beans.factory.NoSuchBeanDefinitionException: No qualifying bean of type 'java.lang.reflect.InvocationHandler' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {}
 </code></pre>
 <p>6、分析<br>
@@ -1019,7 +1019,7 @@ Caused by: org.springframework.beans.factory.UnsatisfiedDependencyException: Err
     }
 }
 </code></pre>
-<pre><code class="language-plain">Caused by: org.springframework.beans.BeanInstantiationException: Failed to instantiate [com.ssm.dao.CardDao]: Specified class is an interface
+<pre><code>Caused by: org.springframework.beans.BeanInstantiationException: Failed to instantiate [com.ssm.dao.CardDao]: Specified class is an interface
 </code></pre>
 <p>根据 beanName=&quot;cardDao&quot; 取出 BeanDefinition，当执行完上述第 5 行代码后，取出的 BeanDefinition 类型为 CardDao 接口，接口不能实例化。<br>
 所以需要将一个代理对象放入 map 中，{ beanName=&quot;dao&quot;, BeanDefinition={beanClass=$Proxy01.class; ...} }</p>
@@ -1090,7 +1090,7 @@ public class AppConfig{
 }
 </code></pre>
 <p>测试结果：</p>
-<pre><code class="language-plain">select * from t1 where a=#{number}
+<pre><code>select * from t1 where a=#{number}
 proxy
 </code></pre>
 <h1 id="mybatis">MyBatis</h1>
