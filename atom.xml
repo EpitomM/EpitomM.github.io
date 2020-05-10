@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://epitomm.github.io</id>
     <title>SSM</title>
-    <updated>2020-05-10T13:14:43.944Z</updated>
+    <updated>2020-05-10T15:46:41.006Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://epitomm.github.io"/>
     <link rel="self" href="https://epitomm.github.io/atom.xml"/>
@@ -69,7 +69,7 @@ public class IndexDaoImpl implements IndexDao{
 }
 </code></pre>
 <p>运行结果：</p>
-<pre><code class="language-plain">dao...模拟查询数据库
+<pre><code>dao...模拟查询数据库
 </code></pre>
 <p>总结：即使没有添加 @Configuration 注解，也能正确完成对 AppConfig 类的扫描：扫描包 com.ssm。那么 @Configuration 到底有什么用呢？</p>
 <h1 id="1processconfigbeandefinitions">1.processConfigBeanDefinitions</h1>
@@ -924,7 +924,7 @@ public class AppConfig {
 }
 </code></pre>
 <p>运行结果：</p>
-<pre><code class="language-plain">dao3...模拟查询数据库
+<pre><code>dao3...模拟查询数据库
 </code></pre>
 <p>直接在 IndexDaoImpl3 添加 @Component 注解也能实现将 对象注入到 Spring 容器中，为什么要使用一个 MyImportSelector implements ImportSelector 类呢？<br>
 因为有的功能需要 Spring 动态帮我们加载，比如 IndexDaoImpl3 是我开发的程序，我开发的程序并不一定在我的项目中，可以在 AppConfig 中修改扫描包，但是如果只有一个类需要引用，修改扫描包 @ComponentScan 不是好的办法。可以开关闭某些功能。</p>
@@ -969,10 +969,10 @@ public @interface EnableLuban {
 public class AppConfig {
 </code></pre>
 <p>如果配置类有 @EnableLuban 注解，运行结果：</p>
-<pre><code class="language-plain">dao3...模拟查询数据库
+<pre><code>dao3...模拟查询数据库
 </code></pre>
 <p>如果配置类没有 @EnableLuban 注解，运行结果：</p>
-<pre><code class="language-plain">Exception in thread &quot;main&quot; org.springframework.beans.factory.NoSuchBeanDefinitionException: No qualifying bean of type 'com.ssm.dao.impl.IndexDaoImpl3' available
+<pre><code>Exception in thread &quot;main&quot; org.springframework.beans.factory.NoSuchBeanDefinitionException: No qualifying bean of type 'com.ssm.dao.impl.IndexDaoImpl3' available
 </code></pre>
 <pre><code class="language-java">public class MyInvocationHandler implements InvocationHandler {
    Object target;
@@ -1004,7 +1004,7 @@ public class AppConfig {
 }
 </code></pre>
 <p>运行结果：</p>
-<pre><code class="language-plain">代理方法...
+<pre><code>代理方法...
 dao...模拟查询数据库
 </code></pre>
 ]]></content>
