@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://epitomm.github.io</id>
     <title>SSM</title>
-    <updated>2020-05-15T11:03:05.616Z</updated>
+    <updated>2020-05-16T02:59:47.090Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://epitomm.github.io"/>
     <link rel="self" href="https://epitomm.github.io/atom.xml"/>
@@ -10,6 +10,1530 @@
     <logo>https://epitomm.github.io/images/avatar.png</logo>
     <icon>https://epitomm.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, SSM</rights>
+    <entry>
+        <title type="html"><![CDATA[Spring系列（十）Spring源码解析]]></title>
+        <id>https://epitomm.github.io/post/spring-xi-lie-shi-spring-yuan-ma/</id>
+        <link href="https://epitomm.github.io/post/spring-xi-lie-shi-spring-yuan-ma/">
+        </link>
+        <updated>2020-05-15T15:32:41.000Z</updated>
+        <content type="html"><![CDATA[<h1 id="processconfigurationclass">processConfigurationClass</h1>
+<p>context.<em>refresh</em>(); ---&gt; <em>invokeBeanFactoryPostProcessors</em>(beanFactory); ---&gt; PostProcessorRegistrationDelegate.invokeBeanFactoryPostProcessors(beanFactory, getBeanFactoryPostProcessors()); ---&gt;invokeBeanDefinitionRegistryPostProcessors(currentRegistryProcessors, registry); ---&gt; postProcessor.<em>postProcessBeanDefinitionRegistry</em>(registry); ---&gt; <em>processConfigBeanDefinitions</em>(registry);处理@Configuration ---&gt; parser.parse(candidates); 解析注解对象---&gt; parse(((AnnotatedBeanDefinition) bd).getMetadata(), holder.getBeanName()); ---&gt; processConfigurationClass(new ConfigurationClass(metadata, beanName)); 处理Import---&gt; sourceClass = doProcessConfigurationClass(configClass, sourceClass); ---&gt; this.componentScanParser.parse(componentScan, sourceClass.getMetadata().getClassName()); ---&gt; scanner.doScan(StringUtils.toStringArray(basePackages));扫描包</p>
+<pre><code class="language-java">protected void processConfigurationClass(ConfigurationClass configClass) throws IOException {
+   // 判断是否应该跳过解析
+   if (this.conditionEvaluator.shouldSkip(configClass.getMetadata(), ConfigurationPhase.PARSE_CONFIGURATION)) {
+      return;
+   }
+   // 处理 Imported 的情况
+   // 就是当前这个类有没有被别的类 @Import
+   ConfigurationClass existingClass = this.configurationClasses.get(configClass);
+   if (existingClass != null) {
+      if (configClass.isImported()) {
+         if (existingClass.isImported()) {
+            existingClass.mergeImportedBy(configClass);
+         }
+         // Otherwise ignore new imported config class; existing non-imported class overrides it.
+         return;
+      }
+      else {
+         // Explicit bean definition found, probably replacing an import.
+         // Let's remove the old one and go with the new one.
+         this.configurationClasses.remove(configClass);
+         this.knownSuperclasses.values().removeIf(configClass::equals);
+      }
+   }
+   // Recursively process the configuration class and its superclass hierarchy.
+   SourceClass sourceClass = asSourceClass(configClass);
+   do {
+      sourceClass = doProcessConfigurationClass(configClass, sourceClass);
+   }
+   while (sourceClass != null);
+   // 一个 map，用来存放扫描出来的 bean（注意这里的 bean 不是对象，仅仅是 bean 的信息，因为还没到实例化）
+   this.configurationClasses.put(configClass, configClass);
+}
+</code></pre>
+<h2 id="扫描普通类component并放到-map-中">扫描普通类@Component，并放到 map 中</h2>
+<h3 id="doprocessconfigurationclass">doProcessConfigurationClass</h3>
+<p>上述代码第 29 行：解析注解类</p>
+<pre><code class="language-java">protected final SourceClass doProcessConfigurationClass(ConfigurationClass configClass, SourceClass sourceClass)
+      throws IOException {
+   // Recursively process any member (nested) classes first
+   // 处理内部类
+   processMemberClasses(configClass, sourceClass);
+   // Process any @PropertySource annotations
+   for (AnnotationAttributes propertySource : AnnotationConfigUtils.attributesForRepeatable(
+         sourceClass.getMetadata(), PropertySources.class,
+         org.springframework.context.annotation.PropertySource.class)) {
+      if (this.environment instanceof ConfigurableEnvironment) {
+         processPropertySource(propertySource);
+      }
+      else {
+         logger.warn(&quot;Ignoring @PropertySource annotation on [&quot; + sourceClass.getMetadata().getClassName() +
+               &quot;]. Reason: Environment must implement ConfigurableEnvironment&quot;);
+      }
+   }
+   // Process any @ComponentScan annotations
+   Set&lt;AnnotationAttributes&gt; componentScans = AnnotationConfigUtils.attributesForRepeatable(
+         sourceClass.getMetadata(), ComponentScans.class, ComponentScan.class);
+   if (!componentScans.isEmpty() &amp;&amp;
+         !this.conditionEvaluator.shouldSkip(sourceClass.getMetadata(), ConfigurationPhase.REGISTER_BEAN)) {
+      for (AnnotationAttributes componentScan : componentScans) {
+         // The config class is annotated with @ComponentScan -&gt; perform the scan immediately
+         // 扫描普通类=componentScan=com.ssm
+         // 这里扫描出来所有 @Component
+         Set&lt;BeanDefinitionHolder&gt; scannedBeanDefinitions =
+               this.componentScanParser.parse(componentScan, sourceClass.getMetadata().getClassName());
+         // Check the set of scanned definitions for any further config classes and parse recursively if needed
+         // 检查扫描出来的类当中是否还有 Configuration
+         for (BeanDefinitionHolder holder : scannedBeanDefinitions) {
+            BeanDefinition bdCand = holder.getBeanDefinition().getOriginatingBeanDefinition();
+            if (bdCand == null) {
+               bdCand = holder.getBeanDefinition();
+            }
+            if (ConfigurationClassUtils.checkConfigurationClassCandidate(bdCand, this.metadataReaderFactory)) {
+               parse(bdCand.getBeanClassName(), holder.getBeanName());
+            }
+         }
+      }
+   }
+   /**
+    * 上面的代码就是扫描普通类——@Component
+    * 并且放到了map当中
+    */
+   // Process any @Import annotations
+   // 处理 @Import：三种情况
+   // ImportSelector、ImportBeanDefinitionRegistrar、普通类
+   /**
+    * 这里处理的 import 是需要判断我们的类当中是否有@Import注解： getImports(sourceClass)
+    * 如果有 @Import 注解，就把这个值拿出来，是一个类
+    * 比如 @Import(xxxx.class)，那么这里便把 xxxx 传进去进行解析
+    * 在解析的过程中如果发觉是一个 importSelector 那么就回调 selector 的方法
+    * 返回一个字符串（类名），通过这个字符串得到一个类
+    * 继而在递归调用本方法来处理这个类
+    *
+    * 判断一组类是不是 imports(3种import)
+    */
+   processImports(configClass, sourceClass, getImports(sourceClass), true);
+   // Process any @ImportResource annotations
+   AnnotationAttributes importResource =
+         AnnotationConfigUtils.attributesFor(sourceClass.getMetadata(), ImportResource.class);
+   if (importResource != null) {
+      String[] resources = importResource.getStringArray(&quot;locations&quot;);
+      Class&lt;? extends BeanDefinitionReader&gt; readerClass = importResource.getClass(&quot;reader&quot;);
+      for (String resource : resources) {
+         String resolvedResource = this.environment.resolveRequiredPlaceholders(resource);
+         configClass.addImportedResource(resolvedResource, readerClass);
+      }
+   }
+   // Process individual @Bean methods
+   Set&lt;MethodMetadata&gt; beanMethods = retrieveBeanMethodMetadata(sourceClass);
+   for (MethodMetadata methodMetadata : beanMethods) {
+      configClass.addBeanMethod(new BeanMethod(methodMetadata, configClass));
+   }
+   // Process default methods on interfaces
+   processInterfaces(configClass, sourceClass);
+   // Process superclass, if any
+   if (sourceClass.getMetadata().hasSuperClass()) {
+      String superclass = sourceClass.getMetadata().getSuperClassName();
+      if (superclass != null &amp;&amp; !superclass.startsWith(&quot;java&quot;) &amp;&amp;
+            !this.knownSuperclasses.containsKey(superclass)) {
+         this.knownSuperclasses.put(superclass, configClass);
+         // Superclass found, return its annotation metadata and recurse
+         return sourceClass.getSuperClass();
+      }
+   }
+   // No superclass -&gt; processing is complete
+   return null;
+}
+</code></pre>
+<p>普通类扫描后就完成了注册：上述代码第 26 行：<br>
+上述代码第 31 行：</p>
+<pre><code class="language-java">public Set&lt;BeanDefinitionHolder&gt; parse(AnnotationAttributes componentScan, final String declaringClass) {
+   ClassPathBeanDefinitionScanner scanner = new ClassPathBeanDefinitionScanner(this.registry,
+         componentScan.getBoolean(&quot;useDefaultFilters&quot;), this.environment, this.resourceLoader);
+   // BeanNameGenerator：Bean名字生成器
+   Class&lt;? extends BeanNameGenerator&gt; generatorClass = componentScan.getClass(&quot;nameGenerator&quot;);
+   boolean useInheritedGenerator = (BeanNameGenerator.class == generatorClass);
+   scanner.setBeanNameGenerator(useInheritedGenerator ? this.beanNameGenerator :
+         BeanUtils.instantiateClass(generatorClass));
+   ScopedProxyMode scopedProxyMode = componentScan.getEnum(&quot;scopedProxy&quot;);
+   if (scopedProxyMode != ScopedProxyMode.DEFAULT) {
+      scanner.setScopedProxyMode(scopedProxyMode);
+   }
+   else {
+      Class&lt;? extends ScopeMetadataResolver&gt; resolverClass = componentScan.getClass(&quot;scopeResolver&quot;);
+      scanner.setScopeMetadataResolver(BeanUtils.instantiateClass(resolverClass));
+   }
+   scanner.setResourcePattern(componentScan.getString(&quot;resourcePattern&quot;));
+   // 遍历当中的过滤
+   for (AnnotationAttributes filter : componentScan.getAnnotationArray(&quot;includeFilters&quot;)) {
+      for (TypeFilter typeFilter : typeFiltersFor(filter)) {
+         scanner.addIncludeFilter(typeFilter);
+      }
+   }
+   for (AnnotationAttributes filter : componentScan.getAnnotationArray(&quot;excludeFilters&quot;)) {
+      for (TypeFilter typeFilter : typeFiltersFor(filter)) {
+         scanner.addExcludeFilter(typeFilter);
+      }
+   }
+   // 扫描出来的这个类是否需要懒加载：默认 false
+   // xml 配置懒加载：&lt;beans lazy=&quot;true&quot;&gt;&lt;bean&gt;&lt;/bean&gt;&lt;/beans&gt;
+   // JavaConfig配置懒加载：@Lazy   public class AppConfig{
+   boolean lazyInit = componentScan.getBoolean(&quot;lazyInit&quot;);
+   if (lazyInit) {
+      scanner.getBeanDefinitionDefaults().setLazyInit(true);
+   }
+   Set&lt;String&gt; basePackages = new LinkedHashSet&lt;&gt;();
+   String[] basePackagesArray = componentScan.getStringArray(&quot;basePackages&quot;);
+   for (String pkg : basePackagesArray) {
+      String[] tokenized = StringUtils.tokenizeToStringArray(this.environment.resolvePlaceholders(pkg),
+            ConfigurableApplicationContext.CONFIG_LOCATION_DELIMITERS);
+      Collections.addAll(basePackages, tokenized);
+   }
+   for (Class&lt;?&gt; clazz : componentScan.getClassArray(&quot;basePackageClasses&quot;)) {
+      basePackages.add(ClassUtils.getPackageName(clazz));
+   }
+   if (basePackages.isEmpty()) {
+      basePackages.add(ClassUtils.getPackageName(declaringClass));
+   }
+   scanner.addExcludeFilter(new AbstractTypeHierarchyTraversingFilter(false, false) {
+      @Override
+      protected boolean matchClassName(String className) {
+         return declaringClass.equals(className);
+      }
+   });
+   return scanner.doScan(StringUtils.toStringArray(basePackages));
+}
+</code></pre>
+<p>上述代码第 62 行，调用 doScan 方法完成扫描</p>
+<pre><code class="language-java">protected Set&lt;BeanDefinitionHolder&gt; doScan(String... basePackages) {
+   Assert.notEmpty(basePackages, &quot;At least one base package must be specified&quot;);
+   Set&lt;BeanDefinitionHolder&gt; beanDefinitions = new LinkedHashSet&lt;&gt;();
+   // 循环所有 basePackages，因为@ComponentScan({&quot;com.ssm.dao&quot;},{&quot;com.ssm.service&quot;})可以写多个
+   for (String basePackage : basePackages) {
+      // 扫表 basePackage 路径下的 java 文件
+      // 并把它转成 BeanDefinition 类型
+      Set&lt;BeanDefinition&gt; candidates = findCandidateComponents(basePackage);
+      for (BeanDefinition candidate : candidates) {
+         // 解析 scope 属性
+         ScopeMetadata scopeMetadata = this.scopeMetadataResolver.resolveScopeMetadata(candidate);
+         candidate.setScope(scopeMetadata.getScopeName());
+         String beanName = this.beanNameGenerator.generateBeanName(candidate, this.registry);
+         if (candidate instanceof AbstractBeanDefinition) {
+            // 如果这个类是 AbstractBeanDefinition 的子类
+            // 则为它设置默认值，比如 lazy，init destroy
+            postProcessBeanDefinition((AbstractBeanDefinition) candidate, beanName);
+         }
+         if (candidate instanceof AnnotatedBeanDefinition) {
+            // 检查并且处理常用的注解
+            // 这里的处理主要是指把常用注解的值设置到 AnnotatedBeanDefinition 当中
+            // 当前前提是这个类必须是 AnnotatedBeanDefinition 类型的，说白了就是加了注解的类
+            AnnotationConfigUtils.processCommonDefinitionAnnotations((AnnotatedBeanDefinition) candidate);
+         }
+         if (checkCandidate(beanName, candidate)) {
+            BeanDefinitionHolder definitionHolder = new BeanDefinitionHolder(candidate, beanName);
+            definitionHolder =
+                  AnnotationConfigUtils.applyScopedProxyMode(scopeMetadata, definitionHolder, this.registry);
+            beanDefinitions.add(definitionHolder);
+            // 加入到 map 中
+            registerBeanDefinition(definitionHolder, this.registry);
+         }
+      }
+   }
+   return beanDefinitions;
+}
+</code></pre>
+<p>上述代码第 8 行：</p>
+<pre><code class="language-java">Set&lt;BeanDefinition&gt; candidates = findCandidateComponents(basePackage);
+</code></pre>
+<p>调用 findCandidateComponents 方法完成扫描，并把扫描出来的类都转化成 BeanDefinition，<br>
+第 31 行：把所有的 BeanDefinition 注册到 map 中。</p>
+<p>即：普通类扫描后就完成了注册。</p>
+<pre><code class="language-java">@Import(MyImportSelector.class)
+@ComponentScan
+public class AppConfig{
+  
+}
+</code></pre>
+<p>上述代码完成了：扫描所有的 @ComponentScan，并把 BeanDefinition 放到 map 中。<br>
+还没有开始处理 @Import。</p>
+<h2 id="处理-import">处理 @Import</h2>
+<p>什么时候处理 @Import呢？上述 processConfigurationClass 方法的第 64 行：</p>
+<pre><code class="language-java">/**
+ * 这里处理的 import 是需要判断我们的类当中是否有@Import注解： getImports(sourceClass)
+ * 如果有 @Import 注解，就把这个值拿出来，是一个类
+ * 比如 @Import(xxxx.class)，那么这里便把 xxxx 传进去进行解析
+ * 在解析的过程中如果发觉是一个 importSelector 那么就回调 selector 的方法
+ * 返回一个字符串（类名），通过这个字符串得到一个类
+ * 继而在递归调用本方法来处理这个类
+ *
+ * 判断一组类是不是 imports(3中import)
+ */
+processImports(configClass, sourceClass, getImports(sourceClass), true);
+</code></pre>
+<h3 id="示例代码">示例代码</h3>
+<p>1、有一个配置类：</p>
+<p>① 扫描包 com.ssm；</p>
+<p>② @Import(MyImportSelector.class)；</p>
+<p>③ 通过 @Bean 注入 IndexDaoImpl2</p>
+<pre><code class="language-plain">@ComponentScan(&quot;com.ssm&quot;)
+@Import(MyImportSelector.class)
+public class AppConfig {
+   @Bean
+   public IndexDaoImpl2 indexDaoImpl2(){
+      return new IndexDaoImpl2();
+   }
+}
+</code></pre>
+<p>2、有一个 IndexDaoImpl 通过 @Repository(&quot;indexDao&quot;) 注入到 Spring 容器中。</p>
+<pre><code class="language-java">@Repository(&quot;indexDao&quot;)
+public class IndexDaoImpl implements IndexDao{
+   @Override
+   public void query() {
+      System.out.println(&quot;dao...模拟查询数据库&quot;);
+   }
+}
+</code></pre>
+<p>3、有一个 IndexDaoImpl2 在此类中并未添加 @Component，但是在 AppConfig 通过 @Bean 的方式 new IndexDaoImpl2 添加到 Spring 容器中了。</p>
+<pre><code class="language-java">public class IndexDaoImpl2 implements IndexDao{
+   @Override
+   public void query() {
+      System.out.println(&quot;dao2...模拟查询数据库&quot;);
+   }
+}
+</code></pre>
+<p>4、MyImportSelector implements ImportSelector，返回 “类的字符串”，即 IndexDaoImpl3.class.getName()</p>
+<pre><code class="language-java">public class MyImportSelector implements ImportSelector {
+   @Override
+   public String[] selectImports(AnnotationMetadata importingClassMetadata) {
+      return new String[]{IndexDaoImpl3.class.getName()};
+   }
+}
+</code></pre>
+<p>5、IndexDaoImpl3 implements BeanPostProcessor</p>
+<pre><code class="language-java">public class IndexDaoImpl3 implements IndexDao, BeanPostProcessor {
+   @Override
+   public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
+      if(beanName.equals(&quot;indexDao&quot;)){
+         bean = Proxy.newProxyInstance(this.getClass().getClassLoader(), new Class[]{IndexDao.class},new MyInvocationHandler(bean));
+      }
+      return bean;
+   }
+   @Override
+   public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+      return null;
+   }
+   @Override
+   public void query() {
+      System.out.println(&quot;dao3...模拟查询数据库&quot;);
+   }
+}
+</code></pre>
+<p>6、MyInvocationHandler implements InvocationHandler</p>
+<pre><code class="language-java">public class MyInvocationHandler implements InvocationHandler {
+   Object target;
+   public MyInvocationHandler(Object target){
+      this.target = target;
+   }
+   @Override
+   public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+      System.out.println(&quot;代理方法...&quot;);
+      return method.invoke(target,args);
+   }
+}
+</code></pre>
+<p>7、测试类</p>
+<pre><code class="language-java">public class Test {
+   public static void main(String[] args) {
+      // 把 Spring 所有前提环境准备好
+      // 1.准备工厂=DefaultListableBeanFactory
+      // 实例化一个 bdReader 和一个 scanner
+      AnnotationConfigApplicationContext context =
+            new AnnotationConfigApplicationContext();
+      // 把一个 class 转成 bd，最后 put 到 map
+      // map 位置 DefaultListableBeanFactory 的 beanDefinitionMap
+      context.register(AppConfig.class);
+      // 初始化 Spring 的环境
+      context. refresh();
+      IndexDao dao = (IndexDao) context.getBean(&quot;indexDao&quot;);
+      dao.query();
+   }
+}
+</code></pre>
+<p>8、运行结果：</p>
+<pre><code class="language-plain">代理方法...
+dao...模拟查询数据库
+</code></pre>
+<h3 id="processimports">processImports</h3>
+<pre><code class="language-java">private void processImports(ConfigurationClass configClass, SourceClass currentSourceClass,
+      Collection&lt;SourceClass&gt; importCandidates, boolean checkForCircularImports) {
+   // 如果没有加@Import，直接返回
+   if (importCandidates.isEmpty()) {
+      return;
+   }
+   if (checkForCircularImports &amp;&amp; isChainedImportOnStack(configClass)) {
+      this.problemReporter.error(new CircularImportProblem(configClass, this.importStack));
+   }
+   else {
+      this.importStack.push(configClass);
+      try {
+         for (SourceClass candidate : importCandidates) {
+            // @Import(IndexDao.class)、@Import(ImportSelector)、@Import(ImportBeanDefinitionRegistrar)
+            // 判断是不是 ImportSelector
+            if (candidate.isAssignable(ImportSelector.class)) {
+               // Candidate class is an ImportSelector -&gt; delegate to it to determine imports
+               Class&lt;?&gt; candidateClass = candidate.loadClass();
+               // 反射实现一个对象
+               ImportSelector selector = BeanUtils.instantiateClass(candidateClass, ImportSelector.class);
+               ParserStrategyUtils.invokeAwareMethods(
+                     selector, this.environment, this.resourceLoader, this.registry);
+               if (this.deferredImportSelectors != null &amp;&amp; selector instanceof DeferredImportSelector) {
+                  this.deferredImportSelectors.add(
+                        new DeferredImportSelectorHolder(configClass, (DeferredImportSelector) selector));
+               }
+               else {
+                  // 回调
+                  String[] importClassNames = selector.selectImports(currentSourceClass.getMetadata());
+                  Collection&lt;SourceClass&gt; importSourceClasses = asSourceClasses(importClassNames);
+                  // 递归，这里第二次调用 processImports
+                  // 如果是一个普通类，会进 else
+                  processImports(configClass, currentSourceClass, importSourceClasses, false);
+               }
+            }
+            // 判断是不是 ImportBeanDefinitionRegistrar
+            else if (candidate.isAssignable(ImportBeanDefinitionRegistrar.class)) {
+               // Candidate class is an ImportBeanDefinitionRegistrar -&gt;
+               // delegate to it to register additional bean definitions
+               Class&lt;?&gt; candidateClass = candidate.loadClass();
+               ImportBeanDefinitionRegistrar registrar =
+                     BeanUtils.instantiateClass(candidateClass, ImportBeanDefinitionRegistrar.class);
+               ParserStrategyUtils.invokeAwareMethods(
+                     registrar, this.environment, this.resourceLoader, this.registry);
+               // 添加到一个 list 当中和 importSelector 不同
+               configClass.addImportBeanDefinitionRegistrar(registrar, currentSourceClass.getMetadata());
+            }
+            // 普通类：@Import(IndexDao.class)
+            else {
+               // Candidate class not an ImportSelector or ImportBeanDefinitionRegistrar -&gt;
+               // process it as an @Configuration class
+               // 否则，加入到 importStack 后调用 processConfigurationClass 进行处理
+               // processConfigurationClass 里面主要就是把类放到 configurationClasses
+               // configurationClasses 是一个集合，会在后面拿出来解析成 bd 继而注册
+               // 可以看到普通类在扫描出来的时候就被注册了
+               // 如果是 importSelector，会先放到 configurationClasses 后面进行出来注册
+               this.importStack.registerImport(
+                     currentSourceClass.getMetadata(), candidate.getMetadata().getClassName());
+               processConfigurationClass(candidate.asConfigClass(configClass));
+            }
+         }
+      }
+      catch (BeanDefinitionStoreException ex) {
+         throw ex;
+      }
+      catch (Throwable ex) {
+         throw new BeanDefinitionStoreException(
+               &quot;Failed to process import candidates for configuration class [&quot; +
+               configClass.getMetadata().getClassName() + &quot;]&quot;, ex);
+      }
+      finally {
+         this.importStack.pop();
+      }
+   }
+}
+</code></pre>
+<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/candidate.png" alt="图片" loading="lazy"></figure>
+<p>上述代码第 15-20 行：</p>
+<pre><code class="language-java">for (SourceClass candidate : importCandidates) {
+    // @Import(IndexDao.class)、@Import(ImportSelector)、@Import(ImportBeanDefinitionRegistrar)
+    // 判断是不是 ImportSelector
+    if (candidate.isAssignable(ImportSelector.class)) {
+    // Candidate class is an ImportSelector -&gt; delegate to it to determine imports
+        Class&lt;?&gt; candidateClass = candidate.loadClass(
+        
+</code></pre>
+<p>解析到了 @Import(MyImportSelector.class)，</p>
+<pre><code class="language-java">public class MyImportSelector implements ImportSelector {
+   @Override
+   public String[] selectImports(AnnotationMetadata importingClassMetadata) {
+      return new String[]{IndexDaoImpl3.class.getName()};
+   }
+}
+</code></pre>
+<p>解析到 @MyImportSelector 后，会返回一个 “类的字符串”，如上述代码第 4 行所示。<br>
+这个 “类的字符串” 肯定会放到 map 中，但此时还没有放进去。</p>
+<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/candidateClass.png" alt="图片" loading="lazy"></figure>
+<p>普通类通过 doScan 方法被扫描出来，转化成 BeanDefinition，并被加入到 map 中：所以被 @Reposity 修饰的 IndexDaoImpl 此时已经在容器中了。</p>
+<h3 id="何时将-importselector-返回的字符串放到-map-中">何时将 @ImportSelector 返回的字符串放到 map 中</h3>
+<p>反射实现一个对象：Spring 要知道这个 ImportSelector  到底返回了哪些字符串（return new String[]{IndexDaoImpl3.class.getName()};），然后通过这个字符串反射得到类名。</p>
+<pre><code class="language-java">public class MyImportSelector implements ImportSelector {
+   @Override
+   public String[] selectImports(AnnotationMetadata importingClassMetadata) {
+      return new String[]{IndexDaoImpl3.class.getName()};
+   }
+}
+</code></pre>
+<p>得到 selectImports 方法返回的字符串数组：String[] strs = selectImports();<br>
+for(String str: strs){</p>
+<p>// 通过反射得到类名</p>
+<p>class = Class.forName(str);</p>
+<p>}</p>
+<figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/importSourceClasses.png" alt="图片" loading="lazy"></figure>
+<h2 id="递归调用-processimports">递归调用 processImports</h2>
+<p>得到类名 IndexDaoImpl3，正常情况可能会想：将 IndexDaoImpl3 转化成 BeanDefinition，然后放到 map 中，但是，Spring 并不是这样做的，因为有可能这个 IndexDaoImpl3 里面也有一个 @Import，所以 Spring 进行递归处理。</p>
+<p>上述 processImports 方法的第 30-35 行：</p>
+<pre><code class="language-java">// 得到类名
+String[] importClassNames = selector.selectImports(currentSourceClass.getMetadata());
+Collection&lt;SourceClass&gt; importSourceClasses = asSourceClasses(importClassNames);
+// 递归，这里第二次调用 processImports
+// 如果是一个普通类，会进 else
+processImports(configClass, currentSourceClass, importSourceClasses, false);
+</code></pre>
+<p>于是再次调用 processImports 方法：<br>
+上述 processImports  方法第 18 行判断：</p>
+<pre><code class="language-java">if (candidate.isAssignable(ImportSelector.class)) {
+</code></pre>
+<p>IndexDaoImpl3 不是一个 ImportSelector<br>
+上述 processImports  方法第 39 行判断：</p>
+<pre><code class="language-java">else if (candidate.isAssignable(ImportBeanDefinitionRegistrar.class)) {
+</code></pre>
+<p>IndexDaoImpl3 不是一个 ImportBeanDefinitionRegistrar<br>
+所以进入 processImports  方法的第 51 行 else 分支</p>
+<pre><code class="language-java">else{
+  this.importStack.registerImport(
+      currentSourceClass.getMetadata(), candidate.getMetadata().getClassName());
+processConfigurationClass(candidate.asConfigClass(configClass));
+}
+</code></pre>
+<h3 id="外部调用">外部调用</h3>
+<p>从外部调用时，doProcessConfigurationClass 方法的第 64 行：</p>
+<pre><code class="language-java">processImports(configClass, sourceClass, getImports(sourceClass), true);
+</code></pre>
+<figure data-type="image" tabindex="4"><img src="https://epitomm.github.io/post-images/getImports.png" alt="图片" loading="lazy"></figure>
+<p>传递的第三个参数是获得 @Import(MyImportSelector.class) 的值：MyImportSelector。判断 AppConfig 中 @Import 的值到底是哪一种 Import，然后再来进行处理。</p>
+<p>再来看 processImports 方法的参数</p>
+<pre><code class="language-java">private void processImports(ConfigurationClass configClass, SourceClass currentSourceClass,
+      Collection&lt;SourceClass&gt; importCandidates, boolean checkForCircularImports) {
+</code></pre>
+<p>第三个参数 importCandidates 即 MyImportSelector</p>
+<h3 id="内部调用">内部调用</h3>
+<p>内部递归调用时，传递的第三个参数是当前类：</p>
+<pre><code class="language-java">processImports(configClass, currentSourceClass, importSourceClasses, false);
+</code></pre>
+<p>内部调用判断当前类 IndexDaoImpl3 到底是哪一种 @Import。<br>
+<strong>getImports(sourceClass) 是获取 @Import 注解内的值，而 processImports 仅仅判断传进来的类（第三个参数）是 三种Import 中的哪一种</strong>。</p>
+<h2 id="processconfigurationclass-2">processConfigurationClass</h2>
+<p>前面提到递归调用会进入 else 分支，调用 processConfigurationClass 方法：</p>
+<pre><code class="language-java">protected void processConfigurationClass(ConfigurationClass configClass) throws IOException {
+   // 判断是否应该跳过解析
+   if (this.conditionEvaluator.shouldSkip(configClass.getMetadata(), ConfigurationPhase.PARSE_CONFIGURATION)) {
+      return;
+   }
+   // 处理 Imported 的情况
+   // 就是当前这个类有没有被别的类 @Import
+   ConfigurationClass existingClass = this.configurationClasses.get(configClass);
+   if (existingClass != null) {
+      if (configClass.isImported()) {
+         if (existingClass.isImported()) {
+            existingClass.mergeImportedBy(configClass);
+         }
+         // Otherwise ignore new imported config class; existing non-imported class overrides it.
+         return;
+      }
+      else {
+         // Explicit bean definition found, probably replacing an import.
+         // Let's remove the old one and go with the new one.
+         this.configurationClasses.remove(configClass);
+         this.knownSuperclasses.values().removeIf(configClass::equals);
+      }
+   }
+   // Recursively process the configuration class and its superclass hierarchy.
+   SourceClass sourceClass = asSourceClass(configClass);
+   do {
+      sourceClass = doProcessConfigurationClass(configClass, sourceClass);
+   }
+   while (sourceClass != null);
+   // 一个 map，用来存放扫描出来的 bean（注意这里的 bean 不是对象，仅仅是 bean 的信息，因为还没到实例化）
+   this.configurationClasses.put(configClass, configClass);
+}
+</code></pre>
+<p>上述代码第 34 行：将类放到 configurationClasses 变量中。</p>
+<pre><code class="language-java">private final Map&lt;ConfigurationClass, ConfigurationClass&gt; configurationClasses = new LinkedHashMap&lt;&gt;();
+</code></pre>
+<h1 id="spring-处理四种类">Spring 处理四种类</h1>
+<h2 id="普通类-component">普通类 @Component</h2>
+<p>扫描完成后注册</p>
+<h2 id="importselector">importSelector</h2>
+<p><strong>先放到 Map&lt;ConfigurationClass, ConfigurationClass&gt; configurationClasses = new LinkedHashMap&lt;&gt;(); 中，然后再注册</strong>。</p>
+<p>context.<em>refresh</em>(); ---&gt; <em>invokeBeanFactoryPostProcessors</em>(beanFactory); ---&gt; PostProcessorRegistrationDelegate.invokeBeanFactoryPostProcessors(beanFactory, getBeanFactoryPostProcessors()); ---&gt;invokeBeanDefinitionRegistryPostProcessors(currentRegistryProcessors, registry); ---&gt; postProcessor.<em>postProcessBeanDefinitionRegistry</em>(registry); ---&gt; <em>processConfigBeanDefinitions</em>(registry);处理@Configuration ---&gt; parser.parse(candidates); 解析注解对象---&gt; parse(((AnnotatedBeanDefinition) bd).getMetadata(), holder.getBeanName()); ---&gt; processConfigurationClass(new ConfigurationClass(metadata, beanName)); 处理Import</p>
+<pre><code class="language-java">protected void processConfigurationClass(ConfigurationClass configClass) throws IOException {
+   // 判断是否应该跳过解析
+   if (this.conditionEvaluator.shouldSkip(configClass.getMetadata(), ConfigurationPhase.PARSE_CONFIGURATION)) {
+      return;
+   }
+   // 处理 Imported 的情况
+   // 就是当前这个类有没有被别的类 @Import
+   ConfigurationClass existingClass = this.configurationClasses.get(configClass);
+   if (existingClass != null) {
+      if (configClass.isImported()) {
+         if (existingClass.isImported()) {
+            existingClass.mergeImportedBy(configClass);
+         }
+         // Otherwise ignore new imported config class; existing non-imported class overrides it.
+         return;
+      }
+      else {
+         // Explicit bean definition found, probably replacing an import.
+         // Let's remove the old one and go with the new one.
+         this.configurationClasses.remove(configClass);
+         this.knownSuperclasses.values().removeIf(configClass::equals);
+      }
+   }
+   // Recursively process the configuration class and its superclass hierarchy.
+   SourceClass sourceClass = asSourceClass(configClass);
+   do {
+      sourceClass = doProcessConfigurationClass(configClass, sourceClass);
+   }
+   while (sourceClass != null);
+   // 一个 map，用来存放扫描出来的 bean（注意这里的 bean 不是对象，仅仅是 bean 的信息，因为还没到实例化）
+   this.configurationClasses.put(configClass, configClass);
+}
+</code></pre>
+<figure data-type="image" tabindex="5"><img src="https://epitomm.github.io/post-images/map%E4%B8%AD%E6%9C%898%E4%B8%AA.png" alt="图片" loading="lazy"></figure>
+<p>context. refresh(); ---&gt; invokeBeanFactoryPostProcessors(beanFactory); ---&gt; PostProcessorRegistrationDelegate.invokeBeanFactoryPostProcessors(beanFactory, getBeanFactoryPostProcessors()); ---&gt; invokeBeanDefinitionRegistryPostProcessors(currentRegistryProcessors, registry); ---&gt; postProcessor.postProcessBeanDefinitionRegistry(registry); ---&gt; processConfigBeanDefinitions(registry); ---&gt; this.reader.loadBeanDefinitions(configClasses);</p>
+<pre><code class="language-java">public void processConfigBeanDefinitions(BeanDefinitionRegistry registry) {
+   //定义一个 list 存放 app 提供的 bd：项目当中提供了 @Component
+   List&lt;BeanDefinitionHolder&gt; configCandidates = new ArrayList&lt;&gt;();
+   // 获取容器中注册的所有 bd 名字
+   // 7 个
+   String[] candidateNames = registry.getBeanDefinitionNames();
+   // 依次取出每个&lt;beanName,beanDefinition&gt;
+   /**
+    * full
+    * lite
+    */
+   for (String beanName : candidateNames) {
+      BeanDefinition beanDef = registry.getBeanDefinition(beanName);
+      // 判断当前 bean 是否被处理过：使用 isFullConfigurationClass 来标识
+      if (ConfigurationClassUtils.isFullConfigurationClass(beanDef) ||
+            ConfigurationClassUtils.isLiteConfigurationClass(beanDef)) {
+         // 如果 BeanDefinition 中的 configurationClass 属性为 full 或者 lite，则意味着已经处理过了，直接跳过
+         // 这里需要结合下面的代码才能理解
+         if (logger.isDebugEnabled()) {
+            logger.debug(&quot;Bean definition has already been processed as a configuration class: &quot; + beanDef);
+         }
+      }
+      // 判断这个 BeanDefinition 是否是 Configuration类，如果加了 Configuration 下面的这几个注解就不再判断了
+      // 还有  add(Component.class.getName())
+      //         candidateIndicators.add(ComponentScan.class.getName())
+      //         candidateIndicators.add(Import.class.getName())
+      //         candidateIndicators.add(ImportResource.class.getName())
+      else if (ConfigurationClassUtils.checkConfigurationClassCandidate(beanDef, this.metadataReaderFactory)) {
+         configCandidates.add(new BeanDefinitionHolder(beanDef, beanName));
+      }
+   }
+   // Return immediately if no @Configuration classes were found
+   if (configCandidates.isEmpty()) {
+      return;
+   }
+   // 排序，根据 order，不重要
+   // Sort by previously determined @Order value, if applicable
+   configCandidates.sort((bd1, bd2) -&gt; {
+      int i1 = ConfigurationClassUtils.getOrder(bd1.getBeanDefinition());
+      int i2 = ConfigurationClassUtils.getOrder(bd2.getBeanDefinition());
+      return Integer.compare(i1, i2);
+   });
+   // Detect any custom bean name generation strategy supplied through the enclosing application context
+   SingletonBeanRegistry sbr = null;
+   // 如果 BeanDefinitionRegistry 是 SingletonBeanRegistry 子类的话
+   // 由于会将 registry 强转为 SingletonBeanRegistry
+   if (registry instanceof SingletonBeanRegistry) {
+      sbr = (SingletonBeanRegistry) registry;
+      if (!this.localBeanNameGeneratorSet) {//是否有自定义的
+         BeanNameGenerator generator = (BeanNameGenerator) sbr.getSingleton(CONFIGURATION_BEAN_NAME_GENERATOR);
+         // SingletonBeanRegistry 中有 id 为 org.springframework.context.annotation.internalConfigurationBeanNameGenerator
+         // 如果有则利用它的，否则则使用 Spring 默认的
+         if (generator != null) {
+            this.componentScanBeanNameGenerator = generator;
+            this.importBeanNameGenerator = generator;
+         }
+      }
+   }
+   if (this.environment == null) {
+      this.environment = new StandardEnvironment();
+   }
+   // Parse each @Configuration class
+   // 实例化 ConfigurationClassParser 为了解析各个配置类
+   ConfigurationClassParser parser = new ConfigurationClassParser(
+         this.metadataReaderFactory, this.problemReporter, this.environment,
+         this.resourceLoader, this.componentScanBeanNameGenerator, registry);
+   // 实例化 2 个 set，candidates 用于将之前加入的 configCandidates 进行去重
+   // 因为可能有多个配置类重复了
+   // alreadyParsed 用户判断是否处理过
+   Set&lt;BeanDefinitionHolder&gt; candidates = new LinkedHashSet&lt;&gt;(configCandidates);
+   Set&lt;ConfigurationClass&gt; alreadyParsed = new HashSet&lt;&gt;(configCandidates.size());
+   do {
+      parser.parse(candidates);
+      parser.validate();
+      Set&lt;ConfigurationClass&gt; configClasses = new LinkedHashSet&lt;&gt;(parser.getConfigurationClasses());
+      configClasses.removeAll(alreadyParsed);
+      // Read the model and create bean definitions based on its content
+      if (this.reader == null) {
+         this.reader = new ConfigurationClassBeanDefinitionReader(
+               registry, this.sourceExtractor, this.resourceLoader, this.environment,
+               this.importBeanNameGenerator, parser.getImportRegistry());
+      }
+      // 把扫描出来的 bean 对应的 beanDefinitions 添加到 factory 的 map 当中
+      this.reader.loadBeanDefinitions(configClasses);
+      alreadyParsed.addAll(configClasses);
+      candidates.clear();
+      if (registry.getBeanDefinitionCount() &gt; candidateNames.length) {
+         String[] newCandidateNames = registry.getBeanDefinitionNames();
+         Set&lt;String&gt; oldCandidateNames = new HashSet&lt;&gt;(Arrays.asList(candidateNames));
+         Set&lt;String&gt; alreadyParsedClasses = new HashSet&lt;&gt;();
+         for (ConfigurationClass configurationClass : alreadyParsed) {
+            alreadyParsedClasses.add(configurationClass.getMetadata().getClassName());
+         }
+         for (String candidateName : newCandidateNames) {
+            if (!oldCandidateNames.contains(candidateName)) {
+               BeanDefinition bd = registry.getBeanDefinition(candidateName);
+               if (ConfigurationClassUtils.checkConfigurationClassCandidate(bd, this.metadataReaderFactory) &amp;&amp;
+                     !alreadyParsedClasses.contains(bd.getBeanClassName())) {
+                  candidates.add(new BeanDefinitionHolder(bd, candidateName));
+               }
+            }
+         }
+         candidateNames = newCandidateNames;
+      }
+   }
+   while (!candidates.isEmpty());
+   // Register the ImportRegistry as a bean in order to support ImportAware @Configuration classes
+   if (sbr != null &amp;&amp; !sbr.containsSingleton(IMPORT_REGISTRY_BEAN_NAME)) {
+      sbr.registerSingleton(IMPORT_REGISTRY_BEAN_NAME, parser.getImportRegistry());
+   }
+   if (this.metadataReaderFactory instanceof CachingMetadataReaderFactory) {
+      // Clear cache in externally provided MetadataReaderFactory; this is a no-op
+      // for a shared cache since it'll be cleared by the ApplicationContext.
+      ((CachingMetadataReaderFactory) this.metadataReaderFactory).clearCache();
+   }
+}
+</code></pre>
+<p>上述代码第 82 行：</p>
+<pre><code class="language-java">Set&lt;ConfigurationClass&gt; configClasses = new LinkedHashSet&lt;&gt;(parser.getConfigurationClasses());
+</code></pre>
+<pre><code>public Set&lt;ConfigurationClass&gt; getConfigurationClasses() {
+   return this.configurationClasses.keySet();
+}
+</code></pre>
+<pre><code class="language-java">private final Map&lt;ConfigurationClass, ConfigurationClass&gt; configurationClasses = new LinkedHashMap&lt;&gt;();
+</code></pre>
+<figure data-type="image" tabindex="6"><img src="https://epitomm.github.io/post-images/getConfigurationClasses.png" alt="图片" loading="lazy"></figure>
+<p>通过 parser.getConfigurationClasses() 方法，得到：普通类 @Component、 @Import 类、本身类 appConfig ，其中 普通类、本身类已经注册了，@Import 类还没有注册。</p>
+<p>如何知道哪些类还没有注册呢？</p>
+<p>上述代码第 92 行：</p>
+<pre><code class="language-java">this.reader.loadBeanDefinitions(configClasses);
+</code></pre>
+<figure data-type="image" tabindex="7"><img src="https://epitomm.github.io/post-images/%E6%89%A7%E8%A1%8CloadBeanDefinitions%E5%89%8D.png" alt="图片" loading="lazy"></figure>
+<pre><code class="language-java">public void loadBeanDefinitions(Set&lt;ConfigurationClass&gt; configurationModel) {
+   TrackedConditionEvaluator trackedConditionEvaluator = new TrackedConditionEvaluator();
+   for (ConfigurationClass configClass : configurationModel) {
+      loadBeanDefinitionsForConfigurationClass(configClass, trackedConditionEvaluator);
+   }
+}
+</code></pre>
+<pre><code class="language-java">private void loadBeanDefinitionsForConfigurationClass(
+      ConfigurationClass configClass, TrackedConditionEvaluator trackedConditionEvaluator) {
+   if (trackedConditionEvaluator.shouldSkip(configClass)) {
+      String beanName = configClass.getBeanName();
+      if (StringUtils.hasLength(beanName) &amp;&amp; this.registry.containsBeanDefinition(beanName)) {
+         this.registry.removeBeanDefinition(beanName);
+      }
+      this.importRegistry.removeImportingClass(configClass.getMetadata().getClassName());
+      return;
+   }
+   if (configClass.isImported()) {
+      registerBeanDefinitionForImportedConfigurationClass(configClass);
+   }
+   for (BeanMethod beanMethod : configClass.getBeanMethods()) {
+      loadBeanDefinitionsForBeanMethod(beanMethod);
+   }
+   loadBeanDefinitionsFromImportedResources(configClass.getImportedResources());
+   // 注册 Registrar
+loadBeanDefinitionsFromRegistrars(configClass.getImportBeanDefinitionRegistrars());
+}
+</code></pre>
+<p>上述代码第 22 行：</p>
+<pre><code class="language-java">private void loadBeanDefinitionsFromRegistrars(Map&lt;ImportBeanDefinitionRegistrar, AnnotationMetadata&gt; registrars) {
+   registrars.forEach((registrar, metadata) -&gt;
+         registrar.registerBeanDefinitions(metadata, this.registry));
+}
+</code></pre>
+<p>如果一个类是 Registrar，将它放到 importBeanDefinitionRegistrars 中，循环遍历 importBeanDefinitionRegistrars  注册。<br>
+当执行完 this.reader.loadBeanDefinitions(configClasses);</p>
+<figure data-type="image" tabindex="8"><img src="https://epitomm.github.io/post-images/%E6%89%A7%E8%A1%8CloadBeanDefinitions%E5%90%8E.png" alt="图片" loading="lazy"></figure>
+<p>IndexDaoImpl2 是通过 @Bean 注入到容器中的，IndexDaoImpl3 是通过 “将 @ImportSelector 返回的字符串放到 map 中” 注入到容器中的。</p>
+<h2 id="registrar">Registrar</h2>
+<p>先放到 importBeanDefinitionRegistrars 中，然后再 通过 loadBeanDefinitionsFromRegistrars 方法注册。</p>
+<p>processImports 方法的第 39-49 行：</p>
+<pre><code class="language-java">else if (candidate.isAssignable(ImportBeanDefinitionRegistrar.class)) {
+    // Candidate class is an ImportBeanDefinitionRegistrar -&gt;
+    // delegate to it to register additional bean definitions
+    Class&lt;?&gt; candidateClass = candidate.loadClass();
+    ImportBeanDefinitionRegistrar registrar = BeanUtils.instantiateClass(candidateClass, ImportBeanDefinitionRegistrar.class);
+    ParserStrategyUtils.invokeAwareMethods(registrar, this.environment, this.resourceLoader, this.registry);
+    // 添加到一个 list 当中和 importSelector 不同
+    configClass.addImportBeanDefinitionRegistrar(registrar, currentSourceClass.getMetadata());
+}
+</code></pre>
+<p>如果有一个类是 ImportBeanDefinitionRegistrar，把这个类拿出来，把它实例化，放到 configClass 中。<br>
+上述代码第 8 行：</p>
+<pre><code class="language-java">public void addImportBeanDefinitionRegistrar(ImportBeanDefinitionRegistrar registrar, AnnotationMetadata importingClassMetadata) {
+   this.importBeanDefinitionRegistrars.put(registrar, importingClassMetadata);
+}
+</code></pre>
+<pre><code class="language-java">private final Map&lt;ImportBeanDefinitionRegistrar, AnnotationMetadata&gt; importBeanDefinitionRegistrars = new LinkedHashMap&lt;&gt;();
+</code></pre>
+<h2 id="import-普通类">import 普通类</h2>
+<p><strong>先放到 configurationClasses，注册时判断里面有没有，如果有就不注册了，因为扫描出来的已经有了</strong>。</p>
+<p>processImports 方法第 51-62 行：</p>
+<pre><code class="language-java">else {
+    // Candidate class not an ImportSelector or ImportBeanDefinitionRegistrar -&gt;
+    // process it as an @Configuration class
+    // 否则，加入到 importStack 后调用 processConfigurationClass 进行处理
+    // processConfigurationClass 里面主要就是把类放到 configurationClasses
+    // configurationClasses 是一个集合，会在后面拿出来解析成 bd 继而注册
+    // 可以看到普通类在扫描出来的时候就被注册了
+    // 如果是 importSelector，会先放到 configurationClasses 后面进行出来注册
+    this.importStack.registerImport(currentSourceClass.getMetadata(), candidate.getMetadata().getClassName());
+               processConfigurationClass(candidate.asConfigClass(configClass));
+}     
+</code></pre>
+<p>上述代码第 10 行：</p>
+<pre><code class="language-java">protected void processConfigurationClass(ConfigurationClass configClass) throws IOException {
+   // 判断是否应该跳过解析
+   if (this.conditionEvaluator.shouldSkip(configClass.getMetadata(), ConfigurationPhase.PARSE_CONFIGURATION)) {
+      return;
+   }
+   // 处理 Imported 的情况
+   // 就是当前这个类有没有被别的类 @Import
+   ConfigurationClass existingClass = this.configurationClasses.get(configClass);
+   if (existingClass != null) {
+      if (configClass.isImported()) {
+         if (existingClass.isImported()) {
+            existingClass.mergeImportedBy(configClass);
+         }
+         // Otherwise ignore new imported config class; existing non-imported class overrides it.
+         return;
+      }
+      else {
+         // Explicit bean definition found, probably replacing an import.
+         // Let's remove the old one and go with the new one.
+         this.configurationClasses.remove(configClass);
+         this.knownSuperclasses.values().removeIf(configClass::equals);
+      }
+   }
+   // Recursively process the configuration class and its superclass hierarchy.
+   SourceClass sourceClass = asSourceClass(configClass);
+   do {
+      sourceClass = doProcessConfigurationClass(configClass, sourceClass);
+   }
+   while (sourceClass != null);
+   // 一个 map，用来存放扫描出来的 bean（注意这里的 bean 不是对象，仅仅是 bean 的信息，因为还没到实例化）
+   this.configurationClasses.put(configClass, configClass);
+}
+</code></pre>
+<p>至此为止，执行完了 自定义的 BeanDefinitionRegistryPostProcessor + Spring 内部的 BeanDefinitionRegistryPostProcessor 所有的 postProcessBeanDefinitionRegistry 方法。<br>
+context. refresh(); ---&gt; invokeBeanFactoryPostProcessors(beanFactory); ---&gt; PostProcessorRegistrationDelegate.invokeBeanFactoryPostProcessors(beanFactory, getBeanFactoryPostProcessors()); 获取<strong>自定义的 beanFactoryPostProcessors+ Spring 内部自己实现了 BeanDefinitionRegistryPostProcessor 接口的对象</strong></p>
+<p>---&gt; invokeBeanDefinitionRegistryPostProcessors(currentRegistryProcessors, registry); <strong>执行所有 BeanDefinitionRegistryPostProcessor</strong>---&gt; postProcessor.postProcessBeanDefinitionRegistry(registry); ---&gt; processConfigBeanDefinitions(registry); ---&gt; parser.parse(candidates); 解析：把普通类放到 map 中；this.reader.loadBeanDefinitions(configClasses); 特殊类：处理所有的 @Import；</p>
+<pre><code class="language-java">public static void invokeBeanFactoryPostProcessors(
+      ConfigurableListableBeanFactory beanFactory, List&lt;BeanFactoryPostProcessor&gt; beanFactoryPostProcessors) {
+   // Invoke BeanDefinitionRegistryPostProcessors first, if any.
+   Set&lt;String&gt; processedBeans = new HashSet&lt;&gt;();
+   if (beanFactory instanceof BeanDefinitionRegistry) {
+      BeanDefinitionRegistry registry = (BeanDefinitionRegistry) beanFactory;
+      // 定义两个 list， BeanDefinitionRegistryPostProcessor 实现了 BeanFactoryPostProcessor 接口
+      // 因为 bdrp 是子类，子类肯定扩展了父类中的功能。
+      List&lt;BeanFactoryPostProcessor&gt; regularPostProcessors = new ArrayList&lt;&gt;();
+      List&lt;BeanDefinitionRegistryPostProcessor&gt; registryProcessors = new ArrayList&lt;&gt;();
+      // 自定义的 beanFactoryPostProcessors
+      for (BeanFactoryPostProcessor postProcessor : beanFactoryPostProcessors) {
+         if (postProcessor instanceof BeanDefinitionRegistryPostProcessor) {
+            BeanDefinitionRegistryPostProcessor registryProcessor =
+                  (BeanDefinitionRegistryPostProcessor) postProcessor;
+            registryProcessor.postProcessBeanDefinitionRegistry(registry);
+            registryProcessors.add(registryProcessor);
+         }
+         else {
+            regularPostProcessors.add(postProcessor);
+         }
+      }
+      // Do not initialize FactoryBeans here: We need to leave all regular beans
+      // uninitialized to let the bean factory post-processors apply to them!
+      // Separate between BeanDefinitionRegistryPostProcessors that implement
+      // PriorityOrdered, Ordered, and the rest.
+      // 这个 currentRegistryProcessors 放的是 Spring 内部自己实现了 BeanDefinitionRegistryPostProcessor 接口的对象
+      List&lt;BeanDefinitionRegistryPostProcessor&gt; currentRegistryProcessors = new ArrayList&lt;&gt;();
+      // First, invoke the BeanDefinitionRegistryPostProcessors that implement PriorityOrdered.
+      // BeanDefinitionRegistryPostProcessor 等于 BeanFactoryPostProcessor
+      // getBeanNamesForType：根据 bean 的 Type 类型获取 bean 的名字
+      String[] postProcessorNames =
+            beanFactory.getBeanNamesForType(BeanDefinitionRegistryPostProcessor.class, true, false);
+      // 这个地方可以得到一个 BeanFactoryPostProcessor，因为是 Spring 默认在最开始自己注册的
+      // 为什么要在最开始注册这个呢？
+      // 因为 Spring 的工厂需要注解去扫描等等功能
+      // 而这些功能都是需要在 Spring 工厂初始化完成之前就执行
+      // 要么在工厂最开始的时候，要么在工厂初始化之中，反正不能在之后
+      // 因为如果在之后就没有意义，因为那个时候已经需要使用工厂了
+      // 所以这里 Spring 在一开始就注册了一个 BeanFactoryPostProcessor，用来插手 springFactory 的实例化过程
+      // 在这个地方断点可以知道这个类叫做 ConfigurationClassPostProcessor
+      // ConfigurationClassPostProcessor 那么这个类能干嘛呢？可以参考源码
+      // 下面对这个“插手 Spring 工厂实例化过程”的类重点解释
+      for (String ppName : postProcessorNames) {
+         if (beanFactory.isTypeMatch(ppName, PriorityOrdered.class)) {
+            currentRegistryProcessors.add(beanFactory.getBean(ppName, BeanDefinitionRegistryPostProcessor.class));
+            processedBeans.add(ppName);
+         }
+      }
+      // 排序不重要，况且 currentRegistryProcessor 这里也只有一个数据
+      sortPostProcessors(currentRegistryProcessors, beanFactory);
+      // 合并 List，不重要（为什么要合并，因为有自定义的Spring自己的）
+      registryProcessors.addAll(currentRegistryProcessors);
+      // 最重要。注意这里是方法调用
+      // 执行所有 BeanDefinitionRegistryPostProcessor
+      invokeBeanDefinitionRegistryPostProcessors(currentRegistryProcessors, registry);
+      // 执行完了所有的 BeanDefinitionRegistryPostProcessor
+      // 这个 list 只是一个临时变量，故而要清除
+      currentRegistryProcessors.clear();
+      // Next, invoke the BeanDefinitionRegistryPostProcessors that implement Ordered.
+      postProcessorNames = beanFactory.getBeanNamesForType(BeanDefinitionRegistryPostProcessor.class, true, false);
+      for (String ppName : postProcessorNames) {
+         if (!processedBeans.contains(ppName) &amp;&amp; beanFactory.isTypeMatch(ppName, Ordered.class)) {
+            currentRegistryProcessors.add(beanFactory.getBean(ppName, BeanDefinitionRegistryPostProcessor.class));
+            processedBeans.add(ppName);
+         }
+      }
+      sortPostProcessors(currentRegistryProcessors, beanFactory);
+      registryProcessors.addAll(currentRegistryProcessors);
+      invokeBeanDefinitionRegistryPostProcessors(currentRegistryProcessors, registry);
+      currentRegistryProcessors.clear();
+      // Finally, invoke all other BeanDefinitionRegistryPostProcessors until no further ones appear.
+      boolean reiterate = true;
+      while (reiterate) {
+         reiterate = false;
+         postProcessorNames = beanFactory.getBeanNamesForType(BeanDefinitionRegistryPostProcessor.class, true, false);
+         for (String ppName : postProcessorNames) {
+            if (!processedBeans.contains(ppName)) {
+               currentRegistryProcessors.add(beanFactory.getBean(ppName, BeanDefinitionRegistryPostProcessor.class));
+               processedBeans.add(ppName);
+               reiterate = true;
+            }
+         }
+         sortPostProcessors(currentRegistryProcessors, beanFactory);
+         registryProcessors.addAll(currentRegistryProcessors);
+         invokeBeanDefinitionRegistryPostProcessors(currentRegistryProcessors, registry);
+         currentRegistryProcessors.clear();
+      }
+      // Now, invoke the postProcessBeanFactory callback of all processors handled so far.
+      // 执行 BeanFactoryPostProcessor 的回调，前面不是吗？
+      // 前面执行的 BeanFactoryPostProcessor 的子类 BeanDefinitionRegistryPostProcessor 的回调
+      // 这里执行的是 BeanFactoryPostProcessor 的回调
+      invokeBeanFactoryPostProcessors(registryProcessors, beanFactory);
+      //
+      invokeBeanFactoryPostProcessors(regularPostProcessors, beanFactory);
+   }
+   else {
+      // Invoke factory processors registered with the context instance.
+      invokeBeanFactoryPostProcessors(beanFactoryPostProcessors, beanFactory);
+   }
+   // Do not initialize FactoryBeans here: We need to leave all regular beans
+   // uninitialized to let the bean factory post-processors apply to them!
+   String[] postProcessorNames =
+         beanFactory.getBeanNamesForType(BeanFactoryPostProcessor.class, true, false);
+   // Separate between BeanFactoryPostProcessors that implement PriorityOrdered,
+   // Ordered, and the rest.
+   List&lt;BeanFactoryPostProcessor&gt; priorityOrderedPostProcessors = new ArrayList&lt;&gt;();
+   List&lt;String&gt; orderedPostProcessorNames = new ArrayList&lt;&gt;();
+   List&lt;String&gt; nonOrderedPostProcessorNames = new ArrayList&lt;&gt;();
+   for (String ppName : postProcessorNames) {
+      if (processedBeans.contains(ppName)) {
+         // skip - already processed in first phase above
+      }
+      else if (beanFactory.isTypeMatch(ppName, PriorityOrdered.class)) {
+         priorityOrderedPostProcessors.add(beanFactory.getBean(ppName, BeanFactoryPostProcessor.class));
+      }
+      else if (beanFactory.isTypeMatch(ppName, Ordered.class)) {
+         orderedPostProcessorNames.add(ppName);
+      }
+      else {
+         nonOrderedPostProcessorNames.add(ppName);
+      }
+   }
+   // First, invoke the BeanFactoryPostProcessors that implement PriorityOrdered.
+   sortPostProcessors(priorityOrderedPostProcessors, beanFactory);
+   invokeBeanFactoryPostProcessors(priorityOrderedPostProcessors, beanFactory);
+   // Next, invoke the BeanFactoryPostProcessors that implement Ordered.
+   List&lt;BeanFactoryPostProcessor&gt; orderedPostProcessors = new ArrayList&lt;&gt;();
+   for (String postProcessorName : orderedPostProcessorNames) {
+      orderedPostProcessors.add(beanFactory.getBean(postProcessorName, BeanFactoryPostProcessor.class));
+   }
+   sortPostProcessors(orderedPostProcessors, beanFactory);
+   invokeBeanFactoryPostProcessors(orderedPostProcessors, beanFactory);
+   // Finally, invoke all other BeanFactoryPostProcessors.
+   List&lt;BeanFactoryPostProcessor&gt; nonOrderedPostProcessors = new ArrayList&lt;&gt;();
+   for (String postProcessorName : nonOrderedPostProcessorNames) {
+      nonOrderedPostProcessors.add(beanFactory.getBean(postProcessorName, BeanFactoryPostProcessor.class));
+   }
+   invokeBeanFactoryPostProcessors(nonOrderedPostProcessors, beanFactory);
+   // Clear cached merged bean definitions since the post-processors might have
+   // modified the original metadata, e.g. replacing placeholders in values...
+   beanFactory.clearMetadataCache();
+}
+</code></pre>
+<p>上述第 98-102 行代码：</p>
+<pre><code class="language-java">// Now, invoke the postProcessBeanFactory callback of all processors handled so far.
+// 执行 BeanFactoryPostProcessor 的回调，前面不是吗？
+// 前面执行的 BeanFactoryPostProcessor 的子类 BeanDefinitionRegistryPostProcessor 的回调
+// 这里执行的是 BeanFactoryPostProcessor 的回调
+invokeBeanFactoryPostProcessors(registryProcessors, beanFactory);
+</code></pre>
+<p>执行 BeanFactoryPostProcessor 的回调，前面不是吗？<br>
+前面执行的 BeanFactoryPostProcessor 的子类 BeanDefinitionRegistryPostProcessor 的回调。这里执行的是 BeanFactoryPostProcessor 的回调。</p>
+<p>于是我们来看一下前面的代码验证一下，上述方法第 16 行，判断是不是 BeanDefinitionRegistryPostProcessor，如果是，就把它放到 registryProcessors 中：</p>
+<pre><code class="language-java">for (BeanFactoryPostProcessor postProcessor : beanFactoryPostProcessors) {
+   if (postProcessor instanceof BeanDefinitionRegistryPostProcessor) {
+      BeanDefinitionRegistryPostProcessor registryProcessor =
+            (BeanDefinitionRegistryPostProcessor) postProcessor;
+      registryProcessor.postProcessBeanDefinitionRegistry(registry);
+      registryProcessors.add(registryProcessor);
+   }
+   else {
+      regularPostProcessors.add(postProcessor);
+   }
+}
+</code></pre>
+<p>接下来看 invokeBeanFactoryPostProcessors 方法：完成 BeanFactoryPostProcessor 的回调</p>
+<pre><code class="language-java">private static void invokeBeanFactoryPostProcessors(
+      Collection&lt;? extends BeanFactoryPostProcessor&gt; postProcessors, ConfigurableListableBeanFactory beanFactory) {
+   for (BeanFactoryPostProcessor postProcessor : postProcessors) {
+      postProcessor.postProcessBeanFactory(beanFactory);
+   }
+}
+</code></pre>
+<p>点进来这个方法：</p>
+<pre><code class="language-java">public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) {
+   int factoryId = System.identityHashCode(beanFactory);
+   if (this.factoriesPostProcessed.contains(factoryId)) {
+      throw new IllegalStateException(
+            &quot;postProcessBeanFactory already called on this post-processor against &quot; + beanFactory);
+   }
+   this.factoriesPostProcessed.add(factoryId);
+   if (!this.registriesPostProcessed.contains(factoryId)) {
+      // BeanDefinitionRegistryPostProcessor hook apparently not supported...
+      // Simply call processConfigurationClasses lazily at this point then.
+      processConfigBeanDefinitions((BeanDefinitionRegistry) beanFactory);
+   }
+   // 产生 cglib 代理
+   // 为什么需要产生 cglib 代理
+   enhanceConfigurationClasses(beanFactory);
+   beanFactory.addBeanPostProcessor(new ImportAwareBeanPostProcessor(beanFactory));
+}
+</code></pre>
+<h1 id="full-与-lite">FULL 与 LITE</h1>
+<p>上述代码第 16 行：</p>
+<pre><code class="language-java">public void enhanceConfigurationClasses(ConfigurableListableBeanFactory beanFactory) {
+   Map&lt;String, AbstractBeanDefinition&gt; configBeanDefs = new LinkedHashMap&lt;&gt;();
+   for (String beanName : beanFactory.getBeanDefinitionNames()) {
+      BeanDefinition beanDef = beanFactory.getBeanDefinition(beanName);
+      // 判断是否是一个全注解类
+      // 什么是全注解类？FULL 和 LITE
+      if (ConfigurationClassUtils.isFullConfigurationClass(beanDef)) {
+         if (!(beanDef instanceof AbstractBeanDefinition)) {
+            throw new BeanDefinitionStoreException(&quot;Cannot enhance @Configuration bean definition '&quot; +
+                  beanName + &quot;' since it is not stored in an AbstractBeanDefinition subclass&quot;);
+         }
+         else if (logger.isWarnEnabled() &amp;&amp; beanFactory.containsSingleton(beanName)) {
+            logger.warn(&quot;Cannot enhance @Configuration bean definition '&quot; + beanName +
+                  &quot;' since its singleton instance has been created too early. The typical cause &quot; +
+                  &quot;is a non-static @Bean method with a BeanDefinitionRegistryPostProcessor &quot; +
+                  &quot;return type: Consider declaring such methods as 'static'.&quot;);
+         }
+         configBeanDefs.put(beanName, (AbstractBeanDefinition) beanDef);
+      }
+   }
+   if (configBeanDefs.isEmpty()) {
+      // nothing to enhance -&gt; return immediately
+      return;
+   }
+   ConfigurationClassEnhancer enhancer = new ConfigurationClassEnhancer();
+   for (Map.Entry&lt;String, AbstractBeanDefinition&gt; entry : configBeanDefs.entrySet()) {
+      AbstractBeanDefinition beanDef = entry.getValue();
+      // If a @Configuration class gets proxied, always proxy the target class
+      beanDef.setAttribute(AutoProxyUtils.PRESERVE_TARGET_CLASS_ATTRIBUTE, Boolean.TRUE);
+      try {
+         // Set enhanced subclass of the user-specified bean class
+         Class&lt;?&gt; configClass = beanDef.resolveBeanClass(this.beanClassLoader);
+         if (configClass != null) {
+            Class&lt;?&gt; enhancedClass = enhancer.enhance(configClass, this.beanClassLoader);
+            if (configClass != enhancedClass) {
+               if (logger.isDebugEnabled()) {
+                  logger.debug(String.format(&quot;Replacing bean definition '%s' existing class '%s' with &quot; +
+                        &quot;enhanced class '%s'&quot;, entry.getKey(), configClass.getName(), enhancedClass.getName()));
+               }
+               beanDef.setBeanClass(enhancedClass);
+            }
+         }
+      }
+      catch (Throwable ex) {
+         throw new IllegalStateException(&quot;Cannot load configuration class: &quot; + beanDef.getBeanClassName(), ex);
+      }
+   }
+}
+</code></pre>
+<p>如果没有添加 @Configuration 会直接在上述代码第 23 行 return;<br>
+如果添加了 @Configuration 后，就不会在第 23 行 return;而是会继续向下走到第 26 行。</p>
+<p>加了 @Configuration 会进行 cglib 代理，如果不加 @Configuration  就不会进行 cglib 动态代理。</p>
+<p>为什么加了 @Configuration 能够向下走到第 26 行呢？</p>
+<p>上述代码第 5-8 行：</p>
+<pre><code class="language-java">// 判断是否是一个全注解类
+// 什么是全注解类？FULL 和 LITE
+if (ConfigurationClassUtils.isFullConfigurationClass(beanDef)) {
+  if (!(beanDef instanceof AbstractBeanDefinition)) {  
+</code></pre>
+<p>在解析 AppConfig 时，如果 AppConfig 有 @Configuration 注解，就会给它设置一个属性 FULL；如果没有，就设置属性 LITE。<br>
+<strong>FULL 与 LITE 只是 Spring 当中的一个标识，Spring 标识为 FULL，表示它是一个全配置类，Spring 在为它生成 Bean 时，会加上 cglib 代理。标志为 LITE，表示它是一个部分配置类</strong>。</p>
+<p><img src="https://epitomm.github.io/post-images/%E6%B7%BB%E5%8A%A0@Configuration%E6%B3%A8%E8%A7%A3.png" alt="图片" loading="lazy"><br>
+<img src="https://epitomm.github.io/post-images/%E4%B8%8D%E6%B7%BB%E5%8A%A0@Configuration%E6%B3%A8%E8%A7%A3.png" alt="图片" loading="lazy"></p>
+<h1 id="为什么要给这个类加上-cglib-动态代理">为什么要给这个类加上 cglib 动态代理</h1>
+<pre><code class="language-java">public class IndexDaoImpl2 implements IndexDao{
+   @Override
+   public void query() {
+      System.out.println(&quot;dao2...模拟查询数据库&quot;);
+   }
+}
+</code></pre>
+<pre><code class="language-java">public class IndexDaoImpl implements IndexDao{
+   public IndexDaoImpl(){
+      System.out.println(&quot;indexDao...constructor&quot;);
+   }
+   @Override
+   public void query() {
+      System.out.println(&quot;dao...模拟查询数据库&quot;);
+   }
+}
+</code></pre>
+<pre><code class="language-java">@ComponentScan(&quot;com.ssm&quot;)
+public class AppConfig {
+   @Bean
+   public IndexDao indexDao2(){
+      return new IndexDaoImpl2();
+   }
+   @Bean
+   public IndexDao indexDao(){
+      return new IndexDaoImpl();
+   }
+}
+</code></pre>
+<pre><code class="language-java">public class Test {
+   public static void main(String[] args) {
+      // 把 Spring 所有前提环境准备好
+      // 1.准备工厂=DefaultListableBeanFactory
+      // 实例化一个 bdReader 和一个 scanner
+      AnnotationConfigApplicationContext context =
+            new AnnotationConfigApplicationContext();
+      // 把一个 class 转成 bd，最后 put 到 map
+      // map 位置 DefaultListableBeanFactory 的 beanDefinitionMap
+      context.register(AppConfig.class);
+      // 初始化 Spring 的环境
+      context. refresh();
+   }
+}
+</code></pre>
+<p>运行结果：</p>
+<pre><code class="language-plain">indexDao...constructor
+</code></pre>
+<p>分析：当执行 indexDao() 时，new IndexDaoImpl()，调用 IndexDaoImpl 的构造方法，所以IndexDaoImpl 的构造方法执行一次。</p>
+<pre><code class="language-java">@ComponentScan(&quot;com.ssm&quot;)
+public class AppConfig {
+   @Bean
+   public IndexDao indexDao2(){
+      indexDao();
+      return new IndexDaoImpl2();
+   }
+   @Bean
+   public IndexDao indexDao(){
+      return new IndexDaoImpl();
+   }
+}
+</code></pre>
+<p>运行结果：</p>
+<pre><code class="language-plain">indexDao...constructor
+indexDao...constructor
+</code></pre>
+<p>分析：当执行 indexDao() 时，new IndexDaoImpl()，调用 IndexDaoImpl 的构造方法。<br>
+当执行 indexDao2 方法时，再次调用 indexDao(); 方法，所以IndexDaoImpl 的构造方法共执行了两次。</p>
+<pre><code class="language-java">@Configuration
+@ComponentScan(&quot;com.ssm&quot;)
+public class AppConfig {
+   @Bean
+   public IndexDao indexDao2(){
+      indexDao();
+      return new IndexDaoImpl2();
+   }
+   @Bean
+   public IndexDao indexDao(){
+      return new IndexDaoImpl();
+   }
+}
+</code></pre>
+<p>运行结果：</p>
+<pre><code class="language-plain">indexDao...constructor
+</code></pre>
+<p>分析：<strong>添加了 @Configuration 后，仅调用一次 IndexDao 的构造方法</strong>。<br>
+indexDao() 方法被改变了，即使在 indexDao2() 内再次调用 indexDao()，也不会执行方法内的代码 new IndexDaoImpl(); 了。</p>
+<p>如何改变一个方法 indexD()？</p>
+<p><strong>代理 AppConfig</strong>，当调用 AppConfig 的 indexDao() 时，调用的是代理类 AppConfig 内部的 indexDao()，而不是普通类 AppConfig 内部的 indexDao()。</p>
+<pre><code class="language-java">public void enhanceConfigurationClasses(ConfigurableListableBeanFactory beanFactory) {
+   Map&lt;String, AbstractBeanDefinition&gt; configBeanDefs = new LinkedHashMap&lt;&gt;();
+   for (String beanName : beanFactory.getBeanDefinitionNames()) {
+      BeanDefinition beanDef = beanFactory.getBeanDefinition(beanName);
+      // 判断是否是一个全注解类
+      // 什么是全注解类？FULL 和 LITE
+      if (ConfigurationClassUtils.isFullConfigurationClass(beanDef)) {
+         if (!(beanDef instanceof AbstractBeanDefinition)) {
+            throw new BeanDefinitionStoreException(&quot;Cannot enhance @Configuration bean definition '&quot; +
+                  beanName + &quot;' since it is not stored in an AbstractBeanDefinition subclass&quot;);
+         }
+         else if (logger.isWarnEnabled() &amp;&amp; beanFactory.containsSingleton(beanName)) {
+            logger.warn(&quot;Cannot enhance @Configuration bean definition '&quot; + beanName +
+                  &quot;' since its singleton instance has been created too early. The typical cause &quot; +
+                  &quot;is a non-static @Bean method with a BeanDefinitionRegistryPostProcessor &quot; +
+                  &quot;return type: Consider declaring such methods as 'static'.&quot;);
+         }
+         //  如果是一个全注解，添加到 configBeanDefs 中；如果不是全注解，则不会put，即 configBeanDefs 为空
+         configBeanDefs.put(beanName, (AbstractBeanDefinition) beanDef);
+      }
+   }
+   // 如果不是全注解，configBeanDefs 为空，直接 return;
+   if (configBeanDefs.isEmpty()) {
+      // nothing to enhance -&gt; return immediately
+      return;
+   }
+   ConfigurationClassEnhancer enhancer = new ConfigurationClassEnhancer();
+   for (Map.Entry&lt;String, AbstractBeanDefinition&gt; entry : configBeanDefs.entrySet()) {
+      AbstractBeanDefinition beanDef = entry.getValue();
+      // If a @Configuration class gets proxied, always proxy the target class
+      beanDef.setAttribute(AutoProxyUtils.PRESERVE_TARGET_CLASS_ATTRIBUTE, Boolean.TRUE);
+      try {
+         // Set enhanced subclass of the user-specified bean class
+         Class&lt;?&gt; configClass = beanDef.resolveBeanClass(this.beanClassLoader);
+         if (configClass != null) {
+            // 完成对全注解类的 cglib 代理
+            Class&lt;?&gt; enhancedClass = enhancer.enhance(configClass, this.beanClassLoader);
+            if (configClass != enhancedClass) {
+               if (logger.isDebugEnabled()) {
+                  logger.debug(String.format(&quot;Replacing bean definition '%s' existing class '%s' with &quot; +
+                        &quot;enhanced class '%s'&quot;, entry.getKey(), configClass.getName(), enhancedClass.getName()));
+               }
+               beanDef.setBeanClass(enhancedClass);
+            }
+         }
+      }
+      catch (Throwable ex) {
+         throw new IllegalStateException(&quot;Cannot load configuration class: &quot; + beanDef.getBeanClassName(), ex);
+      }
+   }
+}
+</code></pre>
+<p>上述代码第 38 行：</p>
+<pre><code class="language-java">public Class&lt;?&gt; enhance(Class&lt;?&gt; configClass, @Nullable ClassLoader classLoader) {
+   if (EnhancedConfiguration.class.isAssignableFrom(configClass)) {
+      if (logger.isDebugEnabled()) {
+         logger.debug(String.format(&quot;Ignoring request to enhance %s as it has &quot; +
+               &quot;already been enhanced. This usually indicates that more than one &quot; +
+               &quot;ConfigurationClassPostProcessor has been registered (e.g. via &quot; +
+               &quot;&lt;context:annotation-config&gt;). This is harmless, but you may &quot; +
+               &quot;want check your configuration and remove one CCPP if possible&quot;,
+               configClass.getName()));
+      }
+      return configClass;
+   }
+   // cglib 代理
+   Class&lt;?&gt; enhancedClass = createClass(newEnhancer(configClass, classLoader));
+   if (logger.isDebugEnabled()) {
+      logger.debug(String.format(&quot;Successfully enhanced %s; enhanced class name is: %s&quot;,
+            configClass.getName(), enhancedClass.getName()));
+   }
+   return enhancedClass;
+}
+</code></pre>
+<p>创建一个类，把这个类 enhancedClass  返回，因为此时还没有实例化对象，<br>
+AppConfig - cglib的class - BeanDefinition - cglib的Bean</p>
+<p>如何返回一个 cglib 的 class？</p>
+<p>上述代码第 14 行：</p>
+<pre><code class="language-java">private Enhancer newEnhancer(Class&lt;?&gt; configSuperClass, @Nullable ClassLoader classLoader) {
+   Enhancer enhancer = new Enhancer();
+   // 增强父类，cglib 是基于继承来的
+   // 把当前类 configSuperClass 作为 enhancer 的父类
+   enhancer.setSuperclass(configSuperClass);
+   // 增强接口，为什么要增强接口？
+   // 便于判断，表示一个类已经被增强了
+   enhancer.setInterfaces(new Class&lt;?&gt;[] {EnhancedConfiguration.class});
+   enhancer.setUseFactory(false);
+   enhancer.setNamingPolicy(SpringNamingPolicy.INSTANCE);
+   // BeanFactoryAwareGeneratorStrategy 是一个生成策略
+   // 主要为生成的 CGLIB 类中添加成员变量 $$beanFactory
+   // 同时基于接口 EnhancedConfiguration 的父接口 BeanFactoryAware 中的 setBeanFactory 方法，
+   // 设置此变量的值为当前 Context 中的 beanFactory，这样一来我们这个 cglib 代理的对象就有了 beanFactory
+   // 有了 factory 就能获得对象，而不用去通过方法获得对象了，因为通过方法获得对象不能控制其过程
+   // BeanFactory 的作用是在 this 调用时拦截该调用，并直接在 beanFactory 中获得目标 bean
+   enhancer.setStrategy(new BeanFactoryAwareGeneratorStrategy(classLoader));
+   // 当调用 indexDao() 时进行拦截
+   enhancer.setCallbackFilter(CALLBACK_FILTER);
+   enhancer.setCallbackTypes(CALLBACK_FILTER.getCallbackTypes());
+   return enhancer;
+}
+</code></pre>
+<p>EnhancedConfiguration 继承了 BeanFactoryAware</p>
+<pre><code class="language-java">public interface EnhancedConfiguration extends BeanFactoryAware {
+</code></pre>
+<p>BeanFactoryAware 实现了 Aware，Aware 里面有一个 setBeanFactory 方法</p>
+<pre><code class="language-java">public interface BeanFactoryAware extends Aware {
+   /**
+    * Callback that supplies the owning factory to a bean instance.
+    * &lt;p&gt;Invoked after the population of normal bean properties
+    * but before an initialization callback such as
+    * {@link InitializingBean#afterPropertiesSet()} or a custom init-method.
+    * @param beanFactory owning BeanFactory (never {@code null}).
+    * The bean can immediately call methods on the factory.
+    * @throws BeansException in case of initialization errors
+    * @see BeanInitializationException
+    */
+   void setBeanFactory(BeanFactory beanFactory) throws BeansException;
+}
+</code></pre>
+<p>让 CGLIB 产生的代理对象能够获得 BeanFactory。</p>
+<h3 id="cglib-的代理对象为什么要得到-beanfactory">CGLIB 的代理对象为什么要得到 BeanFactory？</h3>
+<p>AppConfig 在执行代理前直接使用它得到原始类，就会执行原始类中的原始方法，每调用一次 indexDao() 方法，就会 new IndexDaoImpl(); 违背了 Spring 中的单例原则，所以不能使用原始对象，就需要使用代理对象，当再次调用 indexDao() 方法时，执行代理对象内的 indexDao() 方法，不再 new  IndexDaoImpl()，而是直接返回已经存在的 IndexDaoImpl。</p>
+<p>![图片](https://epitomm.github.io/post-images/CGLIB的代理对象为什么要得到 BeanFactory.png)</p>
+<p>当第一次调用 indexDao() 时，new IndexDaoImpl()，放到容器中，当第二次调用时，不再 new，而是直接从容器中拿出来 <strong>factory.getBean()</strong>，就需要在代理对象中有一个 BeanFactory，不然没办法 factory.getBean()。</p>
+<h3 id="如何得到一个-beanfactory">如何得到一个 BeanFactory？</h3>
+<p>实现 BeanFactoryAware 接口，后置处理器在实例化对象前，把它放进来。</p>
+<p>BeanFactoryAwareGeneratorStrategy：CGLIB 生成类的策略。</p>
+<p>默认策略：DefaultGeneratorStrategy，生成基本的。如果需要扩展，使用一个类 BeanFactoryAwareGeneratorStrategy：CGLIB  继承 DefaultGeneratorStrategy，在生成这个类的过程中，调用 declare_field 方法：声明一个属性 $$beanFactory。</p>
+<pre><code class="language-java">protected ClassGenerator transform(ClassGenerator cg) throws Exception {
+   ClassEmitterTransformer transformer = new ClassEmitterTransformer() {
+      @Override
+      public void end_class() {
+         declare_field(Constants.ACC_PUBLIC, BEAN_FACTORY_FIELD, Type.getType(BeanFactory.class), null);
+         super.end_class();
+      }
+   };
+   return new TransformingClassGenerator(cg, transformer);
+}
+</code></pre>
+<pre><code class="language-java">private static final String BEAN_FACTORY_FIELD = &quot;$$beanFactory&quot;;
+</code></pre>
+<pre><code class="language-java">public class Test {
+   public static void main(String[] args) {
+      // 把 Spring 所有前提环境准备好
+      // 1.准备工厂=DefaultListableBeanFactory
+      // 实例化一个 bdReader 和一个 scanner
+      AnnotationConfigApplicationContext context =
+            new AnnotationConfigApplicationContext();
+      // 把一个 class 转成 bd，最后 put 到 map
+      // map 位置 DefaultListableBeanFactory 的 beanDefinitionMap
+      context.register(AppConfig.class);
+      // 初始化 Spring 的环境
+      context. refresh();
+      /**
+        * 对目标对象的所有方法进行拦截
+        */
+      Enhancer enhancer = new Enhancer();
+      enhancer.setSuperclass(IndexDaoImpl.class);
+      // 增强接口
+      enhancer.setNamingPolicy(SpringNamingPolicy.INSTANCE);
+      // 添加方法过滤器
+      enhancer.setCallback(new TestMethodCallabck());
+      IndexDaoImpl indexDao = (IndexDaoImpl) enhancer.create();
+      indexDao.query();
+   }
+}
+</code></pre>
+<pre><code class="language-java">public class TestMethodCallabck implements MethodInterceptor {
+   /**
+    *
+    * @param o 代理对象
+    * @param method 当前方法，目标对象的方法
+    * @param objects 参数
+    * @param methodProxy 代理对象的方法
+    * @return
+    * @throws Throwable
+    */
+   @Override
+   public Object intercept(Object o, Method method, Object[] objects, MethodProxy methodProxy) throws Throwable {
+      System.out.println(&quot;method...&quot;);
+      return methodProxy.invokeSuper(o,objects);
+   }
+}
+</code></pre>
+<p>运行结果：</p>
+<pre><code class="language-java">indexDao...constructor
+indexDao...constructor
+method...
+dao...模拟查询数据库
+</code></pre>
+<p>newEnhancer 方法的第 19 行：</p>
+<pre><code class="language-java">private static final ConditionalCallbackFilter CALLBACK_FILTER = new ConditionalCallbackFilter(CALLBACKS);
+</code></pre>
+<pre><code class="language-java">private static final Callback[] CALLBACKS = new Callback[] {
+      new BeanMethodInterceptor(),
+      new BeanFactoryAwareMethodInterceptor(),
+      NoOp.INSTANCE
+};
+</code></pre>
+<h1 id="configuration">@Configuration</h1>
+<p>让 AppConfig 产生一个 CGLIB 动态代理类，这个 CGLIB 代理类会去实现一个 BeanFactoryAware 接口，自动注入一个 BeanFactory，于是当再次调用 indexDao() 时，首先会判断是不是第一次，如果是，则 new IndexDaoImpl；如果不是，从 BeanFactory 中得到这个 Bean 并返回。</p>
+<pre><code class="language-java">@Configuration
+@ComponentScan(&quot;com.ssm&quot;)
+public class AppConfig {
+   @Bean
+   public IndexDao indexDao2(){
+      indexDao();
+      return new IndexDaoImpl2();
+   }
+   @Bean
+   public static IndexDao indexDao(){
+      return new IndexDaoImpl();
+   }
+}
+</code></pre>
+<p>即使添加了 @Configuration，如果 使用 static 修饰 indexDao()，也会创建两遍</p>
+<pre><code class="language-plain">indexDao...constructor
+indexDao...constructor
+</code></pre>
+<pre><code class="language-java">private void loadBeanDefinitionsForConfigurationClass(
+      ConfigurationClass configClass, TrackedConditionEvaluator trackedConditionEvaluator) {
+   if (trackedConditionEvaluator.shouldSkip(configClass)) {
+      String beanName = configClass.getBeanName();
+      if (StringUtils.hasLength(beanName) &amp;&amp; this.registry.containsBeanDefinition(beanName)) {
+         this.registry.removeBeanDefinition(beanName);
+      }
+      this.importRegistry.removeImportingClass(configClass.getMetadata().getClassName());
+      return;
+   }
+   // 如果一个类是被 import 的，会被 Spring 标注
+   // 在这里完成注册
+   if (configClass.isImported()) {
+      registerBeanDefinitionForImportedConfigurationClass(configClass);
+   }
+   // BeanMethod：得到 AppConfig 中的所有包，
+   for (BeanMethod beanMethod : configClass.getBeanMethods()) {
+      loadBeanDefinitionsForBeanMethod(beanMethod);
+   }
+   // xml
+   loadBeanDefinitionsFromImportedResources(configClass.getImportedResources());
+   // 注册 Registrar
+   loadBeanDefinitionsFromRegistrars(configClass.getImportBeanDefinitionRegistrars());
+}
+</code></pre>
+<pre><code class="language-java">private void loadBeanDefinitionsForBeanMethod(BeanMethod beanMethod) {
+   ConfigurationClass configClass = beanMethod.getConfigurationClass();
+   MethodMetadata metadata = beanMethod.getMetadata();
+   String methodName = metadata.getMethodName();
+   // Do we need to mark the bean as skipped by its condition?
+   if (this.conditionEvaluator.shouldSkip(metadata, ConfigurationPhase.REGISTER_BEAN)) {
+      configClass.skippedBeanMethods.add(methodName);
+      return;
+   }
+   if (configClass.skippedBeanMethods.contains(methodName)) {
+      return;
+   }
+   AnnotationAttributes bean = AnnotationConfigUtils.attributesFor(metadata, Bean.class);
+   Assert.state(bean != null, &quot;No @Bean annotation attributes&quot;);
+   // Consider name and any aliases
+   List&lt;String&gt; names = new ArrayList&lt;&gt;(Arrays.asList(bean.getStringArray(&quot;name&quot;)));
+   String beanName = (!names.isEmpty() ? names.remove(0) : methodName);
+   // Register aliases even when overridden
+   for (String alias : names) {
+      this.registry.registerAlias(beanName, alias);
+   }
+   // Has this effectively been overridden before (e.g. via XML)?
+   if (isOverriddenByExistingDefinition(beanMethod, beanName)) {
+      if (beanName.equals(beanMethod.getConfigurationClass().getBeanName())) {
+         throw new BeanDefinitionStoreException(beanMethod.getConfigurationClass().getResource().getDescription(),
+               beanName, &quot;Bean name derived from @Bean method '&quot; + beanMethod.getMetadata().getMethodName() +
+               &quot;' clashes with bean name for containing configuration class; please make those names unique!&quot;);
+      }
+      return;
+   }
+   ConfigurationClassBeanDefinition beanDef = new ConfigurationClassBeanDefinition(configClass, metadata);
+   beanDef.setSource(this.sourceExtractor.extractSource(metadata, configClass.getResource()));
+   if (metadata.isStatic()) {
+      // static @Bean method
+      beanDef.setBeanClassName(configClass.getMetadata().getClassName());
+      beanDef.setFactoryMethodName(methodName);
+   }
+   else {
+      // instance @Bean method
+      beanDef.setFactoryBeanName(configClass.getBeanName());
+      beanDef.setUniqueFactoryMethodName(methodName);
+   }
+   beanDef.setAutowireMode(AbstractBeanDefinition.AUTOWIRE_CONSTRUCTOR);
+   beanDef.setAttribute(RequiredAnnotationBeanPostProcessor.SKIP_REQUIRED_CHECK_ATTRIBUTE, Boolean.TRUE);
+   AnnotationConfigUtils.processCommonDefinitionAnnotations(beanDef, metadata);
+   Autowire autowire = bean.getEnum(&quot;autowire&quot;);
+   if (autowire.isAutowire()) {
+      beanDef.setAutowireMode(autowire.value());
+   }
+   String initMethodName = bean.getString(&quot;initMethod&quot;);
+   if (StringUtils.hasText(initMethodName)) {
+      beanDef.setInitMethodName(initMethodName);
+   }
+   String destroyMethodName = bean.getString(&quot;destroyMethod&quot;);
+   beanDef.setDestroyMethodName(destroyMethodName);
+   // Consider scoping
+   ScopedProxyMode proxyMode = ScopedProxyMode.NO;
+   AnnotationAttributes attributes = AnnotationConfigUtils.attributesFor(metadata, Scope.class);
+   if (attributes != null) {
+      beanDef.setScope(attributes.getString(&quot;value&quot;));
+      proxyMode = attributes.getEnum(&quot;proxyMode&quot;);
+      if (proxyMode == ScopedProxyMode.DEFAULT) {
+         proxyMode = ScopedProxyMode.NO;
+      }
+   }
+   // Replace the original bean definition with the target one, if necessary
+   BeanDefinition beanDefToRegister = beanDef;
+   if (proxyMode != ScopedProxyMode.NO) {
+      BeanDefinitionHolder proxyDef = ScopedProxyCreator.createScopedProxy(
+            new BeanDefinitionHolder(beanDef, beanName), this.registry,
+            proxyMode == ScopedProxyMode.TARGET_CLASS);
+      beanDefToRegister = new ConfigurationClassBeanDefinition(
+            (RootBeanDefinition) proxyDef.getBeanDefinition(), configClass, metadata);
+   }
+   if (logger.isDebugEnabled()) {
+      logger.debug(String.format(&quot;Registering bean definition for @Bean method %s.%s()&quot;,
+            configClass.getMetadata().getClassName(), beanName));
+   }
+   this.registry.registerBeanDefinition(beanName, beanDefToRegister);
+}
+</code></pre>
+<p>上述代码第 40 行：</p>
+<pre><code class="language-java">if (metadata.isStatic()) {
+   // static @Bean method
+   // 如果是静态的，BeanDefinition 中放的是 Bean   beanDef.setBeanClassName(configClass.getMetadata().getClassName());
+   beanDef.setFactoryMethodName(methodName);
+}
+else {
+   // instance @Bean method
+   // 如果不是静态的，BeanDefinition 中放的是 FactoryBean
+   // FactoryBean 是怎样被创建出来的？
+   // FactoryBean 有两个意义：本身是一个 Bean，
+   // 如何 new 出来一个 FactoryBean 给它呢？
+   // 通过 setUniqueFactoryMethodName
+   beanDef.setFactoryBeanName(configClass.getBeanName());
+   beanDef.setUniqueFactoryMethodName(methodName);
+}
+</code></pre>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[Spring系列（九）Spring源码解析]]></title>
         <id>https://epitomm.github.io/post/spring-xi-lie-jiu-yuan-ma-jie-xi/</id>
@@ -8597,695 +10121,6 @@ public class SpringConfig {
         return sqlSessionFactoryBean;
     }
 }
-</code></pre>
-]]></content>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[Java 并发——CAS 和 AQS]]></title>
-        <id>https://epitomm.github.io/post/java-bing-fa-cas-he-aqs/</id>
-        <link href="https://epitomm.github.io/post/java-bing-fa-cas-he-aqs/">
-        </link>
-        <updated>2020-04-29T15:37:33.000Z</updated>
-        <content type="html"><![CDATA[<ul>
-<li>多线程
-<ul>
-<li>Synchronized Volatile单例</li>
-<li>锁：封锁。
-<ul>
-<li>悲观锁、写（增删改）多，读（查）少Lock</li>
-<li>乐观锁：读（查）多、写少版本</li>
-</ul>
-</li>
-<li>1.5 JUC</li>
-</ul>
-</li>
-</ul>
-<h1 id="一-cas">一、CAS</h1>
-<h2 id="1-概念">1. 概念</h2>
-<ul>
-<li>CompareAndSet：比较和设置</li>
-<li>CompareAndSwap：比较和交换。一种无锁的原子算法，乐观锁。</li>
-<li>思想：
-<ul>
-<li>给你一个期望值，与现有的值比较，如果相等则修改；如果不相等什么事情都不做。</li>
-<li>CAS(V,E,N)
-<ul>
-<li>V：目前拿到的值</li>
-<li>E：期望值</li>
-<li>N：新值</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<h2 id="2-作用及优点">2. 作用及优点</h2>
-<ul>
-<li>CAS 实现稍微复杂，无锁，不存在阻塞，提高了效率，CPU的吞吐量高，性能好。</li>
-</ul>
-<h2 id="3-实例">3. 实例</h2>
-<pre><code class="language-java">package luban;
-
-public class CASDemo1 {
-
-    private static volatile int m = 0;
-
-    public static void increase(){
-        m ++;
-    }
-    public static void main(String[] args){
-        for (int i = 0; i &lt; 20; i++) {
-            new Thread(() -&gt; {
-                CASDemo1.increase();
-            }).start();
-        }
-        System.out.println(m);
-    }
-}
-</code></pre>
-<p>运行结果：</p>
-<pre><code>16
-</code></pre>
-<p>分析：<br>
-m++ 不具有原子性。</p>
-<p>修改后：</p>
-<pre><code class="language-java">package luban;
-
-/**
- * volatile 变量
- * join()
- */
-public class CASDemo3 {
-
-    private static volatile int m = 0;
-    public static void increase(){
-        m ++;
-    }
-    public static void main(String[] args) throws InterruptedException {
-        Thread[] threads = new Thread[20];
-        for (int i = 0; i &lt; threads.length; i++) {
-            threads[i] = new Thread(() -&gt; {
-                CASDemo3.increase();
-            });
-            threads[i].start();
-            threads[i].join();
-        }
-        System.out.println(m);
-    }
-}
-</code></pre>
-<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/join.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">join()</p>
-<p>反汇编：</p>
-<pre><code>javap -c CASDemo3
-</code></pre>
-<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/i++.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">i++ 三步操作</p>
-<pre><code class="language-java">package luban;
-
-/**
- * AtomicInteger 变量
- * join()
- */
-
-import java.util.concurrent.atomic.AtomicInteger;
-
-public class CASDemo2 {
-
-    private static AtomicInteger atomicI = new AtomicInteger(0);
-
-    public static void increastAtomic(){
-        atomicI.incrementAndGet();
-    }
-    public static void main(String[] args) throws InterruptedException {
-        Thread[] threads = new Thread[20];
-        for (int i = 0; i &lt; threads.length; i++) {
-            threads[i] = new Thread(() -&gt; {
-                CASDemo2.increastAtomic();
-            });
-            threads[i].start();
-            threads[i].join();// join()：加入。当前 threads[i] 线程加入到线程组中，当前线程等待 threads[i]线程执行完了之后再执行
-        }
-        System.out.println(atomicI.get());
-    }
-}
-</code></pre>
-<p>反汇编：</p>
-<pre><code>javap -c CASDemo2
-</code></pre>
-<figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/atomicI.incrementAndGet.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">atomicI.incrementAndGet() 实现 i++ 只需一步操作</p>
-<h2 id="4-方法摘要">4. 方法摘要</h2>
-<figure data-type="image" tabindex="4"><img src="https://epitomm.github.io/post-images/atomic%E6%96%B9%E6%B3%95.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">java.util.concurrent.atomic</p>
-<figure data-type="image" tabindex="5"><img src="https://epitomm.github.io/post-images/AtomicInteger%E6%96%B9%E6%B3%95.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">AtomicInteger 方法摘要</p>
-<h2 id="5-原理">5. 原理</h2>
-<p>JUC下的atomic类都是通过CAS来实现的，下面就以AtomicInteger为例来阐述CAS的实现。如下：</p>
-<figure data-type="image" tabindex="6"><img src="https://epitomm.github.io/post-images/AtomicInteger%E7%B1%BB.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">AtomicInteger 类</p>
-<figure data-type="image" tabindex="7"><img src="https://epitomm.github.io/post-images/getUnsafe.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">JVM 调用底层指令实现 getUnsafe()</p>
-<figure data-type="image" tabindex="8"><img src="https://epitomm.github.io/post-images/incrementAndGet.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">incrementAndGet() 方法</p>
-<figure data-type="image" tabindex="9"><img src="https://epitomm.github.io/post-images/getAndAddInt.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">getAndAddInt() 方法</p>
-<pre><code class="language-java">public final native boolean compareAndSwapInt(Object var1, long var2, int var4, int var5);
-// var1：现在拿到的值
-// var2：期望的值
-// var4:最终改变的值
-// var5：最后改变了的值  
-</code></pre>
-<p>总结：CAS的原子性流程<br>
-<img src="https://epitomm.github.io/post-images/Unsafe.png" alt="图片" loading="lazy"></p>
-<p style = "text-align:center;font-family:楷体">Unsafe 的返回值是 Atomic::cmpchg(x, addr, e)</p>
-<figure data-type="image" tabindex="10"><img src="https://epitomm.github.io/post-images/Unsafe_2.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">Atomic::cmpchg(jint exchange_value, volatile jint* dest, jint com)</p>
-<p>incrementAndGet -&gt; unsafe.java -&gt; unsafe.cpp -&gt; 汇编 cmpxchg</p>
-<p>需要<strong>硬件支持</strong>汇编指令 cmpxchg</p>
-<p>Unsafe是CAS的核心类，Java无法直接访问底层操作系统，而是通过本地（native）方法来访问。不过尽管如此，JVM还是开了一个后门：Unsafe，它提供了硬件级别的原子操作。</p>
-<h2 id="6-缺点">6. 缺点</h2>
-<ul>
-<li>无法检测到中间值的变化：A(100) -&gt; B(110) -&gt; A(100)</li>
-</ul>
-<p>CAS需要检查操作值有没有发生改变，如果没有发生改变则更新。但是存在这样一种情况：如果一个值原来是A，变成了B，然后又变成了A，那么在CAS检查的时候会发现没有改变，但是实质上它已经发生了改变，这就是所谓的ABA问题。</p>
-<pre><code class="language-java">package luban;
-/**
- * 无法检测到中间值的变化
- */
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
-public class CASDemo4 {
-
-    private static AtomicInteger atomicI = new AtomicInteger(100);
-
-    public static void main(String[] args){
-        ExecutorService service = Executors.newCachedThreadPool();
-        service.execute(() -&gt; {
-            System.out.println(&quot;(1) 100 变为 110：&quot; + atomicI.compareAndSet(100,110));
-        });
-
-        service.execute(() -&gt; {
-            try {
-                TimeUnit.SECONDS.sleep(2);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            System.out.println(&quot;(2) 110 变为 100：&quot; + atomicI.compareAndSet(110,100));
-        });
-
-        service.execute(() -&gt; {
-            try {
-                TimeUnit.SECONDS.sleep(3);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            System.out.println(&quot;(3) 110 变为 100：&quot; + atomicI.compareAndSet(100,120));
-        });
-
-        service.shutdown();
-    }
-}
-</code></pre>
-<p>运行结果：</p>
-<pre><code>(1) 100 变为 110：true
-(2) 110 变为 100：true
-(3) 110 变为 100：true
-</code></pre>
-<h2 id="7-改进">7. 改进</h2>
-<p>类 AtomicStampedReference<V></p>
-<p>增加版本号声明：A1(100) -&gt; B2(110) -&gt; A3(100)</p>
-<pre><code class="language-java">package luban;
-
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicStampedReference;
-
-public class CASDemo5 {
-
-    // 设置初值时，给定版本号
-    private static AtomicStampedReference asr = new AtomicStampedReference(100, 1);
-    public static void main(String[] args){
-        ExecutorService service = Executors.newCachedThreadPool();
-        service.execute(() -&gt; {
-            try {
-                TimeUnit.SECONDS.sleep(1);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            System.out.println(&quot;100 变为 110：&quot; + asr.compareAndSet(100,110,asr.getStamp(), asr.getStamp() + 1));
-            System.out.println(&quot;110 变成 100：&quot; +asr.compareAndSet(110,100,asr.getStamp(), asr.getStamp() + 1));
-        });
-        service.execute(() -&gt; {
-            // 得到版本号
-            int stamp = asr.getStamp();
-            try {
-                TimeUnit.SECONDS.sleep(2);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            System.out.println(asr.getStamp());
-            System.out.println(stamp);
-            System.out.println(&quot;100 变成 120：&quot; +asr.compareAndSet( 100,120,stamp, stamp  + 1));
-//            System.out.println(&quot;100 变成 120：&quot; +asr.compareAndSet( 100,120,asr.getStamp(), asr.getStamp()  + 1));
-        });
-    }
-}
-</code></pre>
-<p>运行结果：</p>
-<pre><code>100 变为 110：true
-110 变成 100：true
-3
-1
-100 变成 120：false
-</code></pre>
-<p>分析：第一个线程 sleep 2 秒后执行 set，所以第二个线程先 getStamp() 到的stamp 是初始化的，还未修改过的 stamp = 1；而第二个线程 sleep 后的 asr 得到的 stamp = 3，现有值与期望值不同，所以修改失败。<br>
-CAS 的应用场景：</p>
-<ul>
-<li>应用于简单的数据计算。</li>
-<li>适合线程冲突少的场景。</li>
-</ul>
-<h1 id="二-aqs">二、AQS</h1>
-<h2 id="1-概念-2">1. 概念</h2>
-<ul>
-<li>AbstractQueuedSynchronizer</li>
-<li>同步发生器</li>
-<li>构建 LOCK</li>
-<li>JUC：java.util.current</li>
-</ul>
-<h2 id="2-基本思想">2. 基本思想</h2>
-<ul>
-<li>通过内置得到 FIFO 同步队列来完成线程争夺资源的管理工作。</li>
-</ul>
-<h2 id="3-clh同步队列">3. CLH同步队列</h2>
-<figure data-type="image" tabindex="11"><img src="https://epitomm.github.io/post-images/CLH%E5%90%8C%E6%AD%A5%E9%98%9F%E5%88%97.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">CLH 同步队列</p>
-<pre><code>static final class Node {
-    /** Marker to indicate a node is waiting in shared mode */
-    static final Node SHARED = new Node(); // 共享
-    /** Marker to indicate a node is waiting in exclusive mode */
-    static final Node EXCLUSIVE = null; // 排他
-
-    /** waitStatus value to indicate thread has cancelled */
-    static final int CANCELLED =  1; // 因中断、完成 退出队列
-    /** waitStatus value to indicate successor's thread needs unparking */
-    static final int SIGNAL    = -1; // 节点的后继结点被阻塞
-    /** waitStatus value to indicate thread is waiting on condition */
-    static final int CONDITION = -2; // 条件阻塞
-    /**
-     * waitStatus value to indicate the next acquireShared should
-     * unconditionally propagate
-     */
-    static final int PROPAGATE = -3; // 共享模式下，头结点的状态
-</code></pre>
-<h1 id="三-自定义锁">三、自定义锁</h1>
-<ul>
-<li>AQS 写一个锁（Lock）
-<ul>
-<li>子类定义为非公共内部帮助器类（私有的内部类继承AQS），写锁的时候的一个帮助器，提供获取或和释放锁的功能。</li>
-</ul>
-</li>
-<li>方法
-<ul>
-<li>acquire(int arg)：以<strong>独占</strong>模式获取，忽略中断。</li>
-<li>acquireShared(int arg)：以<strong>共享</strong>模式获取，忽略中断。</li>
-</ul>
-</li>
-</ul>
-<pre><code class="language-java">public final void acquire(int arg) {
-    if (!tryAcquire(arg) &amp;&amp;
-        acquireQueued(addWaiter(Node.EXCLUSIVE), arg))
-        selfInterrupt();
-}
-</code></pre>
-<ul>
-<li>tryAcquire(int arg) ：尝试以独占模式获取对象状态。</li>
-<li>tryAcquireShared(int arg)：尝试以共享模式获取对象状态 。</li>
-</ul>
-<pre><code class="language-java">private Node addWaiter(Node mode) {
-    Node node = new Node(Thread.currentThread(), mode);
-    // Try the fast path of enq; backup to full enq on failure
-    Node pred = tail;
-    if (pred != null) {
-        node.prev = pred;
-        if (compareAndSetTail(pred, node)) {
-            pred.next = node;
-            return node;
-        }
-    }
-    enq(node);
-    return node;
-}
-</code></pre>
-<ul>
-<li>release(int arg)：以独占模式释放对象。</li>
-<li>releaseShared(int arg)：以共享模式释放对象。</li>
-</ul>
-<h2 id="实例">实例</h2>
-<figure data-type="image" tabindex="12"><img src="https://epitomm.github.io/post-images/Lock%E7%B1%BB%E6%96%B9%E6%B3%95.png" alt="图片" loading="lazy"></figure>
-<p style = "text-align:center;font-family:楷体">Lock 类的方法</p>
-<pre><code class="language-java">package luban;
-
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.AbstractQueuedSynchronizer;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-
-public class MyLock implements Lock {
-
-    private Helper helper = new Helper();
-
-    private class Helper extends AbstractQueuedSynchronizer{
-        // 获取锁
-        @Override
-        protected boolean tryAcquire(int arg) {
-            int state = getState();
-            if(state == 0){
-                // 利用 CAS 原理修改 state
-                if(compareAndSetState(0, arg)){
-                    // 设置当前线程占有资源
-                    setExclusiveOwnerThread(Thread.currentThread());
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        // 释放锁
-        @Override
-        protected boolean tryRelease(int arg) {// arg:信号量
-            int state = getState() - arg;
-            boolean flag = false;
-            // 判断释放后是否为 0
-            if(state == 0){
-                setExclusiveOwnerThread(null);
-                setState(state);
-                return true;
-            }
-            setState(state);//不存在线程安全问题。重入性的问题，已经独占了资源state，其他线程不会干扰
-            return false;
-        }
-        public Condition newConditionObject(){
-            return new ConditionObject();
-        }
-    }
-    @Override
-    public void lock() {
-        helper.acquire(1);
-    }
-
-    @Override
-    public void lockInterruptibly() throws InterruptedException {
-        helper.acquireInterruptibly(1);
-    }
-
-    @Override
-    public boolean tryLock() {
-        return helper.tryAcquire(1);
-    }
-
-    @Override
-    public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
-        return helper.tryAcquireNanos(1, unit.toNanos(time));
-    }
-
-    @Override
-    public void unlock() {
-        helper.release(1);
-    }
-
-    @Override
-    public Condition newCondition() {
-        return helper.newConditionObject();
-    }
-}
-</code></pre>
-<ol>
-<li>不加锁的实现有问题</li>
-</ol>
-<pre><code class="language-java">package luban;
-import java.util.concurrent.TimeUnit;
-
-public class Demo {
-    private int m = 0;
-    private int next(){
-        try {
-            TimeUnit.SECONDS.sleep(1);
-            return m++;
-        } catch (InterruptedException e) {
-            throw new RuntimeException(&quot;ERROR&quot;);
-        }
-    }
-
-    public static void main(String[] args){
-        Demo demo = new Demo();
-        Thread[] th = new Thread[10];
-        for(int i = 0 ; i &lt; 10 ; i ++){
-            th[i] = new Thread(() -&gt; {
-                System.out.println(demo.next());
-            });
-            th[i].start();
-        }
-    }
-}
-</code></pre>
-<p>运行结果：</p>
-<pre><code>1
-7
-8
-6
-5
-0
-4
-3
-2
-0
-</code></pre>
-<ol start="2">
-<li>使用自定义锁的实现正确</li>
-</ol>
-<pre><code class="language-java">package luban;
-
-public class Demo01 {
-
-    private MyLock lock = new MyLock();
-
-    private int m = 0;
-
-    public int next(){
-        lock.lock();
-        try {
-            return m++;
-        } finally{
-            lock.unlock();
-        }
-    }
-
-    public static void main(String[] args){
-        Demo01 demo = new Demo01();
-        Thread[] th = new Thread[10];
-        for(int i = 0 ; i &lt; 10 ; i ++){
-            th[i] = new Thread(() -&gt; {
-                System.out.println(demo.next());
-            });
-            th[i].start();
-        }
-    }
-}
-</code></pre>
-<p>运行结果：</p>
-<pre><code>0
-4
-3
-2
-1
-5
-6
-7
-8
-9
-</code></pre>
-<p>上面实现的 MyLock 不具有可重入性。测试：</p>
-<pre><code class="language-java">package luban;
-
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-public class Demo02 {
-
-    private MyLock lock = new MyLock();
-
-    private int m = 0;
-
-    public void a(){
-        lock.lock();
-        System.out.println(&quot;a&quot;);
-        b();
-        lock.unlock();
-    }
-    public void b(){
-        lock.lock();
-        System.out.println(&quot;b&quot;);
-        lock.unlock();
-    }
-
-    public int next(){
-        lock.lock();
-        try {
-            return m++;
-        } finally{
-            lock.unlock();
-        }
-    }
-
-    public static void main(String[] args) throws InterruptedException {
-        Demo02 demo = new Demo02();
-        ExecutorService service = Executors.newCachedThreadPool();
-        service.execute(() -&gt; {
-            demo.a();
-        });
-    }
-}
-</code></pre>
-<p>运行结果：</p>
-<pre><code>a
-（阻塞···）
-</code></pre>
-<h2 id="可重入性">可重入性</h2>
-<p>同一个锁对同一资源进行占有的时候，直接分配给这个线程。</p>
-<p>【占有锁的线程再次申请锁时仍可获取。获取一次，锁这个变量值(默认为 0) 加一。释放一次，锁这个变量值减一。锁这个变量值为 0 时，说明该锁没有被线程占用。】</p>
-<p>对 MyLock 代码进行修改，使其具有可重入性：</p>
-<pre><code class="language-java">package luban;
-
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.AbstractQueuedSynchronizer;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-
-public class MyLock implements Lock {
-
-    private Helper helper = new Helper();
-
-    private class Helper extends AbstractQueuedSynchronizer{
-        // 获取锁
-        @Override
-        protected boolean tryAcquire(int arg) {
-            int state = getState();
-            if(state == 0){
-                // 利用 CAS 原理修改 state
-                if(compareAndSetState(0, arg)){
-                    // 设置当前线程占有资源
-                    setExclusiveOwnerThread(Thread.currentThread());
-                    return true;
-                }
-            }else if(getExclusiveOwnerThread() == Thread.currentThread()){//可重入
-                setState(getState() + arg);
-                return true;
-            }
-            return false;
-        }
-
-        // 释放锁
-        @Override
-        protected boolean tryRelease(int arg) {// arg:信号量
-            int state = getState() - arg;
-            boolean flag = false;
-            // 判断释放后是否为 0
-            if(state == 0){
-                setExclusiveOwnerThread(null);
-                setState(state);
-                return true;
-            }
-            setState(state);//不存在线程安全问题。重入性的问题，已经独占了资源state，其他线程不会干扰
-            return false;
-        }
-
-        public Condition newConditionObject(){
-            return new ConditionObject();
-        }
-    }
-    @Override
-    public void lock() {
-        helper.acquire(1);
-    }
-
-    @Override
-    public void lockInterruptibly() throws InterruptedException {
-        helper.acquireInterruptibly(1);
-    }
-
-    @Override
-    public boolean tryLock() {
-        return helper.tryAcquire(1);
-    }
-
-    @Override
-    public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
-        return helper.tryAcquireNanos(1, unit.toNanos(time));
-    }
-
-    @Override
-    public void unlock() {
-        helper.release(1);
-    }
-
-    @Override
-    public Condition newCondition() {
-        return helper.newConditionObject();
-    }
-}
-</code></pre>
-<p>测试：</p>
-<pre><code class="language-java">package luban;
-
-
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-public class Demo02 {
-
-    private MyLock lock = new MyLock();
-
-    private int m = 0;
-
-    public void a(){
-        lock.lock();
-        System.out.println(&quot;a&quot;);
-        b();
-        lock.unlock();
-    }
-    public void b(){
-        lock.lock();
-        System.out.println(&quot;b&quot;);
-        lock.unlock();
-    }
-
-    public int next(){
-        lock.lock();
-        try {
-            return m++;
-        } finally{
-            lock.unlock();
-        }
-    }
-
-    public static void main(String[] args) throws InterruptedException {
-        Demo02 demo = new Demo02();
-        ExecutorService service = Executors.newCachedThreadPool();
-        service.execute(() -&gt; {
-            demo.a();
-        });
-        service.shutdown();
-    }
-}
-</code></pre>
-<p>运行结果：</p>
-<pre><code>a
-b
 </code></pre>
 ]]></content>
     </entry>
