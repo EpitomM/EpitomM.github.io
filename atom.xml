@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://epitomm.github.io</id>
     <title>SSM</title>
-    <updated>2020-05-16T02:59:47.090Z</updated>
+    <updated>2020-05-16T14:35:49.782Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://epitomm.github.io"/>
     <link rel="self" href="https://epitomm.github.io/atom.xml"/>
@@ -275,7 +275,7 @@ processImports(configClass, sourceClass, getImports(sourceClass), true);
 <p>① 扫描包 com.ssm；</p>
 <p>② @Import(MyImportSelector.class)；</p>
 <p>③ 通过 @Bean 注入 IndexDaoImpl2</p>
-<pre><code class="language-plain">@ComponentScan(&quot;com.ssm&quot;)
+<pre><code>@ComponentScan(&quot;com.ssm&quot;)
 @Import(MyImportSelector.class)
 public class AppConfig {
    @Bean
@@ -360,7 +360,7 @@ public class IndexDaoImpl implements IndexDao{
 }
 </code></pre>
 <p>8、运行结果：</p>
-<pre><code class="language-plain">代理方法...
+<pre><code>代理方法...
 dao...模拟查询数据库
 </code></pre>
 <h3 id="processimports">processImports</h3>
@@ -1147,7 +1147,7 @@ public class AppConfig {
 }
 </code></pre>
 <p>运行结果：</p>
-<pre><code class="language-plain">indexDao...constructor
+<pre><code>indexDao...constructor
 </code></pre>
 <p>分析：当执行 indexDao() 时，new IndexDaoImpl()，调用 IndexDaoImpl 的构造方法，所以IndexDaoImpl 的构造方法执行一次。</p>
 <pre><code class="language-java">@ComponentScan(&quot;com.ssm&quot;)
@@ -1164,7 +1164,7 @@ public class AppConfig {
 }
 </code></pre>
 <p>运行结果：</p>
-<pre><code class="language-plain">indexDao...constructor
+<pre><code>indexDao...constructor
 indexDao...constructor
 </code></pre>
 <p>分析：当执行 indexDao() 时，new IndexDaoImpl()，调用 IndexDaoImpl 的构造方法。<br>
@@ -1184,7 +1184,7 @@ public class AppConfig {
 }
 </code></pre>
 <p>运行结果：</p>
-<pre><code class="language-plain">indexDao...constructor
+<pre><code>indexDao...constructor
 </code></pre>
 <p>分析：<strong>添加了 @Configuration 后，仅调用一次 IndexDao 的构造方法</strong>。<br>
 indexDao() 方法被改变了，即使在 indexDao2() 内再次调用 indexDao()，也不会执行方法内的代码 new IndexDaoImpl(); 了。</p>
@@ -1406,7 +1406,7 @@ public class AppConfig {
 }
 </code></pre>
 <p>即使添加了 @Configuration，如果 使用 static 修饰 indexDao()，也会创建两遍</p>
-<pre><code class="language-plain">indexDao...constructor
+<pre><code>indexDao...constructor
 indexDao...constructor
 </code></pre>
 <pre><code class="language-java">private void loadBeanDefinitionsForConfigurationClass(

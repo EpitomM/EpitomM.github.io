@@ -9,7 +9,7 @@
 <meta name="description" content="热心善良的老学姐">
 <meta name="theme-color" content="#000">
 <title>一篇文章彻底搞定 NIO | SSM</title>
-<link rel="shortcut icon" href="/favicon.ico?v=1589597976281">
+<link rel="shortcut icon" href="/favicon.ico?v=1589639744111">
 <link rel="stylesheet" href="/media/css/gemini.css">
 <link rel="stylesheet" href="/media/fonts/font-awesome.css">
 <link
@@ -1464,7 +1464,7 @@ processImports(configClass, sourceClass, getImports(sourceClass), true);
 &lt;p&gt;① 扫描包 com.ssm；&lt;/p&gt;
 &lt;p&gt;② @Import(MyImportSelector.class)；&lt;/p&gt;
 &lt;p&gt;③ 通过 @Bean 注入 IndexDaoImpl2&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&#34;language-plain&#34;&gt;@ComponentScan(&amp;quot;com.ssm&amp;quot;)
+&lt;pre&gt;&lt;code&gt;@ComponentScan(&amp;quot;com.ssm&amp;quot;)
 @Import(MyImportSelector.class)
 public class AppConfig {
    @Bean
@@ -1549,7 +1549,7 @@ public class IndexDaoImpl implements IndexDao{
 }
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;8、运行结果：&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&#34;language-plain&#34;&gt;代理方法...
+&lt;pre&gt;&lt;code&gt;代理方法...
 dao...模拟查询数据库
 &lt;/code&gt;&lt;/pre&gt;
 &lt;h3 id=&#34;processimports&#34;&gt;processImports&lt;/h3&gt;
@@ -2336,7 +2336,7 @@ public class AppConfig {
 }
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;运行结果：&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&#34;language-plain&#34;&gt;indexDao...constructor
+&lt;pre&gt;&lt;code&gt;indexDao...constructor
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;分析：当执行 indexDao() 时，new IndexDaoImpl()，调用 IndexDaoImpl 的构造方法，所以IndexDaoImpl 的构造方法执行一次。&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@ComponentScan(&amp;quot;com.ssm&amp;quot;)
@@ -2353,7 +2353,7 @@ public class AppConfig {
 }
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;运行结果：&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&#34;language-plain&#34;&gt;indexDao...constructor
+&lt;pre&gt;&lt;code&gt;indexDao...constructor
 indexDao...constructor
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;分析：当执行 indexDao() 时，new IndexDaoImpl()，调用 IndexDaoImpl 的构造方法。&lt;br&gt;
@@ -2373,7 +2373,7 @@ public class AppConfig {
 }
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;运行结果：&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&#34;language-plain&#34;&gt;indexDao...constructor
+&lt;pre&gt;&lt;code&gt;indexDao...constructor
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;分析：&lt;strong&gt;添加了 @Configuration 后，仅调用一次 IndexDao 的构造方法&lt;/strong&gt;。&lt;br&gt;
 indexDao() 方法被改变了，即使在 indexDao2() 内再次调用 indexDao()，也不会执行方法内的代码 new IndexDaoImpl(); 了。&lt;/p&gt;
@@ -2595,7 +2595,7 @@ public class AppConfig {
 }
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;即使添加了 @Configuration，如果 使用 static 修饰 indexDao()，也会创建两遍&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&#34;language-plain&#34;&gt;indexDao...constructor
+&lt;pre&gt;&lt;code&gt;indexDao...constructor
 indexDao...constructor
 &lt;/code&gt;&lt;/pre&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;private void loadBeanDefinitionsForConfigurationClass(
