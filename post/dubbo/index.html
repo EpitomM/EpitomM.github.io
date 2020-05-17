@@ -9,7 +9,7 @@
 <meta name="description" content="热心善良的老学姐">
 <meta name="theme-color" content="#000">
 <title>dubbo | SSM</title>
-<link rel="shortcut icon" href="/favicon.ico?v=1589639744111">
+<link rel="shortcut icon" href="/favicon.ico?v=1589687647641">
 <link rel="stylesheet" href="/media/css/gemini.css">
 <link rel="stylesheet" href="/media/fonts/font-awesome.css">
 <link
@@ -202,7 +202,7 @@
     <div class="sidebar-item-box">
       <a href="/archives/">
         
-        <span class="site-item-stat-count">40</span>
+        <span class="site-item-stat-count">41</span>
         <span class="site-item-stat-name language" data-lan="article">文章</span>
       </a>
     </div>
@@ -2175,6 +2175,478 @@ public class HelloServiceImpl implements HelloService {
       <hr>
     </div>
     <div class="result" id="result">
+      
+      <div class="item">
+        <a class="result-title" style="opacity: 0;" href="https://epitomm.github.io/post/spring-xi-lie-shi-yi-spring-yuan-ma-jie-xi/"" data-c="
+          &lt;h1 id=&#34;如何处理bean&#34;&gt;如何处理@Bean&lt;/h1&gt;
+&lt;p&gt;给配置类产生 CGLIB 代理：需要维护配置类中 Bean 的作用域。&lt;/p&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;1&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E9%85%8D%E7%BD%AE%E7%B1%BB%E4%BA%A7%E7%94%9FCGLIB%E4%BB%A3%E7%90%86.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;h2 id=&#34;enhance&#34;&gt;enhance&lt;/h2&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public Class&amp;lt;?&amp;gt; enhance(Class&amp;lt;?&amp;gt; configClass, @Nullable ClassLoader classLoader) {
+   // 判断是否被代理过
+   // 如何判断是否被代理？这个 AppConfig 一旦被代理了，就会产生一个EnhancedConfiguration接口。
+   // 如果实现了这个接口，就代表已经被代理过了，直接 return
+   if (EnhancedConfiguration.class.isAssignableFrom(configClass)) {
+      if (logger.isDebugEnabled()) {
+         logger.debug(String.format(&amp;quot;Ignoring request to enhance %s as it has &amp;quot; +
+               &amp;quot;already been enhanced. This usually indicates that more than one &amp;quot; +
+               &amp;quot;ConfigurationClassPostProcessor has been registered (e.g. via &amp;quot; +
+               &amp;quot;&amp;lt;context:annotation-config&amp;gt;). This is harmless, but you may &amp;quot; +
+               &amp;quot;want check your configuration and remove one CCPP if possible&amp;quot;,
+               configClass.getName()));
+      }
+      return configClass;
+   }
+   // 如果没有被代理，就cglib 代理
+   Class&amp;lt;?&amp;gt; enhancedClass = createClass(newEnhancer(configClass, classLoader));
+   if (logger.isDebugEnabled()) {
+      logger.debug(String.format(&amp;quot;Successfully enhanced %s; enhanced class name is: %s&amp;quot;,
+            configClass.getName(), enhancedClass.getName()));
+   }
+   return enhancedClass;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&#34;newenhancer&#34;&gt;newEnhancer&lt;/h2&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;private Enhancer newEnhancer(Class&amp;lt;?&amp;gt; configSuperClass, @Nullable ClassLoader classLoader) {
+   Enhancer enhancer = new Enhancer();
+   // 增强父类，cglib 是基于继承来的
+   // 把当前类 configSuperClass 作为 enhancer 的父类
+   enhancer.setSuperclass(configSuperClass);
+   // 增强接口，为什么要增强接口？
+   // 便于判断，表示一个类已经被增强了
+   enhancer.setInterfaces(new Class&amp;lt;?&amp;gt;[] {EnhancedConfiguration.class});
+   enhancer.setUseFactory(false);
+   enhancer.setNamingPolicy(SpringNamingPolicy.INSTANCE);
+   // BeanFactoryAwareGeneratorStrategy 是一个生成策略
+   // 主要为生成的 CGLIB 类中添加成员变量 $$beanFactory
+   // 同时基于接口 EnhancedConfiguration 的父接口 BeanFactoryAware 中的 setBeanFactory 方法，
+   // 设置此变量的值为当前 Context 中的 beanFactory，这样一来我们这个 cglib 代理的对象就有了 beanFactory
+   // 有了 factory 就能获得对象，而不用去通过方法获得对象了，因为通过方法获得对象不能控制其过程
+   // BeanFactory 的作用是在 this 调用时拦截该调用，并直接在 beanFactory 中获得目标 bean
+   enhancer.setStrategy(new BeanFactoryAwareGeneratorStrategy(classLoader));
+   // 过滤方法，不能每次都去 new
+   enhancer.setCallbackFilter(CALLBACK_FILTER);
+   enhancer.setCallbackTypes(CALLBACK_FILTER.getCallbackTypes());
+   return enhancer;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;private static final ConditionalCallbackFilter CALLBACK_FILTER = new ConditionalCallbackFilter(CALLBACKS);
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;private static final Callback[] CALLBACKS = new Callback[] {
+      // 增强方法，主要控制 bean 的作用域，就是不让它每调用方法都去 new
+      new BeanMethodInterceptor(),
+      // 设置一个 BeanFactory
+      new BeanFactoryAwareMethodInterceptor(),
+      NoOp.INSTANCE
+};
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h1 id=&#34;怎样拿到-cglib-代理产生的类&#34;&gt;怎样拿到 CGLIB 代理产生的类？&lt;/h1&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class Test {
+   public static void main(String[] args) {
+      // 把 Spring 所有前提环境准备好
+      // 1.准备工厂=DefaultListableBeanFactory
+      // 实例化一个 bdReader 和一个 scanner
+      AnnotationConfigApplicationContext context =
+            new AnnotationConfigApplicationContext();
+      // 把一个 class 转成 bd，最后 put 到 map
+      // map 位置 DefaultListableBeanFactory 的 beanDefinitionMap
+      context.register(AppConfig.class);
+      // 初始化 Spring 的环境
+      context. refresh();
+      /**
+       * 对目标对象的所有方法进行拦截
+       */
+      Enhancer enhancer = new Enhancer();
+      enhancer.setSuperclass(IndexDaoImpl.class);
+      // 增强接口
+      enhancer.setNamingPolicy(SpringNamingPolicy.INSTANCE);
+      // 添加方法过滤器
+      enhancer.setCallback(new TestMethodCallabck());
+      IndexDaoImpl indexDao = (IndexDaoImpl) enhancer.create();
+      indexDao.query();
+      try {
+         System.in.read();
+      } catch (IOException e) {
+         e.printStackTrace();
+      }
+   }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class TestMethodCallabck implements MethodInterceptor {
+   /**
+    *
+    * @param o 代理对象
+    * @param method 当前方法，目标对象的方法
+    * @param objects 参数
+    * @param methodProxy 代理对象的方法
+    * @return
+    * @throws Throwable
+    */
+   @Override
+   public Object intercept(Object o, Method method, Object[] objects, MethodProxy methodProxy) throws Throwable {
+      System.out.println(&amp;quot;method...&amp;quot;);
+      return methodProxy.invokeSuper(o,objects);
+   }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&#34;原始类未经过代理的&#34;&gt;原始类（未经过代理的）&lt;/h2&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@Configuration
+@ComponentScan(&amp;quot;com.ssm&amp;quot;)
+public class AppConfig {
+   @Bean
+   public IndexDao indexDao2(){
+      indexDao();
+      return new IndexDaoImpl2();
+   }
+   @Bean
+   public IndexDao indexDao(){
+      return new IndexDaoImpl();
+   }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&#34;经过-cglib-代理后得到的代理类&#34;&gt;经过 CGLIB 代理后得到的代理类&lt;/h2&gt;
+&lt;h3 id=&#34;我们的猜测&#34;&gt;我们的猜测&lt;/h3&gt;
+&lt;pre&gt;&lt;code class=&#34;language-plain&#34;&gt;@Configuration
+@ComponentScan(&amp;quot;com.ssm&amp;quot;)
+public class xxxx extends AppConfig implements EnhancedConfiguration{
+   private BeanFactory $$beanFactory;
+   @Bean
+   public IndexDao indexDao2(){
+      if(第一次调用){
+        // 调用父类方法，让父类去 new
+        proxy.invokeSuper();
+      }else{
+        // 如果不是第一次调用，直接从 bean 工厂中取出对象并返回
+        return $$beanFactory.getBean();
+      }
+   }
+   @Bean
+   public IndexDao indexDao(){
+      return new IndexDaoImpl();
+   }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;ul&gt;
+&lt;li&gt;代理类 extends AppConfig implements EnhancedConfiguration&lt;/li&gt;
+&lt;/ul&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;enhancer.setInterfaces(new Class&amp;lt;?&amp;gt;[] {EnhancedConfiguration.class});
+&lt;/code&gt;&lt;/pre&gt;
+&lt;ul&gt;
+&lt;li&gt;添加了一个属性：private BeanFactory $$beanFactory;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;为代理类添加了一个方法过滤器后，代理类与原始类代码有什么区别？&lt;/p&gt;
+&lt;p&gt;在外部调用时， AppConfig appConfig = getBean(); 拿到的对象是代理类 xxxx&lt;/p&gt;
+&lt;p&gt;当调用 appConfig.indexDao() 时，具体方法里面是什么样还不知道。&lt;/p&gt;
+&lt;p&gt;其实 indexDao() 方法并没有改变，只不过在这个方法前面还执行了一段代码进行拦截，可以调用父类方法，也可以直接调用子类方法。&lt;/p&gt;
+&lt;h3 id=&#34;查看-cglib-生成的-class-文件&#34;&gt;查看 CGLIB 生成的 class 文件&lt;/h3&gt;
+&lt;p&gt;java -classpath &amp;quot;C:\Program Files\Java\jdk1.8.0_172\lib\sa-jdi.jar&amp;quot; sun.jvm.hotspot.HSDB&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;Only@DESKTOP-MHJI7PB MINGW64 ~/Downloads/spring-framework-5.0.x
+$ jps
+11408 RemoteMavenServer36
+22980 Test
+23636 Launcher
+24132 KotlinCompileDaemon
+24708
+22172 Jps
+Only@DESKTOP-MHJI7PB MINGW64 ~/Downloads/spring-framework-5.0.x
+$ java -classpath &amp;quot;C:\Program Files\Java\jdk1.8.0_172\lib\sa-jdi.jar&amp;quot; sun.jvm.hotspot.HSDB
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E5%BE%97%E5%88%B0CGLIB%E4%BB%A3%E7%90%86%E7%94%9F%E6%88%90%E7%9A%84class%E6%96%87%E4%BB%B6_1.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;br&gt;
+&lt;img src=&#34;https://epitomm.github.io/post-images/%E5%BE%97%E5%88%B0CGLIB%E4%BB%A3%E7%90%86%E7%94%9F%E6%88%90%E7%9A%84class%E6%96%87%E4%BB%B6_2.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;br&gt;
+&lt;img src=&#34;https://epitomm.github.io/post-images/%E5%BE%97%E5%88%B0CGLIB%E4%BB%A3%E7%90%86%E7%94%9F%E6%88%90%E7%9A%84class%E6%96%87%E4%BB%B6_3.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/p&gt;
+&lt;p&gt;创建完成后，在当前运行目录  ~/Downloads/spring-framework-5.0.x 下&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E5%BE%97%E5%88%B0CGLIB%E4%BB%A3%E7%90%86%E7%94%9F%E6%88%90%E7%9A%84class%E6%96%87%E4%BB%B6_4.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;br&gt;
+&lt;img src=&#34;https://epitomm.github.io/post-images/%E5%BE%97%E5%88%B0CGLIB%E4%BB%A3%E7%90%86%E7%94%9F%E6%88%90%E7%9A%84class%E6%96%87%E4%BB%B6_5.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public final void query() {
+    // CGLIB$CALLBACK_0 对应 TestMethodInterceptor 类
+    MethodInterceptor var10000 = this.CGLIB$CALLBACK_0;
+    if (var10000 == null) {
+        CGLIB$BIND_CALLBACKS(this);
+        var10000 = this.CGLIB$CALLBACK_0;
+    }
+    if (var10000 != null) {
+        // 调用 TestMethodInterceptor 的 intercept 方法
+        var10000.intercept(this, CGLIB$query$0$Method, CGLIB$emptyArgs, CGLIB$query$0$Proxy);
+    } else {
+        super.query();
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;JDK 动态代理是实现一个接口，CGLIB 动态代理是继承父类。&lt;/p&gt;
+&lt;h1 id=&#34;如何判断是不是第一次调用&#34;&gt;如何判断是不是第一次调用&lt;/h1&gt;
+&lt;p&gt;第一次调用 indexDao() 方法时 new IndexDaoImpl ，之后再次调用 indexDao() ，则直接从容器中拿出来，factory.getBean() ，如此保持了 IndexDaoImpl 对象的单例。&lt;/p&gt;
+&lt;p&gt;当 Spring 容器解析到 @Bean 时，就会调用 indexDao()，产生一个 Bean，把它放到 Spring 的 singleObjects 中，得到对象。&lt;/p&gt;
+&lt;h2 id=&#34;intercept&#34;&gt;intercept&lt;/h2&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public Object intercept(Object enhancedConfigInstance, Method beanMethod, Object[] beanMethodArgs,
+         MethodProxy cglibMethodProxy) throws Throwable {
+   // enhancedConfigInstance 代理对象
+   // 通过 enhancedConfigInstance 中 cglib 生成的成员变量 $$beanFactory 获得 beanFactory
+   ConfigurableBeanFactory beanFactory = getBeanFactory(enhancedConfigInstance);
+   String beanName = BeanAnnotationHelper.determineBeanNameFor(beanMethod);
+   // Determine whether this bean is a scoped-proxy
+   Scope scope = AnnotatedElementUtils.findMergedAnnotation(beanMethod, Scope.class);
+   if (scope != null &amp;amp;&amp;amp; scope.proxyMode() != ScopedProxyMode.NO) {
+      String scopedBeanName = ScopedProxyCreator.getTargetBeanName(beanName);
+      if (beanFactory.isCurrentlyInCreation(scopedBeanName)) {
+         beanName = scopedBeanName;
+      }
+   }
+   // To handle the case of an inter-bean method reference, we must explicitly check the
+   // container for already cached instances.
+   // First, check to see if the requested bean is a FactoryBean. If so, create a subclass
+   // proxy that intercepts calls to getObject() and returns any cached bean instance.
+   // This ensures that the semantics of calling a FactoryBean from within @Bean methods
+   // is the same as that of referring to a FactoryBean within XML. See SPR-6602.
+   if (factoryContainsBean(beanFactory, BeanFactory.FACTORY_BEAN_PREFIX + beanName) &amp;amp;&amp;amp;
+         factoryContainsBean(beanFactory, beanName)) {
+      // 如何判断这个 Bean 是不是 FactoryBean？
+      // 从 BeanFactory 中拿 &amp;quot;&amp;amp;beanName&amp;quot;，如果能够拿到，证明这就是一个 FactoryBean
+      Object factoryBean = beanFactory.getBean(BeanFactory.FACTORY_BEAN_PREFIX + beanName);
+      if (factoryBean instanceof ScopedProxyFactoryBean) {
+         // Scoped proxy factory beans are a special case and should not be further proxied
+      }
+      else {
+         // It is a candidate FactoryBean - go ahead with enhancement
+         return enhanceFactoryBean(factoryBean, beanMethod.getReturnType(), beanFactory, beanName);
+      }
+   }
+   // 判断是不是第一次调用，如果是第一次就 new；否则 factory,getBean()
+   // 判断执行的方法和调用方法是不是同一个方法
+   if (isCurrentlyInvokedFactoryMethod(beanMethod)) {
+      // The factory is calling the bean method in order to instantiate and register the bean
+      // (i.e. via a getBean() call) -&amp;gt; invoke the super implementation of the method to actually
+      // create the bean instance.
+      if (logger.isWarnEnabled() &amp;amp;&amp;amp;
+            BeanFactoryPostProcessor.class.isAssignableFrom(beanMethod.getReturnType())) {
+         logger.warn(String.format(&amp;quot;@Bean method %s.%s is non-static and returns an object &amp;quot; +
+                     &amp;quot;assignable to Spring&#39;s BeanFactoryPostProcessor interface. This will &amp;quot; +
+                     &amp;quot;result in a failure to process annotations such as @Autowired, &amp;quot; +
+                     &amp;quot;@Resource and @PostConstruct within the method&#39;s declaring &amp;quot; +
+                     &amp;quot;@Configuration class. Add the &#39;static&#39; modifier to this method to avoid &amp;quot; +
+                     &amp;quot;these container lifecycle issues; see @Bean javadoc for complete details.&amp;quot;,
+               beanMethod.getDeclaringClass().getSimpleName(), beanMethod.getName()));
+      }
+      return cglibMethodProxy.invokeSuper(enhancedConfigInstance, beanMethodArgs);
+   }
+   return resolveBeanReference(beanMethod, beanMethodArgs, beanFactory, beanName);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;beanMethod 是当前调用的方法。&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public void query(){
+  //...具体操作
+}
+// query2()是调用方法，query()是执行方法
+public void query2(){
+  // 判断当前调用方法 query2 与执行方法 query 是否相同，如果相同，证明是第一次调用，就执行 new；如果不同，证明不是第一次调用，就执行 factory.getBean()。
+  query();
+  //...具体操作
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class TestMethodCallabck implements MethodInterceptor {
+   /**
+    *
+    * @param o 代理对象
+    * @param method 当前方法，目标对象的方法
+    * @param objects 参数
+    * @param methodProxy 代理对象的方法
+    * @return
+    * @throws Throwable
+    */
+    // 当一个方法调用时，method 与 methodProxy 相同。当在 query2()内调用 query() 时，method=query() 与 methodProxy=query2() 不同。
+   @Override
+   public Object intercept(Object o, Method method, Object[] objects, MethodProxy methodProxy) throws Throwable {
+      System.out.println(&amp;quot;method...&amp;quot;);
+      return methodProxy.invokeSuper(o,objects);
+   }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;private boolean isCurrentlyInvokedFactoryMethod(Method method) {
+   //  得到代理方法（调用方法），如果调用方法名与执行方法名相同，即method.getName().equals(currentlyInvoked.getName())，就认为是第一次调用
+   Method currentlyInvoked = SimpleInstantiationStrategy.getCurrentlyInvokedFactoryMethod();
+   return (currentlyInvoked != null &amp;amp;&amp;amp; method.getName().equals(currentlyInvoked.getName()) &amp;amp;&amp;amp;
+         Arrays.equals(method.getParameterTypes(), currentlyInvoked.getParameterTypes()));
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;2&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E7%AC%AC%E4%B8%80%E6%AC%A1%E8%B0%83%E7%94%A8.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p&gt;第一次调用时，需要 new，直接调用父类方法，父类方法内含有 new，让父类去 new，上述 intercept 方法第 55 行：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;cglibMethodProxy.invokeSuper(enhancedConfigInstance, beanMethodArgs);
+&lt;/code&gt;&lt;/pre&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;3&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E7%AC%AC%E4%B8%80%E6%AC%A1%E8%B0%83%E7%94%A8indexDao2.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p&gt;首先扫描 @Bean，调用 indexDao2() 方法，&lt;/p&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;4&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E7%AC%AC%E4%B8%80%E6%AC%A1%E8%B0%83%E7%94%A8indexDao.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p&gt;调用 indexDao2() 方法内部的 indexDao() 方法&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E7%AC%AC%E4%BA%8C%E6%AC%A1%E8%B0%83%E7%94%A8indexDao.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;br&gt;
+扫描下一个 @Bean，调用 indexDao() 方法&lt;/p&gt;
+&lt;p&gt;intercept 方法的第 58 行：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;private Object resolveBeanReference(Method beanMethod, Object[] beanMethodArgs,
+      ConfigurableBeanFactory beanFactory, String beanName) {
+   // The user (i.e. not the factory) is requesting this bean through a call to
+   // the bean method, direct or indirect. The bean may have already been marked
+   // as &#39;in creation&#39; in certain autowiring scenarios; if so, temporarily set
+   // the in-creation status to false in order to avoid an exception.
+   // 判断它是否正在创建
+   boolean alreadyInCreation = beanFactory.isCurrentlyInCreation(beanName);
+   try {
+      if (alreadyInCreation) {
+         beanFactory.setCurrentlyInCreation(beanName, false);
+      }
+      boolean useArgs = !ObjectUtils.isEmpty(beanMethodArgs);
+      if (useArgs &amp;amp;&amp;amp; beanFactory.isSingleton(beanName)) {
+         // Stubbed null arguments just for reference purposes,
+         // expecting them to be autowired for regular singleton references?
+         // A safe assumption since @Bean singleton arguments cannot be optional...
+         for (Object arg : beanMethodArgs) {
+            if (arg == null) {
+               useArgs = false;
+               break;
+            }
+         }
+      }
+      Object beanInstance = (useArgs ? beanFactory.getBean(beanName, beanMethodArgs) :
+            beanFactory.getBean(beanName));
+      if (!ClassUtils.isAssignableValue(beanMethod.getReturnType(), beanInstance)) {
+         // Detect package-protected NullBean instance through equals(null) check
+         if (beanInstance.equals(null)) {
+            if (logger.isDebugEnabled()) {
+               logger.debug(String.format(&amp;quot;@Bean method %s.%s called as bean reference &amp;quot; +
+                     &amp;quot;for type [%s] returned null bean; resolving to null value.&amp;quot;,
+                     beanMethod.getDeclaringClass().getSimpleName(), beanMethod.getName(),
+                     beanMethod.getReturnType().getName()));
+            }
+            beanInstance = null;
+         }
+         else {
+            String msg = String.format(&amp;quot;@Bean method %s.%s called as bean reference &amp;quot; +
+                  &amp;quot;for type [%s] but overridden by non-compatible bean instance of type [%s].&amp;quot;,
+                  beanMethod.getDeclaringClass().getSimpleName(), beanMethod.getName(),
+                  beanMethod.getReturnType().getName(), beanInstance.getClass().getName());
+            try {
+               BeanDefinition beanDefinition = beanFactory.getMergedBeanDefinition(beanName);
+               msg += &amp;quot; Overriding bean of same name declared in: &amp;quot; + beanDefinition.getResourceDescription();
+            }
+            catch (NoSuchBeanDefinitionException ex) {
+               // Ignore - simply no detailed message then.
+            }
+            throw new IllegalStateException(msg);
+         }
+      }
+      Method currentlyInvoked = SimpleInstantiationStrategy.getCurrentlyInvokedFactoryMethod();
+      if (currentlyInvoked != null) {
+         String outerBeanName = BeanAnnotationHelper.determineBeanNameFor(currentlyInvoked);
+         beanFactory.registerDependentBean(beanName, outerBeanName);
+      }
+      return beanInstance;
+   }
+   finally {
+      if (alreadyInCreation) {
+         beanFactory.setCurrentlyInCreation(beanName, true);
+      }
+   }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;一个对象有三种状态：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;no 没有创建
+&lt;ul&gt;
+&lt;li&gt;去创建它&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;ing 在创建中
+&lt;ul&gt;
+&lt;li&gt;标识正在创建&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;ed 创建成功
+&lt;ul&gt;
+&lt;li&gt;直接拿出来&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Spring 的 getBean() 方法做了封装：没有就创建，有就直接拿。&lt;/p&gt;
+&lt;h1 id=&#34;spring-当中-bean-的后置处理器&#34;&gt;Spring 当中 Bean 的后置处理器&lt;/h1&gt;
+&lt;p&gt;Spring 当中的后置处理器是 Spring 提供的一个扩展点，程序员只要去实现 BeanPostProcessor 接口，就能插手 Bean 的实例化过程，怎么插手呢？在 Bean 被放到 Spring 这个 Bean 容器之前去插手，能够对 Bean 做一些改变。经典场景：① Bean 的生命周期回调：CommonAnnotationBeanPostProcessor、② AOP：@AspectJ&lt;/p&gt;
+&lt;h1 id=&#34;beanfactorypostprocessor-的作用&#34;&gt;BeanFactoryPostProcessor 的作用&lt;/h1&gt;
+&lt;p&gt;BeanFactoryPostProcessor 主要能够在 Spring 的 bean容器当中的任意一个类被实例化之前来回调里面的方法。经典应用场景：ConfigurationClassPostProcessor#postProcessBeanFactory，针对 @Configuration 配置类加上 CGLIB 代理&lt;/p&gt;
+&lt;h1 id=&#34;beandefinitionregistrypostprocessor&#34;&gt;BeanDefinitionRegistryPostProcessor&lt;/h1&gt;
+&lt;p&gt;是 BeanFactoryPostProcessor 的子类，在 BeanFactoryPostProcessor 之前执行。&lt;/p&gt;
+&lt;p&gt;Spinrg 底层源码决定的，先遍历 BeanDefinitionRegistryPostProcessor：Spring 提供的 + 自定义的：context.addBeanFactoryPostProcessor()，先执行自定义的，后执行 Spring 提供的【参照源码：refresh(); ---&amp;gt; invokeBeanFactoryPostProcessors(beanFactory); ---&amp;gt; invokeBeanFactoryPostProcessors(beanFactory, getBeanFactoryPostProcessors()); ---&amp;gt; invokeBeanFactoryPostProcessors】，后遍历 BeanFactoryPostProcessor。&lt;/p&gt;
+&lt;p&gt;应用场景：ConfigurationClassPostProcessor 扫描、解析。ConfigurationClassPostProcessor 实现了 BeanDefinitionRegistryPostProcessor 接口，这个类当中有一个回调方法，完成了 Spring 的核心功能：扫描类，包括3种import的扫描、@Bean的扫描、判断配置类是否是一个完整的配置类，解析、解析配置类、解析 XML。&lt;/p&gt;
+&lt;h1 id=&#34;importselector&#34;&gt;ImportSelector&lt;/h1&gt;
+&lt;p&gt;通过 selectImports 方法返回一个类名（全限定类名），把它变成 bd，动态添加 bd（这个 bd 是死的）。如果用 ImportSelector，实现了 selectImports 方法，返回全限定类名，Spring 会得到这些类名，然后通过这些类名得到一个 Class，然后把它变成一个 BeanDefinition，但是把 Class 变成 BeanDefinition 的过程是由 Spring 完成的，所以这个 BeanDefinition 是死的，这个 Class 是怎样的，这个 BeanDefinition 就是怎样的。&lt;/p&gt;
+&lt;p&gt;ImportSelector 还可以动态扫描&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;String[] selectImports(AnnotationMetadata importingClassMetadata){
+  class A extends Spring扫描器{
+    A 完成扫描，返回字符串xxxx，把字符串返回给 String[],也能注入成功
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;扫描谁都可以做，关键是扫描出来后，程序员不能把它变成 BeanDefinition，因为扫描出来的仅仅是一个 Class 或者是 Resource，怎样把它变成 BeanDefinition 呢？要么交给 Spring，让 Spring 把它变成 BeanDefinition；要么手动 new reader，然后通过一个 BeanDefinition &lt;br&gt;
+的实现类的构造方法去 new。而 selectImports 方法只需要把它变成 Class，后续 Spring 会把它变成一个 BeanDefinition。一些应用直接扩展 ImportSlector，在里面扩展 Spring 扫描器，完成自己的扫描，经典场景 MyBatis：MyBatis 扩展 Spring 扫描器，扫描 Dao，但是扫描出来由Spring 把它变成 BeanDefinition。但是 MyBatis 用的不是 ImportSelector，因为 MyBatis 底层要做一些 BeanDefinition 的改变，ImportSelector 无法实现。&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.TYPE)
+@Documented
+@Import(MapperScannerRegistrar.class)
+public @interface MapperScan {
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class MapperScannerRegistrar implements ImportBeanDefinitionRegistrar, ResourceLoaderAware {
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;// BeanDefinitionRegistry 注册器：在注册前可以改变 BeanDefinition，然后再注册到 Spring 容器中
+public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
+  AnnotationAttributes annoAttrs = AnnotationAttributes.fromMap(importingClassMetadata.getAnnotationAttributes(MapperScan.class.getName()));
+  ClassPathMapperScanner scanner = new ClassPathMapperScanner(registry);
+  // this check is needed in Spring 3.1
+  if (resourceLoader != null) {
+    scanner.setResourceLoader(resourceLoader);
+  }
+  Class&amp;lt;? extends Annotation&amp;gt; annotationClass = annoAttrs.getClass(&amp;quot;annotationClass&amp;quot;);
+  if (!Annotation.class.equals(annotationClass)) {
+    scanner.setAnnotationClass(annotationClass);
+  }
+  Class&amp;lt;?&amp;gt; markerInterface = annoAttrs.getClass(&amp;quot;markerInterface&amp;quot;);
+  if (!Class.class.equals(markerInterface)) {
+    scanner.setMarkerInterface(markerInterface);
+  }
+  Class&amp;lt;? extends BeanNameGenerator&amp;gt; generatorClass = annoAttrs.getClass(&amp;quot;nameGenerator&amp;quot;);
+  if (!BeanNameGenerator.class.equals(generatorClass)) {
+    scanner.setBeanNameGenerator(BeanUtils.instantiateClass(generatorClass));
+  }
+  Class&amp;lt;? extends MapperFactoryBean&amp;gt; mapperFactoryBeanClass = annoAttrs.getClass(&amp;quot;factoryBean&amp;quot;);
+  if (!MapperFactoryBean.class.equals(mapperFactoryBeanClass)) {
+    scanner.setMapperFactoryBean(BeanUtils.instantiateClass(mapperFactoryBeanClass));
+  }
+  scanner.setSqlSessionTemplateBeanName(annoAttrs.getString(&amp;quot;sqlSessionTemplateRef&amp;quot;));
+  scanner.setSqlSessionFactoryBeanName(annoAttrs.getString(&amp;quot;sqlSessionFactoryRef&amp;quot;));
+  List&amp;lt;String&amp;gt; basePackages = new ArrayList&amp;lt;String&amp;gt;();
+  for (String pkg : annoAttrs.getStringArray(&amp;quot;value&amp;quot;)) {
+    if (StringUtils.hasText(pkg)) {
+      basePackages.add(pkg);
+    }
+  }
+  for (String pkg : annoAttrs.getStringArray(&amp;quot;basePackages&amp;quot;)) {
+    if (StringUtils.hasText(pkg)) {
+      basePackages.add(pkg);
+    }
+  }
+  for (Class&amp;lt;?&amp;gt; clazz : annoAttrs.getClassArray(&amp;quot;basePackageClasses&amp;quot;)) {
+    basePackages.add(ClassUtils.getPackageName(clazz));
+  }
+  scanner.registerFilters();
+  scanner.doScan(StringUtils.toStringArray(basePackages));
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class ClassPathMapperScanner extends ClassPathBeanDefinitionScanner {
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h1 id=&#34;importselector-与-importbeandefinitionregistrar-的区别&#34;&gt;ImportSelector 与  ImportBeanDefinitionRegistrar 的区别&lt;/h1&gt;
+&lt;p&gt;ImportSelector 与 ImportBeanDefinitionRegistrar 的区别，实现的 ImportSelector，永远停留在 BeanDefinition 级别，Bean 的级别要到 BeanPostProcessor 那里去。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;什么时候用 ImportSelector，什么时候用 ImportBeanDefinitionRegistrar&lt;/strong&gt; ？&lt;/p&gt;
+&lt;p&gt;看要不要动态改变这个 BeanDefinition，如果这个 BeanDefinition 不要动态改变，就用 ImportSelector；如果需要动态改变，就用 Registrar。&lt;/p&gt;
+&lt;p&gt;ImportSelector 能拿到 AnnotationMetadata 注解，但是 Registrar 不一定能拿到。&lt;/p&gt;
+&lt;p&gt;ImportSelector 能做的事情，Registrar 都能做，但是 Registrar 能动态改变 BeanDefinition，ImportSelector 做不了。&lt;/p&gt;
+&lt;p&gt;ImportSelector 的 String[] selectImports(AnnotationMetadata importingClassMetadata); 返回字符串，Spring 帮忙注册。&lt;/p&gt;
+&lt;p&gt;ImportBeanDefinitionRegistrar 的 registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry); 提供环境 registry，让程序员自己注册。&lt;/p&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;5&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E6%80%BB%E7%BB%93.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+">Spring系列（十一）Spring源码解析</a>
+      </div>
       
       <div class="item">
         <a class="result-title" style="opacity: 0;" href="https://epitomm.github.io/post/spring-xi-lie-shi-spring-yuan-ma/"" data-c="
