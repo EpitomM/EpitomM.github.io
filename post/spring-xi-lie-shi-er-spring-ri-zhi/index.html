@@ -9,7 +9,7 @@
 <meta name="description" content="热心善良的老学姐">
 <meta name="theme-color" content="#000">
 <title>Spring系列（十二）Spring5新特性——日志 | SSM</title>
-<link rel="shortcut icon" href="/favicon.ico?v=1589811454344">
+<link rel="shortcut icon" href="/favicon.ico?v=1589813418383">
 <link rel="stylesheet" href="/media/css/gemini.css">
 <link rel="stylesheet" href="/media/fonts/font-awesome.css">
 <link
@@ -239,9 +239,9 @@
 </li>
 <li><a href="#%E4%B8%BB%E6%B5%81%E7%9A%84log%E6%8A%80%E6%9C%AF%E5%90%8D%E8%AF%8D">主流的log技术名词</a>
 <ul>
-<li><a href="#1log4j"><strong>1.log4j</strong></a></li>
-<li><a href="#2jul"><strong>2.jul</strong></a></li>
-<li><a href="#3jcl"><strong>3.jcl</strong></a>
+<li><a href="#1log4j">1.log4j</a></li>
+<li><a href="#2jul">2.jul</a></li>
+<li><a href="#3jcl">3.jcl</a>
 <ul>
 <li><a href="#log4j">log4j</a>
 <ul>
@@ -680,9 +680,9 @@ log4j.appender.stdout.layout.ConversionPattern=%d{yyyy-MM-dd HH:mm:ss,SSS} %p [%
 &lt;/dependency&gt;
 </code></pre>
 <p>由于 log4j 内配置只打印 ERROR 级别的日志，由于没有 ERROR，所以日志打印为空。</p>
-<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/log4j.png" alt="图片" loading="lazy"></figure>
+<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/log4j%E6%97%A5%E5%BF%97.png" alt="图片" loading="lazy"></figure>
 <h1 id="主流的log技术名词">主流的log技术名词</h1>
-<h2 id="1log4j"><strong>1.log4j</strong></h2>
+<h2 id="1log4j">1.log4j</h2>
 <ul>
 <li>可以不需要依赖第三方的技术</li>
 <li>直接记录日志</li>
@@ -714,7 +714,7 @@ public class Log4j {
 <p>（4）日志打印：</p>
 <pre><code>2020-05-17 12:44:41,453 INFO [main] com.ssm.utils.Log4j.main(9) | log4j
 </code></pre>
-<h2 id="2jul"><strong>2.jul</strong></h2>
+<h2 id="2jul">2.jul</h2>
 <p>java自带的一个日志记录的技术,直接使用</p>
 <pre><code class="language-java">import java.util.logging.Logger;
 public class JUL {
@@ -728,7 +728,7 @@ public class JUL {
 <pre><code>五月 17, 2020 12:45:59 下午 com.ssm.utils.JUL main
 信息: jul
 </code></pre>
-<h2 id="3jcl"><strong>3.jcl</strong></h2>
+<h2 id="3jcl">3.jcl</h2>
 <p>jakartaCommonsLoggingImpl</p>
 <pre><code>&lt;dependency&gt;
     &lt;groupId&gt;commons-logging&lt;/groupId&gt;
@@ -1086,7 +1086,10 @@ Object o = constructor.newInstance(params);
 <p><img src="https://epitomm.github.io/post-images/c_2.png" alt="图片" loading="lazy"><br>
 <img src="https://epitomm.github.io/post-images/logAdapter_2.png" alt="图片" loading="lazy"></p>
 <h3 id="总结">总结</h3>
-<pre><code>jcl=Jakarta commons-logging ,是apache公司开发的一个抽象日志通用框架,本身不实现日志记录,但是提供了记录日志的抽象方法即接口(info,debug,error.......),底层通过一个数组存放具体的日志框架的类名,然后循环数组依次去匹配这些类名是否在app中被依赖了,如果找到被依赖的则直接使用,所以他有先后顺序。
+<pre><code>jcl=Jakarta commons-logging ,是apache公司开发的一个抽象日志通用框架,本身不实现日志记录,
+但是提供了记录日志的抽象方法即接口(info,debug,error.......),底层通过一个数组存放具体的日志
+框架的类名,然后循环数组依次去匹配这些类名是否在app中被依赖了,如果找到被依赖的则直接使用,所以他
+有先后顺序。
 </code></pre>
 <figure data-type="image" tabindex="8"><img src="https://epitomm.github.io/post-images/jcl1.png" alt="图片" loading="lazy"></figure>
 <pre><code>上图为jcl中存放日志技术类名的数组，默认有四个，后面两个可以忽略。
@@ -2056,7 +2059,7 @@ DEBUG [main] - Closing non transactional SqlSession [org.apache.ibatis.session.d
 &lt;h1 id=&#34;mybatis的日志技术实现&#34;&gt;mybatis的日志技术实现&lt;/h1&gt;
 &lt;h2 id=&#34;初始化&#34;&gt;初始化&lt;/h2&gt;
 &lt;h3 id=&#34;orgapacheibatislogginglogfactory&#34;&gt;org.apache.ibatis.logging.LogFactory&lt;/h3&gt;
-&lt;p&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/logFactory#static.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;br&gt;
+&lt;p&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/logFactory_static.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;br&gt;
 &lt;img src=&#34;https://epitomm.github.io/post-images/tryImplementation.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;tryImplementation(new Runnable() {
   @Override
@@ -2364,9 +2367,9 @@ log4j.appender.stdout.layout.ConversionPattern=%d{yyyy-MM-dd HH:mm:ss,SSS} %p [%
 &amp;lt;/dependency&amp;gt;
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;由于 log4j 内配置只打印 ERROR 级别的日志，由于没有 ERROR，所以日志打印为空。&lt;/p&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;1&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/log4j.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;1&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/log4j%E6%97%A5%E5%BF%97.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
 &lt;h1 id=&#34;主流的log技术名词&#34;&gt;主流的log技术名词&lt;/h1&gt;
-&lt;h2 id=&#34;1log4j&#34;&gt;&lt;strong&gt;1.log4j&lt;/strong&gt;&lt;/h2&gt;
+&lt;h2 id=&#34;1log4j&#34;&gt;1.log4j&lt;/h2&gt;
 &lt;ul&gt;
 &lt;li&gt;可以不需要依赖第三方的技术&lt;/li&gt;
 &lt;li&gt;直接记录日志&lt;/li&gt;
@@ -2398,7 +2401,7 @@ public class Log4j {
 &lt;p&gt;（4）日志打印：&lt;/p&gt;
 &lt;pre&gt;&lt;code&gt;2020-05-17 12:44:41,453 INFO [main] com.ssm.utils.Log4j.main(9) | log4j
 &lt;/code&gt;&lt;/pre&gt;
-&lt;h2 id=&#34;2jul&#34;&gt;&lt;strong&gt;2.jul&lt;/strong&gt;&lt;/h2&gt;
+&lt;h2 id=&#34;2jul&#34;&gt;2.jul&lt;/h2&gt;
 &lt;p&gt;java自带的一个日志记录的技术,直接使用&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;import java.util.logging.Logger;
 public class JUL {
@@ -2412,7 +2415,7 @@ public class JUL {
 &lt;pre&gt;&lt;code&gt;五月 17, 2020 12:45:59 下午 com.ssm.utils.JUL main
 信息: jul
 &lt;/code&gt;&lt;/pre&gt;
-&lt;h2 id=&#34;3jcl&#34;&gt;&lt;strong&gt;3.jcl&lt;/strong&gt;&lt;/h2&gt;
+&lt;h2 id=&#34;3jcl&#34;&gt;3.jcl&lt;/h2&gt;
 &lt;p&gt;jakartaCommonsLoggingImpl&lt;/p&gt;
 &lt;pre&gt;&lt;code&gt;&amp;lt;dependency&amp;gt;
     &amp;lt;groupId&amp;gt;commons-logging&amp;lt;/groupId&amp;gt;
@@ -2770,7 +2773,10 @@ Object o = constructor.newInstance(params);
 &lt;p&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/c_2.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;br&gt;
 &lt;img src=&#34;https://epitomm.github.io/post-images/logAdapter_2.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/p&gt;
 &lt;h3 id=&#34;总结&#34;&gt;总结&lt;/h3&gt;
-&lt;pre&gt;&lt;code&gt;jcl=Jakarta commons-logging ,是apache公司开发的一个抽象日志通用框架,本身不实现日志记录,但是提供了记录日志的抽象方法即接口(info,debug,error.......),底层通过一个数组存放具体的日志框架的类名,然后循环数组依次去匹配这些类名是否在app中被依赖了,如果找到被依赖的则直接使用,所以他有先后顺序。
+&lt;pre&gt;&lt;code&gt;jcl=Jakarta commons-logging ,是apache公司开发的一个抽象日志通用框架,本身不实现日志记录,
+但是提供了记录日志的抽象方法即接口(info,debug,error.......),底层通过一个数组存放具体的日志
+框架的类名,然后循环数组依次去匹配这些类名是否在app中被依赖了,如果找到被依赖的则直接使用,所以他
+有先后顺序。
 &lt;/code&gt;&lt;/pre&gt;
 &lt;figure data-type=&#34;image&#34; tabindex=&#34;8&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/jcl1.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
 &lt;pre&gt;&lt;code&gt;上图为jcl中存放日志技术类名的数组，默认有四个，后面两个可以忽略。
