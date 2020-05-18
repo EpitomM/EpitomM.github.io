@@ -9,7 +9,7 @@
 <meta name="description" content="热心善良的老学姐">
 <meta name="theme-color" content="#000">
 <title>面试题系列 —— Zookeeper | SSM</title>
-<link rel="shortcut icon" href="/favicon.ico?v=1589687647641">
+<link rel="shortcut icon" href="/favicon.ico?v=1589811454344">
 <link rel="stylesheet" href="/media/css/gemini.css">
 <link rel="stylesheet" href="/media/fonts/font-awesome.css">
 <link
@@ -202,7 +202,7 @@
     <div class="sidebar-item-box">
       <a href="/archives/">
         
-        <span class="site-item-stat-count">41</span>
+        <span class="site-item-stat-count">43</span>
         <span class="site-item-stat-name language" data-lan="article">文章</span>
       </a>
     </div>
@@ -1023,6 +1023,1398 @@ ZAB 协议包括两种基本的模式：<strong>崩溃恢复</strong>和<strong>
     <div class="result" id="result">
       
       <div class="item">
+        <a class="result-title" style="opacity: 0;" href="https://epitomm.github.io/post/spring-xi-lie-shi-san-mybatis-ri-zhi/"" data-c="
+          &lt;h1 id=&#34;mybatis-入门&#34;&gt;MyBatis 入门&lt;/h1&gt;
+&lt;p&gt;MyBatis 官网：&lt;a href=&#34;https://mybatis.org/mybatis-3/zh/index.html&#34;&gt;https://mybatis.org/mybatis-3/zh/index.html&lt;/a&gt;&lt;/p&gt;
+&lt;h2 id=&#34;先从一个测试类开始&#34;&gt;先从一个测试类开始&lt;/h2&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public interface IndexDao {
+    @Select(&amp;quot;select * from t1&amp;quot;)
+    List&amp;lt;Map&amp;lt;String,Object&amp;gt;&amp;gt; list();
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@Service
+public class IndexService {
+    @Autowired
+    IndexDao indexDao;
+    public List&amp;lt;Map&amp;lt;String,Object&amp;gt;&amp;gt; list(){
+        return indexDao.list();
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@Configuration
+@ComponentScan(&amp;quot;com.ssm&amp;quot;)
+@MapperScan(&amp;quot;com.ssm.dao&amp;quot;)
+public class AppConfig{
+    @Bean
+    public DataSource dataSource(){
+        DriverManagerDataSource dataSource = new DriverManagerDataSource();
+        dataSource.setDriverClassName(&amp;quot;com.mysql.jdbc.Driver&amp;quot;);
+        dataSource.setUsername(&amp;quot;root&amp;quot;);
+        dataSource.setPassword(&amp;quot;123456&amp;quot;);
+        dataSource.setUrl(&amp;quot;jdbc:mysql://localhost:3306/t1&amp;quot;);
+        return dataSource;
+    }
+    @Bean
+    public SqlSessionFactoryBean sqlSessionFactoryBean(DataSource dataSource){
+        SqlSessionFactoryBean sqlSessionFactoryBean =  new SqlSessionFactoryBean();
+         // 配置日志打印 SQL
+        org.apache.ibatis.session.Configuration configuration = new org.apache.ibatis.session.Configuration();
+        configuration.setLogImpl(Log4jImpl.class);
+        sqlSessionFactoryBean.setConfiguration(configuration);
+        // -- 日志打印 SQL 结束
+        sqlSessionFactoryBean.setDataSource(dataSource);
+        return sqlSessionFactoryBean;
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class Test {
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext configApplicationContext = new AnnotationConfigApplicationContext(AppConfig.class);
+        List&amp;lt;Map&amp;lt;String, Object&amp;gt;&amp;gt; list = configApplicationContext.getBean(IndexService.class).list();
+        System.out.println(list);
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code&gt;# 全局日志配置
+log4j.rootLogger=DEBUG, stdout
+# MyBatis 日志配置
+log4j.logger.com.ssm.IndexDao=TRACE
+# 控制台输出
+log4j.appender.stdout=org.apache.log4j.ConsoleAppender
+log4j.appender.stdout.layout=org.apache.log4j.PatternLayout
+log4j.appender.stdout.layout.ConversionPattern=%5p [%t] - %m%n
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;日志打印结果：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;五月 18, 2020 8:47:01 下午 org.springframework.context.support.AbstractApplicationContext prepareRefresh
+信息: Refreshing org.springframework.context.annotation.AnnotationConfigApplicationContext@433c675d: startup date [Mon May 18 20:47:01 CST 2020]; root of context hierarchy
+五月 18, 2020 8:47:01 下午 org.springframework.jdbc.datasource.DriverManagerDataSource setDriverClassName
+信息: Loaded JDBC driver: com.mysql.jdbc.Driver
+DEBUG [main] - Logging initialized using &#39;class org.apache.ibatis.logging.log4j.Log4jImpl&#39; adapter.
+DEBUG [main] - Creating a new SqlSession
+DEBUG [main] - SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@445b295b] was not registered for synchronization because synchronization is not active
+DEBUG [main] - JDBC Connection [com.mysql.jdbc.JDBC4Connection@a2431d0] will not be managed by Spring
+DEBUG [main] - ==&amp;gt;  Preparing: select * from t1 
+DEBUG [main] - ==&amp;gt; Parameters: 
+DEBUG [main] - &amp;lt;==      Total: 9
+DEBUG [main] - Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@445b295b]
+[{a=1, b=11, c=4, d=1, e=a}, {a=2, b=2, c=2, d=2, e=b}, {a=3, b=3, c=2, d=2, e=c}, {a=4, b=3, c=1, d=1, e=d}, {a=5, b=2, c=3, d=5, e=e}, {a=6, b=6, c=4, d=4, e=6}, {a=7, b=4, c=5, d=5, e=g}, {a=8, b=8, c=8, d=8, e=h}, {a=9, b=9, c=9, d=9, e=i}]
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h1 id=&#34;mybatis的日志技术实现&#34;&gt;mybatis的日志技术实现&lt;/h1&gt;
+&lt;h2 id=&#34;初始化&#34;&gt;初始化&lt;/h2&gt;
+&lt;h3 id=&#34;orgapacheibatislogginglogfactory&#34;&gt;org.apache.ibatis.logging.LogFactory&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/logFactory#static.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;br&gt;
+&lt;img src=&#34;https://epitomm.github.io/post-images/tryImplementation.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;tryImplementation(new Runnable() {
+  @Override
+  public void run() {
+    useSlf4jLogging();
+  }
+});
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;方法中的 runnable 参数是 new Runnable() 对象，run() 方法里面调用了 useSlf4jLogging() 方法，使用 SLF4J 日志。关键代码  **   if (logConstructor == null)****,**没有找到实现则继续找&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;private static void tryImplementation(Runnable runnable) {
+  if (logConstructor == null) {
+    try {
+      runnable.run();
+    } catch (Throwable t) {
+      // ignore
+    }
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;调用 setImplementation 方法，传参 Slf4jImpl ：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public static synchronized void useSlf4jLogging() {
+  setImplementation(org.apache.ibatis.logging.slf4j.Slf4jImpl.class);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;LogFactory#setImplementation&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;private static void setImplementation(Class&amp;lt;? extends Log&amp;gt; implClass) {
+  try {
+    //  通过参数 implClass 得到构造方法
+    Constructor&amp;lt;? extends Log&amp;gt; candidate = implClass.getConstructor(String.class);
+    //  通过构造方法 new 出来对象
+    Log log = candidate.newInstance(LogFactory.class.getName());
+    if (log.isDebugEnabled()) {
+      log.debug(&amp;quot;Logging initialized using &#39;&amp;quot; + implClass + &amp;quot;&#39; adapter.&amp;quot;);
+    }
+    // 将构造方法赋值给全局变量：private static Constructor&amp;lt;? extends Log&amp;gt; logConstructor;
+    logConstructor = candidate;
+  } catch (Throwable t) {
+    throw new LogException(&amp;quot;Error setting Log implementation.  Cause: &amp;quot; + t, t);
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;上述代码第 6 行，调用 Slf4jImpl 的构造方法：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public Slf4jImpl(String clazz) {
+  Logger logger = LoggerFactory.getLogger(clazz);
+  if (logger instanceof LocationAwareLogger) {
+    try {
+      // check for slf4j &amp;gt;= 1.6 method signature
+      logger.getClass().getMethod(&amp;quot;log&amp;quot;, Marker.class, String.class, int.class, String.class, Object[].class, Throwable.class);
+      log = new Slf4jLocationAwareLoggerImpl((LocationAwareLogger) logger);
+      return;
+    } catch (SecurityException e) {
+      // fail-back to Slf4jLoggerImpl
+    } catch (NoSuchMethodException e) {
+      // fail-back to Slf4jLoggerImpl
+    }
+  }
+  // Logger is not LocationAwareLogger or slf4j version &amp;lt; 1.6
+  log = new Slf4jLoggerImpl(logger);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;在执行过程中发现，上述代码执行到第 2 行就返回了，因为项目中并未添加 SLF4J 依赖。于是抛出异常，执行 static 块的 useCommonsLogging。&lt;/p&gt;
+&lt;h2 id=&#34;总结&#34;&gt;总结&lt;/h2&gt;
+&lt;p&gt;MyBatis 日志使用顺序： SLF4J、JCL、Log4J2、JUL、NO&lt;/p&gt;
+&lt;p&gt;如果没有引入 SLF4J，就会使用 JCL，因为 spring-context 默认内置 JCL。&lt;/p&gt;
+&lt;h2 id=&#34;日志打印-sql&#34;&gt;日志打印 SQL&lt;/h2&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@Service
+public class IndexService {
+    @Autowired
+    IndexDao indexDao;
+    public List&amp;lt;Map&amp;lt;String,Object&amp;gt;&amp;gt; list(){
+        // 将代码添加在这里无法打印 SQL
+        org.apache.ibatis.logging.LogFactory.useLog4JLogging();
+        return indexDao.list();
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;1&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E6%97%A5%E5%BF%97%E6%89%93%E5%8D%B0SQL.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p&gt;&lt;strong&gt;打印 SQL 语句是一个 proxy 代理对象&lt;/strong&gt;，这个代理对象在 Spring 初始化时利用 Registrar 创建的，但是在创建这个 proxy 之前是没有任何日志的，而 useLog4J() 这个方法是在后面使用的，于是在 proxy 里面无法得到 log4j 对象，为什么创建时可以使用？因为 Spring 实例化过程 比 MyBatis 实例化的过程早，Spring 实例化 Service 时已经告诉 MyBatis 要使用 log4j 了，当创建 MyBatis 工厂时，可以直接打印日志，但是&lt;strong&gt;代理对象在 useLog4JLogging() 方法之前&lt;/strong&gt;，所以不知道到底要使用哪个日志。实例化 indexDao 这个代理对象，包含一个日志对象 Log logger，但是在创建 BeanDefinition 之前，不知道要使用哪个 Log，所以 logger=null。&lt;/p&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;2&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E6%97%A5%E5%BF%97%E6%89%93%E5%8D%B0SQL_2.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p&gt;需要将 org.apache.ibatis.logging.LogFactory.useLog4JLogging(); 写在 Spring 初始化之前，告诉 MyBatis 要使用 log4J，当产生代理对象时，就知道要使用 log4j 日志了，代理对象中就有了 Log logger = new Log4JLogger();对象。&lt;/p&gt;
+&lt;p&gt;一个对象要记录日志：logger.info()，证明代理对象 proxy 要包含一个 Log logger， proxy 被 new 出来的过程中，MyBatis 不知道它要使用什么日志，所以就不记录日志，即 logger=null。&lt;/p&gt;
+&lt;p&gt;如果在 proxy 之前让 proxy 使用 Log4J，在产生这个代理对象之前，Log logger = new Log4JLogger();&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class Test {
+    public static void main(String[] args) {
+         // 在 Spring 初始化前设置使用的日志
+        org.apache.ibatis.logging.LogFactory.useLog4JLogging();
+        AnnotationConfigApplicationContext configApplicationContext = new AnnotationConfigApplicationContext(AppConfig.class);
+        List&amp;lt;Map&amp;lt;String, Object&amp;gt;&amp;gt; list = configApplicationContext.getBean(IndexService.class).list();
+        System.out.println(list);
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;LogFactory#useLog4JLogging -&amp;gt; LogFactory#setImplementation：给构造方法赋值logConstructor = candidate;&lt;/p&gt;
+&lt;h3 id=&#34;在使用日志时如何得到-logger&#34;&gt;在使用日志时如何得到 logger？&lt;/h3&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;private static final Log LOGGER = LogFactory.getLog(SqlSessionFactoryBean.class);
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public static Log getLog(Class&amp;lt;?&amp;gt; aClass) {
+  return getLog(aClass.getName());
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;调用 logConstructor.newInstance(logger); logConstructor 即之前赋的值 candidate：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public static Log getLog(String logger) {
+  try {
+    return logConstructor.newInstance(logger);
+  } catch (Throwable t) {
+    throw new LogException(&amp;quot;Error creating logger for logger &amp;quot; + logger + &amp;quot;.  Cause: &amp;quot; + t, t);
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;日志打印：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;DEBUG [main] - Property &#39;configuration&#39; or &#39;configLocation&#39; not specified, using default MyBatis Configuration
+DEBUG [main] - Property &#39;mapperLocations&#39; was not specified or no matching resources found
+DEBUG [main] - Creating a new SqlSession
+DEBUG [main] - SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@445b295b] was not registered for synchronization because synchronization is not active
+DEBUG [main] - JDBC Connection [com.mysql.jdbc.JDBC4Connection@a2431d0] will not be managed by Spring
+DEBUG [main] - ==&amp;gt;  Preparing: select * from t1 
+DEBUG [main] - ==&amp;gt; Parameters: 
+DEBUG [main] - &amp;lt;==      Total: 9
+DEBUG [main] - Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@445b295b]
+[{a=1, b=11, c=4, d=1, e=a}, {a=2, b=2, c=2, d=2, e=b}, {a=3, b=3, c=2, d=2, e=c}, {a=4, b=3, c=1, d=1, e=d}, {a=5, b=2, c=3, d=5, e=e}, {a=6, b=6, c=4, d=4, e=6}, {a=7, b=4, c=5, d=5, e=g}, {a=8, b=8, c=8, d=8, e=h}, {a=9, b=9, c=9, d=9, e=i}]
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&#34;具体实现类&#34;&gt;具体实现类&lt;/h2&gt;
+&lt;p&gt;mybatis提供很多日志的实现类,用来记录日志,取决于初始化的时候load到的class&lt;/p&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;3&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/MyBatis%E6%97%A5%E5%BF%97%E5%85%B7%E4%BD%93%E5%AE%9E%E7%8E%B0%E7%B1%BB.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;pre&gt;&lt;code&gt;上图红色箭头可以看到 JakartaCommonsLoggingImpl 中引用了 jcl 的类,如果在初始化的时候load到类为JakartaCommonsLoggingImpl，
+那么则使用 jcl 去实现日志记录,但是也是顺序的,顺序参考源码
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&#34;自己模拟实现mybaits的日志实现&#34;&gt;自己模拟实现mybaits的日志实现&lt;/h2&gt;
+&lt;pre&gt;&lt;code&gt;mybatis的官网关于日志的介绍
+定义org.apache.ibatis.session.Configuration
+参考org.apache.ibatis.logging.commons.JakartaCommonsLoggingImpl
+分析为什么jcl不记录日志,修改代码
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h1 id=&#34;架构系统如何考虑日志&#34;&gt;架构系统如何考虑日志&lt;/h1&gt;
+&lt;p&gt;old:jcl+log4j&lt;/p&gt;
+&lt;p&gt;new:slf4j+jul&lt;/p&gt;
+&lt;h1 id=&#34;缓存&#34;&gt;缓存&lt;/h1&gt;
+&lt;h2 id=&#34;一级缓存&#34;&gt;一级缓存&lt;/h2&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;4&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/MyBatis%E4%B8%80%E7%BA%A7%E7%BC%93%E5%AD%98.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p&gt;如果不使用 Spring，执行三行相同的查询，只会打印一条 SQL 语句，证明一级缓存有效。&lt;/p&gt;
+&lt;p&gt;但是使用 Spring 后，执行三行相同的查询，会打印三条 SQL 语句，证明&lt;strong&gt;一级缓存失效&lt;/strong&gt;。&lt;/p&gt;
+&lt;p&gt;一级缓存基于 SqlSession，当执行 list() 方法时，在代理类中，会得到一个 SqlSession 对象，并且把它设置到当前线程中去，&lt;strong&gt;当完成一个查询后，会关闭 SqlSession&lt;/strong&gt;，这是 Spring 做的，所以一级缓存失效了。&lt;/p&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;5&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E4%B8%8D%E5%90%8C%E7%94%A8%E6%88%B7%E6%97%A0%E6%B3%95%E5%85%B1%E4%BA%ABMyBatis%E4%B8%80%E7%BA%A7%E7%BC%93%E5%AD%98.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;h2 id=&#34;二级缓存&#34;&gt;二级缓存&lt;/h2&gt;
+&lt;p&gt;多个线程共享二级缓存&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@CacheNamespace
+public interface IndexDao {
+&lt;/code&gt;&lt;/pre&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;6&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/MyBatis%E4%BA%8C%E7%BA%A7%E7%BC%93%E5%AD%98.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@CacheNamespace
+public interface IndexDao2 {
+    @Update(&amp;quot;update t1 set b=1 where a=1&amp;quot;)
+    public int update();
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@Service
+public class IndexService {
+    @Autowired
+    IndexDao indexDao;
+    @Autowired
+    IndexDao2 indexDao2;
+    public List&amp;lt;Map&amp;lt;String,Object&amp;gt;&amp;gt; list(){
+        indexDao.list();
+        indexDao.list();
+        return indexDao.list();
+    }
+    public void update(){
+       indexDao2.update();
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class Test {
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext configApplicationContext = new AnnotationConfigApplicationContext(AppConfig.class);
+        List&amp;lt;Map&amp;lt;String, Object&amp;gt;&amp;gt; list = configApplicationContext.getBean(IndexService.class).list();
+        System.out.println(list);
+        configApplicationContext.getBean(IndexService.class).update();
+        System.out.println(configApplicationContext.getBean(IndexService.class).list());
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;我们发现，使用了二级缓存后，第一次查询，将查询结果缓存起来，接下来更新操作，第二次再次查询直接使用缓存结果，无法查到更新后的值。&lt;br&gt;
+&lt;img src=&#34;https://epitomm.github.io/post-images/MyBatis%E4%BA%8C%E7%BA%A7%E7%BC%93%E5%AD%98%E8%AF%BB%E8%84%8F%E6%95%B0%E6%8D%AE.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/p&gt;
+&lt;p&gt;分析：MyBatis 缓存是基于&lt;strong&gt;命名空间&lt;/strong&gt;的，当调用 indexDao.list() 查询出结果后，由于 IndexDao 添加了缓存 @CacheNamespace，把 list() 查询结果放到缓存中，存放形式：&amp;lt;&amp;quot;com.ssm.dao.IndexDao&amp;quot;, &amp;quot;list&amp;quot;&amp;gt;，当调用 update() 方法时，更新当前这个 update() 方法所在的命名空间，即 com.ssm.dao.IndexDao2，于是放入缓存 &amp;lt;&amp;quot;com.ssm.dao.IndexDao2&amp;quot;, &amp;quot;更新后的list&amp;quot;&amp;gt;，而第二次调用 list() 查询时，查找 list() 方法对应的命名空间的缓存：&amp;lt;&amp;quot;com.ssm.dao.IndexDao&amp;quot;, &amp;quot;list&amp;quot;&amp;gt;。&lt;/p&gt;
+&lt;p&gt;如果将 update、select 写在一个 dao 内，就不会出现上述问题了，代码修改如下：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@CacheNamespace
+public interface IndexDao {
+    @Select(&amp;quot;select * from t1&amp;quot;)
+    List&amp;lt;Map&amp;lt;String,Object&amp;gt;&amp;gt; list();
+    @Update(&amp;quot;update t1 set b=111 where a=1&amp;quot;)
+    public int update();
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@Service
+public class IndexService {
+    @Autowired
+    IndexDao indexDao;
+    public List&amp;lt;Map&amp;lt;String,Object&amp;gt;&amp;gt; list(){
+        indexDao.list();
+        indexDao.list();
+        return indexDao.list();
+    }
+    public void update(){
+       indexDao.update();
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;7&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/MyBatis%E4%BA%8C%E7%BA%A7%E7%BC%93%E5%AD%98%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4%E7%9B%B8%E5%90%8C%E8%AF%BB%E6%95%B0%E6%8D%AE%E6%AD%A3%E7%A1%AE.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p&gt;分析：MyBatis 缓存是基于&lt;strong&gt;命名空间&lt;/strong&gt;的，当调用 indexDao.list() 查询出结果后，由于 IndexDao 添加了缓存 @CacheNamespace，把 list() 查询结果放到缓存中，存放形式：&amp;lt;&amp;quot;com.ssm.dao.IndexDao&amp;quot;, &amp;quot;list&amp;quot;&amp;gt;，当调用 update() 方法时，更新当前这个 update() 方法所在的命名空间，即 &amp;lt;&amp;quot;com.ssm.dao.IndexDao&amp;quot;, &amp;quot;更新后的list&amp;quot;&amp;gt;。&lt;/p&gt;
+">MyBatis系列（一）——MyBatis日志</a>
+      </div>
+      
+      <div class="item">
+        <a class="result-title" style="opacity: 0;" href="https://epitomm.github.io/post/spring-xi-lie-shi-er-spring-ri-zhi/"" data-c="
+          &lt;ul&gt;
+&lt;li&gt;各种日志技术的关系和作用&lt;/li&gt;
+&lt;li&gt;通过源码来分析spring的日志技术&lt;/li&gt;
+&lt;li&gt;commons-logging源码分析&lt;/li&gt;
+&lt;li&gt;通过源码分析mybaits的日志技术&lt;/li&gt;
+&lt;li&gt;架构系统时候如何选择、优化日志技术&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h1 id=&#34;先从一个-spring-日志开始&#34;&gt;先从一个 Spring 日志开始&lt;/h1&gt;
+&lt;p&gt;1、配置文件引入 spring-context&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-xml&#34;&gt;&amp;lt;dependencies&amp;gt;
+  &amp;lt;dependency&amp;gt;
+    &amp;lt;groupId&amp;gt;org.springframework&amp;lt;/groupId&amp;gt;
+    &amp;lt;artifactId&amp;gt;spring-context&amp;lt;/artifactId&amp;gt;
+    &amp;lt;version&amp;gt;5.0.9.RELEASE&amp;lt;/version&amp;gt;
+  &amp;lt;/dependency&amp;gt;
+&amp;lt;/dependencies&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;2、一个 配置类&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@Configuration
+@Component(&amp;quot;com.ssm&amp;quot;)
+public class AppConfig {
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;3、一个 Service&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@Service
+public class IndexService {
+    public void query(){
+        System.out.println(&amp;quot;query...&amp;quot;);
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;4、测试类&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class Test {
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext configApplicationContext = new AnnotationConfigApplicationContext(AppConfig.class);
+        configApplicationContext.start();
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;5、日志打印如下：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;五月 17, 2020 12:02:07 下午 org.springframework.context.support.AbstractApplicationContext prepareRefresh
+信息: Refreshing org.springframework.context.annotation.AnnotationConfigApplicationContext@7e6cbb7a: startup date [Sun May 17 12:02:07 CST 2020]; root of context hierarchy
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&#34;spring4-spring5-日志打印&#34;&gt;Spring4、Spring5 日志打印&lt;/h2&gt;
+&lt;p&gt;接下来开始分析这个日志如何打印出来的&lt;/p&gt;
+&lt;p&gt;先从日志打印 AbstractApplicationContext 类开始：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;protected void prepareRefresh() {
+   this.startupDate = System.currentTimeMillis();
+   this.closed.set(false);
+   this.active.set(true);
+   if (logger.isInfoEnabled()) {
+      logger.info(&amp;quot;Refreshing &amp;quot; + this);
+   }
+   // Initialize any placeholder property sources in the context environment
+   initPropertySources();
+   // Validate that all properties marked as required are resolvable
+   // see ConfigurablePropertyResolver#setRequiredProperties
+   getEnvironment().validateRequiredProperties();
+   // Allow for the collection of early ApplicationEvents,
+   // to be published once the multicaster is available...
+   this.earlyApplicationEvents = new LinkedHashSet&amp;lt;&amp;gt;();
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;上述代码第6 行打印 Refreshing：即我们上面看到的日志打印结果，这里调用了 logger.info()，那么我们来看看这个 logger 到底是什么？先来剧透一下：其实它是一个 JUL。&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;protected final Log logger = LogFactory.getLog(getClass());
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;由于 JUL 是 JDK 的，很难去修改它的打印格式，于是我们想把日志打印换成 log4j，于是我们在 xml 中加上 log4j 依赖，如下：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-xml&#34;&gt;&amp;lt;dependency&amp;gt;
+  &amp;lt;groupId&amp;gt;log4j&amp;lt;/groupId&amp;gt;
+  &amp;lt;artifactId&amp;gt;log4j&amp;lt;/artifactId&amp;gt;
+  &amp;lt;version&amp;gt;1.2.17&amp;lt;/version&amp;gt;
+&amp;lt;/dependency&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;log4j 配置文件：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-prolog&#34;&gt;log4j.rootLogger=ERROR,stdout
+# 输出到控制台
+log4j.appender.stdout=org.apache.log4j.ConsoleAppender
+log4j.appender.stdout.target=System.out
+log4j.appender.stdout.layout=org.apache.log4j.PatternLayout
+log4j.appender.stdout.layout.ConversionPattern=%d{yyyy-MM-dd HH:mm:ss,SSS} %p [%t] %C.%M(%L) | %m%n
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;结果却发现，即使加上了 log4j 依赖，日志却仍然使用 JUL 打印&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;五月 17, 2020 12:13:10 下午 org.springframework.context.support.AbstractApplicationContext prepareRefresh
+信息: Refreshing org.springframework.context.annotation.AnnotationConfigApplicationContext@7106e68e: startup date [Sun May 17 12:13:09 CST 2020]; root of context hierarchy
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;当将 Spring 版本更改为 4.x.x 后，上述代码成功打印了 log4j 日志：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;&amp;lt;dependency&amp;gt;
+  &amp;lt;groupId&amp;gt;org.springframework&amp;lt;/groupId&amp;gt;
+  &amp;lt;artifactId&amp;gt;spring-context&amp;lt;/artifactId&amp;gt;
+  &amp;lt;version&amp;gt;4.3.16.RELEASE&amp;lt;/version&amp;gt;
+&amp;lt;/dependency&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;由于 log4j 内配置只打印 ERROR 级别的日志，由于没有 ERROR，所以日志打印为空。&lt;/p&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;1&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/log4j.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;h1 id=&#34;主流的log技术名词&#34;&gt;主流的log技术名词&lt;/h1&gt;
+&lt;h2 id=&#34;1log4j&#34;&gt;&lt;strong&gt;1.log4j&lt;/strong&gt;&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;可以不需要依赖第三方的技术&lt;/li&gt;
+&lt;li&gt;直接记录日志&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;（1）引入依赖&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-xml&#34;&gt;&amp;lt;dependency&amp;gt;
+  &amp;lt;groupId&amp;gt;log4j&amp;lt;/groupId&amp;gt;
+  &amp;lt;artifactId&amp;gt;log4j&amp;lt;/artifactId&amp;gt;
+  &amp;lt;version&amp;gt;1.2.17&amp;lt;/version&amp;gt;
+&amp;lt;/dependency&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;（2）配置&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;log4j.rootLogger=INFO,stdout
+# 输出到控制台
+log4j.appender.stdout=org.apache.log4j.ConsoleAppender
+log4j.appender.stdout.target=System.out
+log4j.appender.stdout.layout=org.apache.log4j.PatternLayout
+log4j.appender.stdout.layout.ConversionPattern=%d{yyyy-MM-dd HH:mm:ss,SSS} %p [%t] %C.%M(%L) | %m%n
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;（3）测试类&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;import org.apache.log4j.Logger;
+public class Log4j {
+    public static void main(String[] args) {
+        Logger logger = Logger.getLogger(&amp;quot;log4j&amp;quot;);
+        logger.info(&amp;quot;log4j&amp;quot;);
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;（4）日志打印：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;2020-05-17 12:44:41,453 INFO [main] com.ssm.utils.Log4j.main(9) | log4j
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&#34;2jul&#34;&gt;&lt;strong&gt;2.jul&lt;/strong&gt;&lt;/h2&gt;
+&lt;p&gt;java自带的一个日志记录的技术,直接使用&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;import java.util.logging.Logger;
+public class JUL {
+    public static void main(String[] args) {
+        Logger logger = Logger.getLogger(&amp;quot;jul&amp;quot;);
+        logger.info(&amp;quot;jul&amp;quot;);
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;打印结果：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;五月 17, 2020 12:45:59 下午 com.ssm.utils.JUL main
+信息: jul
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&#34;3jcl&#34;&gt;&lt;strong&gt;3.jcl&lt;/strong&gt;&lt;/h2&gt;
+&lt;p&gt;jakartaCommonsLoggingImpl&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;&amp;lt;dependency&amp;gt;
+    &amp;lt;groupId&amp;gt;commons-logging&amp;lt;/groupId&amp;gt;
+    &amp;lt;artifactId&amp;gt;commons-logging&amp;lt;/artifactId&amp;gt;
+    &amp;lt;version&amp;gt;1.1.1&amp;lt;/version&amp;gt;
+&amp;lt;/dependency&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;ul&gt;
+&lt;li&gt;jcl他不直接记录日志,他是通过第三方记录日志(jul、log4j)&lt;/li&gt;
+&lt;li&gt;如果使用jcl来记录日志,在没有log4j的依赖情况下,使用jul&lt;/li&gt;
+&lt;li&gt;如果有了log4j则使用log4j&lt;/li&gt;
+&lt;/ul&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;2&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/JCL%E6%97%A5%E5%BF%97.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;h3 id=&#34;log4j&#34;&gt;log4j&lt;/h3&gt;
+&lt;p&gt;当有 log4j 依赖时，JCL 日志使用 log4j 打印：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class JCL {
+    public static void main(String[] args) {
+        Log log = LogFactory.getLog(&amp;quot;jcl&amp;quot;);
+        log.info(&amp;quot;jcl&amp;quot;);
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;3&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/JCL_log4j.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p&gt;日志打印：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;2020-05-17 12:50:04,813 INFO [main] com.ssm.utils.JCL.main(9) | jcl
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h4 id=&#34;分析&#34;&gt;分析&lt;/h4&gt;
+&lt;p&gt;LogFactory#getLog&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public static Log getLog(String name) throws LogConfigurationException {
+    return getFactory().getInstance(name);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;LogFactoryImpl#getInstance&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public Log getInstance(String name) throws LogConfigurationException {
+    Log instance = (Log) instances.get(name);
+    if (instance == null) {
+        instance = newInstance(name);
+        instances.put(name, instance);
+    }
+    return instance;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;上述代码第 4 行：&lt;br&gt;
+LogFactoryImpl#newInstance&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;protected Log newInstance(String name) throws LogConfigurationException {
+    Log instance;
+    try {
+        if (logConstructor == null) {
+            instance = discoverLogImplementation(name);
+        }
+        else {
+            Object params[] = { name };
+            instance = (Log) logConstructor.newInstance(params);
+        }
+        if (logMethod != null) {
+            Object params[] = { this };
+            logMethod.invoke(instance, params);
+        }
+        return instance;
+    } catch (LogConfigurationException lce) {
+        // this type of exception means there was a problem in discovery
+        // and we&#39;ve already output diagnostics about the issue, etc.;
+        // just pass it on
+        throw lce;
+    } catch (InvocationTargetException e) {
+        // A problem occurred invoking the Constructor or Method
+        // previously discovered
+        Throwable c = e.getTargetException();
+        throw new LogConfigurationException(c == null ? e : c);
+    } catch (Throwable t) {
+        handleThrowable(t); // may re-throw t
+        // A problem occurred invoking the Constructor or Method
+        // previously discovered
+        throw new LogConfigurationException(t);
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;LogFactoryImpl#discoverLogImplementation&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;private Log discoverLogImplementation(String logCategory)
+    throws LogConfigurationException {
+    if (isDiagnosticsEnabled()) {
+        logDiagnostic(&amp;quot;Discovering a Log implementation...&amp;quot;);
+    }
+    initConfiguration();
+    Log result = null;
+    // See if the user specified the Log implementation to use
+    String specifiedLogClassName = findUserSpecifiedLogClassName();
+    if (specifiedLogClassName != null) {
+        if (isDiagnosticsEnabled()) {
+            logDiagnostic(&amp;quot;Attempting to load user-specified log class &#39;&amp;quot; +
+                specifiedLogClassName + &amp;quot;&#39;...&amp;quot;);
+        }
+        result = createLogFromClass(specifiedLogClassName,
+                                    logCategory,
+                                    true);
+        if (result == null) {
+            StringBuffer messageBuffer =  new StringBuffer(&amp;quot;User-specified log class &#39;&amp;quot;);
+            messageBuffer.append(specifiedLogClassName);
+            messageBuffer.append(&amp;quot;&#39; cannot be found or is not useable.&amp;quot;);
+            // Mistyping or misspelling names is a common fault.
+            // Construct a good error message, if we can
+            informUponSimilarName(messageBuffer, specifiedLogClassName, LOGGING_IMPL_LOG4J_LOGGER);
+            informUponSimilarName(messageBuffer, specifiedLogClassName, LOGGING_IMPL_JDK14_LOGGER);
+            informUponSimilarName(messageBuffer, specifiedLogClassName, LOGGING_IMPL_LUMBERJACK_LOGGER);
+            informUponSimilarName(messageBuffer, specifiedLogClassName, LOGGING_IMPL_SIMPLE_LOGGER);
+            throw new LogConfigurationException(messageBuffer.toString());
+        }
+        return result;
+    }
+    // No user specified log; try to discover what&#39;s on the classpath
+    //
+    // Note that we deliberately loop here over classesToDiscover and
+    // expect method createLogFromClass to loop over the possible source
+    // classloaders. The effect is:
+    //   for each discoverable log adapter
+    //      for each possible classloader
+    //          see if it works
+    //
+    // It appears reasonable at first glance to do the opposite:
+    //   for each possible classloader
+    //     for each discoverable log adapter
+    //        see if it works
+    //
+    // The latter certainly has advantages for user-installable logging
+    // libraries such as log4j; in a webapp for example this code should
+    // first check whether the user has provided any of the possible
+    // logging libraries before looking in the parent classloader.
+    // Unfortunately, however, Jdk14Logger will always work in jvm&amp;gt;=1.4,
+    // and SimpleLog will always work in any JVM. So the loop would never
+    // ever look for logging libraries in the parent classpath. Yet many
+    // users would expect that putting log4j there would cause it to be
+    // detected (and this is the historical JCL behaviour). So we go with
+    // the first approach. A user that has bundled a specific logging lib
+    // in a webapp should use a commons-logging.properties file or a
+    // service file in META-INF to force use of that logging lib anyway,
+    // rather than relying on discovery.
+    if (isDiagnosticsEnabled()) {
+        logDiagnostic(
+            &amp;quot;No user-specified Log implementation; performing discovery&amp;quot; +
+            &amp;quot; using the standard supported logging implementations...&amp;quot;);
+    }
+    for(int i=0; i&amp;lt;classesToDiscover.length &amp;amp;&amp;amp; result == null; ++i) {
+        result = createLogFromClass(classesToDiscover[i], logCategory, true);
+    }
+    if (result == null) {
+        throw new LogConfigurationException
+                    (&amp;quot;No suitable Log implementation&amp;quot;);
+    }
+    return result;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;上述代码第 74 行：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;result = createLogFromClass(classesToDiscover[i], logCategory, true);
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;private static final String[] classesToDiscover = {
+        LOGGING_IMPL_LOG4J_LOGGER,
+        &amp;quot;org.apache.commons.logging.impl.Jdk14Logger&amp;quot;,
+        &amp;quot;org.apache.commons.logging.impl.Jdk13LumberjackLogger&amp;quot;,
+        &amp;quot;org.apache.commons.logging.impl.SimpleLog&amp;quot;
+};
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;private static final String LOGGING_IMPL_LOG4J_LOGGER = &amp;quot;org.apache.commons.logging.impl.Log4JLogger&amp;quot;;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;当执行到 73 行，进行第 0 次 for 循环时，将 org.apache.commons.logging.impl.Log4JLogger 作为第一个参数传递给 createLogFromClass 方法：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;private Log createLogFromClass(String logAdapterClassName,
+                               String logCategory,
+                               boolean affectState)
+    throws LogConfigurationException {
+    if (isDiagnosticsEnabled()) {
+        logDiagnostic(&amp;quot;Attempting to instantiate &#39;&amp;quot; + logAdapterClassName + &amp;quot;&#39;&amp;quot;);
+    }
+    Object[] params = { logCategory };
+    Log logAdapter = null;
+    Constructor constructor = null;
+    Class logAdapterClass = null;
+    ClassLoader currentCL = getBaseClassLoader();
+    for(;;) {
+        // Loop through the classloader hierarchy trying to find
+        // a viable classloader.
+        logDiagnostic(&amp;quot;Trying to load &#39;&amp;quot; + logAdapterClassName + &amp;quot;&#39; from classloader &amp;quot; + objectId(currentCL));
+        try {
+            if (isDiagnosticsEnabled()) {
+                // Show the location of the first occurrence of the .class file
+                // in the classpath. This is the location that ClassLoader.loadClass
+                // will load the class from -- unless the classloader is doing
+                // something weird.
+                URL url;
+                String resourceName = logAdapterClassName.replace(&#39;.&#39;, &#39;/&#39;) + &amp;quot;.class&amp;quot;;
+                if (currentCL != null) {
+                    url = currentCL.getResource(resourceName );
+                } else {
+                    url = ClassLoader.getSystemResource(resourceName + &amp;quot;.class&amp;quot;);
+                }
+                if (url == null) {
+                    logDiagnostic(&amp;quot;Class &#39;&amp;quot; + logAdapterClassName + &amp;quot;&#39; [&amp;quot; + resourceName + &amp;quot;] cannot be found.&amp;quot;);
+                } else {
+                    logDiagnostic(&amp;quot;Class &#39;&amp;quot; + logAdapterClassName + &amp;quot;&#39; was found at &#39;&amp;quot; + url + &amp;quot;&#39;&amp;quot;);
+                }
+            }
+            Class c;
+            try {
+                c = Class.forName(logAdapterClassName, true, currentCL);
+            } catch (ClassNotFoundException originalClassNotFoundException) {
+                // The current classloader was unable to find the log adapter
+                // in this or any ancestor classloader. There&#39;s no point in
+                // trying higher up in the hierarchy in this case..
+                String msg = originalClassNotFoundException.getMessage();
+                logDiagnostic(&amp;quot;The log adapter &#39;&amp;quot; + logAdapterClassName + &amp;quot;&#39; is not available via classloader &amp;quot; +
+                              objectId(currentCL) + &amp;quot;: &amp;quot; + msg.trim());
+                try {
+                    // Try the class classloader.
+                    // This may work in cases where the TCCL
+                    // does not contain the code executed or JCL.
+                    // This behaviour indicates that the application
+                    // classloading strategy is not consistent with the
+                    // Java 1.2 classloading guidelines but JCL can
+                    // and so should handle this case.
+                    c = Class.forName(logAdapterClassName);
+                } catch (ClassNotFoundException secondaryClassNotFoundException) {
+                    // no point continuing: this adapter isn&#39;t available
+                    msg = secondaryClassNotFoundException.getMessage();
+                    logDiagnostic(&amp;quot;The log adapter &#39;&amp;quot; + logAdapterClassName +
+                                  &amp;quot;&#39; is not available via the LogFactoryImpl class classloader: &amp;quot; + msg.trim());
+                    break;
+                }
+            }
+            constructor = c.getConstructor(logConstructorSignature);
+            Object o = constructor.newInstance(params);
+            // Note that we do this test after trying to create an instance
+            // [rather than testing Log.class.isAssignableFrom(c)] so that
+            // we don&#39;t complain about Log hierarchy problems when the
+            // adapter couldn&#39;t be instantiated anyway.
+            if (o instanceof Log) {
+                logAdapterClass = c;
+                logAdapter = (Log) o;
+                break;
+            }
+            // Oops, we have a potential problem here. An adapter class
+            // has been found and its underlying lib is present too, but
+            // there are multiple Log interface classes available making it
+            // impossible to cast to the type the caller wanted. We
+            // certainly can&#39;t use this logger, but we need to know whether
+            // to keep on discovering or terminate now.
+            //
+            // The handleFlawedHierarchy method will throw
+            // LogConfigurationException if it regards this problem as
+            // fatal, and just return if not.
+            handleFlawedHierarchy(currentCL, c);
+        } catch (NoClassDefFoundError e) {
+            // We were able to load the adapter but it had references to
+            // other classes that could not be found. This simply means that
+            // the underlying logger library is not present in this or any
+            // ancestor classloader. There&#39;s no point in trying higher up
+            // in the hierarchy in this case..
+            String msg = e.getMessage();
+            logDiagnostic(&amp;quot;The log adapter &#39;&amp;quot; + logAdapterClassName +
+                          &amp;quot;&#39; is missing dependencies when loaded via classloader &amp;quot; + objectId(currentCL) +
+                          &amp;quot;: &amp;quot; + msg.trim());
+            break;
+        } catch (ExceptionInInitializerError e) {
+            // A static initializer block or the initializer code associated
+            // with a static variable on the log adapter class has thrown
+            // an exception.
+            //
+            // We treat this as meaning the adapter&#39;s underlying logging
+            // library could not be found.
+            String msg = e.getMessage();
+            logDiagnostic(&amp;quot;The log adapter &#39;&amp;quot; + logAdapterClassName +
+                          &amp;quot;&#39; is unable to initialize itself when loaded via classloader &amp;quot; + objectId(currentCL) +
+                          &amp;quot;: &amp;quot; + msg.trim());
+            break;
+        } catch (LogConfigurationException e) {
+            // call to handleFlawedHierarchy above must have thrown
+            // a LogConfigurationException, so just throw it on
+            throw e;
+        } catch (Throwable t) {
+            handleThrowable(t); // may re-throw t
+            // handleFlawedDiscovery will determine whether this is a fatal
+            // problem or not. If it is fatal, then a LogConfigurationException
+            // will be thrown.
+            handleFlawedDiscovery(logAdapterClassName, currentCL, t);
+        }
+        if (currentCL == null) {
+            break;
+        }
+        // try the parent classloader
+        // currentCL = currentCL.getParent();
+        currentCL = getParentClassLoader(currentCL);
+    }
+    if (logAdapterClass != null &amp;amp;&amp;amp; affectState) {
+        // We&#39;ve succeeded, so set instance fields
+        this.logClassName   = logAdapterClassName;
+        this.logConstructor = constructor;
+        // Identify the &amp;lt;code&amp;gt;setLogFactory&amp;lt;/code&amp;gt; method (if there is one)
+        try {
+            this.logMethod = logAdapterClass.getMethod(&amp;quot;setLogFactory&amp;quot;, logMethodSignature);
+            logDiagnostic(&amp;quot;Found method setLogFactory(LogFactory) in &#39;&amp;quot; + logAdapterClassName + &amp;quot;&#39;&amp;quot;);
+        } catch (Throwable t) {
+            handleThrowable(t); // may re-throw t
+            this.logMethod = null;
+            logDiagnostic(&amp;quot;[INFO] &#39;&amp;quot; + logAdapterClassName + &amp;quot;&#39; from classloader &amp;quot; + objectId(currentCL) +
+                          &amp;quot; does not declare optional method &amp;quot; + &amp;quot;setLogFactory(LogFactory)&amp;quot;);
+        }
+        logDiagnostic(&amp;quot;Log adapter &#39;&amp;quot; + logAdapterClassName + &amp;quot;&#39; from classloader &amp;quot; +
+                      objectId(logAdapterClass.getClassLoader()) + &amp;quot; has been selected for use.&amp;quot;);
+    }
+    return logAdapter;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;上述代码第 44 行&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;c = Class.forName(logAdapterClassName, true, currentCL);
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;logAdapterClassName 是 createLogFromClass 方法的第一个参数  org.apache.commons.logging.impl.Log4JLogger&lt;br&gt;
+Class c = Class.forName(&amp;quot;org.apache.commons.logging.impl.Log4JLogger&amp;quot;, true, currentCL);&lt;/p&gt;
+&lt;p&gt;如果能够得到这个 Class，c 就有值，因为当前有 log4j 依赖，所以能够得到 Log4JLogger 类。&lt;/p&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;4&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/c.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p&gt;上述代码第 70 行：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;//  得到这个类的构造方法
+constructor = c.getConstructor(logConstructorSignature);
+// 创建一个实例对象
+Object o = constructor.newInstance(params);
+&lt;/code&gt;&lt;/pre&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;5&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/o.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p&gt;上述代码第 77 行：把创建出来的实例对象 o 赋值给 logAdapter&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;if (o instanceof Log) {
+    logAdapterClass = c;
+    logAdapter = (Log) o;
+    break;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;第 158 行：返回实例化对象 logAdapter：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;return logAdapter;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;于是第一次 for 循环结束，result != null ，于是终止 for 循环&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;for(int i=0; i&amp;lt;classesToDiscover.length &amp;amp;&amp;amp; result == null; ++i) {
+    result = createLogFromClass(classesToDiscover[i], logCategory, true);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3 id=&#34;jul&#34;&gt;JUL&lt;/h3&gt;
+&lt;p&gt;当 pom.xml 内没有 log4j 依赖时，JCL 日志使用 JUL 打印：&lt;/p&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;6&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/JUL.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;pre&gt;&lt;code&gt;五月 17, 2020 12:59:17 下午 jcl main
+信息: jcl
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Class c = Class.forName(&amp;quot;org.apache.commons.logging.impl.Log4JLogger&amp;quot;, true, currentCL);&lt;br&gt;
+因为当前没有 log4j 依赖，所以不能得到 Log4JLogger 类，所以进入 catch (NoClassDefFoundError e){，logAdapter 没有被复制，最终返回 null。&lt;/p&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;7&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/logAdapter.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p&gt;于是进入第 1 次循环：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;for(int i=0; i&amp;lt;classesToDiscover.length &amp;amp;&amp;amp; result == null; ++i) {
+    result = createLogFromClass(classesToDiscover[i], logCategory, true);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;classesToDiscover[1] = org.apache.commons.logging.impl.Jdk14Logger&lt;br&gt;
+因为 Jdk14Logger 是JDK 内部自带的，所以执行第 1 次循环，返回的 result 一定有值。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/c_2.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;br&gt;
+&lt;img src=&#34;https://epitomm.github.io/post-images/logAdapter_2.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/p&gt;
+&lt;h3 id=&#34;总结&#34;&gt;总结&lt;/h3&gt;
+&lt;pre&gt;&lt;code&gt;jcl=Jakarta commons-logging ,是apache公司开发的一个抽象日志通用框架,本身不实现日志记录,但是提供了记录日志的抽象方法即接口(info,debug,error.......),底层通过一个数组存放具体的日志框架的类名,然后循环数组依次去匹配这些类名是否在app中被依赖了,如果找到被依赖的则直接使用,所以他有先后顺序。
+&lt;/code&gt;&lt;/pre&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;8&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/jcl1.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;pre&gt;&lt;code&gt;上图为jcl中存放日志技术类名的数组，默认有四个，后面两个可以忽略。
+&lt;/code&gt;&lt;/pre&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;9&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/jcl0.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;pre&gt;&lt;code&gt;上图81行就是通过一个类名去load一个class，如果load成功则直接new出来并且返回使用。
+如果没有load到class这循环第二个，直到找到为止。
+&lt;/code&gt;&lt;/pre&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;10&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/jcl2.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;pre&gt;&lt;code&gt;可以看到这里的循环条件必须满足result不为空，
+也就是如果没有找到具体的日志依赖则继续循环，如果找到则条件不成立，不进行循环了。
+总结：顺序log4j&amp;gt;jul
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&#34;为什么要引入-jcl&#34;&gt;为什么要引入 JCL&lt;/h2&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;11&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/JCL.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p&gt;如果要合并两个 app1 和 app2，其中 app1 使用 JUL 日志，app2 使用 lot4j 记录日志，就会出现：日志打印格式混乱问题。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E4%B8%A4%E7%A7%8D%E6%97%A5%E5%BF%97.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;br&gt;
+&lt;img src=&#34;https://epitomm.github.io/post-images/JCL%E7%9A%84%E4%BD%BF%E7%94%A8.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/p&gt;
+&lt;p&gt;如果使用 JCL，如果想使用 log4j 打印日志，只需引入 log4j 依赖；如果想使用 JUL 打印日志，只需删除 log4j 依赖即可。&lt;/p&gt;
+&lt;h2 id=&#34;4log4j2&#34;&gt;4.log4j2&lt;/h2&gt;
+&lt;h2 id=&#34;5slf4j&#34;&gt;5.slf4j&lt;/h2&gt;
+&lt;p&gt;slf4j官网：&lt;a href=&#34;http://www.slf4j.org/&#34;&gt;http://www.slf4j.org/&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;slf4j他也不记录日志,通过绑定器绑定一个具体的日志记录来完成日志记录&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;log4j---&amp;lt;artifactId&amp;gt;slf4j-log4j12&amp;lt;/artifactId&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;12&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/slf4j.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;h3 id=&#34;加入-slf4j-依赖&#34;&gt;加入 slf4j 依赖&lt;/h3&gt;
+&lt;pre&gt;&lt;code class=&#34;language-xml&#34;&gt;&amp;lt;!-- slf4j --&amp;gt;
+&amp;lt;dependency&amp;gt;
+  &amp;lt;groupId&amp;gt;org.slf4j&amp;lt;/groupId&amp;gt;
+  &amp;lt;artifactId&amp;gt;slf4j-api&amp;lt;/artifactId&amp;gt;
+  &amp;lt;version&amp;gt;1.7.25&amp;lt;/version&amp;gt;
+&amp;lt;/dependency&amp;gt;
+&amp;lt;!-- 绑定器：注绑定器版本号和 slf4j 版本号要一致 --&amp;gt;
+&amp;lt;dependency&amp;gt;
+  &amp;lt;groupId&amp;gt;org.slf4j&amp;lt;/groupId&amp;gt;
+  &amp;lt;artifactId&amp;gt;slf4j-jdk14&amp;lt;/artifactId&amp;gt;
+  &amp;lt;version&amp;gt;1.7.25&amp;lt;/version&amp;gt;
+&amp;lt;/dependency&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;13&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/slf4j%E6%94%AF%E6%8C%81%E7%9A%84%E6%97%A5%E5%BF%97%E7%BB%91%E5%AE%9A.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;h3 id=&#34;模拟日志打印&#34;&gt;模拟日志打印&lt;/h3&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+public class SLF4J {
+    public static void main(String[] args) {
+        Logger logger = LoggerFactory.getLogger(&amp;quot;slf4j&amp;quot;);
+        logger.info(&amp;quot;slf4j&amp;quot;);
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;日志打印 JUL：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;五月 17, 2020 5:25:58 下午 com.ssm.utils.SLF4J main
+信息: slf4j
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;当绑定 slf4j 时，&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-xml&#34;&gt;&amp;lt;!-- slf4j --&amp;gt;
+&amp;lt;dependency&amp;gt;
+    &amp;lt;groupId&amp;gt;org.slf4j&amp;lt;/groupId&amp;gt;
+    &amp;lt;artifactId&amp;gt;slf4j-api&amp;lt;/artifactId&amp;gt;
+    &amp;lt;version&amp;gt;1.7.25&amp;lt;/version&amp;gt;
+&amp;lt;/dependency&amp;gt;
+&amp;lt;!-- 绑定器：log4j --&amp;gt;
+&amp;lt;dependency&amp;gt;
+    &amp;lt;groupId&amp;gt;org.slf4j&amp;lt;/groupId&amp;gt;
+    &amp;lt;artifactId&amp;gt;slf4j-log4j12&amp;lt;/artifactId&amp;gt;
+    &amp;lt;version&amp;gt;1.7.25&amp;lt;/version&amp;gt;
+&amp;lt;/dependency&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;日志打印是 log4j 形式：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;2020-05-17 17:30:47,801 INFO [main] com.ssm.utils.SLF4J.main(9) | slf4j
+&lt;/code&gt;&lt;/pre&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;14&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E4%B8%8D%E5%90%8C%E6%97%A5%E5%BF%97%E6%89%93%E5%8D%B0.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p&gt;如果想统一日志格式为 log4j，只需修改 app1 的绑定器，使它绑定 log4j 即可，如下图所示：&lt;/p&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;15&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E7%BB%9F%E4%B8%80%E6%97%A5%E5%BF%97%E6%89%93%E5%8D%B0%E4%B8%BAlog4j.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p&gt;如果想统一日志格式为 JUL ：① 可删除 Spring 内的 log4j 依赖，JCL 就自动使用 JCL 了。&lt;/p&gt;
+&lt;p&gt;② 为 Spring 添加桥接器，通过桥接器把它桥接到 slf4j，然后再绑定 JUL，就能打印 JUL 了，如下图所示：&lt;/p&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;16&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E7%BB%9F%E4%B8%80%E6%97%A5%E5%BF%97%E6%89%93%E5%8D%B0%E4%B8%BAJUL.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;h3 id=&#34;模拟&#34;&gt;模拟&lt;/h3&gt;
+&lt;h4 id=&#34;两种日志打印&#34;&gt;两种日志打印&lt;/h4&gt;
+&lt;p&gt;Sring 使用 JCL，且有 log4j，即 Spring 使用 log4j 日志打印。&lt;/p&gt;
+&lt;p&gt;App1 使用 slf4j ，绑定器绑定 JUL 日志打印。&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-xml&#34;&gt;  &amp;lt;dependencies&amp;gt;
+    &amp;lt;dependency&amp;gt;
+      &amp;lt;groupId&amp;gt;org.springframework&amp;lt;/groupId&amp;gt;
+      &amp;lt;artifactId&amp;gt;spring-context&amp;lt;/artifactId&amp;gt;
+      &amp;lt;version&amp;gt;4.3.16.RELEASE&amp;lt;/version&amp;gt;
+    &amp;lt;/dependency&amp;gt;
+    &amp;lt;!-- 绑定器：JUL --&amp;gt;
+    &amp;lt;dependency&amp;gt;
+      &amp;lt;groupId&amp;gt;org.slf4j&amp;lt;/groupId&amp;gt;
+      &amp;lt;artifactId&amp;gt;slf4j-jdk14&amp;lt;/artifactId&amp;gt;
+      &amp;lt;version&amp;gt;1.7.25&amp;lt;/version&amp;gt;
+    &amp;lt;/dependency&amp;gt;
+    &amp;lt;!-- log4j --&amp;gt;
+    &amp;lt;dependency&amp;gt;
+      &amp;lt;groupId&amp;gt;log4j&amp;lt;/groupId&amp;gt;
+      &amp;lt;artifactId&amp;gt;log4j&amp;lt;/artifactId&amp;gt;
+      &amp;lt;version&amp;gt;1.2.17&amp;lt;/version&amp;gt;
+    &amp;lt;/dependency&amp;gt;
+    &amp;lt;!-- JCL --&amp;gt;
+    &amp;lt;dependency&amp;gt;
+      &amp;lt;groupId&amp;gt;commons-logging&amp;lt;/groupId&amp;gt;
+      &amp;lt;artifactId&amp;gt;commons-logging&amp;lt;/artifactId&amp;gt;
+      &amp;lt;version&amp;gt;1.2&amp;lt;/version&amp;gt;
+    &amp;lt;/dependency&amp;gt;
+  &amp;lt;/dependencies&amp;gt;  
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;自己的 app 使用 slf4j 日志打印：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+public class SLF4J {
+    public static void main(String[] args) {
+        Logger logger = LoggerFactory.getLogger(&amp;quot;slf4j&amp;quot;);
+        logger.info(&amp;quot;slf4j&amp;quot;);
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;17&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/slf4j%E6%97%A5%E5%BF%97%E6%89%93%E5%8D%B0.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p&gt;Spring 使用 log4j 日志打印：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+public class TestSpringLog {
+    public static void main(String[] args) {
+        Log log = LogFactory.getLog(&amp;quot;spring&amp;quot;);
+        log.info(&amp;quot;spring...JCL&amp;quot;);
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;18&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/log4j%E6%97%A5%E5%BF%97%E6%89%93%E5%8D%B0.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;h4 id=&#34;统一日志打印&#34;&gt;统一日志打印&lt;/h4&gt;
+&lt;p&gt;添加桥接器&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-xml&#34;&gt;&amp;lt;!-- 桥接器 --&amp;gt;
+&amp;lt;dependency&amp;gt;
+  &amp;lt;groupId&amp;gt;org.slf4j&amp;lt;/groupId&amp;gt;
+  &amp;lt;artifactId&amp;gt;jcl-over-slf4j&amp;lt;/artifactId&amp;gt;
+  &amp;lt;version&amp;gt;1.7.25&amp;lt;/version&amp;gt;
+&amp;lt;/dependency&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;运行：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+public class TestSpringLog {
+    public static void main(String[] args) {
+        Log log = LogFactory.getLog(&amp;quot;spring&amp;quot;);
+        log.info(&amp;quot;spring...JCL&amp;quot;);
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;19&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E4%BE%9D%E8%B5%96%E6%B7%B7%E4%B9%B1%E5%AF%BC%E8%87%B4%E5%86%85%E5%AD%98%E6%BA%A2%E5%87%BA.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p&gt;Spring 日志打印也变成 JUL 了。&lt;/p&gt;
+&lt;h3 id=&#34;依赖混乱导致内存溢出&#34;&gt;依赖混乱导致内存溢出&lt;/h3&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;20&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E5%86%85%E5%AD%98%E6%BA%A2%E5%87%BA.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;pre&gt;&lt;code class=&#34;language-xml&#34;&gt;&amp;lt;dependencies&amp;gt;
+  &amp;lt;dependency&amp;gt;
+    &amp;lt;groupId&amp;gt;org.springframework&amp;lt;/groupId&amp;gt;
+    &amp;lt;artifactId&amp;gt;spring-context&amp;lt;/artifactId&amp;gt;
+    &amp;lt;version&amp;gt;4.3.16.RELEASE&amp;lt;/version&amp;gt;
+  &amp;lt;/dependency&amp;gt;
+  &amp;lt;!-- slf4j --&amp;gt;
+  &amp;lt;dependency&amp;gt;
+    &amp;lt;groupId&amp;gt;org.slf4j&amp;lt;/groupId&amp;gt;
+    &amp;lt;artifactId&amp;gt;slf4j-api&amp;lt;/artifactId&amp;gt;
+    &amp;lt;version&amp;gt;1.7.25&amp;lt;/version&amp;gt;
+  &amp;lt;/dependency&amp;gt;
+  &amp;lt;!-- 绑定器：JCL. slf4j 绑定到 JCL --&amp;gt;
+  &amp;lt;dependency&amp;gt;
+    &amp;lt;groupId&amp;gt;org.slf4j&amp;lt;/groupId&amp;gt;
+    &amp;lt;artifactId&amp;gt;slf4j-jcl&amp;lt;/artifactId&amp;gt;
+    &amp;lt;version&amp;gt;1.7.25&amp;lt;/version&amp;gt;
+  &amp;lt;/dependency&amp;gt;
+  &amp;lt;!-- 桥接器：JCL. JCL 桥接到 slf4j --&amp;gt;
+  &amp;lt;dependency&amp;gt;
+    &amp;lt;groupId&amp;gt;org.slf4j&amp;lt;/groupId&amp;gt;
+    &amp;lt;artifactId&amp;gt;jcl-over-slf4j&amp;lt;/artifactId&amp;gt;
+    &amp;lt;version&amp;gt;1.7.25&amp;lt;/version&amp;gt;
+  &amp;lt;/dependency&amp;gt;
+&amp;lt;/dependencies&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;测试类：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;import com.ssm.app.AppConfig;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+public class Test {
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext configApplicationContext = new AnnotationConfigApplicationContext(AppConfig.class);
+        configApplicationContext.start();
+        LoggerFactory.getLogger(&amp;quot;ttt&amp;quot;).info(&amp;quot;test&amp;quot;);
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;运行结果：&lt;br&gt;
+&lt;img src=&#34;https://epitomm.github.io/post-images/%E5%86%85%E5%AD%98%E6%BA%A2%E5%87%BA.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/p&gt;
+&lt;h2 id=&#34;6logback&#34;&gt;6.logback&lt;/h2&gt;
+&lt;h2 id=&#34;7simple-log&#34;&gt;7.simple-log&lt;/h2&gt;
+&lt;h1 id=&#34;各种日志技术的关系和作用&#34;&gt;各种日志技术的关系和作用&lt;/h1&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;21&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E5%90%84%E7%A7%8D%E6%97%A5%E5%BF%97.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;h1 id=&#34;spring日志技术分析&#34;&gt;spring日志技术分析&lt;/h1&gt;
+&lt;p&gt;再来看一下开始的那个问题：Spring4 加上 log4j 就打印 log4j 日志；但是 Spring5 加上 log4j 仍打印 JUL 日志。&lt;/p&gt;
+&lt;h2 id=&#34;spring4日志技术实现&#34;&gt;spring4.*日志技术实现&lt;/h2&gt;
+&lt;p&gt;spring4当中依赖的是原生的jcl：commons-logging.jar&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/Spring4%E6%97%A5%E5%BF%97.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;br&gt;
+&lt;img src=&#34;https://epitomm.github.io/post-images/Spring4%E5%BC%95%E5%85%A5log4j.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/p&gt;
+&lt;p&gt;上面的日志打印说是在org.springframework.context.support.AbstractApplicationContext.prepareRefresh(583) 内进行的日志打印：logger.info(&amp;quot;Refreshing &amp;quot; + this);&lt;/p&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;22&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/Spring%E7%89%88%E6%9C%AC%E5%8F%B7.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p&gt;这里我们要查看的是 Spring4 的 AbstractApplicationContext，我们来看一下 AbstractApplicationContext#prepareRefresh&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;protected void prepareRefresh() {
+   this.startupDate = System.currentTimeMillis();
+   this.closed.set(false);
+   this.active.set(true);
+   if (logger.isInfoEnabled()) {
+      logger.info(&amp;quot;Refreshing &amp;quot; + this);
+   }
+   // Initialize any placeholder property sources in the context environment
+   initPropertySources();
+   // Validate that all properties marked as required are resolvable
+   // see ConfigurablePropertyResolver#setRequiredProperties
+   getEnvironment().validateRequiredProperties();
+   // Allow for the collection of early ApplicationEvents,
+   // to be published once the multicaster is available...
+   this.earlyApplicationEvents = new LinkedHashSet&amp;lt;ApplicationEvent&amp;gt;();
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;23&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/Log4JLogger.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p&gt;org.springframework.context.support.AbstractApplicationContext.prepareRefresh(583) 的 logger 对象是 Log4JLogger，所以打印 log4j 日志。&lt;/p&gt;
+&lt;p&gt;来看一个 logger 变量的定义：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;protected final Log logger = LogFactory.getLog(getClass());
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;我们再来看一下这个 Log 对象，它是 JCL （org.apache.commons.logging）包下的，我们的 pom.xml 中并未引入 JCL 依赖，只引入了 spring-context 和 log4j 依赖，于是猜想 spring-context 中有 JCL 依赖。&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;package org.apache.commons.logging;
+public interface Log {
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;看一下 maven 依赖图：&lt;br&gt;
+&lt;img src=&#34;https://epitomm.github.io/post-images/spring4maven%E4%BE%9D%E8%B5%96.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Spring4 当中依赖了 JCL，Spring4 中采用的日志技术是 JCL：commons-logging.jar&lt;/strong&gt;。&lt;/p&gt;
+&lt;p&gt;LogFactory#getLog&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public static Log getLog(Class clazz) throws LogConfigurationException {
+    return getFactory().getInstance(clazz);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;LogFactory#getFactory&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public static LogFactory getFactory() throws LogConfigurationException {
+    // Identify the class loader we will be using
+    ClassLoader contextClassLoader = getContextClassLoaderInternal();
+    if (contextClassLoader == null) {
+        // This is an odd enough situation to report about. This
+        // output will be a nuisance on JDK1.1, as the system
+        // classloader is null in that environment.
+        if (isDiagnosticsEnabled()) {
+            logDiagnostic(&amp;quot;Context classloader is null.&amp;quot;);
+        }
+    }
+    // Return any previously registered factory for this class loader
+    LogFactory factory = getCachedFactory(contextClassLoader);
+    if (factory != null) {
+        return factory;
+    }
+    if (isDiagnosticsEnabled()) {
+        logDiagnostic(
+                &amp;quot;[LOOKUP] LogFactory implementation requested for the first time for context classloader &amp;quot; +
+                objectId(contextClassLoader));
+        logHierarchy(&amp;quot;[LOOKUP] &amp;quot;, contextClassLoader);
+    }
+    // Load properties file.
+    //
+    // If the properties file exists, then its contents are used as
+    // &amp;quot;attributes&amp;quot; on the LogFactory implementation class. One particular
+    // property may also control which LogFactory concrete subclass is
+    // used, but only if other discovery mechanisms fail..
+    //
+    // As the properties file (if it exists) will be used one way or
+    // another in the end we may as well look for it first.
+    Properties props = getConfigurationFile(contextClassLoader, FACTORY_PROPERTIES);
+    // Determine whether we will be using the thread context class loader to
+    // load logging classes or not by checking the loaded properties file (if any).
+    ClassLoader baseClassLoader = contextClassLoader;
+    if (props != null) {
+        String useTCCLStr = props.getProperty(TCCL_KEY);
+        if (useTCCLStr != null) {
+            // The Boolean.valueOf(useTCCLStr).booleanValue() formulation
+            // is required for Java 1.2 compatibility.
+            if (Boolean.valueOf(useTCCLStr).booleanValue() == false) {
+                // Don&#39;t use current context classloader when locating any
+                // LogFactory or Log classes, just use the class that loaded
+                // this abstract class. When this class is deployed in a shared
+                // classpath of a container, it means webapps cannot deploy their
+                // own logging implementations. It also means that it is up to the
+                // implementation whether to load library-specific config files
+                // from the TCCL or not.
+                baseClassLoader = thisClassLoader;
+            }
+        }
+    }
+    // Determine which concrete LogFactory subclass to use.
+    // First, try a global system property
+    if (isDiagnosticsEnabled()) {
+        logDiagnostic(&amp;quot;[LOOKUP] Looking for system property [&amp;quot; + FACTORY_PROPERTY +
+                      &amp;quot;] to define the LogFactory subclass to use...&amp;quot;);
+    }
+    try {
+        String factoryClass = getSystemProperty(FACTORY_PROPERTY, null);
+        if (factoryClass != null) {
+            if (isDiagnosticsEnabled()) {
+                logDiagnostic(&amp;quot;[LOOKUP] Creating an instance of LogFactory class &#39;&amp;quot; + factoryClass +
+                              &amp;quot;&#39; as specified by system property &amp;quot; + FACTORY_PROPERTY);
+            }
+            factory = newFactory(factoryClass, baseClassLoader, contextClassLoader);
+        } else {
+            if (isDiagnosticsEnabled()) {
+                logDiagnostic(&amp;quot;[LOOKUP] No system property [&amp;quot; + FACTORY_PROPERTY + &amp;quot;] defined.&amp;quot;);
+            }
+        }
+    } catch (SecurityException e) {
+        if (isDiagnosticsEnabled()) {
+            logDiagnostic(&amp;quot;[LOOKUP] A security exception occurred while trying to create an&amp;quot; +
+                          &amp;quot; instance of the custom factory class&amp;quot; + &amp;quot;: [&amp;quot; + trim(e.getMessage()) +
+                          &amp;quot;]. Trying alternative implementations...&amp;quot;);
+        }
+        // ignore
+    } catch (RuntimeException e) {
+        // This is not consistent with the behaviour when a bad LogFactory class is
+        // specified in a services file.
+        //
+        // One possible exception that can occur here is a ClassCastException when
+        // the specified class wasn&#39;t castable to this LogFactory type.
+        if (isDiagnosticsEnabled()) {
+            logDiagnostic(&amp;quot;[LOOKUP] An exception occurred while trying to create an&amp;quot; +
+                          &amp;quot; instance of the custom factory class&amp;quot; + &amp;quot;: [&amp;quot; +
+                          trim(e.getMessage()) +
+                          &amp;quot;] as specified by a system property.&amp;quot;);
+        }
+        throw e;
+    }
+    // Second, try to find a service by using the JDK1.3 class
+    // discovery mechanism, which involves putting a file with the name
+    // of an interface class in the META-INF/services directory, where the
+    // contents of the file is a single line specifying a concrete class
+    // that implements the desired interface.
+    if (factory == null) {
+        if (isDiagnosticsEnabled()) {
+            logDiagnostic(&amp;quot;[LOOKUP] Looking for a resource file of name [&amp;quot; + SERVICE_ID +
+                          &amp;quot;] to define the LogFactory subclass to use...&amp;quot;);
+        }
+        try {
+            final InputStream is = getResourceAsStream(contextClassLoader, SERVICE_ID);
+            if( is != null ) {
+                // This code is needed by EBCDIC and other strange systems.
+                // It&#39;s a fix for bugs reported in xerces
+                BufferedReader rd;
+                try {
+                    rd = new BufferedReader(new InputStreamReader(is, &amp;quot;UTF-8&amp;quot;));
+                } catch (java.io.UnsupportedEncodingException e) {
+                    rd = new BufferedReader(new InputStreamReader(is));
+                }
+                String factoryClassName = rd.readLine();
+                rd.close();
+                if (factoryClassName != null &amp;amp;&amp;amp; ! &amp;quot;&amp;quot;.equals(factoryClassName)) {
+                    if (isDiagnosticsEnabled()) {
+                        logDiagnostic(&amp;quot;[LOOKUP]  Creating an instance of LogFactory class &amp;quot; +
+                                      factoryClassName +
+                                      &amp;quot; as specified by file &#39;&amp;quot; + SERVICE_ID +
+                                      &amp;quot;&#39; which was present in the path of the context classloader.&amp;quot;);
+                    }
+                    factory = newFactory(factoryClassName, baseClassLoader, contextClassLoader );
+                }
+            } else {
+                // is == null
+                if (isDiagnosticsEnabled()) {
+                    logDiagnostic(&amp;quot;[LOOKUP] No resource file with name &#39;&amp;quot; + SERVICE_ID + &amp;quot;&#39; found.&amp;quot;);
+                }
+            }
+        } catch (Exception ex) {
+            // note: if the specified LogFactory class wasn&#39;t compatible with LogFactory
+            // for some reason, a ClassCastException will be caught here, and attempts will
+            // continue to find a compatible class.
+            if (isDiagnosticsEnabled()) {
+                logDiagnostic(
+                    &amp;quot;[LOOKUP] A security exception occurred while trying to create an&amp;quot; +
+                    &amp;quot; instance of the custom factory class&amp;quot; +
+                    &amp;quot;: [&amp;quot; + trim(ex.getMessage()) +
+                    &amp;quot;]. Trying alternative implementations...&amp;quot;);
+            }
+            // ignore
+        }
+    }
+    // Third try looking into the properties file read earlier (if found)
+    if (factory == null) {
+        if (props != null) {
+            if (isDiagnosticsEnabled()) {
+                logDiagnostic(
+                    &amp;quot;[LOOKUP] Looking in properties file for entry with key &#39;&amp;quot; + FACTORY_PROPERTY +
+                    &amp;quot;&#39; to define the LogFactory subclass to use...&amp;quot;);
+            }
+            String factoryClass = props.getProperty(FACTORY_PROPERTY);
+            if (factoryClass != null) {
+                if (isDiagnosticsEnabled()) {
+                    logDiagnostic(
+                        &amp;quot;[LOOKUP] Properties file specifies LogFactory subclass &#39;&amp;quot; + factoryClass + &amp;quot;&#39;&amp;quot;);
+                }
+                factory = newFactory(factoryClass, baseClassLoader, contextClassLoader);
+                // TODO: think about whether we need to handle exceptions from newFactory
+            } else {
+                if (isDiagnosticsEnabled()) {
+                    logDiagnostic(&amp;quot;[LOOKUP] Properties file has no entry specifying LogFactory subclass.&amp;quot;);
+                }
+            }
+        } else {
+            if (isDiagnosticsEnabled()) {
+                logDiagnostic(&amp;quot;[LOOKUP] No properties file available to determine&amp;quot; + &amp;quot; LogFactory subclass from..&amp;quot;);
+            }
+        }
+    }
+    // Fourth, try the fallback implementation class
+    if (factory == null) {
+        if (isDiagnosticsEnabled()) {
+            logDiagnostic(
+                &amp;quot;[LOOKUP] Loading the default LogFactory implementation &#39;&amp;quot; + FACTORY_DEFAULT +
+                &amp;quot;&#39; via the same classloader that loaded this LogFactory&amp;quot; +
+                &amp;quot; class (ie not looking in the context classloader).&amp;quot;);
+        }
+        // Note: unlike the above code which can try to load custom LogFactory
+        // implementations via the TCCL, we don&#39;t try to load the default LogFactory
+        // implementation via the context classloader because:
+        // * that can cause problems (see comments in newFactory method)
+        // * no-one should be customising the code of the default class
+        // Yes, we do give up the ability for the child to ship a newer
+        // version of the LogFactoryImpl class and have it used dynamically
+        // by an old LogFactory class in the parent, but that isn&#39;t
+        // necessarily a good idea anyway.
+        factory = newFactory(FACTORY_DEFAULT, thisClassLoader, contextClassLoader);
+    }
+    if (factory != null) {
+        /**
+         * Always cache using context class loader.
+         */
+        cacheFactory(contextClassLoader, factory);
+        if (props != null) {
+            Enumeration names = props.propertyNames();
+            while (names.hasMoreElements()) {
+                String name = (String) names.nextElement();
+                String value = props.getProperty(name);
+                factory.setAttribute(name, value);
+            }
+        }
+    }
+    return factory;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&#34;spring5日志技术实现&#34;&gt;spring5.*日志技术实现&lt;/h2&gt;
+&lt;p&gt;spring5使用的spring的jcl(spring改了jcl的代码)来记录日志的,但是jcl不能直接记录日志,采用循环优先的原则&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/Spring5%E6%97%A5%E5%BF%97.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;br&gt;
+&lt;img src=&#34;https://epitomm.github.io/post-images/Spring5maven%E4%BE%9D%E8%B5%96.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Spring5 当中依赖了 JCL，Spring5 中采用的日志技术是 JCL：spring-jcl&lt;/strong&gt;。&lt;/p&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;24&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/Spring5%E5%BC%95%E5%85%A5log4j.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p&gt;上面的日志打印说是在org.springframework.context.support.AbstractApplicationContext prepareRefresh 内进行的日志打印：logger.info(&amp;quot;Refreshing &amp;quot; + this);&lt;/p&gt;
+&lt;p&gt;这里我们要查看的是 Spring5 的 AbstractApplicationContext#prepareRefresh，我们来看一下&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;protected void prepareRefresh() {
+   this.startupDate = System.currentTimeMillis();
+   this.closed.set(false);
+   this.active.set(true);
+   if (logger.isInfoEnabled()) {
+      logger.info(&amp;quot;Refreshing &amp;quot; + this);
+   }
+   // Initialize any placeholder property sources in the context environment
+   initPropertySources();
+   // Validate that all properties marked as required are resolvable
+   // see ConfigurablePropertyResolver#setRequiredProperties
+   getEnvironment().validateRequiredProperties();
+   // Allow for the collection of early ApplicationEvents,
+   // to be published once the multicaster is available...
+   this.earlyApplicationEvents = new LinkedHashSet&amp;lt;&amp;gt;();
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;25&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/Spring5JUL.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p&gt;org.springframework.context.support.AbstractApplicationContext prepareRefresh 的 logger 对象是 JavaUtilLog，所以打印 JUL 日志。&lt;/p&gt;
+&lt;p&gt;来看一个 logger 变量的定义：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;protected final Log logger = LogFactory.getLog(getClass());
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;我们再来看一下这个 Log 对象，它是 JCL （org.apache.commons.logging）包下的，虽然我们的 pom.xml 中并未引入 JCL 依赖，但是 spring-context 中有 JCL 依赖。&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;package org.apache.commons.logging;
+public interface Log {
+&lt;/code&gt;&lt;/pre&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;26&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/Spring5JUL_2.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p&gt;一般情况下，JCL 在有 log4j 时，使用 log4j 打印日志；在没有 log4j 时，使用 JUL 打印日志。但是 Spring5 在有 log4j 时，仍然打印 JUL 日志，因为Spring 把 JCL 的源码改了。&lt;/p&gt;
+&lt;p&gt;LogFactory#getLog&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public static Log getLog(Class&amp;lt;?&amp;gt; clazz) {
+   return getLog(clazz.getName());
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;LogFactory#getLog&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public static Log getLog(String name) {
+   switch (logApi) {
+      case LOG4J:
+         return Log4jDelegate.createLog(name);
+      case SLF4J_LAL:
+         return Slf4jDelegate.createLocationAwareLog(name);
+      case SLF4J:
+         return Slf4jDelegate.createLog(name);
+      default:
+         // Defensively use lazy-initializing delegate class here as well since the
+         // java.logging module is not present by default on JDK 9. We are requiring
+         // its presence if neither Log4j nor SLF4J is available; however, in the
+         // case of Log4j or SLF4J, we are trying to prevent early initialization
+         // of the JavaUtilLog adapter - e.g. by a JVM in debug mode - when eagerly
+         // trying to parse the bytecode for all the cases of this switch clause.
+         return JavaUtilDelegate.createLog(name);
+   }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;27&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/logApi.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p&gt;来看一下 logApi 这个变量：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;private static LogApi logApi = LogApi.JUL;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;JavaUtilDelegate#createLog&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;private static class JavaUtilDelegate {
+   public static Log createLog(String name) {
+      return new JavaUtilLog(name);
+   }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;最终会返回 JavaUtilLog。Spiring5 默认采用 JCL 绑定 JUL 打印日志。&lt;br&gt;
+我们看一下 case LOG4J 分支：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;case LOG4J:
+   return Log4jDelegate.createLog(name);   
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;如果走 case LOG4J 分支，创建的是 Log4j2 日志：org.apache.logging.log4j.Level，而不是 log4j 日志：org.apache.log4j.Logger;&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;import org.apache.logging.log4j.Level;
+private static class Log4jDelegate {
+   public static Log createLog(String name) {
+      return new Log4jLog(name);
+   }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;所以在 Spring5 中不能仅仅通过在 pom.xml 中引入 log4j 来使用 log4j。&lt;/p&gt;
+&lt;h3 id=&#34;spring5-使用桥接器-slf4j-绑定-log4j-打印日志&#34;&gt;Spring5 使用桥接器 SLF4J 绑定 log4j 打印日志&lt;/h3&gt;
+&lt;p&gt;如果想要使用 log4j 打印日志，就需要修改 logApi 的值，先来看一下 logApi 是在哪里赋值的：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;static {
+   ClassLoader cl = LogFactory.class.getClassLoader();
+   try {
+      // 如果有 log4j2，就使用 log4j2 打印日志
+      // Try Log4j 2.x API
+      cl.loadClass(&amp;quot;org.apache.logging.log4j.spi.ExtendedLogger&amp;quot;);
+      logApi = LogApi.LOG4J;
+   }
+   // 如果没有 log4j2
+   catch (ClassNotFoundException ex1) {
+      try {
+         // 如果有 SLF4J，就桥接 SLF4J 日志打印
+         // Try SLF4J 1.7 SPI
+         cl.loadClass(&amp;quot;org.slf4j.spi.LocationAwareLogger&amp;quot;);
+         logApi = LogApi.SLF4J_LAL;
+      }
+      catch (ClassNotFoundException ex2) {
+         try {
+            // Try SLF4J 1.7 API
+            cl.loadClass(&amp;quot;org.slf4j.Logger&amp;quot;);
+            logApi = LogApi.SLF4J;
+         }
+         catch (ClassNotFoundException ex3) {
+            // Keep java.util.logging as default
+         }
+      }
+   }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;28&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/logApi%E8%B5%8B%E5%80%BC%E8%BF%87%E7%A8%8B.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;pre&gt;&lt;code class=&#34;language-xml&#34;&gt;  &amp;lt;dependencies&amp;gt;
+    &amp;lt;dependency&amp;gt;
+      &amp;lt;groupId&amp;gt;org.springframework&amp;lt;/groupId&amp;gt;
+      &amp;lt;artifactId&amp;gt;spring-context&amp;lt;/artifactId&amp;gt;
+      &amp;lt;version&amp;gt;5.0.9.RELEASE&amp;lt;/version&amp;gt;
+    &amp;lt;/dependency&amp;gt;
+    &amp;lt;!-- slf4j --&amp;gt;
+    &amp;lt;dependency&amp;gt;
+      &amp;lt;groupId&amp;gt;org.slf4j&amp;lt;/groupId&amp;gt;
+      &amp;lt;artifactId&amp;gt;slf4j-api&amp;lt;/artifactId&amp;gt;
+      &amp;lt;version&amp;gt;1.7.25&amp;lt;/version&amp;gt;
+    &amp;lt;/dependency&amp;gt;
+    &amp;lt;!-- 绑定器：Log4J. slf4j 绑定到 Log4J --&amp;gt;
+    &amp;lt;dependency&amp;gt;
+      &amp;lt;groupId&amp;gt;org.slf4j&amp;lt;/groupId&amp;gt;
+      &amp;lt;artifactId&amp;gt;slf4j-log4j12&amp;lt;/artifactId&amp;gt;
+      &amp;lt;version&amp;gt;1.7.25&amp;lt;/version&amp;gt;
+    &amp;lt;/dependency&amp;gt;
+  &amp;lt;/dependencies&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;29&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/Spring5%E6%89%93%E5%8D%B0log4j.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;h2 id=&#34;总结-2&#34;&gt;总结&lt;/h2&gt;
+&lt;p&gt;Spring4 默认使用 JCL 日志打印，通过 for 循环一个数组[&amp;quot;org.apache.commons.logging.impl.Log4JLogger&amp;quot;,&lt;/p&gt;
+&lt;p&gt;&amp;quot;org.apache.commons.logging.impl.Jdk14Logger&amp;quot;,&lt;/p&gt;
+&lt;p&gt;&amp;quot;org.apache.commons.logging.impl.Jdk13LumberjackLogger&amp;quot;,&lt;/p&gt;
+&lt;p&gt;&amp;quot;org.apache.commons.logging.impl.SimpleLog&amp;quot;&lt;/p&gt;
+&lt;p&gt;]，给 result 赋值。&lt;/p&gt;
+&lt;p&gt;Spring5 默认采用 JCL 日志，但是 Spring 把 JCL 改了，底层用了一个 switch-case 去选择一个不同的日志实现，默认采用 JUL，当项目中如果有 SLF4J 或 Log4J2 时，Spring5 就会选用 SLF4J 或  Log4J2 ，采用一个 class.forName() 机制，如果找到了就修改 logApi 值，调用 getLog 方法时得到具体的日志实现。&lt;/p&gt;
+">Spring系列（十二）Spring5新特性——日志</a>
+      </div>
+      
+      <div class="item">
         <a class="result-title" style="opacity: 0;" href="https://epitomm.github.io/post/spring-xi-lie-shi-yi-spring-yuan-ma-jie-xi/"" data-c="
           &lt;h1 id=&#34;如何处理bean&#34;&gt;如何处理@Bean&lt;/h1&gt;
 &lt;p&gt;给配置类产生 CGLIB 代理：需要维护配置类中 Bean 的作用域。&lt;/p&gt;
@@ -1152,7 +2544,7 @@ public class AppConfig {
 &lt;/code&gt;&lt;/pre&gt;
 &lt;h2 id=&#34;经过-cglib-代理后得到的代理类&#34;&gt;经过 CGLIB 代理后得到的代理类&lt;/h2&gt;
 &lt;h3 id=&#34;我们的猜测&#34;&gt;我们的猜测&lt;/h3&gt;
-&lt;pre&gt;&lt;code class=&#34;language-plain&#34;&gt;@Configuration
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@Configuration
 @ComponentScan(&amp;quot;com.ssm&amp;quot;)
 public class xxxx extends AppConfig implements EnhancedConfiguration{
    private BeanFactory $$beanFactory;

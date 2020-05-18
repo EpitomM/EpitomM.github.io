@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://epitomm.github.io</id>
     <title>SSM</title>
-    <updated>2020-05-17T03:54:28.519Z</updated>
+    <updated>2020-05-18T14:17:40.975Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://epitomm.github.io"/>
     <link rel="self" href="https://epitomm.github.io/atom.xml"/>
@@ -10,6 +10,1404 @@
     <logo>https://epitomm.github.io/images/avatar.png</logo>
     <icon>https://epitomm.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, SSM</rights>
+    <entry>
+        <title type="html"><![CDATA[MyBatis系列（一）——MyBatis日志]]></title>
+        <id>https://epitomm.github.io/post/spring-xi-lie-shi-san-mybatis-ri-zhi/</id>
+        <link href="https://epitomm.github.io/post/spring-xi-lie-shi-san-mybatis-ri-zhi/">
+        </link>
+        <updated>2020-05-18T13:50:22.000Z</updated>
+        <content type="html"><![CDATA[<h1 id="mybatis-入门">MyBatis 入门</h1>
+<p>MyBatis 官网：<a href="https://mybatis.org/mybatis-3/zh/index.html">https://mybatis.org/mybatis-3/zh/index.html</a></p>
+<h2 id="先从一个测试类开始">先从一个测试类开始</h2>
+<pre><code class="language-java">public interface IndexDao {
+    @Select(&quot;select * from t1&quot;)
+    List&lt;Map&lt;String,Object&gt;&gt; list();
+}
+</code></pre>
+<pre><code class="language-java">@Service
+public class IndexService {
+    @Autowired
+    IndexDao indexDao;
+    public List&lt;Map&lt;String,Object&gt;&gt; list(){
+        return indexDao.list();
+    }
+}
+</code></pre>
+<pre><code class="language-java">@Configuration
+@ComponentScan(&quot;com.ssm&quot;)
+@MapperScan(&quot;com.ssm.dao&quot;)
+public class AppConfig{
+    @Bean
+    public DataSource dataSource(){
+        DriverManagerDataSource dataSource = new DriverManagerDataSource();
+        dataSource.setDriverClassName(&quot;com.mysql.jdbc.Driver&quot;);
+        dataSource.setUsername(&quot;root&quot;);
+        dataSource.setPassword(&quot;123456&quot;);
+        dataSource.setUrl(&quot;jdbc:mysql://localhost:3306/t1&quot;);
+        return dataSource;
+    }
+    @Bean
+    public SqlSessionFactoryBean sqlSessionFactoryBean(DataSource dataSource){
+        SqlSessionFactoryBean sqlSessionFactoryBean =  new SqlSessionFactoryBean();
+         // 配置日志打印 SQL
+        org.apache.ibatis.session.Configuration configuration = new org.apache.ibatis.session.Configuration();
+        configuration.setLogImpl(Log4jImpl.class);
+        sqlSessionFactoryBean.setConfiguration(configuration);
+        // -- 日志打印 SQL 结束
+        sqlSessionFactoryBean.setDataSource(dataSource);
+        return sqlSessionFactoryBean;
+    }
+}
+</code></pre>
+<pre><code class="language-java">public class Test {
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext configApplicationContext = new AnnotationConfigApplicationContext(AppConfig.class);
+        List&lt;Map&lt;String, Object&gt;&gt; list = configApplicationContext.getBean(IndexService.class).list();
+        System.out.println(list);
+    }
+}
+</code></pre>
+<pre><code># 全局日志配置
+log4j.rootLogger=DEBUG, stdout
+# MyBatis 日志配置
+log4j.logger.com.ssm.IndexDao=TRACE
+# 控制台输出
+log4j.appender.stdout=org.apache.log4j.ConsoleAppender
+log4j.appender.stdout.layout=org.apache.log4j.PatternLayout
+log4j.appender.stdout.layout.ConversionPattern=%5p [%t] - %m%n
+</code></pre>
+<p>日志打印结果：</p>
+<pre><code>五月 18, 2020 8:47:01 下午 org.springframework.context.support.AbstractApplicationContext prepareRefresh
+信息: Refreshing org.springframework.context.annotation.AnnotationConfigApplicationContext@433c675d: startup date [Mon May 18 20:47:01 CST 2020]; root of context hierarchy
+五月 18, 2020 8:47:01 下午 org.springframework.jdbc.datasource.DriverManagerDataSource setDriverClassName
+信息: Loaded JDBC driver: com.mysql.jdbc.Driver
+DEBUG [main] - Logging initialized using 'class org.apache.ibatis.logging.log4j.Log4jImpl' adapter.
+DEBUG [main] - Creating a new SqlSession
+DEBUG [main] - SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@445b295b] was not registered for synchronization because synchronization is not active
+DEBUG [main] - JDBC Connection [com.mysql.jdbc.JDBC4Connection@a2431d0] will not be managed by Spring
+DEBUG [main] - ==&gt;  Preparing: select * from t1 
+DEBUG [main] - ==&gt; Parameters: 
+DEBUG [main] - &lt;==      Total: 9
+DEBUG [main] - Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@445b295b]
+[{a=1, b=11, c=4, d=1, e=a}, {a=2, b=2, c=2, d=2, e=b}, {a=3, b=3, c=2, d=2, e=c}, {a=4, b=3, c=1, d=1, e=d}, {a=5, b=2, c=3, d=5, e=e}, {a=6, b=6, c=4, d=4, e=6}, {a=7, b=4, c=5, d=5, e=g}, {a=8, b=8, c=8, d=8, e=h}, {a=9, b=9, c=9, d=9, e=i}]
+</code></pre>
+<h1 id="mybatis的日志技术实现">mybatis的日志技术实现</h1>
+<h2 id="初始化">初始化</h2>
+<h3 id="orgapacheibatislogginglogfactory">org.apache.ibatis.logging.LogFactory</h3>
+<p><img src="https://epitomm.github.io/post-images/logFactory#static.png" alt="图片" loading="lazy"><br>
+<img src="https://epitomm.github.io/post-images/tryImplementation.png" alt="图片" loading="lazy"></p>
+<pre><code class="language-java">tryImplementation(new Runnable() {
+  @Override
+  public void run() {
+    useSlf4jLogging();
+  }
+});
+</code></pre>
+<p>方法中的 runnable 参数是 new Runnable() 对象，run() 方法里面调用了 useSlf4jLogging() 方法，使用 SLF4J 日志。关键代码  **   if (logConstructor == null)****,**没有找到实现则继续找</p>
+<pre><code class="language-java">private static void tryImplementation(Runnable runnable) {
+  if (logConstructor == null) {
+    try {
+      runnable.run();
+    } catch (Throwable t) {
+      // ignore
+    }
+  }
+}
+</code></pre>
+<p>调用 setImplementation 方法，传参 Slf4jImpl ：</p>
+<pre><code class="language-java">public static synchronized void useSlf4jLogging() {
+  setImplementation(org.apache.ibatis.logging.slf4j.Slf4jImpl.class);
+}
+</code></pre>
+<p>LogFactory#setImplementation</p>
+<pre><code class="language-java">private static void setImplementation(Class&lt;? extends Log&gt; implClass) {
+  try {
+    //  通过参数 implClass 得到构造方法
+    Constructor&lt;? extends Log&gt; candidate = implClass.getConstructor(String.class);
+    //  通过构造方法 new 出来对象
+    Log log = candidate.newInstance(LogFactory.class.getName());
+    if (log.isDebugEnabled()) {
+      log.debug(&quot;Logging initialized using '&quot; + implClass + &quot;' adapter.&quot;);
+    }
+    // 将构造方法赋值给全局变量：private static Constructor&lt;? extends Log&gt; logConstructor;
+    logConstructor = candidate;
+  } catch (Throwable t) {
+    throw new LogException(&quot;Error setting Log implementation.  Cause: &quot; + t, t);
+  }
+}
+</code></pre>
+<p>上述代码第 6 行，调用 Slf4jImpl 的构造方法：</p>
+<pre><code class="language-java">public Slf4jImpl(String clazz) {
+  Logger logger = LoggerFactory.getLogger(clazz);
+  if (logger instanceof LocationAwareLogger) {
+    try {
+      // check for slf4j &gt;= 1.6 method signature
+      logger.getClass().getMethod(&quot;log&quot;, Marker.class, String.class, int.class, String.class, Object[].class, Throwable.class);
+      log = new Slf4jLocationAwareLoggerImpl((LocationAwareLogger) logger);
+      return;
+    } catch (SecurityException e) {
+      // fail-back to Slf4jLoggerImpl
+    } catch (NoSuchMethodException e) {
+      // fail-back to Slf4jLoggerImpl
+    }
+  }
+  // Logger is not LocationAwareLogger or slf4j version &lt; 1.6
+  log = new Slf4jLoggerImpl(logger);
+}
+</code></pre>
+<p>在执行过程中发现，上述代码执行到第 2 行就返回了，因为项目中并未添加 SLF4J 依赖。于是抛出异常，执行 static 块的 useCommonsLogging。</p>
+<h2 id="总结">总结</h2>
+<p>MyBatis 日志使用顺序： SLF4J、JCL、Log4J2、JUL、NO</p>
+<p>如果没有引入 SLF4J，就会使用 JCL，因为 spring-context 默认内置 JCL。</p>
+<h2 id="日志打印-sql">日志打印 SQL</h2>
+<pre><code class="language-java">@Service
+public class IndexService {
+    @Autowired
+    IndexDao indexDao;
+    public List&lt;Map&lt;String,Object&gt;&gt; list(){
+        // 将代码添加在这里无法打印 SQL
+        org.apache.ibatis.logging.LogFactory.useLog4JLogging();
+        return indexDao.list();
+    }
+}
+</code></pre>
+<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/%E6%97%A5%E5%BF%97%E6%89%93%E5%8D%B0SQL.png" alt="图片" loading="lazy"></figure>
+<p><strong>打印 SQL 语句是一个 proxy 代理对象</strong>，这个代理对象在 Spring 初始化时利用 Registrar 创建的，但是在创建这个 proxy 之前是没有任何日志的，而 useLog4J() 这个方法是在后面使用的，于是在 proxy 里面无法得到 log4j 对象，为什么创建时可以使用？因为 Spring 实例化过程 比 MyBatis 实例化的过程早，Spring 实例化 Service 时已经告诉 MyBatis 要使用 log4j 了，当创建 MyBatis 工厂时，可以直接打印日志，但是<strong>代理对象在 useLog4JLogging() 方法之前</strong>，所以不知道到底要使用哪个日志。实例化 indexDao 这个代理对象，包含一个日志对象 Log logger，但是在创建 BeanDefinition 之前，不知道要使用哪个 Log，所以 logger=null。</p>
+<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/%E6%97%A5%E5%BF%97%E6%89%93%E5%8D%B0SQL_2.png" alt="图片" loading="lazy"></figure>
+<p>需要将 org.apache.ibatis.logging.LogFactory.useLog4JLogging(); 写在 Spring 初始化之前，告诉 MyBatis 要使用 log4J，当产生代理对象时，就知道要使用 log4j 日志了，代理对象中就有了 Log logger = new Log4JLogger();对象。</p>
+<p>一个对象要记录日志：logger.info()，证明代理对象 proxy 要包含一个 Log logger， proxy 被 new 出来的过程中，MyBatis 不知道它要使用什么日志，所以就不记录日志，即 logger=null。</p>
+<p>如果在 proxy 之前让 proxy 使用 Log4J，在产生这个代理对象之前，Log logger = new Log4JLogger();</p>
+<pre><code class="language-java">public class Test {
+    public static void main(String[] args) {
+         // 在 Spring 初始化前设置使用的日志
+        org.apache.ibatis.logging.LogFactory.useLog4JLogging();
+        AnnotationConfigApplicationContext configApplicationContext = new AnnotationConfigApplicationContext(AppConfig.class);
+        List&lt;Map&lt;String, Object&gt;&gt; list = configApplicationContext.getBean(IndexService.class).list();
+        System.out.println(list);
+    }
+}
+</code></pre>
+<p>LogFactory#useLog4JLogging -&gt; LogFactory#setImplementation：给构造方法赋值logConstructor = candidate;</p>
+<h3 id="在使用日志时如何得到-logger">在使用日志时如何得到 logger？</h3>
+<pre><code class="language-java">private static final Log LOGGER = LogFactory.getLog(SqlSessionFactoryBean.class);
+</code></pre>
+<pre><code class="language-java">public static Log getLog(Class&lt;?&gt; aClass) {
+  return getLog(aClass.getName());
+}
+</code></pre>
+<p>调用 logConstructor.newInstance(logger); logConstructor 即之前赋的值 candidate：</p>
+<pre><code class="language-java">public static Log getLog(String logger) {
+  try {
+    return logConstructor.newInstance(logger);
+  } catch (Throwable t) {
+    throw new LogException(&quot;Error creating logger for logger &quot; + logger + &quot;.  Cause: &quot; + t, t);
+  }
+}
+</code></pre>
+<p>日志打印：</p>
+<pre><code>DEBUG [main] - Property 'configuration' or 'configLocation' not specified, using default MyBatis Configuration
+DEBUG [main] - Property 'mapperLocations' was not specified or no matching resources found
+DEBUG [main] - Creating a new SqlSession
+DEBUG [main] - SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@445b295b] was not registered for synchronization because synchronization is not active
+DEBUG [main] - JDBC Connection [com.mysql.jdbc.JDBC4Connection@a2431d0] will not be managed by Spring
+DEBUG [main] - ==&gt;  Preparing: select * from t1 
+DEBUG [main] - ==&gt; Parameters: 
+DEBUG [main] - &lt;==      Total: 9
+DEBUG [main] - Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@445b295b]
+[{a=1, b=11, c=4, d=1, e=a}, {a=2, b=2, c=2, d=2, e=b}, {a=3, b=3, c=2, d=2, e=c}, {a=4, b=3, c=1, d=1, e=d}, {a=5, b=2, c=3, d=5, e=e}, {a=6, b=6, c=4, d=4, e=6}, {a=7, b=4, c=5, d=5, e=g}, {a=8, b=8, c=8, d=8, e=h}, {a=9, b=9, c=9, d=9, e=i}]
+</code></pre>
+<h2 id="具体实现类">具体实现类</h2>
+<p>mybatis提供很多日志的实现类,用来记录日志,取决于初始化的时候load到的class</p>
+<figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/MyBatis%E6%97%A5%E5%BF%97%E5%85%B7%E4%BD%93%E5%AE%9E%E7%8E%B0%E7%B1%BB.png" alt="图片" loading="lazy"></figure>
+<pre><code>上图红色箭头可以看到 JakartaCommonsLoggingImpl 中引用了 jcl 的类,如果在初始化的时候load到类为JakartaCommonsLoggingImpl，
+那么则使用 jcl 去实现日志记录,但是也是顺序的,顺序参考源码
+</code></pre>
+<h2 id="自己模拟实现mybaits的日志实现">自己模拟实现mybaits的日志实现</h2>
+<pre><code>mybatis的官网关于日志的介绍
+定义org.apache.ibatis.session.Configuration
+参考org.apache.ibatis.logging.commons.JakartaCommonsLoggingImpl
+分析为什么jcl不记录日志,修改代码
+</code></pre>
+<h1 id="架构系统如何考虑日志">架构系统如何考虑日志</h1>
+<p>old:jcl+log4j</p>
+<p>new:slf4j+jul</p>
+<h1 id="缓存">缓存</h1>
+<h2 id="一级缓存">一级缓存</h2>
+<figure data-type="image" tabindex="4"><img src="https://epitomm.github.io/post-images/MyBatis%E4%B8%80%E7%BA%A7%E7%BC%93%E5%AD%98.png" alt="图片" loading="lazy"></figure>
+<p>如果不使用 Spring，执行三行相同的查询，只会打印一条 SQL 语句，证明一级缓存有效。</p>
+<p>但是使用 Spring 后，执行三行相同的查询，会打印三条 SQL 语句，证明<strong>一级缓存失效</strong>。</p>
+<p>一级缓存基于 SqlSession，当执行 list() 方法时，在代理类中，会得到一个 SqlSession 对象，并且把它设置到当前线程中去，<strong>当完成一个查询后，会关闭 SqlSession</strong>，这是 Spring 做的，所以一级缓存失效了。</p>
+<figure data-type="image" tabindex="5"><img src="https://epitomm.github.io/post-images/%E4%B8%8D%E5%90%8C%E7%94%A8%E6%88%B7%E6%97%A0%E6%B3%95%E5%85%B1%E4%BA%ABMyBatis%E4%B8%80%E7%BA%A7%E7%BC%93%E5%AD%98.png" alt="图片" loading="lazy"></figure>
+<h2 id="二级缓存">二级缓存</h2>
+<p>多个线程共享二级缓存</p>
+<pre><code class="language-java">@CacheNamespace
+public interface IndexDao {
+</code></pre>
+<figure data-type="image" tabindex="6"><img src="https://epitomm.github.io/post-images/MyBatis%E4%BA%8C%E7%BA%A7%E7%BC%93%E5%AD%98.png" alt="图片" loading="lazy"></figure>
+<pre><code class="language-java">@CacheNamespace
+public interface IndexDao2 {
+    @Update(&quot;update t1 set b=1 where a=1&quot;)
+    public int update();
+}
+</code></pre>
+<pre><code class="language-java">@Service
+public class IndexService {
+    @Autowired
+    IndexDao indexDao;
+    @Autowired
+    IndexDao2 indexDao2;
+    public List&lt;Map&lt;String,Object&gt;&gt; list(){
+        indexDao.list();
+        indexDao.list();
+        return indexDao.list();
+    }
+    public void update(){
+       indexDao2.update();
+    }
+}
+</code></pre>
+<pre><code class="language-java">public class Test {
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext configApplicationContext = new AnnotationConfigApplicationContext(AppConfig.class);
+        List&lt;Map&lt;String, Object&gt;&gt; list = configApplicationContext.getBean(IndexService.class).list();
+        System.out.println(list);
+        configApplicationContext.getBean(IndexService.class).update();
+        System.out.println(configApplicationContext.getBean(IndexService.class).list());
+    }
+}
+</code></pre>
+<p>我们发现，使用了二级缓存后，第一次查询，将查询结果缓存起来，接下来更新操作，第二次再次查询直接使用缓存结果，无法查到更新后的值。<br>
+<img src="https://epitomm.github.io/post-images/MyBatis%E4%BA%8C%E7%BA%A7%E7%BC%93%E5%AD%98%E8%AF%BB%E8%84%8F%E6%95%B0%E6%8D%AE.png" alt="图片" loading="lazy"></p>
+<p>分析：MyBatis 缓存是基于<strong>命名空间</strong>的，当调用 indexDao.list() 查询出结果后，由于 IndexDao 添加了缓存 @CacheNamespace，把 list() 查询结果放到缓存中，存放形式：&lt;&quot;com.ssm.dao.IndexDao&quot;, &quot;list&quot;&gt;，当调用 update() 方法时，更新当前这个 update() 方法所在的命名空间，即 com.ssm.dao.IndexDao2，于是放入缓存 &lt;&quot;com.ssm.dao.IndexDao2&quot;, &quot;更新后的list&quot;&gt;，而第二次调用 list() 查询时，查找 list() 方法对应的命名空间的缓存：&lt;&quot;com.ssm.dao.IndexDao&quot;, &quot;list&quot;&gt;。</p>
+<p>如果将 update、select 写在一个 dao 内，就不会出现上述问题了，代码修改如下：</p>
+<pre><code class="language-java">@CacheNamespace
+public interface IndexDao {
+    @Select(&quot;select * from t1&quot;)
+    List&lt;Map&lt;String,Object&gt;&gt; list();
+    @Update(&quot;update t1 set b=111 where a=1&quot;)
+    public int update();
+}
+</code></pre>
+<pre><code class="language-java">@Service
+public class IndexService {
+    @Autowired
+    IndexDao indexDao;
+    public List&lt;Map&lt;String,Object&gt;&gt; list(){
+        indexDao.list();
+        indexDao.list();
+        return indexDao.list();
+    }
+    public void update(){
+       indexDao.update();
+    }
+}
+</code></pre>
+<figure data-type="image" tabindex="7"><img src="https://epitomm.github.io/post-images/MyBatis%E4%BA%8C%E7%BA%A7%E7%BC%93%E5%AD%98%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4%E7%9B%B8%E5%90%8C%E8%AF%BB%E6%95%B0%E6%8D%AE%E6%AD%A3%E7%A1%AE.png" alt="图片" loading="lazy"></figure>
+<p>分析：MyBatis 缓存是基于<strong>命名空间</strong>的，当调用 indexDao.list() 查询出结果后，由于 IndexDao 添加了缓存 @CacheNamespace，把 list() 查询结果放到缓存中，存放形式：&lt;&quot;com.ssm.dao.IndexDao&quot;, &quot;list&quot;&gt;，当调用 update() 方法时，更新当前这个 update() 方法所在的命名空间，即 &lt;&quot;com.ssm.dao.IndexDao&quot;, &quot;更新后的list&quot;&gt;。</p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[Spring系列（十二）Spring5新特性——日志]]></title>
+        <id>https://epitomm.github.io/post/spring-xi-lie-shi-er-spring-ri-zhi/</id>
+        <link href="https://epitomm.github.io/post/spring-xi-lie-shi-er-spring-ri-zhi/">
+        </link>
+        <updated>2020-05-18T05:50:22.000Z</updated>
+        <content type="html"><![CDATA[<ul>
+<li>各种日志技术的关系和作用</li>
+<li>通过源码来分析spring的日志技术</li>
+<li>commons-logging源码分析</li>
+<li>通过源码分析mybaits的日志技术</li>
+<li>架构系统时候如何选择、优化日志技术</li>
+</ul>
+<h1 id="先从一个-spring-日志开始">先从一个 Spring 日志开始</h1>
+<p>1、配置文件引入 spring-context</p>
+<pre><code class="language-xml">&lt;dependencies&gt;
+  &lt;dependency&gt;
+    &lt;groupId&gt;org.springframework&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-context&lt;/artifactId&gt;
+    &lt;version&gt;5.0.9.RELEASE&lt;/version&gt;
+  &lt;/dependency&gt;
+&lt;/dependencies&gt;
+</code></pre>
+<p>2、一个 配置类</p>
+<pre><code class="language-java">@Configuration
+@Component(&quot;com.ssm&quot;)
+public class AppConfig {
+}
+</code></pre>
+<p>3、一个 Service</p>
+<pre><code class="language-java">@Service
+public class IndexService {
+    public void query(){
+        System.out.println(&quot;query...&quot;);
+    }
+}
+</code></pre>
+<p>4、测试类</p>
+<pre><code class="language-java">public class Test {
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext configApplicationContext = new AnnotationConfigApplicationContext(AppConfig.class);
+        configApplicationContext.start();
+    }
+}
+</code></pre>
+<p>5、日志打印如下：</p>
+<pre><code>五月 17, 2020 12:02:07 下午 org.springframework.context.support.AbstractApplicationContext prepareRefresh
+信息: Refreshing org.springframework.context.annotation.AnnotationConfigApplicationContext@7e6cbb7a: startup date [Sun May 17 12:02:07 CST 2020]; root of context hierarchy
+</code></pre>
+<h2 id="spring4-spring5-日志打印">Spring4、Spring5 日志打印</h2>
+<p>接下来开始分析这个日志如何打印出来的</p>
+<p>先从日志打印 AbstractApplicationContext 类开始：</p>
+<pre><code class="language-java">protected void prepareRefresh() {
+   this.startupDate = System.currentTimeMillis();
+   this.closed.set(false);
+   this.active.set(true);
+   if (logger.isInfoEnabled()) {
+      logger.info(&quot;Refreshing &quot; + this);
+   }
+   // Initialize any placeholder property sources in the context environment
+   initPropertySources();
+   // Validate that all properties marked as required are resolvable
+   // see ConfigurablePropertyResolver#setRequiredProperties
+   getEnvironment().validateRequiredProperties();
+   // Allow for the collection of early ApplicationEvents,
+   // to be published once the multicaster is available...
+   this.earlyApplicationEvents = new LinkedHashSet&lt;&gt;();
+}
+</code></pre>
+<p>上述代码第6 行打印 Refreshing：即我们上面看到的日志打印结果，这里调用了 logger.info()，那么我们来看看这个 logger 到底是什么？先来剧透一下：其实它是一个 JUL。</p>
+<pre><code class="language-java">protected final Log logger = LogFactory.getLog(getClass());
+</code></pre>
+<p>由于 JUL 是 JDK 的，很难去修改它的打印格式，于是我们想把日志打印换成 log4j，于是我们在 xml 中加上 log4j 依赖，如下：</p>
+<pre><code class="language-xml">&lt;dependency&gt;
+  &lt;groupId&gt;log4j&lt;/groupId&gt;
+  &lt;artifactId&gt;log4j&lt;/artifactId&gt;
+  &lt;version&gt;1.2.17&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+<p>log4j 配置文件：</p>
+<pre><code class="language-prolog">log4j.rootLogger=ERROR,stdout
+# 输出到控制台
+log4j.appender.stdout=org.apache.log4j.ConsoleAppender
+log4j.appender.stdout.target=System.out
+log4j.appender.stdout.layout=org.apache.log4j.PatternLayout
+log4j.appender.stdout.layout.ConversionPattern=%d{yyyy-MM-dd HH:mm:ss,SSS} %p [%t] %C.%M(%L) | %m%n
+</code></pre>
+<p>结果却发现，即使加上了 log4j 依赖，日志却仍然使用 JUL 打印</p>
+<pre><code>五月 17, 2020 12:13:10 下午 org.springframework.context.support.AbstractApplicationContext prepareRefresh
+信息: Refreshing org.springframework.context.annotation.AnnotationConfigApplicationContext@7106e68e: startup date [Sun May 17 12:13:09 CST 2020]; root of context hierarchy
+</code></pre>
+<p>当将 Spring 版本更改为 4.x.x 后，上述代码成功打印了 log4j 日志：</p>
+<pre><code class="language-java">&lt;dependency&gt;
+  &lt;groupId&gt;org.springframework&lt;/groupId&gt;
+  &lt;artifactId&gt;spring-context&lt;/artifactId&gt;
+  &lt;version&gt;4.3.16.RELEASE&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+<p>由于 log4j 内配置只打印 ERROR 级别的日志，由于没有 ERROR，所以日志打印为空。</p>
+<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/log4j.png" alt="图片" loading="lazy"></figure>
+<h1 id="主流的log技术名词">主流的log技术名词</h1>
+<h2 id="1log4j"><strong>1.log4j</strong></h2>
+<ul>
+<li>可以不需要依赖第三方的技术</li>
+<li>直接记录日志</li>
+</ul>
+<p>（1）引入依赖</p>
+<pre><code class="language-xml">&lt;dependency&gt;
+  &lt;groupId&gt;log4j&lt;/groupId&gt;
+  &lt;artifactId&gt;log4j&lt;/artifactId&gt;
+  &lt;version&gt;1.2.17&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+<p>（2）配置</p>
+<pre><code class="language-java">log4j.rootLogger=INFO,stdout
+# 输出到控制台
+log4j.appender.stdout=org.apache.log4j.ConsoleAppender
+log4j.appender.stdout.target=System.out
+log4j.appender.stdout.layout=org.apache.log4j.PatternLayout
+log4j.appender.stdout.layout.ConversionPattern=%d{yyyy-MM-dd HH:mm:ss,SSS} %p [%t] %C.%M(%L) | %m%n
+</code></pre>
+<p>（3）测试类</p>
+<pre><code class="language-java">import org.apache.log4j.Logger;
+public class Log4j {
+    public static void main(String[] args) {
+        Logger logger = Logger.getLogger(&quot;log4j&quot;);
+        logger.info(&quot;log4j&quot;);
+    }
+}
+</code></pre>
+<p>（4）日志打印：</p>
+<pre><code>2020-05-17 12:44:41,453 INFO [main] com.ssm.utils.Log4j.main(9) | log4j
+</code></pre>
+<h2 id="2jul"><strong>2.jul</strong></h2>
+<p>java自带的一个日志记录的技术,直接使用</p>
+<pre><code class="language-java">import java.util.logging.Logger;
+public class JUL {
+    public static void main(String[] args) {
+        Logger logger = Logger.getLogger(&quot;jul&quot;);
+        logger.info(&quot;jul&quot;);
+    }
+}
+</code></pre>
+<p>打印结果：</p>
+<pre><code>五月 17, 2020 12:45:59 下午 com.ssm.utils.JUL main
+信息: jul
+</code></pre>
+<h2 id="3jcl"><strong>3.jcl</strong></h2>
+<p>jakartaCommonsLoggingImpl</p>
+<pre><code>&lt;dependency&gt;
+    &lt;groupId&gt;commons-logging&lt;/groupId&gt;
+    &lt;artifactId&gt;commons-logging&lt;/artifactId&gt;
+    &lt;version&gt;1.1.1&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+<ul>
+<li>jcl他不直接记录日志,他是通过第三方记录日志(jul、log4j)</li>
+<li>如果使用jcl来记录日志,在没有log4j的依赖情况下,使用jul</li>
+<li>如果有了log4j则使用log4j</li>
+</ul>
+<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/JCL%E6%97%A5%E5%BF%97.png" alt="图片" loading="lazy"></figure>
+<h3 id="log4j">log4j</h3>
+<p>当有 log4j 依赖时，JCL 日志使用 log4j 打印：</p>
+<pre><code class="language-java">public class JCL {
+    public static void main(String[] args) {
+        Log log = LogFactory.getLog(&quot;jcl&quot;);
+        log.info(&quot;jcl&quot;);
+    }
+}
+</code></pre>
+<figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/JCL_log4j.png" alt="图片" loading="lazy"></figure>
+<p>日志打印：</p>
+<pre><code>2020-05-17 12:50:04,813 INFO [main] com.ssm.utils.JCL.main(9) | jcl
+</code></pre>
+<h4 id="分析">分析</h4>
+<p>LogFactory#getLog</p>
+<pre><code class="language-java">public static Log getLog(String name) throws LogConfigurationException {
+    return getFactory().getInstance(name);
+}
+</code></pre>
+<p>LogFactoryImpl#getInstance</p>
+<pre><code class="language-java">public Log getInstance(String name) throws LogConfigurationException {
+    Log instance = (Log) instances.get(name);
+    if (instance == null) {
+        instance = newInstance(name);
+        instances.put(name, instance);
+    }
+    return instance;
+}
+</code></pre>
+<p>上述代码第 4 行：<br>
+LogFactoryImpl#newInstance</p>
+<pre><code class="language-java">protected Log newInstance(String name) throws LogConfigurationException {
+    Log instance;
+    try {
+        if (logConstructor == null) {
+            instance = discoverLogImplementation(name);
+        }
+        else {
+            Object params[] = { name };
+            instance = (Log) logConstructor.newInstance(params);
+        }
+        if (logMethod != null) {
+            Object params[] = { this };
+            logMethod.invoke(instance, params);
+        }
+        return instance;
+    } catch (LogConfigurationException lce) {
+        // this type of exception means there was a problem in discovery
+        // and we've already output diagnostics about the issue, etc.;
+        // just pass it on
+        throw lce;
+    } catch (InvocationTargetException e) {
+        // A problem occurred invoking the Constructor or Method
+        // previously discovered
+        Throwable c = e.getTargetException();
+        throw new LogConfigurationException(c == null ? e : c);
+    } catch (Throwable t) {
+        handleThrowable(t); // may re-throw t
+        // A problem occurred invoking the Constructor or Method
+        // previously discovered
+        throw new LogConfigurationException(t);
+    }
+}
+</code></pre>
+<p>LogFactoryImpl#discoverLogImplementation</p>
+<pre><code class="language-java">private Log discoverLogImplementation(String logCategory)
+    throws LogConfigurationException {
+    if (isDiagnosticsEnabled()) {
+        logDiagnostic(&quot;Discovering a Log implementation...&quot;);
+    }
+    initConfiguration();
+    Log result = null;
+    // See if the user specified the Log implementation to use
+    String specifiedLogClassName = findUserSpecifiedLogClassName();
+    if (specifiedLogClassName != null) {
+        if (isDiagnosticsEnabled()) {
+            logDiagnostic(&quot;Attempting to load user-specified log class '&quot; +
+                specifiedLogClassName + &quot;'...&quot;);
+        }
+        result = createLogFromClass(specifiedLogClassName,
+                                    logCategory,
+                                    true);
+        if (result == null) {
+            StringBuffer messageBuffer =  new StringBuffer(&quot;User-specified log class '&quot;);
+            messageBuffer.append(specifiedLogClassName);
+            messageBuffer.append(&quot;' cannot be found or is not useable.&quot;);
+            // Mistyping or misspelling names is a common fault.
+            // Construct a good error message, if we can
+            informUponSimilarName(messageBuffer, specifiedLogClassName, LOGGING_IMPL_LOG4J_LOGGER);
+            informUponSimilarName(messageBuffer, specifiedLogClassName, LOGGING_IMPL_JDK14_LOGGER);
+            informUponSimilarName(messageBuffer, specifiedLogClassName, LOGGING_IMPL_LUMBERJACK_LOGGER);
+            informUponSimilarName(messageBuffer, specifiedLogClassName, LOGGING_IMPL_SIMPLE_LOGGER);
+            throw new LogConfigurationException(messageBuffer.toString());
+        }
+        return result;
+    }
+    // No user specified log; try to discover what's on the classpath
+    //
+    // Note that we deliberately loop here over classesToDiscover and
+    // expect method createLogFromClass to loop over the possible source
+    // classloaders. The effect is:
+    //   for each discoverable log adapter
+    //      for each possible classloader
+    //          see if it works
+    //
+    // It appears reasonable at first glance to do the opposite:
+    //   for each possible classloader
+    //     for each discoverable log adapter
+    //        see if it works
+    //
+    // The latter certainly has advantages for user-installable logging
+    // libraries such as log4j; in a webapp for example this code should
+    // first check whether the user has provided any of the possible
+    // logging libraries before looking in the parent classloader.
+    // Unfortunately, however, Jdk14Logger will always work in jvm&gt;=1.4,
+    // and SimpleLog will always work in any JVM. So the loop would never
+    // ever look for logging libraries in the parent classpath. Yet many
+    // users would expect that putting log4j there would cause it to be
+    // detected (and this is the historical JCL behaviour). So we go with
+    // the first approach. A user that has bundled a specific logging lib
+    // in a webapp should use a commons-logging.properties file or a
+    // service file in META-INF to force use of that logging lib anyway,
+    // rather than relying on discovery.
+    if (isDiagnosticsEnabled()) {
+        logDiagnostic(
+            &quot;No user-specified Log implementation; performing discovery&quot; +
+            &quot; using the standard supported logging implementations...&quot;);
+    }
+    for(int i=0; i&lt;classesToDiscover.length &amp;&amp; result == null; ++i) {
+        result = createLogFromClass(classesToDiscover[i], logCategory, true);
+    }
+    if (result == null) {
+        throw new LogConfigurationException
+                    (&quot;No suitable Log implementation&quot;);
+    }
+    return result;
+}
+</code></pre>
+<p>上述代码第 74 行：</p>
+<pre><code class="language-java">result = createLogFromClass(classesToDiscover[i], logCategory, true);
+</code></pre>
+<pre><code class="language-java">private static final String[] classesToDiscover = {
+        LOGGING_IMPL_LOG4J_LOGGER,
+        &quot;org.apache.commons.logging.impl.Jdk14Logger&quot;,
+        &quot;org.apache.commons.logging.impl.Jdk13LumberjackLogger&quot;,
+        &quot;org.apache.commons.logging.impl.SimpleLog&quot;
+};
+</code></pre>
+<pre><code class="language-java">private static final String LOGGING_IMPL_LOG4J_LOGGER = &quot;org.apache.commons.logging.impl.Log4JLogger&quot;;
+</code></pre>
+<p>当执行到 73 行，进行第 0 次 for 循环时，将 org.apache.commons.logging.impl.Log4JLogger 作为第一个参数传递给 createLogFromClass 方法：</p>
+<pre><code class="language-java">private Log createLogFromClass(String logAdapterClassName,
+                               String logCategory,
+                               boolean affectState)
+    throws LogConfigurationException {
+    if (isDiagnosticsEnabled()) {
+        logDiagnostic(&quot;Attempting to instantiate '&quot; + logAdapterClassName + &quot;'&quot;);
+    }
+    Object[] params = { logCategory };
+    Log logAdapter = null;
+    Constructor constructor = null;
+    Class logAdapterClass = null;
+    ClassLoader currentCL = getBaseClassLoader();
+    for(;;) {
+        // Loop through the classloader hierarchy trying to find
+        // a viable classloader.
+        logDiagnostic(&quot;Trying to load '&quot; + logAdapterClassName + &quot;' from classloader &quot; + objectId(currentCL));
+        try {
+            if (isDiagnosticsEnabled()) {
+                // Show the location of the first occurrence of the .class file
+                // in the classpath. This is the location that ClassLoader.loadClass
+                // will load the class from -- unless the classloader is doing
+                // something weird.
+                URL url;
+                String resourceName = logAdapterClassName.replace('.', '/') + &quot;.class&quot;;
+                if (currentCL != null) {
+                    url = currentCL.getResource(resourceName );
+                } else {
+                    url = ClassLoader.getSystemResource(resourceName + &quot;.class&quot;);
+                }
+                if (url == null) {
+                    logDiagnostic(&quot;Class '&quot; + logAdapterClassName + &quot;' [&quot; + resourceName + &quot;] cannot be found.&quot;);
+                } else {
+                    logDiagnostic(&quot;Class '&quot; + logAdapterClassName + &quot;' was found at '&quot; + url + &quot;'&quot;);
+                }
+            }
+            Class c;
+            try {
+                c = Class.forName(logAdapterClassName, true, currentCL);
+            } catch (ClassNotFoundException originalClassNotFoundException) {
+                // The current classloader was unable to find the log adapter
+                // in this or any ancestor classloader. There's no point in
+                // trying higher up in the hierarchy in this case..
+                String msg = originalClassNotFoundException.getMessage();
+                logDiagnostic(&quot;The log adapter '&quot; + logAdapterClassName + &quot;' is not available via classloader &quot; +
+                              objectId(currentCL) + &quot;: &quot; + msg.trim());
+                try {
+                    // Try the class classloader.
+                    // This may work in cases where the TCCL
+                    // does not contain the code executed or JCL.
+                    // This behaviour indicates that the application
+                    // classloading strategy is not consistent with the
+                    // Java 1.2 classloading guidelines but JCL can
+                    // and so should handle this case.
+                    c = Class.forName(logAdapterClassName);
+                } catch (ClassNotFoundException secondaryClassNotFoundException) {
+                    // no point continuing: this adapter isn't available
+                    msg = secondaryClassNotFoundException.getMessage();
+                    logDiagnostic(&quot;The log adapter '&quot; + logAdapterClassName +
+                                  &quot;' is not available via the LogFactoryImpl class classloader: &quot; + msg.trim());
+                    break;
+                }
+            }
+            constructor = c.getConstructor(logConstructorSignature);
+            Object o = constructor.newInstance(params);
+            // Note that we do this test after trying to create an instance
+            // [rather than testing Log.class.isAssignableFrom(c)] so that
+            // we don't complain about Log hierarchy problems when the
+            // adapter couldn't be instantiated anyway.
+            if (o instanceof Log) {
+                logAdapterClass = c;
+                logAdapter = (Log) o;
+                break;
+            }
+            // Oops, we have a potential problem here. An adapter class
+            // has been found and its underlying lib is present too, but
+            // there are multiple Log interface classes available making it
+            // impossible to cast to the type the caller wanted. We
+            // certainly can't use this logger, but we need to know whether
+            // to keep on discovering or terminate now.
+            //
+            // The handleFlawedHierarchy method will throw
+            // LogConfigurationException if it regards this problem as
+            // fatal, and just return if not.
+            handleFlawedHierarchy(currentCL, c);
+        } catch (NoClassDefFoundError e) {
+            // We were able to load the adapter but it had references to
+            // other classes that could not be found. This simply means that
+            // the underlying logger library is not present in this or any
+            // ancestor classloader. There's no point in trying higher up
+            // in the hierarchy in this case..
+            String msg = e.getMessage();
+            logDiagnostic(&quot;The log adapter '&quot; + logAdapterClassName +
+                          &quot;' is missing dependencies when loaded via classloader &quot; + objectId(currentCL) +
+                          &quot;: &quot; + msg.trim());
+            break;
+        } catch (ExceptionInInitializerError e) {
+            // A static initializer block or the initializer code associated
+            // with a static variable on the log adapter class has thrown
+            // an exception.
+            //
+            // We treat this as meaning the adapter's underlying logging
+            // library could not be found.
+            String msg = e.getMessage();
+            logDiagnostic(&quot;The log adapter '&quot; + logAdapterClassName +
+                          &quot;' is unable to initialize itself when loaded via classloader &quot; + objectId(currentCL) +
+                          &quot;: &quot; + msg.trim());
+            break;
+        } catch (LogConfigurationException e) {
+            // call to handleFlawedHierarchy above must have thrown
+            // a LogConfigurationException, so just throw it on
+            throw e;
+        } catch (Throwable t) {
+            handleThrowable(t); // may re-throw t
+            // handleFlawedDiscovery will determine whether this is a fatal
+            // problem or not. If it is fatal, then a LogConfigurationException
+            // will be thrown.
+            handleFlawedDiscovery(logAdapterClassName, currentCL, t);
+        }
+        if (currentCL == null) {
+            break;
+        }
+        // try the parent classloader
+        // currentCL = currentCL.getParent();
+        currentCL = getParentClassLoader(currentCL);
+    }
+    if (logAdapterClass != null &amp;&amp; affectState) {
+        // We've succeeded, so set instance fields
+        this.logClassName   = logAdapterClassName;
+        this.logConstructor = constructor;
+        // Identify the &lt;code&gt;setLogFactory&lt;/code&gt; method (if there is one)
+        try {
+            this.logMethod = logAdapterClass.getMethod(&quot;setLogFactory&quot;, logMethodSignature);
+            logDiagnostic(&quot;Found method setLogFactory(LogFactory) in '&quot; + logAdapterClassName + &quot;'&quot;);
+        } catch (Throwable t) {
+            handleThrowable(t); // may re-throw t
+            this.logMethod = null;
+            logDiagnostic(&quot;[INFO] '&quot; + logAdapterClassName + &quot;' from classloader &quot; + objectId(currentCL) +
+                          &quot; does not declare optional method &quot; + &quot;setLogFactory(LogFactory)&quot;);
+        }
+        logDiagnostic(&quot;Log adapter '&quot; + logAdapterClassName + &quot;' from classloader &quot; +
+                      objectId(logAdapterClass.getClassLoader()) + &quot; has been selected for use.&quot;);
+    }
+    return logAdapter;
+}
+</code></pre>
+<p>上述代码第 44 行</p>
+<pre><code>c = Class.forName(logAdapterClassName, true, currentCL);
+</code></pre>
+<p>logAdapterClassName 是 createLogFromClass 方法的第一个参数  org.apache.commons.logging.impl.Log4JLogger<br>
+Class c = Class.forName(&quot;org.apache.commons.logging.impl.Log4JLogger&quot;, true, currentCL);</p>
+<p>如果能够得到这个 Class，c 就有值，因为当前有 log4j 依赖，所以能够得到 Log4JLogger 类。</p>
+<figure data-type="image" tabindex="4"><img src="https://epitomm.github.io/post-images/c.png" alt="图片" loading="lazy"></figure>
+<p>上述代码第 70 行：</p>
+<pre><code class="language-java">//  得到这个类的构造方法
+constructor = c.getConstructor(logConstructorSignature);
+// 创建一个实例对象
+Object o = constructor.newInstance(params);
+</code></pre>
+<figure data-type="image" tabindex="5"><img src="https://epitomm.github.io/post-images/o.png" alt="图片" loading="lazy"></figure>
+<p>上述代码第 77 行：把创建出来的实例对象 o 赋值给 logAdapter</p>
+<pre><code class="language-java">if (o instanceof Log) {
+    logAdapterClass = c;
+    logAdapter = (Log) o;
+    break;
+}
+</code></pre>
+<p>第 158 行：返回实例化对象 logAdapter：</p>
+<pre><code class="language-java">return logAdapter;
+</code></pre>
+<p>于是第一次 for 循环结束，result != null ，于是终止 for 循环</p>
+<pre><code class="language-java">for(int i=0; i&lt;classesToDiscover.length &amp;&amp; result == null; ++i) {
+    result = createLogFromClass(classesToDiscover[i], logCategory, true);
+}
+</code></pre>
+<h3 id="jul">JUL</h3>
+<p>当 pom.xml 内没有 log4j 依赖时，JCL 日志使用 JUL 打印：</p>
+<figure data-type="image" tabindex="6"><img src="https://epitomm.github.io/post-images/JUL.png" alt="图片" loading="lazy"></figure>
+<pre><code>五月 17, 2020 12:59:17 下午 jcl main
+信息: jcl
+</code></pre>
+<p>Class c = Class.forName(&quot;org.apache.commons.logging.impl.Log4JLogger&quot;, true, currentCL);<br>
+因为当前没有 log4j 依赖，所以不能得到 Log4JLogger 类，所以进入 catch (NoClassDefFoundError e){，logAdapter 没有被复制，最终返回 null。</p>
+<figure data-type="image" tabindex="7"><img src="https://epitomm.github.io/post-images/logAdapter.png" alt="图片" loading="lazy"></figure>
+<p>于是进入第 1 次循环：</p>
+<pre><code class="language-java">for(int i=0; i&lt;classesToDiscover.length &amp;&amp; result == null; ++i) {
+    result = createLogFromClass(classesToDiscover[i], logCategory, true);
+}
+</code></pre>
+<p>classesToDiscover[1] = org.apache.commons.logging.impl.Jdk14Logger<br>
+因为 Jdk14Logger 是JDK 内部自带的，所以执行第 1 次循环，返回的 result 一定有值。</p>
+<p><img src="https://epitomm.github.io/post-images/c_2.png" alt="图片" loading="lazy"><br>
+<img src="https://epitomm.github.io/post-images/logAdapter_2.png" alt="图片" loading="lazy"></p>
+<h3 id="总结">总结</h3>
+<pre><code>jcl=Jakarta commons-logging ,是apache公司开发的一个抽象日志通用框架,本身不实现日志记录,但是提供了记录日志的抽象方法即接口(info,debug,error.......),底层通过一个数组存放具体的日志框架的类名,然后循环数组依次去匹配这些类名是否在app中被依赖了,如果找到被依赖的则直接使用,所以他有先后顺序。
+</code></pre>
+<figure data-type="image" tabindex="8"><img src="https://epitomm.github.io/post-images/jcl1.png" alt="图片" loading="lazy"></figure>
+<pre><code>上图为jcl中存放日志技术类名的数组，默认有四个，后面两个可以忽略。
+</code></pre>
+<figure data-type="image" tabindex="9"><img src="https://epitomm.github.io/post-images/jcl0.png" alt="图片" loading="lazy"></figure>
+<pre><code>上图81行就是通过一个类名去load一个class，如果load成功则直接new出来并且返回使用。
+如果没有load到class这循环第二个，直到找到为止。
+</code></pre>
+<figure data-type="image" tabindex="10"><img src="https://epitomm.github.io/post-images/jcl2.png" alt="图片" loading="lazy"></figure>
+<pre><code>可以看到这里的循环条件必须满足result不为空，
+也就是如果没有找到具体的日志依赖则继续循环，如果找到则条件不成立，不进行循环了。
+总结：顺序log4j&gt;jul
+</code></pre>
+<h2 id="为什么要引入-jcl">为什么要引入 JCL</h2>
+<figure data-type="image" tabindex="11"><img src="https://epitomm.github.io/post-images/JCL.png" alt="图片" loading="lazy"></figure>
+<p>如果要合并两个 app1 和 app2，其中 app1 使用 JUL 日志，app2 使用 lot4j 记录日志，就会出现：日志打印格式混乱问题。</p>
+<p><img src="https://epitomm.github.io/post-images/%E4%B8%A4%E7%A7%8D%E6%97%A5%E5%BF%97.png" alt="图片" loading="lazy"><br>
+<img src="https://epitomm.github.io/post-images/JCL%E7%9A%84%E4%BD%BF%E7%94%A8.png" alt="图片" loading="lazy"></p>
+<p>如果使用 JCL，如果想使用 log4j 打印日志，只需引入 log4j 依赖；如果想使用 JUL 打印日志，只需删除 log4j 依赖即可。</p>
+<h2 id="4log4j2">4.log4j2</h2>
+<h2 id="5slf4j">5.slf4j</h2>
+<p>slf4j官网：<a href="http://www.slf4j.org/">http://www.slf4j.org/</a></p>
+<p><strong>slf4j他也不记录日志,通过绑定器绑定一个具体的日志记录来完成日志记录</strong></p>
+<pre><code>log4j---&lt;artifactId&gt;slf4j-log4j12&lt;/artifactId&gt;
+</code></pre>
+<figure data-type="image" tabindex="12"><img src="https://epitomm.github.io/post-images/slf4j.png" alt="图片" loading="lazy"></figure>
+<h3 id="加入-slf4j-依赖">加入 slf4j 依赖</h3>
+<pre><code class="language-xml">&lt;!-- slf4j --&gt;
+&lt;dependency&gt;
+  &lt;groupId&gt;org.slf4j&lt;/groupId&gt;
+  &lt;artifactId&gt;slf4j-api&lt;/artifactId&gt;
+  &lt;version&gt;1.7.25&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;!-- 绑定器：注绑定器版本号和 slf4j 版本号要一致 --&gt;
+&lt;dependency&gt;
+  &lt;groupId&gt;org.slf4j&lt;/groupId&gt;
+  &lt;artifactId&gt;slf4j-jdk14&lt;/artifactId&gt;
+  &lt;version&gt;1.7.25&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+<figure data-type="image" tabindex="13"><img src="https://epitomm.github.io/post-images/slf4j%E6%94%AF%E6%8C%81%E7%9A%84%E6%97%A5%E5%BF%97%E7%BB%91%E5%AE%9A.png" alt="图片" loading="lazy"></figure>
+<h3 id="模拟日志打印">模拟日志打印</h3>
+<pre><code class="language-java">import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+public class SLF4J {
+    public static void main(String[] args) {
+        Logger logger = LoggerFactory.getLogger(&quot;slf4j&quot;);
+        logger.info(&quot;slf4j&quot;);
+    }
+}
+</code></pre>
+<p>日志打印 JUL：</p>
+<pre><code>五月 17, 2020 5:25:58 下午 com.ssm.utils.SLF4J main
+信息: slf4j
+</code></pre>
+<p>当绑定 slf4j 时，</p>
+<pre><code class="language-xml">&lt;!-- slf4j --&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.slf4j&lt;/groupId&gt;
+    &lt;artifactId&gt;slf4j-api&lt;/artifactId&gt;
+    &lt;version&gt;1.7.25&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;!-- 绑定器：log4j --&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.slf4j&lt;/groupId&gt;
+    &lt;artifactId&gt;slf4j-log4j12&lt;/artifactId&gt;
+    &lt;version&gt;1.7.25&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+<p>日志打印是 log4j 形式：</p>
+<pre><code>2020-05-17 17:30:47,801 INFO [main] com.ssm.utils.SLF4J.main(9) | slf4j
+</code></pre>
+<figure data-type="image" tabindex="14"><img src="https://epitomm.github.io/post-images/%E4%B8%8D%E5%90%8C%E6%97%A5%E5%BF%97%E6%89%93%E5%8D%B0.png" alt="图片" loading="lazy"></figure>
+<p>如果想统一日志格式为 log4j，只需修改 app1 的绑定器，使它绑定 log4j 即可，如下图所示：</p>
+<figure data-type="image" tabindex="15"><img src="https://epitomm.github.io/post-images/%E7%BB%9F%E4%B8%80%E6%97%A5%E5%BF%97%E6%89%93%E5%8D%B0%E4%B8%BAlog4j.png" alt="图片" loading="lazy"></figure>
+<p>如果想统一日志格式为 JUL ：① 可删除 Spring 内的 log4j 依赖，JCL 就自动使用 JCL 了。</p>
+<p>② 为 Spring 添加桥接器，通过桥接器把它桥接到 slf4j，然后再绑定 JUL，就能打印 JUL 了，如下图所示：</p>
+<figure data-type="image" tabindex="16"><img src="https://epitomm.github.io/post-images/%E7%BB%9F%E4%B8%80%E6%97%A5%E5%BF%97%E6%89%93%E5%8D%B0%E4%B8%BAJUL.png" alt="图片" loading="lazy"></figure>
+<h3 id="模拟">模拟</h3>
+<h4 id="两种日志打印">两种日志打印</h4>
+<p>Sring 使用 JCL，且有 log4j，即 Spring 使用 log4j 日志打印。</p>
+<p>App1 使用 slf4j ，绑定器绑定 JUL 日志打印。</p>
+<pre><code class="language-xml">  &lt;dependencies&gt;
+    &lt;dependency&gt;
+      &lt;groupId&gt;org.springframework&lt;/groupId&gt;
+      &lt;artifactId&gt;spring-context&lt;/artifactId&gt;
+      &lt;version&gt;4.3.16.RELEASE&lt;/version&gt;
+    &lt;/dependency&gt;
+    &lt;!-- 绑定器：JUL --&gt;
+    &lt;dependency&gt;
+      &lt;groupId&gt;org.slf4j&lt;/groupId&gt;
+      &lt;artifactId&gt;slf4j-jdk14&lt;/artifactId&gt;
+      &lt;version&gt;1.7.25&lt;/version&gt;
+    &lt;/dependency&gt;
+    &lt;!-- log4j --&gt;
+    &lt;dependency&gt;
+      &lt;groupId&gt;log4j&lt;/groupId&gt;
+      &lt;artifactId&gt;log4j&lt;/artifactId&gt;
+      &lt;version&gt;1.2.17&lt;/version&gt;
+    &lt;/dependency&gt;
+    &lt;!-- JCL --&gt;
+    &lt;dependency&gt;
+      &lt;groupId&gt;commons-logging&lt;/groupId&gt;
+      &lt;artifactId&gt;commons-logging&lt;/artifactId&gt;
+      &lt;version&gt;1.2&lt;/version&gt;
+    &lt;/dependency&gt;
+  &lt;/dependencies&gt;  
+</code></pre>
+<p>自己的 app 使用 slf4j 日志打印：</p>
+<pre><code class="language-java">import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+public class SLF4J {
+    public static void main(String[] args) {
+        Logger logger = LoggerFactory.getLogger(&quot;slf4j&quot;);
+        logger.info(&quot;slf4j&quot;);
+    }
+}
+</code></pre>
+<figure data-type="image" tabindex="17"><img src="https://epitomm.github.io/post-images/slf4j%E6%97%A5%E5%BF%97%E6%89%93%E5%8D%B0.png" alt="图片" loading="lazy"></figure>
+<p>Spring 使用 log4j 日志打印：</p>
+<pre><code class="language-java">import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+public class TestSpringLog {
+    public static void main(String[] args) {
+        Log log = LogFactory.getLog(&quot;spring&quot;);
+        log.info(&quot;spring...JCL&quot;);
+    }
+}
+</code></pre>
+<figure data-type="image" tabindex="18"><img src="https://epitomm.github.io/post-images/log4j%E6%97%A5%E5%BF%97%E6%89%93%E5%8D%B0.png" alt="图片" loading="lazy"></figure>
+<h4 id="统一日志打印">统一日志打印</h4>
+<p>添加桥接器</p>
+<pre><code class="language-xml">&lt;!-- 桥接器 --&gt;
+&lt;dependency&gt;
+  &lt;groupId&gt;org.slf4j&lt;/groupId&gt;
+  &lt;artifactId&gt;jcl-over-slf4j&lt;/artifactId&gt;
+  &lt;version&gt;1.7.25&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+<p>运行：</p>
+<pre><code class="language-java">import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+public class TestSpringLog {
+    public static void main(String[] args) {
+        Log log = LogFactory.getLog(&quot;spring&quot;);
+        log.info(&quot;spring...JCL&quot;);
+    }
+}
+</code></pre>
+<figure data-type="image" tabindex="19"><img src="https://epitomm.github.io/post-images/%E4%BE%9D%E8%B5%96%E6%B7%B7%E4%B9%B1%E5%AF%BC%E8%87%B4%E5%86%85%E5%AD%98%E6%BA%A2%E5%87%BA.png" alt="图片" loading="lazy"></figure>
+<p>Spring 日志打印也变成 JUL 了。</p>
+<h3 id="依赖混乱导致内存溢出">依赖混乱导致内存溢出</h3>
+<figure data-type="image" tabindex="20"><img src="https://epitomm.github.io/post-images/%E5%86%85%E5%AD%98%E6%BA%A2%E5%87%BA.png" alt="图片" loading="lazy"></figure>
+<pre><code class="language-xml">&lt;dependencies&gt;
+  &lt;dependency&gt;
+    &lt;groupId&gt;org.springframework&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-context&lt;/artifactId&gt;
+    &lt;version&gt;4.3.16.RELEASE&lt;/version&gt;
+  &lt;/dependency&gt;
+  &lt;!-- slf4j --&gt;
+  &lt;dependency&gt;
+    &lt;groupId&gt;org.slf4j&lt;/groupId&gt;
+    &lt;artifactId&gt;slf4j-api&lt;/artifactId&gt;
+    &lt;version&gt;1.7.25&lt;/version&gt;
+  &lt;/dependency&gt;
+  &lt;!-- 绑定器：JCL. slf4j 绑定到 JCL --&gt;
+  &lt;dependency&gt;
+    &lt;groupId&gt;org.slf4j&lt;/groupId&gt;
+    &lt;artifactId&gt;slf4j-jcl&lt;/artifactId&gt;
+    &lt;version&gt;1.7.25&lt;/version&gt;
+  &lt;/dependency&gt;
+  &lt;!-- 桥接器：JCL. JCL 桥接到 slf4j --&gt;
+  &lt;dependency&gt;
+    &lt;groupId&gt;org.slf4j&lt;/groupId&gt;
+    &lt;artifactId&gt;jcl-over-slf4j&lt;/artifactId&gt;
+    &lt;version&gt;1.7.25&lt;/version&gt;
+  &lt;/dependency&gt;
+&lt;/dependencies&gt;
+</code></pre>
+<p>测试类：</p>
+<pre><code class="language-java">import com.ssm.app.AppConfig;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+public class Test {
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext configApplicationContext = new AnnotationConfigApplicationContext(AppConfig.class);
+        configApplicationContext.start();
+        LoggerFactory.getLogger(&quot;ttt&quot;).info(&quot;test&quot;);
+    }
+}
+</code></pre>
+<p>运行结果：<br>
+<img src="https://epitomm.github.io/post-images/%E5%86%85%E5%AD%98%E6%BA%A2%E5%87%BA.png" alt="图片" loading="lazy"></p>
+<h2 id="6logback">6.logback</h2>
+<h2 id="7simple-log">7.simple-log</h2>
+<h1 id="各种日志技术的关系和作用">各种日志技术的关系和作用</h1>
+<figure data-type="image" tabindex="21"><img src="https://epitomm.github.io/post-images/%E5%90%84%E7%A7%8D%E6%97%A5%E5%BF%97.png" alt="图片" loading="lazy"></figure>
+<h1 id="spring日志技术分析">spring日志技术分析</h1>
+<p>再来看一下开始的那个问题：Spring4 加上 log4j 就打印 log4j 日志；但是 Spring5 加上 log4j 仍打印 JUL 日志。</p>
+<h2 id="spring4日志技术实现">spring4.*日志技术实现</h2>
+<p>spring4当中依赖的是原生的jcl：commons-logging.jar</p>
+<p><img src="https://epitomm.github.io/post-images/Spring4%E6%97%A5%E5%BF%97.png" alt="图片" loading="lazy"><br>
+<img src="https://epitomm.github.io/post-images/Spring4%E5%BC%95%E5%85%A5log4j.png" alt="图片" loading="lazy"></p>
+<p>上面的日志打印说是在org.springframework.context.support.AbstractApplicationContext.prepareRefresh(583) 内进行的日志打印：logger.info(&quot;Refreshing &quot; + this);</p>
+<figure data-type="image" tabindex="22"><img src="https://epitomm.github.io/post-images/Spring%E7%89%88%E6%9C%AC%E5%8F%B7.png" alt="图片" loading="lazy"></figure>
+<p>这里我们要查看的是 Spring4 的 AbstractApplicationContext，我们来看一下 AbstractApplicationContext#prepareRefresh</p>
+<pre><code class="language-java">protected void prepareRefresh() {
+   this.startupDate = System.currentTimeMillis();
+   this.closed.set(false);
+   this.active.set(true);
+   if (logger.isInfoEnabled()) {
+      logger.info(&quot;Refreshing &quot; + this);
+   }
+   // Initialize any placeholder property sources in the context environment
+   initPropertySources();
+   // Validate that all properties marked as required are resolvable
+   // see ConfigurablePropertyResolver#setRequiredProperties
+   getEnvironment().validateRequiredProperties();
+   // Allow for the collection of early ApplicationEvents,
+   // to be published once the multicaster is available...
+   this.earlyApplicationEvents = new LinkedHashSet&lt;ApplicationEvent&gt;();
+}
+</code></pre>
+<figure data-type="image" tabindex="23"><img src="https://epitomm.github.io/post-images/Log4JLogger.png" alt="图片" loading="lazy"></figure>
+<p>org.springframework.context.support.AbstractApplicationContext.prepareRefresh(583) 的 logger 对象是 Log4JLogger，所以打印 log4j 日志。</p>
+<p>来看一个 logger 变量的定义：</p>
+<pre><code class="language-java">protected final Log logger = LogFactory.getLog(getClass());
+</code></pre>
+<p>我们再来看一下这个 Log 对象，它是 JCL （org.apache.commons.logging）包下的，我们的 pom.xml 中并未引入 JCL 依赖，只引入了 spring-context 和 log4j 依赖，于是猜想 spring-context 中有 JCL 依赖。</p>
+<pre><code class="language-java">package org.apache.commons.logging;
+public interface Log {
+</code></pre>
+<p>看一下 maven 依赖图：<br>
+<img src="https://epitomm.github.io/post-images/spring4maven%E4%BE%9D%E8%B5%96.png" alt="图片" loading="lazy"></p>
+<p><strong>Spring4 当中依赖了 JCL，Spring4 中采用的日志技术是 JCL：commons-logging.jar</strong>。</p>
+<p>LogFactory#getLog</p>
+<pre><code class="language-java">public static Log getLog(Class clazz) throws LogConfigurationException {
+    return getFactory().getInstance(clazz);
+}
+</code></pre>
+<p>LogFactory#getFactory</p>
+<pre><code class="language-java">public static LogFactory getFactory() throws LogConfigurationException {
+    // Identify the class loader we will be using
+    ClassLoader contextClassLoader = getContextClassLoaderInternal();
+    if (contextClassLoader == null) {
+        // This is an odd enough situation to report about. This
+        // output will be a nuisance on JDK1.1, as the system
+        // classloader is null in that environment.
+        if (isDiagnosticsEnabled()) {
+            logDiagnostic(&quot;Context classloader is null.&quot;);
+        }
+    }
+    // Return any previously registered factory for this class loader
+    LogFactory factory = getCachedFactory(contextClassLoader);
+    if (factory != null) {
+        return factory;
+    }
+    if (isDiagnosticsEnabled()) {
+        logDiagnostic(
+                &quot;[LOOKUP] LogFactory implementation requested for the first time for context classloader &quot; +
+                objectId(contextClassLoader));
+        logHierarchy(&quot;[LOOKUP] &quot;, contextClassLoader);
+    }
+    // Load properties file.
+    //
+    // If the properties file exists, then its contents are used as
+    // &quot;attributes&quot; on the LogFactory implementation class. One particular
+    // property may also control which LogFactory concrete subclass is
+    // used, but only if other discovery mechanisms fail..
+    //
+    // As the properties file (if it exists) will be used one way or
+    // another in the end we may as well look for it first.
+    Properties props = getConfigurationFile(contextClassLoader, FACTORY_PROPERTIES);
+    // Determine whether we will be using the thread context class loader to
+    // load logging classes or not by checking the loaded properties file (if any).
+    ClassLoader baseClassLoader = contextClassLoader;
+    if (props != null) {
+        String useTCCLStr = props.getProperty(TCCL_KEY);
+        if (useTCCLStr != null) {
+            // The Boolean.valueOf(useTCCLStr).booleanValue() formulation
+            // is required for Java 1.2 compatibility.
+            if (Boolean.valueOf(useTCCLStr).booleanValue() == false) {
+                // Don't use current context classloader when locating any
+                // LogFactory or Log classes, just use the class that loaded
+                // this abstract class. When this class is deployed in a shared
+                // classpath of a container, it means webapps cannot deploy their
+                // own logging implementations. It also means that it is up to the
+                // implementation whether to load library-specific config files
+                // from the TCCL or not.
+                baseClassLoader = thisClassLoader;
+            }
+        }
+    }
+    // Determine which concrete LogFactory subclass to use.
+    // First, try a global system property
+    if (isDiagnosticsEnabled()) {
+        logDiagnostic(&quot;[LOOKUP] Looking for system property [&quot; + FACTORY_PROPERTY +
+                      &quot;] to define the LogFactory subclass to use...&quot;);
+    }
+    try {
+        String factoryClass = getSystemProperty(FACTORY_PROPERTY, null);
+        if (factoryClass != null) {
+            if (isDiagnosticsEnabled()) {
+                logDiagnostic(&quot;[LOOKUP] Creating an instance of LogFactory class '&quot; + factoryClass +
+                              &quot;' as specified by system property &quot; + FACTORY_PROPERTY);
+            }
+            factory = newFactory(factoryClass, baseClassLoader, contextClassLoader);
+        } else {
+            if (isDiagnosticsEnabled()) {
+                logDiagnostic(&quot;[LOOKUP] No system property [&quot; + FACTORY_PROPERTY + &quot;] defined.&quot;);
+            }
+        }
+    } catch (SecurityException e) {
+        if (isDiagnosticsEnabled()) {
+            logDiagnostic(&quot;[LOOKUP] A security exception occurred while trying to create an&quot; +
+                          &quot; instance of the custom factory class&quot; + &quot;: [&quot; + trim(e.getMessage()) +
+                          &quot;]. Trying alternative implementations...&quot;);
+        }
+        // ignore
+    } catch (RuntimeException e) {
+        // This is not consistent with the behaviour when a bad LogFactory class is
+        // specified in a services file.
+        //
+        // One possible exception that can occur here is a ClassCastException when
+        // the specified class wasn't castable to this LogFactory type.
+        if (isDiagnosticsEnabled()) {
+            logDiagnostic(&quot;[LOOKUP] An exception occurred while trying to create an&quot; +
+                          &quot; instance of the custom factory class&quot; + &quot;: [&quot; +
+                          trim(e.getMessage()) +
+                          &quot;] as specified by a system property.&quot;);
+        }
+        throw e;
+    }
+    // Second, try to find a service by using the JDK1.3 class
+    // discovery mechanism, which involves putting a file with the name
+    // of an interface class in the META-INF/services directory, where the
+    // contents of the file is a single line specifying a concrete class
+    // that implements the desired interface.
+    if (factory == null) {
+        if (isDiagnosticsEnabled()) {
+            logDiagnostic(&quot;[LOOKUP] Looking for a resource file of name [&quot; + SERVICE_ID +
+                          &quot;] to define the LogFactory subclass to use...&quot;);
+        }
+        try {
+            final InputStream is = getResourceAsStream(contextClassLoader, SERVICE_ID);
+            if( is != null ) {
+                // This code is needed by EBCDIC and other strange systems.
+                // It's a fix for bugs reported in xerces
+                BufferedReader rd;
+                try {
+                    rd = new BufferedReader(new InputStreamReader(is, &quot;UTF-8&quot;));
+                } catch (java.io.UnsupportedEncodingException e) {
+                    rd = new BufferedReader(new InputStreamReader(is));
+                }
+                String factoryClassName = rd.readLine();
+                rd.close();
+                if (factoryClassName != null &amp;&amp; ! &quot;&quot;.equals(factoryClassName)) {
+                    if (isDiagnosticsEnabled()) {
+                        logDiagnostic(&quot;[LOOKUP]  Creating an instance of LogFactory class &quot; +
+                                      factoryClassName +
+                                      &quot; as specified by file '&quot; + SERVICE_ID +
+                                      &quot;' which was present in the path of the context classloader.&quot;);
+                    }
+                    factory = newFactory(factoryClassName, baseClassLoader, contextClassLoader );
+                }
+            } else {
+                // is == null
+                if (isDiagnosticsEnabled()) {
+                    logDiagnostic(&quot;[LOOKUP] No resource file with name '&quot; + SERVICE_ID + &quot;' found.&quot;);
+                }
+            }
+        } catch (Exception ex) {
+            // note: if the specified LogFactory class wasn't compatible with LogFactory
+            // for some reason, a ClassCastException will be caught here, and attempts will
+            // continue to find a compatible class.
+            if (isDiagnosticsEnabled()) {
+                logDiagnostic(
+                    &quot;[LOOKUP] A security exception occurred while trying to create an&quot; +
+                    &quot; instance of the custom factory class&quot; +
+                    &quot;: [&quot; + trim(ex.getMessage()) +
+                    &quot;]. Trying alternative implementations...&quot;);
+            }
+            // ignore
+        }
+    }
+    // Third try looking into the properties file read earlier (if found)
+    if (factory == null) {
+        if (props != null) {
+            if (isDiagnosticsEnabled()) {
+                logDiagnostic(
+                    &quot;[LOOKUP] Looking in properties file for entry with key '&quot; + FACTORY_PROPERTY +
+                    &quot;' to define the LogFactory subclass to use...&quot;);
+            }
+            String factoryClass = props.getProperty(FACTORY_PROPERTY);
+            if (factoryClass != null) {
+                if (isDiagnosticsEnabled()) {
+                    logDiagnostic(
+                        &quot;[LOOKUP] Properties file specifies LogFactory subclass '&quot; + factoryClass + &quot;'&quot;);
+                }
+                factory = newFactory(factoryClass, baseClassLoader, contextClassLoader);
+                // TODO: think about whether we need to handle exceptions from newFactory
+            } else {
+                if (isDiagnosticsEnabled()) {
+                    logDiagnostic(&quot;[LOOKUP] Properties file has no entry specifying LogFactory subclass.&quot;);
+                }
+            }
+        } else {
+            if (isDiagnosticsEnabled()) {
+                logDiagnostic(&quot;[LOOKUP] No properties file available to determine&quot; + &quot; LogFactory subclass from..&quot;);
+            }
+        }
+    }
+    // Fourth, try the fallback implementation class
+    if (factory == null) {
+        if (isDiagnosticsEnabled()) {
+            logDiagnostic(
+                &quot;[LOOKUP] Loading the default LogFactory implementation '&quot; + FACTORY_DEFAULT +
+                &quot;' via the same classloader that loaded this LogFactory&quot; +
+                &quot; class (ie not looking in the context classloader).&quot;);
+        }
+        // Note: unlike the above code which can try to load custom LogFactory
+        // implementations via the TCCL, we don't try to load the default LogFactory
+        // implementation via the context classloader because:
+        // * that can cause problems (see comments in newFactory method)
+        // * no-one should be customising the code of the default class
+        // Yes, we do give up the ability for the child to ship a newer
+        // version of the LogFactoryImpl class and have it used dynamically
+        // by an old LogFactory class in the parent, but that isn't
+        // necessarily a good idea anyway.
+        factory = newFactory(FACTORY_DEFAULT, thisClassLoader, contextClassLoader);
+    }
+    if (factory != null) {
+        /**
+         * Always cache using context class loader.
+         */
+        cacheFactory(contextClassLoader, factory);
+        if (props != null) {
+            Enumeration names = props.propertyNames();
+            while (names.hasMoreElements()) {
+                String name = (String) names.nextElement();
+                String value = props.getProperty(name);
+                factory.setAttribute(name, value);
+            }
+        }
+    }
+    return factory;
+}
+</code></pre>
+<h2 id="spring5日志技术实现">spring5.*日志技术实现</h2>
+<p>spring5使用的spring的jcl(spring改了jcl的代码)来记录日志的,但是jcl不能直接记录日志,采用循环优先的原则</p>
+<p><img src="https://epitomm.github.io/post-images/Spring5%E6%97%A5%E5%BF%97.png" alt="图片" loading="lazy"><br>
+<img src="https://epitomm.github.io/post-images/Spring5maven%E4%BE%9D%E8%B5%96.png" alt="图片" loading="lazy"></p>
+<p><strong>Spring5 当中依赖了 JCL，Spring5 中采用的日志技术是 JCL：spring-jcl</strong>。</p>
+<figure data-type="image" tabindex="24"><img src="https://epitomm.github.io/post-images/Spring5%E5%BC%95%E5%85%A5log4j.png" alt="图片" loading="lazy"></figure>
+<p>上面的日志打印说是在org.springframework.context.support.AbstractApplicationContext prepareRefresh 内进行的日志打印：logger.info(&quot;Refreshing &quot; + this);</p>
+<p>这里我们要查看的是 Spring5 的 AbstractApplicationContext#prepareRefresh，我们来看一下</p>
+<pre><code class="language-java">protected void prepareRefresh() {
+   this.startupDate = System.currentTimeMillis();
+   this.closed.set(false);
+   this.active.set(true);
+   if (logger.isInfoEnabled()) {
+      logger.info(&quot;Refreshing &quot; + this);
+   }
+   // Initialize any placeholder property sources in the context environment
+   initPropertySources();
+   // Validate that all properties marked as required are resolvable
+   // see ConfigurablePropertyResolver#setRequiredProperties
+   getEnvironment().validateRequiredProperties();
+   // Allow for the collection of early ApplicationEvents,
+   // to be published once the multicaster is available...
+   this.earlyApplicationEvents = new LinkedHashSet&lt;&gt;();
+}
+</code></pre>
+<figure data-type="image" tabindex="25"><img src="https://epitomm.github.io/post-images/Spring5JUL.png" alt="图片" loading="lazy"></figure>
+<p>org.springframework.context.support.AbstractApplicationContext prepareRefresh 的 logger 对象是 JavaUtilLog，所以打印 JUL 日志。</p>
+<p>来看一个 logger 变量的定义：</p>
+<pre><code class="language-java">protected final Log logger = LogFactory.getLog(getClass());
+</code></pre>
+<p>我们再来看一下这个 Log 对象，它是 JCL （org.apache.commons.logging）包下的，虽然我们的 pom.xml 中并未引入 JCL 依赖，但是 spring-context 中有 JCL 依赖。</p>
+<pre><code class="language-java">package org.apache.commons.logging;
+public interface Log {
+</code></pre>
+<figure data-type="image" tabindex="26"><img src="https://epitomm.github.io/post-images/Spring5JUL_2.png" alt="图片" loading="lazy"></figure>
+<p>一般情况下，JCL 在有 log4j 时，使用 log4j 打印日志；在没有 log4j 时，使用 JUL 打印日志。但是 Spring5 在有 log4j 时，仍然打印 JUL 日志，因为Spring 把 JCL 的源码改了。</p>
+<p>LogFactory#getLog</p>
+<pre><code class="language-java">public static Log getLog(Class&lt;?&gt; clazz) {
+   return getLog(clazz.getName());
+}
+</code></pre>
+<p>LogFactory#getLog</p>
+<pre><code class="language-java">public static Log getLog(String name) {
+   switch (logApi) {
+      case LOG4J:
+         return Log4jDelegate.createLog(name);
+      case SLF4J_LAL:
+         return Slf4jDelegate.createLocationAwareLog(name);
+      case SLF4J:
+         return Slf4jDelegate.createLog(name);
+      default:
+         // Defensively use lazy-initializing delegate class here as well since the
+         // java.logging module is not present by default on JDK 9. We are requiring
+         // its presence if neither Log4j nor SLF4J is available; however, in the
+         // case of Log4j or SLF4J, we are trying to prevent early initialization
+         // of the JavaUtilLog adapter - e.g. by a JVM in debug mode - when eagerly
+         // trying to parse the bytecode for all the cases of this switch clause.
+         return JavaUtilDelegate.createLog(name);
+   }
+}
+</code></pre>
+<figure data-type="image" tabindex="27"><img src="https://epitomm.github.io/post-images/logApi.png" alt="图片" loading="lazy"></figure>
+<p>来看一下 logApi 这个变量：</p>
+<pre><code class="language-java">private static LogApi logApi = LogApi.JUL;
+</code></pre>
+<p>JavaUtilDelegate#createLog</p>
+<pre><code class="language-java">private static class JavaUtilDelegate {
+   public static Log createLog(String name) {
+      return new JavaUtilLog(name);
+   }
+}
+</code></pre>
+<p>最终会返回 JavaUtilLog。Spiring5 默认采用 JCL 绑定 JUL 打印日志。<br>
+我们看一下 case LOG4J 分支：</p>
+<pre><code class="language-java">case LOG4J:
+   return Log4jDelegate.createLog(name);   
+</code></pre>
+<p>如果走 case LOG4J 分支，创建的是 Log4j2 日志：org.apache.logging.log4j.Level，而不是 log4j 日志：org.apache.log4j.Logger;</p>
+<pre><code class="language-java">import org.apache.logging.log4j.Level;
+private static class Log4jDelegate {
+   public static Log createLog(String name) {
+      return new Log4jLog(name);
+   }
+}
+</code></pre>
+<p>所以在 Spring5 中不能仅仅通过在 pom.xml 中引入 log4j 来使用 log4j。</p>
+<h3 id="spring5-使用桥接器-slf4j-绑定-log4j-打印日志">Spring5 使用桥接器 SLF4J 绑定 log4j 打印日志</h3>
+<p>如果想要使用 log4j 打印日志，就需要修改 logApi 的值，先来看一下 logApi 是在哪里赋值的：</p>
+<pre><code class="language-java">static {
+   ClassLoader cl = LogFactory.class.getClassLoader();
+   try {
+      // 如果有 log4j2，就使用 log4j2 打印日志
+      // Try Log4j 2.x API
+      cl.loadClass(&quot;org.apache.logging.log4j.spi.ExtendedLogger&quot;);
+      logApi = LogApi.LOG4J;
+   }
+   // 如果没有 log4j2
+   catch (ClassNotFoundException ex1) {
+      try {
+         // 如果有 SLF4J，就桥接 SLF4J 日志打印
+         // Try SLF4J 1.7 SPI
+         cl.loadClass(&quot;org.slf4j.spi.LocationAwareLogger&quot;);
+         logApi = LogApi.SLF4J_LAL;
+      }
+      catch (ClassNotFoundException ex2) {
+         try {
+            // Try SLF4J 1.7 API
+            cl.loadClass(&quot;org.slf4j.Logger&quot;);
+            logApi = LogApi.SLF4J;
+         }
+         catch (ClassNotFoundException ex3) {
+            // Keep java.util.logging as default
+         }
+      }
+   }
+}
+</code></pre>
+<figure data-type="image" tabindex="28"><img src="https://epitomm.github.io/post-images/logApi%E8%B5%8B%E5%80%BC%E8%BF%87%E7%A8%8B.png" alt="图片" loading="lazy"></figure>
+<pre><code class="language-xml">  &lt;dependencies&gt;
+    &lt;dependency&gt;
+      &lt;groupId&gt;org.springframework&lt;/groupId&gt;
+      &lt;artifactId&gt;spring-context&lt;/artifactId&gt;
+      &lt;version&gt;5.0.9.RELEASE&lt;/version&gt;
+    &lt;/dependency&gt;
+    &lt;!-- slf4j --&gt;
+    &lt;dependency&gt;
+      &lt;groupId&gt;org.slf4j&lt;/groupId&gt;
+      &lt;artifactId&gt;slf4j-api&lt;/artifactId&gt;
+      &lt;version&gt;1.7.25&lt;/version&gt;
+    &lt;/dependency&gt;
+    &lt;!-- 绑定器：Log4J. slf4j 绑定到 Log4J --&gt;
+    &lt;dependency&gt;
+      &lt;groupId&gt;org.slf4j&lt;/groupId&gt;
+      &lt;artifactId&gt;slf4j-log4j12&lt;/artifactId&gt;
+      &lt;version&gt;1.7.25&lt;/version&gt;
+    &lt;/dependency&gt;
+  &lt;/dependencies&gt;
+</code></pre>
+<figure data-type="image" tabindex="29"><img src="https://epitomm.github.io/post-images/Spring5%E6%89%93%E5%8D%B0log4j.png" alt="图片" loading="lazy"></figure>
+<h2 id="总结-2">总结</h2>
+<p>Spring4 默认使用 JCL 日志打印，通过 for 循环一个数组[&quot;org.apache.commons.logging.impl.Log4JLogger&quot;,</p>
+<p>&quot;org.apache.commons.logging.impl.Jdk14Logger&quot;,</p>
+<p>&quot;org.apache.commons.logging.impl.Jdk13LumberjackLogger&quot;,</p>
+<p>&quot;org.apache.commons.logging.impl.SimpleLog&quot;</p>
+<p>]，给 result 赋值。</p>
+<p>Spring5 默认采用 JCL 日志，但是 Spring 把 JCL 改了，底层用了一个 switch-case 去选择一个不同的日志实现，默认采用 JUL，当项目中如果有 SLF4J 或 Log4J2 时，Spring5 就会选用 SLF4J 或  Log4J2 ，采用一个 class.forName() 机制，如果找到了就修改 logApi 值，调用 getLog 方法时得到具体的日志实现。</p>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[Spring系列（十一）Spring源码解析]]></title>
         <id>https://epitomm.github.io/post/spring-xi-lie-shi-yi-spring-yuan-ma-jie-xi/</id>
@@ -144,7 +1542,7 @@ public class AppConfig {
 </code></pre>
 <h2 id="经过-cglib-代理后得到的代理类">经过 CGLIB 代理后得到的代理类</h2>
 <h3 id="我们的猜测">我们的猜测</h3>
-<pre><code class="language-plain">@Configuration
+<pre><code class="language-java">@Configuration
 @ComponentScan(&quot;com.ssm&quot;)
 public class xxxx extends AppConfig implements EnhancedConfiguration{
    private BeanFactory $$beanFactory;
@@ -7669,1652 +9067,6 @@ dao
 	at com.ssm.org.spring.util.BeanFactory.parseXml(BeanFactory.java:137)
 	at com.ssm.org.spring.util.BeanFactory.&lt;init&gt;(BeanFactory.java:25)
 	at com.ssm.test.Test.main(Test.java:10)
-</code></pre>
-]]></content>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[Spring系列（三）一篇文章学会 JDK 动态代理并手动模拟一个动态代理]]></title>
-        <id>https://epitomm.github.io/post/yi-pian-wen-zhang-xue-hui-jdk-dong-tai-dai-li-bing-shou-dong-mo-ni-yi-ge-dong-tai-dai-li/</id>
-        <link href="https://epitomm.github.io/post/yi-pian-wen-zhang-xue-hui-jdk-dong-tai-dai-li-bing-shou-dong-mo-ni-yi-ge-dong-tai-dai-li/">
-        </link>
-        <updated>2020-05-03T14:34:48.000Z</updated>
-        <content type="html"><![CDATA[<h1 id="什么是代理"><strong>什么是代理</strong></h1>
-<p>增强一个对象的功能</p>
-<p>买火车票，app就是一个代理，他代理了火车站；小区当中的代售窗口也是一个代理，代理了火车站。</p>
-<h1 id="代理模式的引入">代理模式的引入</h1>
-<p>1、UserDaoImpl 有一个查询数据库的方法：</p>
-<pre><code class="language-java">public class UserDaoImpl{
-    public void query(){
-        System.out.println(&quot;假装查询数据库&quot;);
-    }
-}
-</code></pre>
-<p>2、测试类中调用这个方法</p>
-<pre><code class="language-java">public class Test {
-    public static void main(String[] args) {
-        UserDaoImpl userDao = new UserDaoImpl();
-        LogUtil.log();
-        userDao.query();
-    }
-}
-</code></pre>
-<p>3、现在有一个这样的需求：想要在每次执行 query() 时记录当前操作写到日志里面。写一个公共的日志方法 log()，那么把 LogUtil.log() 代码写到哪里呢？</p>
-<p>3.1 写到 query() 方法中：</p>
-<p>3.1.1 缺点：可能 UserDoImpl 是一个 jar，根本没有它的源码，无法进行修改。</p>
-<p>3.1.2 即使有源码，将 query() 改写成如下：破坏了单一职责。</p>
-<pre><code class="language-java">public void query(){
-  LogUtil.log();
-  // 进行数据库查询操作...
-  System.out.println(&quot;假装查询数据库&quot;); 
-}
-</code></pre>
-<p>单一职责：只做一件事。将日志操作写到 query() 里面破坏了类的封装性，职责就不单一了 。</p>
-<p>3.2 写到 Test 类中：  每次调用查询操作前记录当前时间。</p>
-<p>缺点：会调用很多次 query 方法，也就要写很多次 Logutil.log() 大量重复代码。</p>
-<p>3.3 引入代理模式</p>
-<h1 id="java实现的代理的两种办法"><strong>java实现的代理的两种办法</strong></h1>
-<h1 id="代理的名词">代理的名词</h1>
-<p>代理对象——增强后的对象</p>
-<p>目标对象——被增强的对象</p>
-<p>他们不是绝对的，会根据情况发生变化</p>
-<h1 id="静态代理">静态代理</h1>
-<h2 id="继承">继承</h2>
-<ul>
-<li>代理对象继承目标对象，重写需要增强的方法</li>
-<li>缺点：会代理类过多，非常复杂</li>
-</ul>
-<p>回到上襦代理模式引入的例子中：</p>
-<p>3.3 继承：自定义一个类<strong>继承</strong>原来需要添加日志的类 UserDaoImpl，在执行业务操作前添加日志打印语句。既解决了 jar 包无法修改源码的问题，又没有破坏单一职责原则。</p>
-<pre><code class="language-java">public class UserDaoLogImpl extends UserDaoImpl {
-    @Override
-    public void query() {
-        LogUtil.log();
-        super.query();
-    }
-}
-</code></pre>
-<p>测试类：</p>
-<pre><code class="language-java">public class Test {
-    public static void main(String[] args) {
-        UserDao userDao = new UserDaoLogImpl();
-        userDao.query();
-    }
-}
-</code></pre>
-<p>分析：如此得到了被增强后的 UserDaoImpl，可实现在 query() 前进行日志打印。</p>
-<p>UserDaoImpl：目标对象</p>
-<p>UserDaoLogImpl ：代理对象。</p>
-<p>代理对象和目标对象是相对而言的。UserDaoLogImpl 是代理对象，但是有一天它也有可能成为目标对象。</p>
-<p>4、有一个新需求：在 query 方法前添加一个权限验证。</p>
-<pre><code class="language-java">public class UserDaoPowerImpl extends UserDaoImpl {
-    @Override
-    public void query() {
-        LogUtil.log(&quot;power...&quot;);
-        super.query();
-    }
-}
-</code></pre>
-<p>5、有一个新需求：在 query 方法前添加一个时间记录。</p>
-<pre><code class="language-java">public class UserDaoTimerImpl extends UserDaoImpl {
-    @Override
-    public void query() {
-        LogUtil.log(&quot;timer...&quot;);
-        super.query();
-    }
-}
-</code></pre>
-<p>6、有一个新需求：在 query() 方法被调用前既实现日志打印、又实现记录当前时间的功能</p>
-<pre><code class="language-java">public class UserDaoTimeAndLogImpl extends UserDaoLogImpl {
-    @Override
-    public void query() {
-        // timer
-        LogUtil.log(&quot;timer...&quot;);
-        // logger &amp; query
-        super.query();
-    }
-}
-</code></pre>
-<p>运行结果：</p>
-<pre><code>timer...
-logger...
-假装查询数据库
-</code></pre>
-<p>7、新需求：在 query() 前先打印日志，然后再记录时间</p>
-<pre><code class="language-java">public class UserDaoLogAndTimeImpl extends UserDaoTimerImpl {
-    @Override
-    public void query() {
-        LogUtil.log(&quot;logger...&quot;);
-        // logger
-        super.query();
-    }
-}
-</code></pre>
-<p>运行结果：</p>
-<pre><code>logger...
-timer...
-假装查询数据库
-</code></pre>
-<p>只是改变了以一下日志记录顺序，就会增加一个新的类，不同的排列组合会造成代理类过多。</p>
-<h2 id="聚合">聚合</h2>
-<ul>
-<li>目标对象和代理对象实现同一个接口，代理对象当中要包含目标对象。</li>
-<li>缺点：也会产生类爆炸（UserDaoLog implements UserDao、OrderDaoLog implements OrderDao......），只不过比继承少一点点</li>
-<li>总结:如果在不确定的情况下，尽量不要去使用静态代理。因为一旦你写代码，就会产生类，一旦产生类就爆炸。</li>
-</ul>
-<p>1、声明一个接口：</p>
-<pre><code class="language-java">public interface UserDao {
-    void query();
-}
-</code></pre>
-<p>2、目标对象 UserDaoImpl 实现 UserDao 接口</p>
-<pre><code class="language-java">public class UserDaoImpl implements UserDao {
-    public void query(){
-        System.out.println(&quot;假装查询数据库&quot;);
-    }
-}
-</code></pre>
-<p>3、代理对象实现 UserDao 接口，代理对象 UserDaoLog 中包含目标对象 UserDaoImpl（测试类传参为目标对象类）</p>
-<pre><code class="language-java">public class UserDaoLog implements UserDao {
-    // 装饰者模式：写一个构造方法，通过传入一个目标对象指定代理/ 装饰具体的对象
-    UserDao dao;
-    public UserDaoLog(UserDao userDao){
-        this.dao = userDao;
-    }
-    @Override
-    public void query() {
-        LogUtil.log(&quot;logger...&quot;);
-        dao.query();
-        // 代理模式：new UserDaoImpl().query();UserDao不是传递进来的，是写死的。
-    }
-}
-</code></pre>
-<p>4、测试类</p>
-<pre><code class="language-java">public class Test {
-    public static void main(String[] args) {
-        UserDao target = new UserDaoImpl();
-        UserDao proxy = new UserDaoLog(target);
-        proxy.query();
-    }
-}
-</code></pre>
-<p>测试结果：</p>
-<pre><code>logger...
-假装查询数据库 
-</code></pre>
-<p>5、新需求：记录时间</p>
-<pre><code class="language-java">public class UserDaoTime implements UserDao {
-    UserDao dao;
-    public UserDaoTime(UserDao userDao){
-        this.dao = userDao;
-    }
-    @Override
-    public void query() {
-        LogUtil.log(&quot;timer...&quot;);
-        dao.query();
-    }
-}
-</code></pre>
-<p>测试类：</p>
-<pre><code class="language-java">public class Test {
-    public static void main(String[] args) {
-        UserDao target = new UserDaoImpl();
-        UserDao proxy = new UserDaoTime(target);
-        proxy.query();
-    }
-}
-</code></pre>
-<p>运行结果：</p>
-<pre><code>timer...
-假装查询数据库
-</code></pre>
-<p>6、新需求：完成对日志和时间的代理，无需新增一个类。只需将时间的代理对象作为目标对象，传递给日志代理对象即可。</p>
-<pre><code class="language-java">public class Test {
-    public static void main(String[] args) {
-        // time + logic(业务逻辑)
-        UserDao target = new UserDaoTime(new UserDaoImpl());
-        // log + time + logic
-        UserDao proxy = new UserDaoLog(target);
-        proxy.query();
-    }
-}
-</code></pre>
-<p>运行结果：</p>
-<pre><code>logger...
-timer...
-假装查询数据库
-</code></pre>
-<p>6、新需求：完成先打印时间，再记录日志的操作。无需新增类，只需修改测试类即可。</p>
-<pre><code class="language-java">public class Test {
-    public static void main(String[] args) {
-        UserDao target = new UserDaoLog(new UserDaoImpl());
-        UserDao proxy = new UserDaoTime(target);
-        proxy.query();
-    }
-}
-</code></pre>
-<p>运行结果：</p>
-<pre><code>timer...
-logger...
-假装查询数据库动态代理
-</code></pre>
-<h2 id="自己模拟的动态代理">自己模拟的动态代理</h2>
-<p>如何拿到一个对象？</p>
-<p>不需要手动 new 创 建类文件（因为一旦手动创建类文件，就会产生类爆炸），通过接口反射生成一个类文件，然后调用第三方的编译技术，动态编译这个产生的类文件成class文件，继而利用UrlclassLoader(因为这个动态产生的class不在工程当中所以需要使用UrlclassLoader)把这个动态编译的类加载到jvm当中，最后通过反射把这个类实例化。</p>
-<p>缺点：首先要生成文件</p>
-<p>缺点：动态编译文件 class</p>
-<p>缺点：需要一个URLclassloader</p>
-<p>软件性能的最终体现在IO操作</p>
-<p>file(.java) ---&gt; .class ---&gt; byte[] ---&gt; object(Class 类对象)  ---&gt; object.newInstance()</p>
-<h3 id="1准备一个接口">1.准备一个接口：</h3>
-<pre><code class="language-java">public interface TestDao {
-    String query(String s1, String s2);
-}
-</code></pre>
-<h3 id="2准备一个接口实现类">2.准备一个接口实现类：</h3>
-<pre><code class="language-java">public class TestDaoImpl implements TestDao {
-    @Override
-    public String query(String s1, String s2) {
-        System.out.println(&quot;查询数据库&quot;);
-        System.out.println(&quot;daoImpl...&quot; + s1 + &quot; &quot; + s2);
-        return s1 + &quot; &quot; + s2;
-    }
-}
-</code></pre>
-<h3 id="3模拟动态代理">3.模拟动态代理：</h3>
-<pre><code class="language-java">package com.ssm.util;
-
-import javax.tools.JavaCompiler;
-import javax.tools.StandardJavaFileManager;
-import javax.tools.ToolProvider;
-import java.io.*;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.net.URL;
-import java.net.URLClassLoader;
-import com.sun.jndi.toolkit.url.UrlUtil;
-
-public class ProxyUtil {
-
-    /**
-     * 如何产生一个对象？
-     *  content ---&gt; String
-     *  .java
-     *  .class
-     *  .new
-     * @param target：目标对象
-     * @return
-     */
-    public static Object newInstance(Object target) throws IOException, IllegalAccessException, InstantiationException, NoSuchMethodException, ClassNotFoundException, InvocationTargetException {
-        // targetInterface：目标对象的接口
-        Class targetInterface = target.getClass().getInterfaces()[0];
-
-        // 声明最终要返回的代理对象
-        Object proxy=null;
-        /**
-         * package com.ssm.proxyInter;
-         *
-         * import com.ssm.dao.UserDao;
-         *
-         * public class UserDaoLog implements UserDao {
-         *
-         *     private UserDao target;
-         *     public UserDaoLog(UserDao target){
-         *         this.target = target;
-         *     }
-         *     @Override
-         *     public void query(String p0, String p1) {
-         *         System.out.println(&quot;log...&quot;);
-         *         target.query(p0,p1);
-         *     }
-         * }
-         * 将上述代码逐行变成字符串
-         */
-        // 换行
-        String line = &quot;\n&quot;;
-        // 缩进
-        String tab = &quot;\t&quot;;
-        // 得到接口名 UserDao
-        String interfaceName = targetInterface.getSimpleName();
-        // 得到接口中的所有方法 query()
-        Method[] methods = targetInterface.getDeclaredMethods();
-        String content = &quot;&quot;;
-        String packageContent = &quot;package com.ssm;&quot; + line;
-        String importContent = &quot;import &quot; + targetInterface.getName() + &quot;;&quot; + line;
-        String classFirstLineContent = &quot;public class $Proxy implements &quot; +interfaceName+ &quot;{&quot; + line;
-        String fieldContent = tab + &quot;private &quot; + interfaceName + &quot; target;&quot; + line;
-        String constructorContent = tab + &quot;public $Proxy (&quot; + interfaceName + &quot; target){&quot; + line
-                + tab + tab + &quot;this.target = target; &quot;+ line
-                + tab +&quot;}&quot; + line;
-
-        // 参数内容：target.query(p0,p1);
-        String paramsContent = &quot;&quot;;
-        String methodContent = &quot;&quot;;
-        for (Method method : methods){
-            // 得到当前方法的返回类型
-            String returnType = method.getReturnType().getSimpleName();
-            // 得到当前方法的方法名
-            String methodName = method.getName();
-            // 得到方法的参数类型：如 String.class
-            Class[] args = method.getParameterTypes();
-            String argsContent = &quot;&quot;;
-            for (int i = 0 ; i &lt; args.length ; i++){
-                // 得到的是参数类型：如 String
-                String temp = args[i].getSimpleName();
-                // 最终构造成这个形式：String p0,String p1
-                argsContent += temp + &quot; p&quot; + i + &quot;,&quot;;
-                paramsContent += &quot;p&quot; + i + &quot;,&quot;;
-            }
-            // 截取掉最后一个多余的 ','
-            if(argsContent.length() &gt; 0){
-                argsContent = argsContent.substring(0,argsContent.lastIndexOf(&quot;,&quot;));
-                paramsContent = paramsContent.substring(0,paramsContent.lastIndexOf(&quot;,&quot;));
-            }
-            methodContent += tab + &quot;public &quot; + returnType + &quot; &quot; + methodName + &quot;(&quot; + argsContent + &quot;) {&quot; + line
-                    + tab + tab + &quot;System.out.println(\&quot;log\&quot;);&quot; + line;
-            // 判断是否有返回值
-            if(&quot;void&quot;.equals(returnType)){
-                methodContent += tab + tab + &quot;target.&quot; + methodName + &quot;(&quot; + paramsContent + &quot;);&quot; + line
-                        + tab + &quot;}&quot; + line;
-            }else {
-                methodContent += tab + tab + &quot; return target.&quot; + methodName + &quot;(&quot; + paramsContent + &quot;);&quot; + line
-                        + tab + &quot;}&quot; + line;
-            }
-
-        }
-
-        content = packageContent + importContent + classFirstLineContent + fieldContent + constructorContent + methodContent + &quot;}&quot;;
-
-        File file = new File(&quot;C:\\Users\\Only\\com\\ssm\\$Proxy.java&quot;);
-        if(!file.exists()){
-            file.createNewFile();
-        }
-        FileWriter fw = new FileWriter(file);
-        fw.write(content);
-        fw.flush();
-        fw.close();
-
-        // .java ---&gt; .class
-        JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-        StandardJavaFileManager fileMgr = compiler.getStandardFileManager(null, null, null);
-        Iterable units = fileMgr.getJavaFileObjects(file);
-        JavaCompiler.CompilationTask t = compiler.getTask(null, fileMgr, null, null, null, units);
-        t.call();
-        fileMgr.close();
-
-        // 通过反射得到构造函数 new 一个对象出来
-        URL[] urls = new URL[]{new URL(&quot;file:C:\\Users\\Only\\\\&quot;)};
-        URLClassLoader urlClassLoader = new URLClassLoader(urls);
-        Class clazz = urlClassLoader.loadClass(&quot;com.ssm.$Proxy&quot;);
-        Constructor constructor = clazz.getConstructor(targetInterface);
-        proxy = constructor.newInstance(target);
-
-        return proxy;
-    }
-}
-</code></pre>
-<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/%E6%A8%A1%E6%8B%9F%E5%8A%A8%E6%80%81%E4%BB%A3%E7%90%86.png" alt="图片" loading="lazy"></figure>
-<h3 id="4测试类">4.测试类</h3>
-<pre><code class="language-java">public class Test {
-    public static void main(String[] args) throws IOException, InvocationTargetException, NoSuchMethodException, ClassNotFoundException, InstantiationException, IllegalAccessException {
-        TestDao proxy = (TestDao) ProxyUtil.newInstance(new TestDaoImpl());
-        String res = proxy.query(&quot;hello&quot;, &quot;world&quot;);
-        System.out.println(&quot;res = &quot; + res);
-    }
-}
-</code></pre>
-<p>最终运行效果：</p>
-<pre><code class="language-java">log
-查询数据库
-daoImpl...hello world
-res = hello world
-</code></pre>
-<h2 id="代理逻辑动态实现而不是写死的-sout">代理逻辑动态实现，而不是写死的 sout</h2>
-<h3 id="1要代理的接口">1.要代理的接口</h3>
-<pre><code class="language-java">public interface TestDao {
-    String delete() throws Exception;
-}
-</code></pre>
-<h3 id="2目标对象">2.目标对象</h3>
-<pre><code class="language-java">public class TestDaoImpl implements TestDao {
-    @Override
-    public String delete() {
-        System.out.println(&quot;dao...delete&quot;);
-        return null;
-    }
-}
-</code></pre>
-<h3 id="3代理逻辑接口">3.代理逻辑接口</h3>
-<pre><code class="language-java">public interface CustomInvocationHandler {
-    Object invoke(Method method);
-}
-</code></pre>
-<h3 id="4代理逻辑具体实现">4.代理逻辑具体实现</h3>
-<pre><code class="language-java">package com.ssm.test;
-import com.ssm.dao.CustomInvocationHandler;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-public class TestCustomHandler implements CustomInvocationHandler {
-    private Object target;
-    public TestCustomHandler(Object target){
-        this.target = target;
-    }
-    @Override
-    public Object invoke(Method method) {
-        System.out.println(&quot;TestCustomHandler...&quot;);
-        try {
-            return method.invoke(target);
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        } catch (InvocationTargetException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-}
-</code></pre>
-<p>4.自定义动态代理</p>
-<pre><code class="language-java">package com.ssm.util;
-
-import javax.tools.JavaCompiler;
-import javax.tools.StandardJavaFileManager;
-import javax.tools.ToolProvider;
-import java.io.*;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.net.URL;
-import java.net.URLClassLoader;
-import com.ssm.dao.CustomInvocationHandler;
-import com.sun.jndi.toolkit.url.UrlUtil;
-public class ProxyUtil {
-    /**
-     * 如何产生一个对象？
-     *  content ---&gt; String
-     *  .java
-     *  .class
-     *  .new
-     * @return
-     */
-    public static Object newInstance(Class targetInterface, CustomInvocationHandler h) throws IOException, IllegalAccessException, InstantiationException, NoSuchMethodException, ClassNotFoundException, InvocationTargetException {
-        // targetInterface：目标对象的接口
-//        Class targetInterface = target.getClass().getInterfaces()[0];
-
-        // 声明最终要返回的代理对象
-        Object proxy=null;
-        /**
-         * package com.ssm.proxyInter;
-         *
-         * import com.ssm.dao.UserDao;
-         *
-         * public class UserDaoLog implements UserDao {
-         *
-         *     private UserDao target;
-         *     public UserDaoLog(UserDao target){
-         *         this.target = target;
-         *     }
-         *     @Override
-         *     public void query(String p0, String p1) {
-         *         System.out.println(&quot;log...&quot;);
-         *         target.query(p0,p1);
-         *     }
-         * }
-         * 将上述代码逐行变成字符串
-         */
-        // 换行
-        String line = &quot;\n&quot;;
-        // 缩进
-        String tab = &quot;\t&quot;;
-        // 得到接口名 UserDao
-        String interfaceName = targetInterface.getSimpleName();
-        // 得到接口中的所有方法 query()
-        Method[] methods = targetInterface.getDeclaredMethods();
-        String content = &quot;&quot;;
-        String packageContent = &quot;package com.ssm;&quot; + line;
-        String importContent = &quot;import &quot; + targetInterface.getName() + &quot;;&quot; + line
-                + &quot;import com.ssm.dao.CustomInvocationHandler;&quot; + line
-                + &quot;import java.lang.reflect.Method;&quot; + line;
-        String classFirstLineContent = &quot;public class $Proxy implements &quot; +interfaceName+ &quot;{&quot; + line;
-        String fieldContent = tab + &quot;private  CustomInvocationHandler h;&quot; + line;
-        String constructorContent = tab + &quot;public $Proxy (CustomInvocationHandler h){&quot; + line
-                + tab + tab + &quot;this.h = h; &quot;+ line
-                + tab +&quot;}&quot; + line;
-                
-        // 参数内容：target.query(p0,p1);
-        String paramsContent = &quot;&quot;;
-        String methodContent = &quot;&quot;;
-        for (Method method : methods){
-            // 得到当前方法的返回类型
-            String returnType = method.getReturnType().getSimpleName();
-            // 得到当前方法的方法名
-            String methodName = method.getName();
-            // 得到方法的参数类型：如 String.class
-            Class[] args = method.getParameterTypes();
-            String argsContent = &quot;&quot;;
-            for (int i = 0 ; i &lt; args.length ; i++){
-                // 得到的是参数类型：如 String
-                String temp = args[i].getSimpleName();
-                // 最终构造成这个形式：String p0,String p1
-                argsContent += temp + &quot; p&quot; + i + &quot;,&quot;;
-                paramsContent += &quot;p&quot; + i + &quot;,&quot;;
-            }
-            // 截取掉最后一个多余的 ','
-            if(argsContent.length() &gt; 0){
-                argsContent = argsContent.substring(0,argsContent.lastIndexOf(&quot;,&quot;));
-                paramsContent = paramsContent.substring(0,paramsContent.lastIndexOf(&quot;,&quot;));
-            }
-            methodContent += tab + &quot;public &quot; + returnType + &quot; &quot; + methodName + &quot;(&quot; + argsContent + &quot;) throws Exception {&quot; + line
-                    + tab + tab + &quot;Method method = Class.forName(\&quot;&quot; + targetInterface.getName() + &quot;\&quot;).getDeclaredMethod(\&quot;&quot; + methodName + &quot;\&quot;);&quot; + line
-                    + tab + tab + &quot;return (&quot;+ returnType +&quot;)h.invoke(method);&quot; + line
-                    + tab + &quot;}&quot; + line;
-        }
-
-        content = packageContent + importContent + classFirstLineContent + fieldContent + constructorContent + methodContent + &quot;}&quot;;
-
-        File file = new File(&quot;C:\\Users\\Only\\com\\ssm\\$Proxy.java&quot;);
-        if(!file.exists()){
-            file.createNewFile();
-        }
-        FileWriter fw = new FileWriter(file);
-        fw.write(content);
-        fw.flush();
-        fw.close();
-
-        // .java ---&gt; .class
-        JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-        StandardJavaFileManager fileMgr = compiler.getStandardFileManager(null, null, null);
-        Iterable units = fileMgr.getJavaFileObjects(file);
-        JavaCompiler.CompilationTask t = compiler.getTask(null, fileMgr, null, null, null, units);
-        t.call();
-        fileMgr.close();
-
-        // 通过反射得到构造函数 new 一个对象出来
-        URL[] urls = new URL[]{new URL(&quot;file:C:\\Users\\Only\\\\&quot;)};
-        URLClassLoader urlClassLoader = new URLClassLoader(urls);
-        Class clazz = urlClassLoader.loadClass(&quot;com.ssm.$Proxy&quot;);
-        Constructor constructor = clazz.getConstructor(CustomInvocationHandler.class);
-        proxy = constructor.newInstance(h);
-
-        return proxy;
-    }
-}
-</code></pre>
-<h3 id="5测试类">5.测试类</h3>
-<pre><code class="language-java">public class Test {
-    public static void main(String[] args) throws Exception {
-//         自定义动态代理
-        TestDao proxy = (TestDao) ProxyUtil.newInstance(TestDao.class, new TestCustomHandler(new TestDaoImpl()));
-        proxy.delete();
-    }
-}
-</code></pre>
-<p>运行结果：</p>
-<pre><code class="language-java">TestCustomHandler...
-dao...delete
-</code></pre>
-<h2 id="jdk动态代理">JDK动态代理</h2>
-<p>通过接口反射得到字节码 byte[] ，然后把字节码转成 class：native方法  openJDK  c++</p>
-<h3 id="1要代理的接口-2">1.要代理的接口</h3>
-<pre><code class="language-java">public interface TestDao {
-    String query(String s1, String s2) throws Exception;
-}
-</code></pre>
-<h3 id="2目标对象-2">2.目标对象</h3>
-<pre><code class="language-java">public class TestDaoImpl implements TestDao {
-    @Override
-    public String query(String s1, String s2) {
-        System.out.println(&quot;查询数据库&quot;);
-        System.out.println(&quot;daoImpl...&quot; + s1 + &quot; &quot; + s2);
-        return s1 + &quot; &quot; + s2;
-    } 
-}
-</code></pre>
-<h3 id="3代理的逻辑">3.代理的逻辑</h3>
-<pre><code class="language-java">package com.ssm.util;
-
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
-
-public class TestInvocationHandler implements InvocationHandler {
-    Object target;
-
-    /**
-     *
-     * @param target 目标对象
-     */
-    public TestInvocationHandler(Object target){
-        this.target = target;
-    }
-    /**
-     *
-     * @param proxy 代理对象 $Proxy
-     * @param method 目标对象 TestDao
-     * @param args 目标方法的参数
-     * @return
-     * @throws Throwable
-     *
-     * 根据代理的逻辑执行：即打印 TestInvocationHandler...proxy
-     * 执行目标对象的方法 ，即 TestDao 的 query()
-     */
-    @Override
-    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-        System.out.println(&quot;TestInvocationHandler...proxy&quot;);
-        return method.invoke(target,args);
-    }
-}
-</code></pre>
-<h3 id="4测试类-2">4.测试类</h3>
-<pre><code class="language-java">public class Test {
-    public static void main(String[] args) throws Exception {
-
-        /**
-         * JDK 动态代理
-         * 参数：要代理哪些接口；new Class[]{TestDao.class}：TestDao 下所有方法的代理。
-         *       代理的逻辑：new TestInvocationHandler(new TestDaoImpl())：在每个方法前打印 TestInvocationHandler...proxy
-         */
-        TestDao jdkProxy = (TestDao) Proxy.newProxyInstance(Test.class.getClassLoader(),
-                new Class[]{TestDao.class},
-                new TestInvocationHandler(new TestDaoImpl()));
-        String result = jdkProxy.query(&quot;hello&quot;, &quot;world&quot;);
-        System.out.println(&quot;result = &quot; + result);
-
-    }
-}
-</code></pre>
-<p>运行结果：</p>
-<pre><code class="language-java">TestInvocationHandler...proxy
-查询数据库
-daoImpl...hello world
-result = hello world
-</code></pre>
-<h3 id="jdk-动态代理分析">JDK 动态代理分析</h3>
-<p>JDK 动态代理：</p>
-<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/JDK%E5%8A%A8%E6%80%81%E4%BB%A3%E7%90%86%E4%BB%A3%E7%90%86%E5%AF%B9%E8%B1%A1.png" alt="图片" loading="lazy"></figure>
-<p>自定义动态代理：</p>
-<figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/%E8%87%AA%E5%AE%9A%E4%B9%89%E5%8A%A8%E6%80%81%E4%BB%A3%E7%90%86%E4%BB%A3%E7%90%86%E5%AF%B9%E8%B1%A1.png" alt="图片" loading="lazy"></figure>
-<h4 id="代理类">代理类</h4>
-<figure data-type="image" tabindex="4"><img src="https://epitomm.github.io/post-images/%E4%BB%A3%E7%90%86%E7%B1%BB.png" alt="图片" loading="lazy"></figure>
-<h4 id="得到代理类的构造方法">得到代理类的构造方法</h4>
-<figure data-type="image" tabindex="5"><img src="https://epitomm.github.io/post-images/%E5%BE%97%E5%88%B0%E4%BB%A3%E7%90%86%E7%B1%BB%E7%9A%84%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95.png" alt="图片" loading="lazy"></figure>
-<h4 id="使用代理类的构造方法-new-一个对象出来">使用代理类的构造方法 new 一个对象出来</h4>
-<figure data-type="image" tabindex="6"><img src="https://epitomm.github.io/post-images/%E4%BD%BF%E7%94%A8%E4%BB%A3%E7%90%86%E7%B1%BB%E7%9A%84%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95new%E4%B8%80%E4%B8%AA%E5%AF%B9%E8%B1%A1%E5%87%BA%E6%9D%A5.png" alt="图片" loading="lazy"></figure>
-<h4 id="class-cl-getproxyclass0loader-intfs">Class&lt;?&gt; cl = getProxyClass0(loader, intfs);</h4>
-<figure data-type="image" tabindex="7"><img src="https://epitomm.github.io/post-images/getProxyClass0.png" alt="图片" loading="lazy"></figure>
-<h4 id="public-v-getk-key-p-parameter">public V get(K key, P parameter) {</h4>
-<figure data-type="image" tabindex="8"><img src="https://epitomm.github.io/post-images/get.png" alt="图片" loading="lazy"></figure>
-<h4 id="debugger">debugger</h4>
-<figure data-type="image" tabindex="9"><img src="https://epitomm.github.io/post-images/debugger.png" alt="图片" loading="lazy"></figure>
-<h4 id="v-value-supplierget">V value = supplier.get();</h4>
-<figure data-type="image" tabindex="10"><img src="https://epitomm.github.io/post-images/suppiler.get.png" alt="图片" loading="lazy"></figure>
-<h4 id="public-synchronized-v-get">public synchronized V get() {</h4>
-<figure data-type="image" tabindex="11"><img src="https://epitomm.github.io/post-images/%E8%BF%94%E5%9B%9Evalue.png" alt="图片" loading="lazy"></figure>
-<h4 id="value-objectsrequirenonnullvaluefactoryapplykey-parameter">value = Objects.requireNonNull(valueFactory.apply(key, parameter))</h4>
-<figure data-type="image" tabindex="12"><img src="https://epitomm.github.io/post-images/requireNonNull.png" alt="图片" loading="lazy"></figure>
-<h4 id="public-class-applyclassloader-loader-class-interfaces">public Class<?> apply(ClassLoader loader, Class<?>[] interfaces) {</h4>
-<figure data-type="image" tabindex="13"><img src="https://epitomm.github.io/post-images/apply.png" alt="图片" loading="lazy"></figure>
-<h4 id="使用类加载器判断是否是同一个对象">使用类加载器判断是否是同一个对象</h4>
-<figure data-type="image" tabindex="14"><img src="https://epitomm.github.io/post-images/%E4%BD%BF%E7%94%A8%E7%B1%BB%E5%8A%A0%E8%BD%BD%E5%99%A8%E5%88%A4%E6%96%AD%E6%98%AF%E5%90%A6%E6%98%AF%E5%90%8C%E4%B8%80%E4%B8%AA%E5%AF%B9%E8%B1%A1.png" alt="图片" loading="lazy"></figure>
-<h4 id="判断接口的权限修饰符">判断接口的权限修饰符</h4>
-<figure data-type="image" tabindex="15"><img src="https://epitomm.github.io/post-images/%E5%88%A4%E6%96%AD%E6%8E%A5%E5%8F%A3%E7%9A%84%E6%9D%83%E9%99%90%E4%BF%AE%E9%A5%B0%E7%AC%A6.png" alt="图片" loading="lazy"></figure>
-<h4 id="string-proxyname-proxypkg-proxyclassnameprefix-num">String proxyName = proxyPkg + proxyClassNamePrefix + num;</h4>
-<figure data-type="image" tabindex="16"><img src="https://epitomm.github.io/post-images/proxyName.png" alt="图片" loading="lazy"></figure>
-<p>类名加上标识0，是为了防止并发情况下产生问题。</p>
-<h4 id="byte-proxyclassfile-proxygeneratorgenerateproxyclassproxyname-interfaces-accessflags">byte[] proxyClassFile = ProxyGenerator.generateProxyClass(proxyName, interfaces, accessFlags);</h4>
-<figure data-type="image" tabindex="17"><img src="https://epitomm.github.io/post-images/generateProxyClass.png" alt="图片" loading="lazy"></figure>
-<figure data-type="image" tabindex="18"><img src="https://epitomm.github.io/post-images/JDK%E4%BB%A3%E7%90%86%E8%BF%87%E7%A8%8B.png" alt="图片" loading="lazy"></figure>
-]]></content>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[Spring系列（二）SpringAOP 应用]]></title>
-        <id>https://epitomm.github.io/post/springaop-ying-yong/</id>
-        <link href="https://epitomm.github.io/post/springaop-ying-yong/">
-        </link>
-        <updated>2020-05-02T07:55:56.000Z</updated>
-        <content type="html"><![CDATA[<h1 id="自定义注解">自定义注解</h1>
-<h2 id="xml-的作用">xml 的作用？</h2>
-<p>答：<strong>描述数据</strong>。<br>
-举例：数据库中有一张 user 表，项目中有一个 User 类，如何将 User 类与 user 表<strong>关联</strong>？<br>
-答：使用 xml 来描述元数据。<br>
-那为什么还要有自定义注解呢？因为xml 开发过程过于复杂。</p>
-<h2 id="自定义注解-2">自定义注解</h2>
-<h3 id="一-准备阶段">一、准备阶段</h3>
-<h4 id="1定义实体类">1.定义实体类</h4>
-<pre><code class="language-java">package com.ssm.entity;
-
-import com.ssm.anno.Entity;
-
-public class CityEntity {
-
-    private Integer id;
-    private String name;
-
-    public Integer getId() {
-        return id;
-    }
-
-    public void setId(Integer id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-}
-</code></pre>
-<h4 id="2定义工具类">2.定义工具类</h4>
-<pre><code class="language-java">package com.ssm.util;
-
-public class CommonUtil {
-    /**
-     * 通过一个对象构建一条查询的 sql 语句
-     * @param obj
-     */
-    public static String buildQuerySqlForEntity(Object obj){
-
-        // 表名、字段应该根据传入的值动态变化，不应该写死
-        // 办法：在实体类 CityEntity 中加入注解 @Table（需要导入JPA），我们使用自定义注解来实现
-        String sql = &quot;select * from ? where id=? and name=?&quot;;
-
-        return null;
-    }
-}
-</code></pre>
-<h4 id="3测试方法">3.测试方法</h4>
-<pre><code class="language-java">package com.ssm.util;
-
-public class CommonUtil {
-    /**
-     * 通过一个对象构建一条查询的 sql 语句
-     * @param obj
-     */
-    public static String buildQuerySqlForEntity(Object obj){
-
-        // 表名、字段应该根据传入的值动态变化，不应该写死
-        // 办法：在实体类 CityEntity 中加入注解 @Table（需要导入JPA），我们使用自定义注解来实现
-        String sql = &quot;select * from ? where id=? and name=?&quot;;
-
-        return null;
-    }
-}
-</code></pre>
-<h3 id="二-自定义注解基本功能">二、自定义注解——基本功能</h3>
-<h4 id="1自定义注解">1.自定义注解</h4>
-<pre><code class="language-java">public @interface Entity {
-    public String value();
-}
-</code></pre>
-<h4 id="2实体类添加注解">2.实体类添加注解</h4>
-<pre><code class="language-java">// 注解里面的 value 方法，返回值是 String 类型
-@Entity(value = &quot;city&quot;)
-public class CityEntity {
-</code></pre>
-<h3 id="三-自定义注解元注解">三、自定义注解——元注解</h3>
-<h4 id="1实体类体会元注解">1.实体类体会元注解</h4>
-<pre><code class="language-java">//@Override   
-// @Override' not applicable to type：@Override 不适用修饰类
-public class CityEntity {
-
-// @Override   
-// Method does not override method from its superclass：没有父类重写的方法。表名 @Override 注解可用于修饰方法
-    public void setId(Integer id) {
-        this.id = id;
-    }    
-</code></pre>
-<p>分析得知：@Override 注解可用于修饰方法，不可用于修饰类。<br>
-于是我们来改动一下我们的自定义注解 @Entity，让它只能用于修饰类，不能用于修饰方法。</p>
-<h4 id="2修改自定义注解类">2.修改自定义注解类</h4>
-<pre><code class="language-java">// @Entity 注解能够出现的目标位置：TYPE：类
-@Target(ElementType.TYPE)
-// @Target({ElementType.TYPE, ElementType.FIELD})：指定多个可以出现的位置：类、
-public @interface Entity {
-    public String value();
-}
-</code></pre>
-<h3 id="四-获得注解内的值">四、获得注解内的值</h3>
-<pre><code class="language-java">package com.ssm.util;
-
-import com.ssm.anno.Entity;
-
-import java.lang.annotation.Annotation;
-
-public class CommonUtil {
-    public static String buildQuerySqlForEntity(Object obj){
-        // 得到类的类对象
-        Class clazz = obj.getClass();
-        // setup1 判断是否加了这个注解
-        if(clazz.isAnnotationPresent(Entity.class)){
-            // setup2 得到注解
-            Entity entity = (Entity) clazz.getDeclaredAnnotation(Entity.class);
-            // setup3 调用方法
-            String value = entity.value();
-            System.out.println(value);  // city
-        }
-
-        // 表名、字段应该根据传入的值动态变化，不应该写死
-        // 办法：在实体类 CityEntity 中加入注解 @Table（需要导入JPA），我们使用自定义注解来实现
-        String sql = &quot;select * from ? where id=? and name=?&quot;;
-
-        return null;
-    }
-}
-</code></pre>
-<h2 id="注解生命周期">注解生命周期</h2>
-<h3 id="retentionretentionpolicysource">@Retention(RetentionPolicy.SOURCE)</h3>
-<p>注解的生命周期：默认情况下仅仅存在于 Java 源码中，即@Retention(RetentionPolicy.SOURCE)，当 JVM 一旦把它编译成字节码，注解会自动丢失。<br>
-<img src="https://epitomm.github.io/post-images/%E6%B3%A8%E8%A7%A3%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9FSOURCE.png" alt="图片" loading="lazy"></p>
-<h3 id="retentionretentionpolicyclass">@Retention(RetentionPolicy.CLASS)</h3>
-<p>会存在于 .class 文件中，但是在代码被运行时还是会被 JVM 忽略。<br>
-<img src="https://epitomm.github.io/post-images/%E6%B3%A8%E8%A7%A3%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9FCLASS.png" alt="图片" loading="lazy"><br>
-测试：</p>
-<pre><code class="language-java">package com.ssm.util;
-
-import com.ssm.anno.Entity;
-
-public class CommonUtil {
-
-    public static String buildQuerySqlForEntity(Object obj){
-        // 得到类的类对象
-        Class clazz = obj.getClass();
-        // setup1 判断是否加了这个注解
-        boolean b = clazz.isAnnotationPresent(Entity.class); // false
-        System.out.println(b);
-
-        return null;
-    }
-}
-</code></pre>
-<h3 id="retentionretentionpolicyruntime">@Retention(RetentionPolicy.RUNTIME)</h3>
-<p>只有当注解的生命周期声明为 RUNTIME 时，在执行时才会被 JVM 发觉到。<br>
-boolean b = clazz.isAnnotationPresent(Entity.class);//true</p>
-<h1 id="aop-是什么">AOP 是什么</h1>
-<p>与OOP对比，面向切面，传统的OOP开发中的代码逻辑是自上而下的，而这些过程会产生一些横切性问题，这些横切性的问题和我们的主业务逻辑关系不大，这些横切性问题不会影响到主逻辑实现的，但是会散落到代码的各个部分，难以维护。AOP是处理一些横切性问题，AOP的编程思想就是把这些问题和主业务逻辑分开，达到与主业务逻辑解耦的目的。使代码的重用性和开发效率更高。<br>
-<img src="https://epitomm.github.io/post-images/AOP%E6%98%AF%E4%BB%80%E4%B9%88.png" alt="图片" loading="lazy"></p>
-<h2 id="aop-的应用场景">AOP 的应用场景</h2>
-<ol>
-<li>日志记录</li>
-<li>权限验证</li>
-<li>效率检查</li>
-<li>事务管理</li>
-<li>exception</li>
-</ol>
-<h2 id="springaop-的底层技术">SpringAOP 的底层技术</h2>
-<table>
-<thead>
-<tr>
-<th style="text-align:center"></th>
-<th style="text-align:center">JDK动态代理</th>
-<th style="text-align:center">CGLIB代理</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center">编译时期的织入还是运行时期的织入?</td>
-<td style="text-align:center">运行时期织入</td>
-<td style="text-align:center">运行时期织入</td>
-</tr>
-<tr>
-<td style="text-align:center">初始化时期织入还是获取对象时期织入？</td>
-<td style="text-align:center">初始化时期织入</td>
-<td style="text-align:center">初始化时期织入</td>
-</tr>
-</tbody>
-</table>
-<h2 id="springaop-和-aspectj-的关系">SpringAOP 和 AspectJ 的关系</h2>
-<p>AOP 是一种概念<br>
-SpringAOP、AspectJ 都是 AOP 的实现，SpringAOP 有自己的语法，但是语法复杂，所以SpringAOP 借助了AspectJ 的注解，但是底层实现还是自己的<br>
-AspectJ 是静态注入：编译（.java -&gt; .class）时就完成了注入，SpringAOP是动态注入：运行时才注入</p>
-<pre><code>spring AOP提供两种编程风格
-@AspectJ support         ------------&gt;利用aspectj的注解
-Schema-based AOP support -----------&gt;xml aop:config 命名空间
-
-证明:spring,通过源  码分析了,我们可以知道spring底层使用的是JDK或者CGLIB来完成的代理,并且在官网上spring给出了aspectj的文档,和springAOP是不同的
-</code></pre>
-<p>如果您只需要建议在Spring bean上执行操作，那么Spring AOP是正确的选择。如果需要通知Spring容器没有管理的对象(通常是域对象)，则需要使用AspectJ。<br>
-Spring AOP的概念<br>
-参考链接：<a href="https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#aop-introduction-defn">https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#aop-introduction-defn</a></p>
-<ul>
-<li>aspect:一定要给spring去管理  抽象  aspectj-&gt;类</li>
-<li>pointcut:切点表示连接点的集合  -----------------&gt;   表 （我的理解：PointCut是JoinPoint的谓语，这是一个动作，主要是告诉通知连接点在哪里，切点表达式决定 JoinPoint 的数量）</li>
-<li>Joinpoint:连接点   目标对象中的方法 ----------------&gt;    记录（我的理解：JoinPoint是要关注和增强的方法，也就是我们要作用的点）</li>
-<li>Weaving :把代理逻辑加入到目标对象上的过程叫做织入</li>
-<li>target 目标对象 原始对象</li>
-<li>aop Proxy 代理对象  包含了原始对象的代码和增加后的代码的那个对象</li>
-<li>advice:通知    (位置 + logic)</li>
-</ul>
-<h2 id="aspect-切面">Aspect 切面</h2>
-<blockquote>
-<p>Aspect: A modularization of a concern that cuts across multiple classes. Transaction management is a good example of a crosscutting concern in enterprise Java applications. In Spring AOP, aspects are implemented by using regular classes (the schema-based approach) or regular classes annotated with the @Aspect annotation (the @AspectJ style).</p>
-</blockquote>
-<p>切面是：通知、切点、连接点的载体。通知、连接点要放到哪里去，好比 Java 中的属性、方法、构造方法，这些东西要放到哪里去？放到一个类里面，这个类就是方法以及参数属性的载体。切面就是连接点、切点、通知的载体，把这些连接点、切点、通知所在的位置称之为一个切面。</p>
-<h2 id="join-point-连接点">Join point 连接点</h2>
-<blockquote>
-<p>Join point: A point during the execution of a program, such as the execution of a method or the handling of an exception. In Spring AOP, a join point always represents a method execution.</p>
-</blockquote>
-<p>连接点：程序执行过程中的一个点，如方法的执行或异常的处理。在Spring AOP中，连接点总是表示方法执行。<br>
-<img src="https://epitomm.github.io/post-images/AOP%E8%BF%9E%E6%8E%A5%E7%82%B9.png" alt="图片" loading="lazy"><br>
-ProceedingJoinPoint 和 JoinPoint 的区别:<br>
-ProceedingJoinPoint  继承了JoinPoint ,proceed()这个是aop代理链执行的方法。并扩充实现了proceed()方法，用于继续执行连接点。JoinPoint 仅能获取相关参数，无法执行连接点。<br>
-JoinPoint 的方法：</p>
-<ol>
-<li>java.lang.Object[] getArgs()：获取连接点方法运行时的入参列表；</li>
-<li>Signature getSignature() ：获取连接点的方法签名对象；</li>
-<li>java.lang.Object getTarget() ：获取连接点所在的目标对象；</li>
-<li>java.lang.Object getThis() ：获取代理对象本身；<br>
-proceed()有重载,有个带参数的方法,可以修改目标方法的的参数</li>
-</ol>
-<p>Advice 通知<br>
-Advice: Action taken by an aspect at a particular join point. Different types of advice include “around”, “before” and “after” advice. (Advice types are discussed later.) Many AOP frameworks, including Spring, model an advice as an interceptor and maintain a chain of interceptors around the join point.<br>
-<img src="https://epitomm.github.io/post-images/AOP%E9%80%9A%E7%9F%A5.png" alt="图片" loading="lazy"></p>
-<ul>
-<li>advice通知类型:</li>
-<li>Before 连接点执行之前，但是无法阻止连接点的正常执行，除非该段执行抛出异常</li>
-<li>After  连接点正常执行之后，执行过程中正常执行返回退出，非异常退出</li>
-<li>After throwing  执行抛出异常的时候</li>
-<li>After (finally)  无论连接点是正常退出还是异常退出，都会执行</li>
-<li>Around advice: 围绕连接点执行，例如方法调用。这是最有用的切面方式。around通知可以在方法调用之前和之后执行自定义行为。它还负责选择是继续加入点还是通过返回自己的返回值或抛出异常来快速建议的方法执行。</li>
-</ul>
-<h3 id="after">After</h3>
-<pre><code class="language-java">@After(&quot;pointCutTarget()&quot;)
-public void after(){
-    System.out.println(&quot;after&quot;);
-}
-</code></pre>
-<h3 id="before">Before</h3>
-<pre><code class="language-java">@Before(&quot;pointCut()&quot;)
-public void before(JoinPoint joinPoint){
-    System.out.println(&quot;before&quot;);
-    System.out.println(joinPoint.getThis());
-    System.out.println(joinPoint.getTarget());
-}
-</code></pre>
-<p>断点调试：<br>
-1、joinPoint.getThis()<br>
-<img src="https://epitomm.github.io/post-images/%E8%BF%9E%E6%8E%A5%E7%82%B9%E6%96%AD%E7%82%B9%E8%B0%83%E8%AF%95_1.png" alt="图片" loading="lazy"><br>
-<img src="https://epitomm.github.io/post-images/%E8%BF%9E%E6%8E%A5%E7%82%B9%E6%96%AD%E7%82%B9%E8%B0%83%E8%AF%95_2.png" alt="图片" loading="lazy"><br>
-2、joinPoint.getTarget()<br>
-<img src="https://epitomm.github.io/post-images/%E8%BF%9E%E6%8E%A5%E7%82%B9%E6%96%AD%E7%82%B9%E8%B0%83%E8%AF%95_3.png" alt="图片" loading="lazy"></p>
-<h3 id="around">Around</h3>
-<p>在通知中拿到连接点，然后执行连接点。</p>
-<pre><code class="language-java">@Around(&quot;pointCut()&quot;)
-// ProceedingJoinPoint：正在进行的 JointPoint：正在增强的方法
-public void around(ProceedingJoinPoint pjp) throws Throwable {
-    System.out.println(&quot;around...before&quot;);
-    // 拿到方法并执行它
-    pjp.proceed();
-    System.out.println(&quot;around...after&quot;);
-}
-</code></pre>
-<p>测试结果：</p>
-<pre><code>around...before
-query
-around...after
-</code></pre>
-<h3 id="xml-通知">XML 通知</h3>
-<p>1、编写 xml，定义切面、连接点、通知</p>
-<pre><code class="language-xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
-&lt;beans xmlns=&quot;http://www.springframework.org/schema/beans&quot;
-       xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot;
-       xmlns:aop=&quot;http://www.springframework.org/schema/aop&quot;
-       xmlns:context=&quot;http://www.springframework.org/schema/context&quot;
-       xsi:schemaLocation=&quot;http://www.springframework.org/schema/beans
-                         http://www.springframework.org/schema/beans/spring-beans.xsd
-                         http://www.springframework.org/schema/aop
-                         http://www.springframework.org/schema/aop/spring-aop.xsd
-                         http://www.springframework.org/schema/context
-                         http://www.springframework.org/schema/context/spring-context.xsd&quot;&gt;
-
-    &lt;context:component-scan base-package=&quot;com.ssm&quot;/&gt;
-    &lt;!-- 定义一个切面 --&gt;
-    &lt;aop:config&gt;
-        &lt;!-- 定义一个连接点 --&gt;
-        &lt;aop:pointcut id=&quot;allDao&quot; expression=&quot;execution(* com.ssm.dao.*.*(..))&quot;/&gt;
-        &lt;!-- 通知包含两部分：位置 pointcut-ref 、逻辑 ref --&gt;
-        &lt;aop:aspect id=&quot;aspect&quot; ref=&quot;xmlBean&quot;&gt;
-            &lt;aop:before pointcut-ref=&quot;allDao&quot;
-                    method=&quot;before&quot;/&gt;
-        &lt;/aop:aspect&gt;
-    &lt;/aop:config&gt;
-
-    &lt;bean id=&quot;xmlBean&quot; class=&quot;com.ssm.app.XMLAopBean&quot;/&gt;
-    &lt;bean id=&quot;indexDao&quot; class=&quot;com.ssm.dao.impl.IndexDaoImpl&quot;/&gt;
-&lt;/beans&gt;
-</code></pre>
-<p>2、编写通知的逻辑</p>
-<pre><code class="language-java">public class XMLAopBean {
-    public void before(){
-        System.out.println(&quot;xml before...&quot;);
-    }
-}
-</code></pre>
-<p>3、测试</p>
-<pre><code class="language-java">public class TestXML {
-    public static void main(String[] args) throws IOException {
-        ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext(&quot;spring.xml&quot;);
-        IndexDao dao = (IndexDao) context.getBean(&quot;indexDao&quot;);
-        dao.query(&quot;hello&quot;);
-    }
-}
-</code></pre>
-<p>4、运行结果</p>
-<pre><code>xml before...
-query
-hello
-</code></pre>
-<h4 id="环绕通知中改变参数值">环绕通知中改变参数值</h4>
-<p>1、传递进来的参数为 &quot;hello&quot;</p>
-<pre><code class="language-java">public class Test {
-    public static void main(String[] args) throws IOException {
-        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);
-        IndexDao dao = (IndexDao) context.getBean(&quot;indexDao&quot;);
-        dao.query(&quot;hello&quot;);
-    }
-}
-</code></pre>
-<p>2、在环绕通知内将参数修改为  hello  world</p>
-<pre><code class="language-java">@Around(&quot;pointCut()&quot;)
-// ProceedingJoinPoint：正在进行的 JointPoint：正在增强的方法 
-public void around(ProceedingJoinPoint pjp) throws Throwable {
-    Object[] args = pjp.getArgs();
-    if(args != null &amp;&amp; args.length &gt; 0){
-        for (int i = 0; i &lt; args.length; i++) {
-            args[i] += &quot; world&quot;;
-        }
-    }
-    System.out.println(&quot;around...before&quot;);
-    // 拿到方法并执行它
-    pjp.proceed(args);
-    System.out.println(&quot;around...after&quot;);
-}
-</code></pre>
-<p>3、输出参数值</p>
-<pre><code class="language-java">@Repository(&quot;indexDao&quot;)
-public class IndexDaoImpl implements IndexDao {
-    @Override
-    public void query(String str){
-        System.out.println(&quot;query&quot;);
-        System.out.println(str);
-    }
-}
-</code></pre>
-<p>4、输出结果：</p>
-<pre><code>around...before
-query
-hello world
-around...after
-</code></pre>
-<h2 id="pointcut-切点">Pointcut 切点</h2>
-<blockquote>
-<p>Pointcut: A predicate that matches join points. Advice is associated with a pointcut expression and runs at any join point matched by the pointcut (for example, the execution of a method with a certain name). The concept of join points as matched by pointcut expressions is central to AOP, and Spring uses the AspectJ pointcut expression language by default.</p>
-</blockquote>
-<p>切点：连接点的集合。<br>
-<img src="https://epitomm.github.io/post-images/AOP%E5%88%87%E7%82%B9.png" alt="图片" loading="lazy"></p>
-<h2 id="introduction">Introduction</h2>
-<blockquote>
-<p>Introduction: Declaring additional methods or fields on behalf of a type. Spring AOP lets you introduce new interfaces (and a corresponding implementation) to any advised object. For example, you could use an introduction to make a bean implement an IsModified interface, to simplify caching. (An introduction is known as an inter-type declaration in the AspectJ community.)</p>
-</blockquote>
-<h3 id="实例">实例</h3>
-<p>1、准备一个 IndexDao 接口</p>
-<pre><code class="language-java">public interface IndexDao {
-    void query(String str);
-}
-</code></pre>
-<p>2、准备一个 IndexDao 接口的实现类</p>
-<pre><code class="language-java">@Repository(&quot;indexDao&quot;)
-public class IndexDaoImpl implements IndexDao {
-    @Override
-    public void query(String str){
-        System.out.println(&quot;query&quot;);
-        System.out.println(str);
-    }
-}
-</code></pre>
-<p>3、再准备一个接口 OrderDAO，并把它注入到 Spring 容器中</p>
-<pre><code class="language-java">@Repository(&quot;orderDao&quot;)
-public class OrderDao {
-}
-</code></pre>
-<p>4、引入</p>
-<pre><code class="language-java">@Component
-// 切面
-@Aspect
-public class NotVeryUsefulAspect {
-     // 找到 com.ssm.dao 下的所有类，让它引入 IndexDao 接口的 IndexDaoImpl 实现，
-    // 即让 class OrderDao implements IndexDao，并且方法的具体实现与 IndexDaoImpl 相同
-    @DeclareParents(value=&quot;com.ssm.dao.*&quot;, defaultImpl= IndexDaoImpl.class)
-    public static IndexDao indexDao;
-}
-</code></pre>
-<p>5、测试</p>
-<pre><code class="language-java">public class Test {
-    public static void main(String[] args) throws IOException {
-        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);
-        IndexDao dao = (IndexDao) context.getBean(&quot;orderDao&quot;);
-        dao.query(&quot;hello&quot;);
-    }
-}
-</code></pre>
-<p>运行结果：</p>
-<pre><code>query
-hello
-</code></pre>
-<p>6、分析：orderDao 内并没有方法，但是获得容器内的 OrderDao 对象后却可以正常调用  query() 方法，原因就是使用了 Introduction。</p>
-<h2 id="aspect-instantiation-models">Aspect Instantiation Models</h2>
-<p>使用方式如下：<br>
-@Aspect(&quot;perthis(this(com.chenss.dao.IndexDaoImpl))&quot;)<br>
-要求：</p>
-<ol>
-<li>AspectJ对象的注入类型为prototype</li>
-<li>目标对象也必须是prototype的<br>
-原因为：只有目标对象是原型模式的，每次getBean得到的对象才是不一样的，由此针对每个对象就会产生新的切面对象，才能产生不同的切面结果。</li>
-</ol>
-<h3 id="示例">示例</h3>
-<p>1、多例的 IndexDaoImpl</p>
-<pre><code class="language-java">@Repository(&quot;indexDao&quot;)
-@Scope(&quot;prototype&quot;)
-public class IndexDaoImpl implements IndexDao {
-</code></pre>
-<p>2、单例的切面</p>
-<pre><code class="language-java">@Component
-@Aspect
-public class NotVeryUsefulAspect {
-    // 切点 com.ssm.dao 下的子包下的任意类的任意方法 任意返回值 任意修饰符
-    @Pointcut(&quot;execution(* com.ssm.dao.*.*(..))&quot;)
-    public void pointCut(){
-    }
-
-    @Around(&quot;pointCut()&quot;)
-    // ProceedingJoinPoint：正在进行的 JointPoint：正在增强的方法
-    public void around(ProceedingJoinPoint pjp) throws Throwable {
-        System.out.println(&quot;this.hashCode = &quot; + this.hashCode());
-        Object[] args = pjp.getArgs();
-        if(args != null &amp;&amp; args.length &gt; 0){
-            for (int i = 0; i &lt; args.length; i++) {
-                args[i] += &quot; world&quot;;
-            }
-        }
-        System.out.println(&quot;around...before&quot;);
-        // 拿到方法并执行它
-        pjp.proceed(args);
-        System.out.println(&quot;around...after&quot;);
-    }
-}
-</code></pre>
-<p>3、测试类</p>
-<pre><code class="language-java">public class Test {
-    public static void main(String[] args) throws IOException {
-        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);
-        IndexDao dao = (IndexDao) context.getBean(&quot;indexDao&quot;);
-        IndexDao dao1 = (IndexDao) context.getBean(&quot;indexDao&quot;);
-        // com.ssm.dao.impl.IndexDaoImpl@24aed80c : com.ssm.dao.impl.IndexDaoImpl@3a52dba3
-        System.out.println(dao+&quot; : &quot;+dao1);
-        dao.query(&quot;hello&quot;);
-        System.out.println(&quot; - - - - - - - - - - - &quot;);
-        dao1.query(&quot;hi&quot;);
-    }
-}
-</code></pre>
-<p>运行结果：</p>
-<pre><code>com.ssm.dao.impl.IndexDaoImpl@24aed80c : com.ssm.dao.impl.IndexDaoImpl@3a52dba3
-this.hashCode = 1792550665
-around...before
-query
-hello world
-around...after
- - - - - - - - - - - - 
-this.hashCode = 1792550665
-around...before
-query
-hi world
-around...after
-</code></pre>
-<p>4、分析：<br>
-当 IndexDaoImpl 设置为原型时，两次 context.getBean(&quot;indexDaoImpl&quot;) 得到的 IndexDaoImpl 是不同的对象。但是不同的 bean 对象得到的切面却是完全相同的。</p>
-<p>更改：AspectJ 对象的注入类型为 prototype，为所有代理对象是 IndexDaoImpl 的单独创建一个切点出来</p>
-<pre><code class="language-java">@Component
-// 为所有代理对象是 IndexDaoImpl 的单独创建一个切点出来
-@Aspect(&quot;perthis(this(com.ssm.dao.impl.IndexDaoImpl))&quot;)
-@Scope(&quot;prototype&quot;)
-public class NotVeryUsefulAspect {
-</code></pre>
-<p>CJLIB 动态代理</p>
-<pre><code class="language-java">@Configuration
-@ComponentScan(&quot;com.ssm&quot;)
-// 开启 AspectJ 语法支持
-@EnableAspectJAutoProxy(proxyTargetClass=true)
-public class AppConfig {
-}
-</code></pre>
-<p>运行结果：</p>
-<pre><code>com.ssm.dao.impl.IndexDaoImpl@672872e1 : com.ssm.dao.impl.IndexDaoImpl@32910148
-this.hashCode = 254801937
-around...before
-query
-hello world
-around...after
- - - - - - - - - - - - 
-this.hashCode = 90767234
-around...before
-query
-hi world
-around...after
-</code></pre>
-<h2 id="target-object目标对象">Target object：目标对象</h2>
-<blockquote>
-<p>Target object: An object being advised by one or more aspects. Also referred to as the “advised object”. Since Spring AOP is implemented by using runtime proxies, this object is always a proxied object.</p>
-</blockquote>
-<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/AOP%E7%9B%AE%E6%A0%87%E5%AF%B9%E8%B1%A1.png" alt="图片" loading="lazy"></figure>
-<h2 id="aop-proxy-代理对象">AOP proxy 代理对象</h2>
-<blockquote>
-<p>AOP proxy: An object created by the AOP framework in order to implement the aspect contracts (advise method executions and so on). In the Spring Framework, an AOP proxy is a JDK dynamic proxy or a CGLIB proxy.</p>
-</blockquote>
-<h2 id="weaving">Weaving</h2>
-<blockquote>
-<p>Weaving: linking aspects with other application types or objects to create an advised object. This can be done at compile time (using the AspectJ compiler, for example), load time, or at runtime. Spring AOP, like other pure Java AOP frameworks, performs weaving at runtime.</p>
-</blockquote>
-<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/AOP%E7%BB%87%E5%85%A5.png" alt="图片" loading="lazy"></figure>
-<h1 id="springaop-支持-aspectj">SpringAOP 支持 AspectJ</h1>
-<p>AOP 和 SpringAOP 的 关系？SpringAOP 是 AOP 的一种实现。<br>
-实现 AOP 的技术：AspectJ、SpringAOP<br>
-SpringAOP 和 AspectJ 的关系？Spring 原先版本的 AOP 语法过于繁琐，于是 Spring 借助了 AspectJ 的语法，底层技术还是用的 Spring 底层的技术。<br>
-参考资料：<a href="https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#aop-ataspectj">https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#aop-ataspectj</a></p>
-<h2 id="0-导入-spring-依赖">0、导入 Spring 依赖</h2>
-<pre><code class="language-xml">&lt;dependency&gt;
-  &lt;groupId&gt;org.springframework&lt;/groupId&gt;
-  &lt;artifactId&gt;spring-context&lt;/artifactId&gt;
-  &lt;version&gt;5.0.9.RELEASE&lt;/version&gt;
-&lt;/dependency&gt;
-</code></pre>
-<p>准备一个 IndexDao：</p>
-<pre><code class="language-java">@Repository
-public class IndexDao {
-    public void query(){
-        System.out.println(&quot;query&quot;);
-    }
-}
-</code></pre>
-<h2 id="1-启用aspectj支持">1、启用@AspectJ支持</h2>
-<p>使用Java Configuration启用@AspectJ支持<br>
-要使用Java @Configuration启用@AspectJ支持，请添加@EnableAspectJAutoProxy注释</p>
-<pre><code class="language-java">@Configuration
-@ComponentScan(&quot;com.ssm&quot;)
-@EnableAspectJAutoProxy
-public class AppConfig {
-
-}
-</code></pre>
-<p>使用XML配置启用@AspectJ支持<br>
-要使用基于xml的配置启用@AspectJ支持，可以使用aop:aspectj-autoproxy元素</p>
-<pre><code class="language-xml">&lt;aop:aspectj-autoproxy/&gt;
-</code></pre>
-<h2 id="2-声明一个aspect">2、声明一个Aspect</h2>
-<p>引入 Aspect 依赖</p>
-<pre><code class="language-xml">&lt;dependency&gt;
-  &lt;groupId&gt;org.aspectj&lt;/groupId&gt;
-  &lt;artifactId&gt;aspectjweaver&lt;/artifactId&gt;
-  &lt;version&gt;1.9.0&lt;/version&gt;
-&lt;/dependency&gt;
-</code></pre>
-<p>声明一个@Aspect注释类，并且定义成一个bean交给Spring管理。</p>
-<pre><code class="language-java">@Component
-@Aspect
-public class UserAspect {
-}
-</code></pre>
-<h2 id="3-声明一个pointcut">3、声明一个PointCut</h2>
-<p>切入点表达式由@Pointcut注释表示。切入点声明由两部分组成:一个签名包含名称和任何参数，以及一个切入点表达式，该表达式确定我们对哪个方法执行感兴趣。</p>
-<pre><code class="language-java">@Pointcut(&quot;execution(* transfer(..))&quot;)// 切入点表达式
-private void anyOldTransfer() {}// 切入点签名
-</code></pre>
-<p>切入点确定感兴趣的 join points（连接点），从而使我们能够控制何时执行通知。Spring AOP只支持Spring bean的方法执行 join points（连接点），所以您可以将切入点看作是匹配Spring bean上方法的执行。</p>
-<pre><code class="language-java">/**
- * 申明Aspect，并且交给spring容器管理
- */
-@Component
-@Aspect
-public class UserAspect {
-    /**
-     * 申明切入点，匹配UserDao所有方法调用
-     * execution匹配方法执行连接点
-     * within:将匹配限制为特定类型中的连接点
-     * args：参数
-     * target：目标对象
-     * this：代理对象
-     */
-    @Pointcut(&quot;execution(* com.yao.dao.UserDao.*(..))&quot;)
-    public void pintCut(){
-        System.out.println(&quot;point cut&quot;);
-    }
-</code></pre>
-<h2 id="4-声明一个advice通知">4、声明一个Advice通知</h2>
-<p>advice通知与pointcut切入点表达式相关联，并在切入点匹配的方法执行@Before之前、@After之后或前后运行。</p>
-<pre><code class="language-java">/**
- * 申明Aspect，并且交给spring容器管理
- */
-@Component
-@Aspect
-public class UserAspect {
-    /**
-     * 申明切入点，匹配UserDao所有方法调用
-     * execution匹配方法执行连接点
-     * within:将匹配限制为特定类型中的连接点
-     * args：参数
-     * target：目标对象
-     * this：代理对象
-     */
-    @Pointcut(&quot;execution(* com.yao.dao.UserDao.*(..))&quot;)
-    public void pintCut(){
-        System.out.println(&quot;point cut&quot;);
-    }
-    /**
-     * 申明before通知,在pintCut切入点前执行
-     * 通知与切入点表达式相关联，
-     * 并在切入点匹配的方法执行之前、之后或前后运行。
-     * 切入点表达式可以是对指定切入点的简单引用，也可以是在适当位置声明的切入点表达式。
-     */
-    @Before(&quot;com.yao.aop.UserAspect.pintCut()&quot;)
-    public void beforeAdvice(){
-        System.out.println(&quot;before&quot;);
-    }
-}
-</code></pre>
-<p>测试类：</p>
-<pre><code class="language-java">public class Test {
-    public static void main(String[] args) {
-        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);
-        IndexDao dao = context.getBean(IndexDao.class);
-        dao.query();
-    }
-}
-</code></pre>
-<p>运行结果：</p>
-<pre><code>before
-query
-</code></pre>
-<h1 id="各种连接点-joinpoint-的意义">各种连接点 JoinPoint 的意义:</h1>
-<h2 id="execution">execution</h2>
-<p>用于匹配方法执行连接点，最小粒度方法，在aop中主要使用。</p>
-<pre><code class="language-java">execution(modifiers-pattern? ret-type-pattern declaring-type-pattern? name-pattern(param-pattern)
-          throws-pattern?)
-</code></pre>
-<p>这里问号表示当前项可以有也可以没有，其中各项的语义如下：<br>
-modifiers-pattern：方法的可见性，如public，protected；<br>
-ret-type-pattern：方法的返回值类型，如int，void等；<br>
-declaring-type-pattern：方法所在类的全路径名，如com.spring.Aspect；<br>
-name-pattern：方法名类型，如 buisinessService()；<br>
-param-pattern：方法的参数类型，如java.lang.String；<br>
-throws-pattern：方法抛出的异常类型，如java.lang.Exception；</p>
-<h3 id="examples">Examples</h3>
-<p>@Pointcut(&quot;execution(* com.chenss.dao.<em>.</em>(..))&quot;)//匹配com.chenss.dao包下的任意接口和类的任意方法【方法返回值类型任意，方法所在类的全路径名：com.chenss.dao，方法名类型任意，方法的参数类型任意】<br>
-@Pointcut(&quot;execution(public * com.chenss.dao.<em>.</em>(..))&quot;)//匹配com.chenss.dao包下的任意接口和类的public方法<br>
-@Pointcut(&quot;execution(public * com.chenss.dao.<em>.</em>())&quot;)//匹配com.chenss.dao包下的任意接口和类的public 无方法参数的方法<br>
-@Pointcut(&quot;execution(* com.chenss.dao.<em>.</em>(java.lang.String, ..))&quot;)//匹配com.chenss.dao包下的任意接口和类的第一个参数为String类型的方法<br>
-@Pointcut(&quot;execution(* com.chenss.dao.<em>.</em>(java.lang.String))&quot;)//匹配com.chenss.dao包下的任意接口和类的只有一个参数，且参数为String类型的方法<br>
-@Pointcut(&quot;execution(* com.chenss.dao.<em>.</em>(java.lang.String))&quot;)//匹配com.chenss.dao包下的任意接口和类的只有一个参数，且参数为String类型的方法<br>
-@Pointcut(&quot;execution(public * <em>(..))&quot;)//匹配任意的public方法<br>
-@Pointcut(&quot;execution(</em> te*(..))&quot;)//匹配任意的以te开头的方法<br>
-@Pointcut(&quot;execution(* com.chenss.dao.IndexDao.<em>(..))&quot;)//匹配com.chenss.dao.IndexDao接口中任意的方法<br>
-@Pointcut(&quot;execution(</em> com.chenss.dao..<em>.</em>(..))&quot;)//匹配com.chenss.dao包及其子包中任意的方法</p>
-<p>关于这个表达式的详细写法,可以脑补也可以参考官网很容易的,可以作为一个看spring官网文档的入门,打破你害怕看官方文档的心理,其实你会发觉官方文档也是很容易的<br>
-<a href="https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#aop-pointcuts-examples">https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#aop-pointcuts-examples</a></p>
-<p>由于Spring切面粒度最小是达到方法级别，而execution表达式可以用于明确指定方法返回类型，类名，方法名和参数名等与方法相关的信息，并且在Spring中，大部分需要使用AOP的业务场景也只需要达到方法级别即可，因而execution表达式的使用是最为广泛的。</p>
-<h2 id="within">within</h2>
-<p>表达式的最小粒度为类<br>
-within与execution相比，粒度更大，仅能实现到包和接口、类级别。而execution可以精确到方法的返回值，参数个数、修饰符、参数类型等</p>
-<pre><code class="language-java">@Pointcut(&quot;within(com.chenss.dao.*)&quot;)//匹配com.chenss.dao包中的任意方法
-@Pointcut(&quot;within(com.chenss.dao..*)&quot;)//匹配com.chenss.dao包及其子包中的任意方法
-</code></pre>
-<h2 id="args">args</h2>
-<blockquote>
-<p>args: Limits matching to join points (the execution of methods when using Spring AOP) where the arguments are instances of the given types.</p>
-</blockquote>
-<p>限制连接点的匹配(使用Spring AOP时方法的执行)，其中的参数是给定类型的实例。<br>
-args表达式的作用是匹配指定参数类型和指定参数数量的方法,与包名和类名无关</p>
-<pre><code class="language-java">/**
- * args同execution不同的地方在于：
- * args匹配的是运行时传递给方法的参数类型
- * execution(* *(java.io.Serializable))匹配的是方法在声明时指定的方法参数类型。
- */
-@Pointcut(&quot;args(java.io.Serializable)&quot;)//匹配运行时传递的参数类型为指定类型的、且参数个数和顺序匹配
-@Pointcut(&quot;@args(com.chenss.anno.Chenss)&quot;)//接受一个参数，并且传递的参数的运行时类型具有@Classified
-</code></pre>
-<h2 id="this">this</h2>
-<blockquote>
-<p>this: Limits matching to join points (the execution of methods when using Spring AOP) where the bean reference (Spring AOP proxy) is an instance of the given type.</p>
-</blockquote>
-<p>限制连接点(使用Spring AOP时方法的执行)的匹配，其中bean引用(Spring AOP代理)是给定类型的实例。<br>
-<strong>this JDK代理时，指向接口和代理类proxy，cglib代理时 指向接口和子类(不使用proxy)</strong></p>
-<h2 id="target">target</h2>
-<p>target: Limits matching to join points (the execution of methods when using Spring AOP) where the target object (application object being proxied) is an instance of the given type.<br>
-限制对连接点(使用Spring AOP时方法的执行)的匹配，其中目标对象(代理的应用程序对象)是给定类型的实例。<br>
-<strong>target  指向接口和子类</strong>。</p>
-<pre><code class="language-java">/**
- * 此处需要注意的是，如果配置设置proxyTargetClass=false，或默认为false，则是用JDK代理，否则使用的是CGLIB代理
- * JDK代理的实现方式是基于接口实现，代理类继承Proxy，实现接口。
- * 而CGLIB继承被代理的类来实现。
- * 所以使用target会保证目标不变，关联对象不会受到这个设置的影响。
- * 但是使用this对象时，会根据该选项的设置，判断是否能找到对象。
- */
-@Pointcut(&quot;target(com.chenss.dao.IndexDaoImpl)&quot;)//目标对象，也就是被代理的对象。限制目标对象为com.chenss.dao.IndexDaoImpl类
-@Pointcut(&quot;this(com.chenss.dao.IndexDaoImpl)&quot;)//当前对象，也就是代理对象，代理对象时通过代理目标对象的方式获取新的对象，与原值并非一个
-@Pointcut(&quot;@target(com.chenss.anno.Chenss)&quot;)//具有@Chenss的目标对象中的任意方法
-@Pointcut(&quot;@within(com.chenss.anno.Chenss)&quot;)//等同于@targ
-</code></pre>
-<p>这个比较难.......<br>
-proxy模式里面有两个重要的术语<br>
-proxy Class<br>
-target Class<br>
-CGLIB和JDK有区别    JDK是基于接口   cglib是基于继承，所有this可以在cglib作用</p>
-<h2 id="annotation">@annotation</h2>
-<p>这个很简单........<br>
-作用<strong>方法</strong>级别<br>
-上述所有表达式都有@ 比如@Target(里面是一个注解类xx,表示所有加了xx注解的类,和包名无关)<br>
-注意:上述所有的表达式可以混合使用,|| &amp;&amp; !</p>
-<pre><code class="language-java">@Before(&quot;pointCutWithin()&amp;&amp;!pointCutArgs()&quot;)
-</code></pre>
-<pre><code class="language-java">@Pointcut(&quot;@annotation(com.chenss.anno.Chenss)&quot;)//匹配带有com.chenss.anno.Chenss注解的方法
-</code></pre>
-<p>如下面这个方法：</p>
-<pre><code class="language-java">@Chenss
-public void query(String str){
-</code></pre>
-<h2 id="bean">bean</h2>
-<pre><code class="language-java">@Pointcut(&quot;bean(dao1)&quot;)//名称为dao1的bean上的任意方法
-@Pointcut(&quot;bean(dao*)&quot;)
-</code></pre>
-<h1 id="aop-proxies">AOP Proxies</h1>
-<p>参考链接：<a href="https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#aop-introduction-proxies">https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#aop-introduction-proxies</a></p>
-<blockquote>
-<p>Spring AOP defaults to using standard JDK dynamic proxies for AOP proxies. This enables any interface (or set of interfaces) to be proxied.</p>
-</blockquote>
-<p>Spring AOP 默认使用标准 JDK 动态代理来完成 AOP 代理。这允许代理任何接口(或一组接口)。</p>
-<h2 id="问题引入">问题引入</h2>
-<p>1、定义一个接口</p>
-<pre><code class="language-java">public interface IndexDao {
-    void query(String str);
-}
-</code></pre>
-<p>2、自定义一个注解</p>
-<pre><code class="language-java">@Retention(RetentionPolicy.RUNTIME)
-public @interface Luban {
-}
-</code></pre>
-<p>3、定义切面，@annotation 连接点</p>
-<pre><code class="language-java">@Component
-// 切面
-@Aspect
-public class NotVeryUsefulAspect {
-    @Pointcut(&quot;@annotation(com.ssm.anno.Luban)&quot;)
-    public void pointCutAnno(){
-    }
-    /**
-     * 通知
-     *  通知位置：pointCut() 的前面
-     *  通知内容
-     */
-    @Before(&quot;pointCutAnno()&quot;)
-    public void before(){
-        System.out.println(&quot;before&quot;);
-    }
-}
-</code></pre>
-<p>4、接口实现类，使用注解增强 query 方法</p>
-<pre><code class="language-java">@Repository(&quot;indexDao&quot;)
-public class IndexDaoImpl implements IndexDao {
-    @Override
-    @Luban
-    public void query(String str){
-        System.out.println(&quot;query&quot;);
-    }
-}
-</code></pre>
-<p>5、配置文件类</p>
-<pre><code class="language-java">@Configuration
-@ComponentScan(&quot;com.ssm&quot;)
-// 开启 AspectJ 语法支持
-@EnableAspectJAutoProxy
-public class AppConfig {
-}
-</code></pre>
-<p>6、测试类</p>
-<pre><code class="language-java">public class Test {
-    public static void main(String[] args) {
-        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);
-        IndexDao dao = (IndexDao) context.getBean(&quot;indexDao&quot;);
-        System.out.println(dao instanceof IndexDaoImpl);
-        dao.query(&quot;111&quot;);
-    }
-}
-</code></pre>
-<p>7、运行结果：</p>
-<pre><code>false
-before
-query
-</code></pre>
-<p>8、分析：为什么我们将一个 IndexDaoImpl 放入 Spring 容器（@Repository），然后再从 Spring 容器内取出来（context.getBean(&quot;indexDao&quot;)）类型却不是 IndexDaoImpl 了呢？<br>
-9、在配置类中加上：@EnableAspectJAutoProxy(proxyTargetClass = true) 后，设置代理方式为 cglib 代理：</p>
-<pre><code class="language-java">@Configuration
-@ComponentScan(&quot;com.ssm&quot;)
-// 开启 AspectJ 语法支持
-@EnableAspectJAutoProxy(proxyTargetClass = true)
-public class AppConfig {
-}
-</code></pre>
-<p>System.out.println(dao instanceof IndexDaoImpl); 返回 true 了。<br>
-注：proxyTargetClass 默认是 false，所以 dao instanceof IndexDaoImpl 返回 false。</p>
-<pre><code class="language-java">boolean proxyTargetClass() default false;
-</code></pre>
-<h2 id="spring-aop-默认使用标准-jdk-动态代理来完成-aop-代理">Spring AOP 默认使用标准 JDK 动态代理来完成 AOP 代理</h2>
-<p>当我们使用 JDK 动态代理时，即 @EnableAspectJAutoProxy(proxyTargetClass = false)，从 Spring 容器中取出来的对象与放进去的对象不一致：context.getBean(&quot;indexDao&quot;) instanceof IndexDaoImpl 返回 false。<br>
-但是 context.getBean(&quot;indexDao&quot;) instanceof indexDao 返回 true，因为 JDK 动态代理底层用的是接口。<br>
-context.getBean(&quot;indexDao&quot;) instanceof Proxy 也返回 true。<br>
-实现代理的办法</p>
-<ul>
-<li>继承</li>
-<li>聚合接口（JDK 动态代理基于聚合）</li>
-<li>动态代理</li>
-</ul>
-<h3 id="jdk-动态代理为什么只能是基于接口不能用继承">JDK 动态代理为什么只能是基于接口，不能用继承？</h3>
-<pre><code class="language-java">public class Test {
-    public static void main(String[] args) throws IOException {
-        Class&lt;?&gt;[] interfaces = new Class[]{IndexDao.class};
-        byte[] bytes = ProxyGenerator.generateProxyClass(&quot;SSM&quot;,interfaces);
-        File file = new File(&quot;C:\\Users\\Only\\Test.class&quot;);
-        FileOutputStream fw = new FileOutputStream(file);
-        fw.write(bytes);
-        fw.flush();
-        fw.close();
-    }
-}
-</code></pre>
-<p>注意：ProxyGenerator 的使用是基于 JDK8 的，如果使用 JDK10 会报 “找不到符号” 错误，参考：<a href="https://blog.csdn.net/weixin_46034990/article/details/105892718">https://blog.csdn.net/weixin_46034990/article/details/105892718</a><br>
-JDK 底层源码已经帮这个对象自动继承了一个 Proxy 对象了，由于 Java 是单继承，所以不可能再去继承目标对象，所以只能实现目标对象的接口。<br>
-<img src="https://epitomm.github.io/post-images/JDK%E5%8A%A8%E6%80%81%E4%BB%A3%E7%90%86.png" alt="图片" loading="lazy"><br>
-基于上图可以看出，这个代理对象等于 IndexDao、也等于 Proxy，但是不等于 IndexDaoImpl，这也就解释了上述 【context.getBean(&quot;indexDao&quot;) instanceof IndexDaoImpl 返回 false。context.getBean(&quot;indexDao&quot;) instanceof indexDao 返回 true、context.getBean(&quot;indexDao&quot;) instanceof Proxy 也返回 true。】的原因。</p>
-<h2 id="this-切点">this 切点</h2>
-<p>this 表示<strong>代理对象</strong>的匹配类型<br>
-前提：使用 JDK 动态代理，即 @EnableAspectJAutoProxy(proxyTargetClass = false)</p>
-<pre><code class="language-java">@Component
-// 切面
-@Aspect
-public class NotVeryUsefulAspect {
-    // this 表示代理对象的匹配类型，使用 JDK 动态代理后，代理对象的类型是：Proxy、IndexDao，但不是 IndexDaoImpl
-    @Pointcut(&quot;this(com.ssm.dao.IndexDao)&quot;)
-    public void pointCutThis(){
-        System.out.println(&quot;point cut&quot;);
-    }
-    /**
-     * 通知
-     *  通知位置：pointCut() 的前面
-     *  通知内容
-     */
-    @Before(&quot;pointCutThis()&quot;)
-    public void before(){
-        System.out.println(&quot;before&quot;);
-    }
-}
-</code></pre>
-<p>增强成功：</p>
-<pre><code>before
-query
-</code></pre>
-<pre><code class="language-java">// this 表示代理对象的匹配类型，使用 JDK 动态代理后，代理对象的类型是：Proxy、IndexDao，但不是 IndexDaoImpl
-@Pointcut(&quot;this(com.ssm.dao.impl.IndexDaoImpl)&quot;)
-public void pointCutThis(){
-    System.out.println(&quot;point cut&quot;);
-}
-
-@Before(&quot;pointCutThis()&quot;)
-public void before(){
-    System.out.println(&quot;before&quot;);
-}
-</code></pre>
-<p>增强失败：</p>
-<pre><code>query
-</code></pre>
-<h1 id="spring-aop-xml实现方式的注意事项">Spring AOP XML实现方式的注意事项:</h1>
-<ol>
-<li>在aop:config中定义切面逻辑，允许重复出现，重复多次，以最后出现的逻辑为准，但是次数以出现的次数为准</li>
-<li>aop:aspect ID重复不影响正常运行，依然能够有正确结果</li>
-<li>aop:pointcut ID重复会出现覆盖，以最后出现的为准。不同aop:aspect内出现的pointcut配置，可以相互引用</li>
-</ol>
-<pre><code class="language-xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
-&lt;beans xmlns=&quot;http://www.springframework.org/schema/beans&quot;
-       xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot;
-       xmlns:aop=&quot;http://www.springframework.org/schema/aop&quot;
-       xmlns:context=&quot;http://www.springframework.org/schema/context&quot;
-       xsi:schemaLocation=&quot;http://www.springframework.org/schema/beans
-                           http://www.springframework.org/schema/beans/spring-beans.xsd
-                           http://www.springframework.org/schema/aop
-                           http://www.springframework.org/schema/aop/spring-aop.xsd
-                           http://www.springframework.org/schema/context
-                           http://www.springframework.org/schema/context/spring-context.xsd&quot;&gt;
-    &lt;!-- 定义开始进行注解扫描 --&gt;
-    &lt;context:component-scan base-package=&quot;com.chenss&quot;&gt;&lt;/context:component-scan&gt;
-
-    &lt;!-- 定义AspectJ对象使用的逻辑类，类中提供切面之后执行的逻辑方法 --&gt;
-    &lt;bean id=&quot;aspectAop&quot; class=&quot;com.chenss.aspectj.Aspect&quot;&gt;&lt;/bean&gt;
-    &lt;bean id=&quot;aspectAop2&quot; class=&quot;com.chenss.aspectj.Aspect2&quot;&gt;&lt;/bean&gt;
-
-    &lt;bean id=&quot;indexDao&quot; class=&quot;com.chenss.entity.IndexDao&quot;&gt;&lt;/bean&gt;
-
-    &lt;!--在Config中定义切面逻辑，允许重复出现，重复多次，以最后出现的逻辑为准，但是次数以出现的次数为准--&gt;
-    &lt;aop:config&gt;
-        &lt;!-- aop:aspect ID重复不影响正常运行，依然能够有正确结果 --&gt;
-        &lt;!-- aop:pointcut ID重复会出现覆盖，以最后出现的为准。不同aop:aspect内出现的pointcut配置，可以相互引用 --&gt;
-        &lt;aop:aspect id=&quot;aspect&quot; ref=&quot;aspectAop&quot;&gt;
-            &lt;aop:pointcut id=&quot;aspectCut&quot; expression=&quot;execution(* com.chenss.entity.*.*())&quot;/&gt;
-            &lt;aop:before method=&quot;before&quot; pointcut-ref=&quot;aspectCut&quot;&gt;&lt;/aop:before&gt;
-      
-            &lt;aop:pointcut id=&quot;aspectNameCut&quot; expression=&quot;execution(* com.chenss.entity.*.*(java.lang.String, ..))&quot;/&gt;
-            &lt;aop:before method=&quot;before2&quot; pointcut-ref=&quot;aspectNameCut&quot;&gt;&lt;/aop:before&gt;
-        &lt;/aop:aspect&gt;
-    &lt;/aop:config&gt;
-&lt;/beans&gt;
 </code></pre>
 ]]></content>
     </entry>
