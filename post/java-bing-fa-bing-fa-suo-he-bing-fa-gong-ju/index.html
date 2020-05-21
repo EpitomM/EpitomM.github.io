@@ -9,7 +9,7 @@
 <meta name="description" content="热心善良的老学姐">
 <meta name="theme-color" content="#000">
 <title>Java 并发——并发锁和并发工具 | SSM</title>
-<link rel="shortcut icon" href="/favicon.ico?v=1589813418383">
+<link rel="shortcut icon" href="/favicon.ico?v=1590025031866">
 <link rel="stylesheet" href="/media/css/gemini.css">
 <link rel="stylesheet" href="/media/fonts/font-awesome.css">
 <link
@@ -202,19 +202,19 @@
     <div class="sidebar-item-box">
       <a href="/archives/">
         
-        <span class="site-item-stat-count">43</span>
+        <span class="site-item-stat-count">44</span>
         <span class="site-item-stat-name language" data-lan="article">文章</span>
       </a>
     </div>
     <div class="sidebar-item-box">
       <a href="">
-        <span class="site-item-stat-count">19</span>
+        <span class="site-item-stat-count">20</span>
         <span class="site-item-stat-name language" data-lan="category">分类</span>
       </a>
     </div>
     <div class="sidebar-item-box">
       <a href="/tags/">
-        <span class="site-item-stat-count">19</span>
+        <span class="site-item-stat-count">20</span>
         <span class="site-item-stat-name language" data-lan="tag">标签</span>
       </a>
     </div>
@@ -1135,6 +1135,84 @@ car[5]离开了停车场
     <div class="result" id="result">
       
       <div class="item">
+        <a class="result-title" style="opacity: 0;" href="https://epitomm.github.io/post/mybatis-xi-lie-er-mybatis-huan-cun/"" data-c="
+          &lt;h1 id=&#34;缓存&#34;&gt;缓存&lt;/h1&gt;
+&lt;h2 id=&#34;一级缓存&#34;&gt;一级缓存&lt;/h2&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;1&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/MyBatis%E4%B8%80%E7%BA%A7%E7%BC%93%E5%AD%98.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p&gt;如果不使用 Spring，执行三行相同的查询，只会打印一条 SQL 语句，证明一级缓存有效。&lt;/p&gt;
+&lt;p&gt;但是使用 Spring 后，执行三行相同的查询，会打印三条 SQL 语句，证明&lt;strong&gt;一级缓存失效&lt;/strong&gt;。&lt;/p&gt;
+&lt;p&gt;一级缓存基于 SqlSession，当执行 list() 方法时，在代理类中，会得到一个 SqlSession 对象，并且把它设置到当前线程中去，&lt;strong&gt;当完成一个查询后，会关闭 SqlSession&lt;/strong&gt;，这是 Spring 做的，所以一级缓存失效了。&lt;/p&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;2&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E4%B8%8D%E5%90%8C%E7%94%A8%E6%88%B7%E6%97%A0%E6%B3%95%E5%85%B1%E4%BA%ABMyBatis%E4%B8%80%E7%BA%A7%E7%BC%93%E5%AD%98.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;h2 id=&#34;二级缓存&#34;&gt;二级缓存&lt;/h2&gt;
+&lt;p&gt;多个线程共享二级缓存&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@CacheNamespace
+public interface IndexDao {
+&lt;/code&gt;&lt;/pre&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;3&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/MyBatis%E4%BA%8C%E7%BA%A7%E7%BC%93%E5%AD%98.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@CacheNamespace
+public interface IndexDao2 {
+    @Update(&amp;quot;update t1 set b=1 where a=1&amp;quot;)
+    public int update();
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@Service
+public class IndexService {
+    @Autowired
+    IndexDao indexDao;
+    @Autowired
+    IndexDao2 indexDao2;
+    public List&amp;lt;Map&amp;lt;String,Object&amp;gt;&amp;gt; list(){
+        indexDao.list();
+        indexDao.list();
+        return indexDao.list();
+    }
+    public void update(){
+       indexDao2.update();
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class Test {
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext configApplicationContext = new AnnotationConfigApplicationContext(AppConfig.class);
+        List&amp;lt;Map&amp;lt;String, Object&amp;gt;&amp;gt; list = configApplicationContext.getBean(IndexService.class).list();
+        System.out.println(list);
+        configApplicationContext.getBean(IndexService.class).update();
+        System.out.println(configApplicationContext.getBean(IndexService.class).list());
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;我们发现，使用了二级缓存后，第一次查询，将查询结果缓存起来，接下来更新操作，第二次再次查询直接使用缓存结果，无法查到更新后的值。&lt;br&gt;
+&lt;img src=&#34;https://epitomm.github.io/post-images/MyBatis%E4%BA%8C%E7%BA%A7%E7%BC%93%E5%AD%98%E8%AF%BB%E8%84%8F%E6%95%B0%E6%8D%AE.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/p&gt;
+&lt;p&gt;分析：MyBatis 缓存是基于&lt;strong&gt;命名空间&lt;/strong&gt;的，当调用 indexDao.list() 查询出结果后，由于 IndexDao 添加了缓存 @CacheNamespace，把 list() 查询结果放到缓存中，存放形式：&amp;lt;&amp;quot;com.ssm.dao.IndexDao&amp;quot;, &amp;quot;list&amp;quot;&amp;gt;，当调用 update() 方法时，更新当前这个 update() 方法所在的命名空间，即 com.ssm.dao.IndexDao2，于是放入缓存 &amp;lt;&amp;quot;com.ssm.dao.IndexDao2&amp;quot;, &amp;quot;更新后的list&amp;quot;&amp;gt;，而第二次调用 list() 查询时，查找 list() 方法对应的命名空间的缓存：&amp;lt;&amp;quot;com.ssm.dao.IndexDao&amp;quot;, &amp;quot;list&amp;quot;&amp;gt;。&lt;/p&gt;
+&lt;p&gt;如果将 update、select 写在一个 dao 内，就不会出现上述问题了，代码修改如下：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@CacheNamespace
+public interface IndexDao {
+    @Select(&amp;quot;select * from t1&amp;quot;)
+    List&amp;lt;Map&amp;lt;String,Object&amp;gt;&amp;gt; list();
+    @Update(&amp;quot;update t1 set b=111 where a=1&amp;quot;)
+    public int update();
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@Service
+public class IndexService {
+    @Autowired
+    IndexDao indexDao;
+    public List&amp;lt;Map&amp;lt;String,Object&amp;gt;&amp;gt; list(){
+        indexDao.list();
+        indexDao.list();
+        return indexDao.list();
+    }
+    public void update(){
+       indexDao.update();
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;4&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/MyBatis%E4%BA%8C%E7%BA%A7%E7%BC%93%E5%AD%98%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4%E7%9B%B8%E5%90%8C%E8%AF%BB%E6%95%B0%E6%8D%AE%E6%AD%A3%E7%A1%AE.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p&gt;分析：MyBatis 缓存是基于&lt;strong&gt;命名空间&lt;/strong&gt;的，当调用 indexDao.list() 查询出结果后，由于 IndexDao 添加了缓存 @CacheNamespace，把 list() 查询结果放到缓存中，存放形式：&amp;lt;&amp;quot;com.ssm.dao.IndexDao&amp;quot;, &amp;quot;list&amp;quot;&amp;gt;，当调用 update() 方法时，更新当前这个 update() 方法所在的命名空间，即 &amp;lt;&amp;quot;com.ssm.dao.IndexDao&amp;quot;, &amp;quot;更新后的list&amp;quot;&amp;gt;。&lt;/p&gt;
+">MyBatis系列（二）——MyBatis缓存</a>
+      </div>
+      
+      <div class="item">
         <a class="result-title" style="opacity: 0;" href="https://epitomm.github.io/post/spring-xi-lie-shi-san-mybatis-ri-zhi/"" data-c="
           &lt;h1 id=&#34;mybatis-入门&#34;&gt;MyBatis 入门&lt;/h1&gt;
 &lt;p&gt;MyBatis 官网：&lt;a href=&#34;https://mybatis.org/mybatis-3/zh/index.html&#34;&gt;https://mybatis.org/mybatis-3/zh/index.html&lt;/a&gt;&lt;/p&gt;
@@ -1336,9 +1414,209 @@ DEBUG [main] - &amp;lt;==      Total: 9
 DEBUG [main] - Closing non transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@445b295b]
 [{a=1, b=11, c=4, d=1, e=a}, {a=2, b=2, c=2, d=2, e=b}, {a=3, b=3, c=2, d=2, e=c}, {a=4, b=3, c=1, d=1, e=d}, {a=5, b=2, c=3, d=5, e=e}, {a=6, b=6, c=4, d=4, e=6}, {a=7, b=4, c=5, d=5, e=g}, {a=8, b=8, c=8, d=8, e=h}, {a=9, b=9, c=9, d=9, e=i}]
 &lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&#34;mybatisspring5log4j-没有日志打印&#34;&gt;MyBatis+Spring5+Log4J 没有日志打印&lt;/h2&gt;
+&lt;pre&gt;&lt;code class=&#34;language-xml&#34;&gt;&amp;lt;dependencies&amp;gt;
+  &amp;lt;!-- spring-core --&amp;gt;
+  &amp;lt;dependency&amp;gt;
+    &amp;lt;groupId&amp;gt;org.springframework&amp;lt;/groupId&amp;gt;
+    &amp;lt;artifactId&amp;gt;spring-context&amp;lt;/artifactId&amp;gt;
+    &amp;lt;version&amp;gt;5.0.9.RELEASE&amp;lt;/version&amp;gt;
+  &amp;lt;/dependency&amp;gt;
+  &amp;lt;!-- spring 连接池 --&amp;gt;
+  &amp;lt;dependency&amp;gt;
+    &amp;lt;groupId&amp;gt;org.springframework&amp;lt;/groupId&amp;gt;
+    &amp;lt;artifactId&amp;gt;spring-jdbc&amp;lt;/artifactId&amp;gt;
+    &amp;lt;version&amp;gt;5.0.9.RELEASE&amp;lt;/version&amp;gt;
+  &amp;lt;/dependency&amp;gt;
+  &amp;lt;!-- mybatis --&amp;gt;
+  &amp;lt;dependency&amp;gt;
+    &amp;lt;groupId&amp;gt;org.mybatis&amp;lt;/groupId&amp;gt;
+    &amp;lt;artifactId&amp;gt;mybatis&amp;lt;/artifactId&amp;gt;
+    &amp;lt;version&amp;gt;3.4.6&amp;lt;/version&amp;gt;
+  &amp;lt;/dependency&amp;gt;
+  &amp;lt;!-- mybatis-spring --&amp;gt;
+  &amp;lt;dependency&amp;gt;
+    &amp;lt;groupId&amp;gt;org.mybatis&amp;lt;/groupId&amp;gt;
+    &amp;lt;artifactId&amp;gt;mybatis-spring&amp;lt;/artifactId&amp;gt;
+    &amp;lt;version&amp;gt;1.3.2&amp;lt;/version&amp;gt;
+  &amp;lt;/dependency&amp;gt;
+  &amp;lt;!-- mysql-connector-java --&amp;gt;
+  &amp;lt;dependency&amp;gt;
+    &amp;lt;groupId&amp;gt;mysql&amp;lt;/groupId&amp;gt;
+    &amp;lt;artifactId&amp;gt;mysql-connector-java&amp;lt;/artifactId&amp;gt;
+    &amp;lt;version&amp;gt;5.1.46&amp;lt;/version&amp;gt;
+  &amp;lt;/dependency&amp;gt;
+  &amp;lt;!-- log4j --&amp;gt;
+  &amp;lt;dependency&amp;gt;
+    &amp;lt;groupId&amp;gt;log4j&amp;lt;/groupId&amp;gt;
+    &amp;lt;artifactId&amp;gt;log4j&amp;lt;/artifactId&amp;gt;
+    &amp;lt;version&amp;gt;1.2.17&amp;lt;/version&amp;gt;
+  &amp;lt;/dependency&amp;gt;
+&amp;lt;/dependencies&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@Configuration
+@ComponentScan(&amp;quot;com.ssm&amp;quot;)
+@MapperScan(&amp;quot;com.ssm.dao&amp;quot;)
+public class AppConfig{
+    @Bean
+    public DataSource dataSource(){
+        DriverManagerDataSource dataSource = new DriverManagerDataSource();
+        dataSource.setDriverClassName(&amp;quot;com.mysql.jdbc.Driver&amp;quot;);
+        dataSource.setUsername(&amp;quot;root&amp;quot;);
+        dataSource.setPassword(&amp;quot;123456&amp;quot;);
+        dataSource.setUrl(&amp;quot;jdbc:mysql://localhost:3306/t1&amp;quot;);
+        return dataSource;
+    }
+    @Bean
+    public SqlSessionFactoryBean sqlSessionFactoryBean(DataSource dataSource){
+        SqlSessionFactoryBean sqlSessionFactoryBean =  new SqlSessionFactoryBean();
+        sqlSessionFactoryBean.setDataSource(dataSource);
+        return sqlSessionFactoryBean;
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E6%B2%A1%E6%9C%89%E6%97%A5%E5%BF%97%E6%89%93%E5%8D%B0.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;br&gt;
+&lt;img src=&#34;https://epitomm.github.io/post-images/Spring5_static.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/p&gt;
+&lt;p&gt;如果想在 Spring5+MyBatis+log4j 打印 log4j 日志，方法一：改变 JUL 的默认级别，但是 JUL 的默认级别不能改变；方法二：扩展 MyBatis。&lt;/p&gt;
+&lt;h3 id=&#34;方法一改变-jul-默认级别&#34;&gt;方法一：改变 JUL 默认级别&lt;/h3&gt;
+&lt;p&gt;由于 Spring5 内置 spring-jcl，spring-jcl+log4j 打印 JUL 日志。&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;private static void setImplementation(Class&amp;lt;? extends Log&amp;gt; implClass) {
+  try {
+    Constructor&amp;lt;? extends Log&amp;gt; candidate = implClass.getConstructor(String.class);
+    Log log = candidate.newInstance(LogFactory.class.getName());
+    // 判断能不能打印日志,MyBatis在记录日志时，要判断级别是不是DEBUG级别，如果是DEBUG级别才会记录；否则不会记录。
+    if (log.isDebugEnabled()) {
+      // 因为这是 debug 信息
+      log.debug(&amp;quot;Logging initialized using &#39;&amp;quot; + implClass + &amp;quot;&#39; adapter.&amp;quot;);
+    }
+    logConstructor = candidate;
+  } catch (Throwable t) {
+    throw new LogException(&amp;quot;Error setting Log implementation.  Cause: &amp;quot; + t, t);
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;3&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/Spring5_JUL.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p&gt;由于 JCL 是一个接口，真实调用了 JUL 或 log4j 的日志打印，所以会判断 JUL 或 lo4j 的级别是否是 DEBUG 级别。&lt;/p&gt;
+&lt;p&gt;JakartaCommonsLoggingImpl#isDebugEnabled&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@Override
+public boolean isDebugEnabled() {
+  return log.isDebugEnabled();
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;4&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E5%88%A4%E6%96%ADJUL%E7%BA%A7%E5%88%AB.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p&gt;判断 JUL 是否是 DEBUG 级别，会返回 false，因为 JUL 日志级别是写死的，不是 DEBUG；&lt;/p&gt;
+&lt;p&gt;但如果是 log4j，由于 lo4j 是自己在 .properties 文件内配置的，可配置级别为 DEBUG。&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-plain&#34;&gt;log4j.rootLogger=DEBUG, stdout
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;JavaUtilLog#isDebugEnabled&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public boolean isDebugEnabled() {
+   return this.logger.isLoggable(java.util.logging.Level.FINE);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;可以将源码中的 java.util.logging.Level.FINE 更改，来改变 JUL 的日志级别。&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;private transient java.util.logging.Logger logger;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;MyBatis - JCL - JavaUtilLog - JUL(java.util.logging.Logger)&lt;br&gt;
+&lt;img src=&#34;https://epitomm.github.io/post-images/JUL%E6%97%A5%E5%BF%97%E7%BA%A7%E5%88%AB%E4%BC%98%E5%85%88%E7%BA%A7.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/p&gt;
+&lt;h3 id=&#34;方法二扩展-mybatis&#34;&gt;方法二：扩展 MyBatis&lt;/h3&gt;
+&lt;p&gt;可以传值一个优先级比 500 高的日志级别。&lt;/p&gt;
+&lt;p&gt;官方文档：&lt;a href=&#34;https://mybatis.org/mybatis-3/zh/logging.html&#34;&gt;https://mybatis.org/mybatis-3/zh/logging.html&lt;/a&gt;&lt;/p&gt;
+&lt;h2 id=&#34;mybatisspring4log4j-有日志打印&#34;&gt;MyBatis+Spring4+Log4J 有日志打印&lt;/h2&gt;
+&lt;p&gt;如果将上述 Spring5 改为 Spring4，可以打印日志。因为在Spring4中：Spring+MyBatis+log4j&lt;/p&gt;
+&lt;p&gt;Spring4 内置 JCL，Spring4+log4j = log4j，所以变成了 MyBatis+log4j，所以打印 log4j 日志。&lt;/p&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;5&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E6%9C%89%E6%97%A5%E5%BF%97%E6%89%93%E5%8D%B0.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;h2 id=&#34;mybatis-如何解析-mapper&#34;&gt;MyBatis 如何解析 mapper&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;resource：&lt;mapper resource=&#34;&#34;&gt;&lt;/li&gt;
+&lt;li&gt;url：&lt;mapper url=&#34;&#34;&gt;&lt;/li&gt;
+&lt;li&gt;class：&lt;mapper class=&#34;&#34;&gt;&lt;/li&gt;
+&lt;li&gt;package：&lt;package name=&#34;&#34;&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;mybatis-log4j-打印-log4j-日志&#34;&gt;MyBatis + Log4J 打印 Log4J 日志&lt;/h2&gt;
+&lt;pre&gt;&lt;code class=&#34;language-xml&#34;&gt;&amp;lt;dependencies&amp;gt;
+  &amp;lt;!-- spring-core --&amp;gt;
+  &amp;lt;dependency&amp;gt;
+    &amp;lt;groupId&amp;gt;org.springframework&amp;lt;/groupId&amp;gt;
+    &amp;lt;artifactId&amp;gt;spring-context&amp;lt;/artifactId&amp;gt;
+    &amp;lt;version&amp;gt;5.0.9.RELEASE&amp;lt;/version&amp;gt;
+    &amp;lt;!-- 剔除 spring-jcl 依赖 --&amp;gt;
+    &amp;lt;exclusions&amp;gt;
+      &amp;lt;exclusion&amp;gt;
+        &amp;lt;groupId&amp;gt;org.springframework&amp;lt;/groupId&amp;gt;
+        &amp;lt;artifactId&amp;gt;spring-jcl&amp;lt;/artifactId&amp;gt;
+      &amp;lt;/exclusion&amp;gt;
+    &amp;lt;/exclusions&amp;gt;
+  &amp;lt;/dependency&amp;gt;
+  &amp;lt;!-- spring 连接池 --&amp;gt;
+  &amp;lt;dependency&amp;gt;
+    &amp;lt;groupId&amp;gt;org.springframework&amp;lt;/groupId&amp;gt;
+    &amp;lt;artifactId&amp;gt;spring-jdbc&amp;lt;/artifactId&amp;gt;
+    &amp;lt;version&amp;gt;5.0.9.RELEASE&amp;lt;/version&amp;gt;
+  &amp;lt;/dependency&amp;gt;
+  &amp;lt;!-- mybatis --&amp;gt;
+  &amp;lt;dependency&amp;gt;
+    &amp;lt;groupId&amp;gt;org.mybatis&amp;lt;/groupId&amp;gt;
+    &amp;lt;artifactId&amp;gt;mybatis&amp;lt;/artifactId&amp;gt;
+    &amp;lt;version&amp;gt;3.4.6&amp;lt;/version&amp;gt;
+  &amp;lt;/dependency&amp;gt;
+  &amp;lt;!-- mybatis-spring --&amp;gt;
+  &amp;lt;dependency&amp;gt;
+    &amp;lt;groupId&amp;gt;org.mybatis&amp;lt;/groupId&amp;gt;
+    &amp;lt;artifactId&amp;gt;mybatis-spring&amp;lt;/artifactId&amp;gt;
+    &amp;lt;version&amp;gt;1.3.2&amp;lt;/version&amp;gt;
+  &amp;lt;/dependency&amp;gt;
+  &amp;lt;!-- mysql-connector-java --&amp;gt;
+  &amp;lt;dependency&amp;gt;
+    &amp;lt;groupId&amp;gt;mysql&amp;lt;/groupId&amp;gt;
+    &amp;lt;artifactId&amp;gt;mysql-connector-java&amp;lt;/artifactId&amp;gt;
+    &amp;lt;version&amp;gt;5.1.46&amp;lt;/version&amp;gt;
+  &amp;lt;/dependency&amp;gt;
+  &amp;lt;!-- log4j --&amp;gt;
+  &amp;lt;dependency&amp;gt;
+    &amp;lt;groupId&amp;gt;log4j&amp;lt;/groupId&amp;gt;
+    &amp;lt;artifactId&amp;gt;log4j&amp;lt;/artifactId&amp;gt;
+    &amp;lt;version&amp;gt;1.2.17&amp;lt;/version&amp;gt;
+  &amp;lt;/dependency&amp;gt;
+&amp;lt;/dependencies&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code class=&#34;language-xml&#34;&gt;&amp;lt;?xml version=&amp;quot;1.0&amp;quot; encoding=&amp;quot;UTF-8&amp;quot; ?&amp;gt;
+&amp;lt;!DOCTYPE configuration
+        PUBLIC &amp;quot;-//mybatis.org//DTD Config 3.0//EN&amp;quot;
+        &amp;quot;http://mybatis.org/dtd/mybatis-3-config.dtd&amp;quot;&amp;gt;
+&amp;lt;configuration&amp;gt;
+    &amp;lt;environments default=&amp;quot;development&amp;quot;&amp;gt;
+        &amp;lt;environment id=&amp;quot;development&amp;quot;&amp;gt;
+            &amp;lt;transactionManager type=&amp;quot;JDBC&amp;quot;/&amp;gt;
+            &amp;lt;dataSource type=&amp;quot;POOLED&amp;quot;&amp;gt;
+                &amp;lt;property name=&amp;quot;driver&amp;quot; value=&amp;quot;com.mysql.jdbc.Driver&amp;quot;/&amp;gt;
+                &amp;lt;property name=&amp;quot;url&amp;quot; value=&amp;quot;jdbc:mysql://localhost:3306/t1&amp;quot;/&amp;gt;
+                &amp;lt;property name=&amp;quot;username&amp;quot; value=&amp;quot;root&amp;quot;/&amp;gt;
+                &amp;lt;property name=&amp;quot;password&amp;quot; value=&amp;quot;123456&amp;quot;/&amp;gt;
+            &amp;lt;/dataSource&amp;gt;
+        &amp;lt;/environment&amp;gt;
+    &amp;lt;/environments&amp;gt;
+    &amp;lt;mappers&amp;gt;
+&amp;lt;!--        &amp;lt;mapper resource=&amp;quot;org/mybatis/example/BlogMapper.xml&amp;quot;/&amp;gt;--&amp;gt;
+    &amp;lt;/mappers&amp;gt;
+&amp;lt;/configuration&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class Test {
+    public static void main(String[] args) throws IOException {
+        String resource = &amp;quot;mybatis-config.xml&amp;quot;;
+        InputStream inputStream = Resources.getResourceAsStream(resource);
+        SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
+        SqlSession sqlSession = sqlSessionFactory.openSession();
+        sqlSession.getConfiguration().addMapper(IndexDao.class);
+        IndexDao mapper = sqlSession.getMapper(IndexDao.class);
+        System.out.println(mapper.list());
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;6&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E6%9C%89%E6%97%A5%E5%BF%97%E6%89%93%E5%8D%B0_2.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;7&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/log4j%E4%BE%9D%E8%B5%96.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
 &lt;h2 id=&#34;具体实现类&#34;&gt;具体实现类&lt;/h2&gt;
 &lt;p&gt;mybatis提供很多日志的实现类,用来记录日志,取决于初始化的时候load到的class&lt;/p&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;3&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/MyBatis%E6%97%A5%E5%BF%97%E5%85%B7%E4%BD%93%E5%AE%9E%E7%8E%B0%E7%B1%BB.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;8&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/MyBatis%E6%97%A5%E5%BF%97%E5%85%B7%E4%BD%93%E5%AE%9E%E7%8E%B0%E7%B1%BB.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
 &lt;pre&gt;&lt;code&gt;上图红色箭头可以看到 JakartaCommonsLoggingImpl 中引用了 jcl 的类,如果在初始化的时候load到类为JakartaCommonsLoggingImpl，
 那么则使用 jcl 去实现日志记录,但是也是顺序的,顺序参考源码
 &lt;/code&gt;&lt;/pre&gt;
@@ -1351,79 +1629,6 @@ DEBUG [main] - Closing non transactional SqlSession [org.apache.ibatis.session.d
 &lt;h1 id=&#34;架构系统如何考虑日志&#34;&gt;架构系统如何考虑日志&lt;/h1&gt;
 &lt;p&gt;old:jcl+log4j&lt;/p&gt;
 &lt;p&gt;new:slf4j+jul&lt;/p&gt;
-&lt;h1 id=&#34;缓存&#34;&gt;缓存&lt;/h1&gt;
-&lt;h2 id=&#34;一级缓存&#34;&gt;一级缓存&lt;/h2&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;4&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/MyBatis%E4%B8%80%E7%BA%A7%E7%BC%93%E5%AD%98.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
-&lt;p&gt;如果不使用 Spring，执行三行相同的查询，只会打印一条 SQL 语句，证明一级缓存有效。&lt;/p&gt;
-&lt;p&gt;但是使用 Spring 后，执行三行相同的查询，会打印三条 SQL 语句，证明&lt;strong&gt;一级缓存失效&lt;/strong&gt;。&lt;/p&gt;
-&lt;p&gt;一级缓存基于 SqlSession，当执行 list() 方法时，在代理类中，会得到一个 SqlSession 对象，并且把它设置到当前线程中去，&lt;strong&gt;当完成一个查询后，会关闭 SqlSession&lt;/strong&gt;，这是 Spring 做的，所以一级缓存失效了。&lt;/p&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;5&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E4%B8%8D%E5%90%8C%E7%94%A8%E6%88%B7%E6%97%A0%E6%B3%95%E5%85%B1%E4%BA%ABMyBatis%E4%B8%80%E7%BA%A7%E7%BC%93%E5%AD%98.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
-&lt;h2 id=&#34;二级缓存&#34;&gt;二级缓存&lt;/h2&gt;
-&lt;p&gt;多个线程共享二级缓存&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@CacheNamespace
-public interface IndexDao {
-&lt;/code&gt;&lt;/pre&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;6&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/MyBatis%E4%BA%8C%E7%BA%A7%E7%BC%93%E5%AD%98.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
-&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@CacheNamespace
-public interface IndexDao2 {
-    @Update(&amp;quot;update t1 set b=1 where a=1&amp;quot;)
-    public int update();
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@Service
-public class IndexService {
-    @Autowired
-    IndexDao indexDao;
-    @Autowired
-    IndexDao2 indexDao2;
-    public List&amp;lt;Map&amp;lt;String,Object&amp;gt;&amp;gt; list(){
-        indexDao.list();
-        indexDao.list();
-        return indexDao.list();
-    }
-    public void update(){
-       indexDao2.update();
-    }
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class Test {
-    public static void main(String[] args) {
-        AnnotationConfigApplicationContext configApplicationContext = new AnnotationConfigApplicationContext(AppConfig.class);
-        List&amp;lt;Map&amp;lt;String, Object&amp;gt;&amp;gt; list = configApplicationContext.getBean(IndexService.class).list();
-        System.out.println(list);
-        configApplicationContext.getBean(IndexService.class).update();
-        System.out.println(configApplicationContext.getBean(IndexService.class).list());
-    }
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;我们发现，使用了二级缓存后，第一次查询，将查询结果缓存起来，接下来更新操作，第二次再次查询直接使用缓存结果，无法查到更新后的值。&lt;br&gt;
-&lt;img src=&#34;https://epitomm.github.io/post-images/MyBatis%E4%BA%8C%E7%BA%A7%E7%BC%93%E5%AD%98%E8%AF%BB%E8%84%8F%E6%95%B0%E6%8D%AE.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/p&gt;
-&lt;p&gt;分析：MyBatis 缓存是基于&lt;strong&gt;命名空间&lt;/strong&gt;的，当调用 indexDao.list() 查询出结果后，由于 IndexDao 添加了缓存 @CacheNamespace，把 list() 查询结果放到缓存中，存放形式：&amp;lt;&amp;quot;com.ssm.dao.IndexDao&amp;quot;, &amp;quot;list&amp;quot;&amp;gt;，当调用 update() 方法时，更新当前这个 update() 方法所在的命名空间，即 com.ssm.dao.IndexDao2，于是放入缓存 &amp;lt;&amp;quot;com.ssm.dao.IndexDao2&amp;quot;, &amp;quot;更新后的list&amp;quot;&amp;gt;，而第二次调用 list() 查询时，查找 list() 方法对应的命名空间的缓存：&amp;lt;&amp;quot;com.ssm.dao.IndexDao&amp;quot;, &amp;quot;list&amp;quot;&amp;gt;。&lt;/p&gt;
-&lt;p&gt;如果将 update、select 写在一个 dao 内，就不会出现上述问题了，代码修改如下：&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@CacheNamespace
-public interface IndexDao {
-    @Select(&amp;quot;select * from t1&amp;quot;)
-    List&amp;lt;Map&amp;lt;String,Object&amp;gt;&amp;gt; list();
-    @Update(&amp;quot;update t1 set b=111 where a=1&amp;quot;)
-    public int update();
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@Service
-public class IndexService {
-    @Autowired
-    IndexDao indexDao;
-    public List&amp;lt;Map&amp;lt;String,Object&amp;gt;&amp;gt; list(){
-        indexDao.list();
-        indexDao.list();
-        return indexDao.list();
-    }
-    public void update(){
-       indexDao.update();
-    }
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;7&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/MyBatis%E4%BA%8C%E7%BA%A7%E7%BC%93%E5%AD%98%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4%E7%9B%B8%E5%90%8C%E8%AF%BB%E6%95%B0%E6%8D%AE%E6%AD%A3%E7%A1%AE.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
-&lt;p&gt;分析：MyBatis 缓存是基于&lt;strong&gt;命名空间&lt;/strong&gt;的，当调用 indexDao.list() 查询出结果后，由于 IndexDao 添加了缓存 @CacheNamespace，把 list() 查询结果放到缓存中，存放形式：&amp;lt;&amp;quot;com.ssm.dao.IndexDao&amp;quot;, &amp;quot;list&amp;quot;&amp;gt;，当调用 update() 方法时，更新当前这个 update() 方法所在的命名空间，即 &amp;lt;&amp;quot;com.ssm.dao.IndexDao&amp;quot;, &amp;quot;更新后的list&amp;quot;&amp;gt;。&lt;/p&gt;
 ">MyBatis系列（一）——MyBatis日志</a>
       </div>
       
@@ -25079,7 +25284,7 @@ if (child_pid == 0) { //我是子进程.
       
       <div class="item">
         <a class="result-title" style="opacity: 0;" href="https://epitomm.github.io/post/mian-shi-ti-xi-lie-mysql-shu-ju-ku/"" data-c="
-          &lt;h1 id=&#34;1存储引擎&#34;&gt;1.存储引擎&lt;/h1&gt;
+          &lt;h1 id=&#34;存储引擎&#34;&gt;存储引擎&lt;/h1&gt;
 &lt;ul&gt;
 &lt;li&gt;MySQL 默认的存储引擎是 InnoDB&lt;/li&gt;
 &lt;/ul&gt;
@@ -25130,13 +25335,13 @@ if (child_pid == 0) { //我是子进程.
 &lt;/tr&gt;
 &lt;/tbody&gt;
 &lt;/table&gt;
-&lt;h1 id=&#34;2索引&#34;&gt;2.索引&lt;/h1&gt;
-&lt;h2 id=&#34;1-聚簇索引与非聚簇索引&#34;&gt;(1) 聚簇索引与非聚簇索引&lt;/h2&gt;
+&lt;h1 id=&#34;索引&#34;&gt;索引&lt;/h1&gt;
+&lt;h2 id=&#34;聚簇索引与非聚簇索引&#34;&gt;聚簇索引与非聚簇索引&lt;/h2&gt;
 &lt;ul&gt;
 &lt;li&gt;MyISAM：B+ 树叶子节点的 data 域存放的是&lt;strong&gt;数据记录的地址&lt;/strong&gt;。在索引检索的时候，首先按照 B+ 树搜索算法搜索索引，如果指定的 key 存在，则取出其 data 域的值，然后以 data 域的值为地址读取相应的数据记录。这被称为 “&lt;strong&gt;非聚簇索引&lt;/strong&gt;”。&lt;/li&gt;
 &lt;li&gt;InnoDB：其数据本身就是索引文件。相比 MyISAM，索引文件和数据文件是分离的，其表数据文件本身就是按照 B+ 树组织的一个索引结构。B+ 树叶子节点的 data 域保存了完整的数据记录。这个索引的 key 是数据表的主键，因此 &lt;strong&gt;InnoDB 表数据文件本身就是主索引&lt;/strong&gt;。这被称为“&lt;strong&gt;聚簇索引&lt;/strong&gt;”（或“聚集索引”）。而其余的索引都作为辅助索引，&lt;strong&gt;辅助索引的 data 域存储相应记录主键的值&lt;/strong&gt;而不是地址，这也是和 MyISAM 不同的地方。在根据主索引搜索时，直接找到 key 所在的节点即可取出数据；在根据辅助索引查找时，则需要先取出主键的值，再走一遍主索引。因此，在设计表的时候，不建议使用过长的字段作为主键，也不建议使用非单调的字段作为主键，这样会造成主索引频繁分裂。&lt;/li&gt;
 &lt;/ul&gt;
-&lt;h2 id=&#34;2-hash-索引与-b-数索引&#34;&gt;(2) Hash 索引与 B+ 数索引&lt;/h2&gt;
+&lt;h2 id=&#34;hash-索引与-b-数索引&#34;&gt;Hash 索引与 B+ 数索引&lt;/h2&gt;
 &lt;h3 id=&#34;hash-索引&#34;&gt;Hash 索引&lt;/h3&gt;
 &lt;ul&gt;
 &lt;li&gt;Hash 索引仅仅能满足 &amp;quot;=&amp;quot;、“IN” 的等值查询，不能使用范围查询。&lt;/li&gt;
@@ -25145,9 +25350,9 @@ if (child_pid == 0) { //我是子进程.
 &lt;/ul&gt;
 &lt;h3 id=&#34;b-树索引&#34;&gt;B+ 树索引&lt;/h3&gt;
 &lt;p&gt;B+树索引的关键字检索效率比较平均，不像B树那样波动幅度大，&lt;strong&gt;在有大量重复键值情况下，哈希索引的效率也是极低的，因为存在所谓的哈希碰撞问题&lt;/strong&gt;。&lt;/p&gt;
-&lt;h1 id=&#34;3什么是事务&#34;&gt;3.什么是事务？&lt;/h1&gt;
+&lt;h1 id=&#34;什么是事务&#34;&gt;什么是事务？&lt;/h1&gt;
 &lt;p&gt;事务是逻辑上的一组操作，要么都执行，要么都不执行。&lt;/p&gt;
-&lt;h1 id=&#34;4事务的四大特征&#34;&gt;4.事务的四大特征&lt;/h1&gt;
+&lt;h1 id=&#34;事务的四大特征&#34;&gt;事务的四大特征&lt;/h1&gt;
 &lt;ul&gt;
 &lt;li&gt;原子性（Atomicity）：事务被视为不可分割的最小单元。事务的所有操作要么全部成功提交，要么全部失败回滚。&lt;/li&gt;
 &lt;li&gt;一致性（Consistency）：数据库在事务执行前后保持一致性状态，多个事务对同一个数据读取的结果是相同的。&lt;/li&gt;
@@ -25163,17 +25368,17 @@ if (child_pid == 0) { //我是子进程.
 &lt;/ul&gt;
 &lt;p&gt;&lt;strong&gt;AUTOCOMMIT&lt;/strong&gt;&lt;/p&gt;
 &lt;p&gt;MySQL 默认采用自动提交模式。也就是说，如果不显式使用 START TRASACTION 语句来开启一个事务，那么每个查询都会被当作一个事务自动提交。&lt;/p&gt;
-&lt;h1 id=&#34;5并发事务带来哪些问题&#34;&gt;5.并发事务带来哪些问题？&lt;/h1&gt;
-&lt;h2 id=&#34;1-丢失修改&#34;&gt;(1) 丢失修改&lt;/h2&gt;
+&lt;h1 id=&#34;并发事务带来哪些问题&#34;&gt;并发事务带来哪些问题？&lt;/h1&gt;
+&lt;h2 id=&#34;丢失修改&#34;&gt;丢失修改&lt;/h2&gt;
 &lt;p&gt;T1 和 T2 两个事务都对一个数据进行修改， T1 先修改，T2 随后修改，T2 的修改覆盖了 T1 的修改。&lt;/p&gt;
 &lt;figure data-type=&#34;image&#34; tabindex=&#34;1&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E4%B8%A2%E5%A4%B1%E4%BF%AE%E6%94%B9.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
-&lt;h2 id=&#34;2-读脏数据&#34;&gt;(2) 读脏数据&lt;/h2&gt;
+&lt;h2 id=&#34;读脏数据&#34;&gt;读脏数据&lt;/h2&gt;
 &lt;p&gt;T1 修改一个数据，T2 随后读取这个数据，如果 T1 撤销了这次修改，那么 T2 读取到的数据是脏数据。&lt;/p&gt;
 &lt;figure data-type=&#34;image&#34; tabindex=&#34;2&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E8%84%8F%E8%AF%BB.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
-&lt;h2 id=&#34;3-不可重复读&#34;&gt;(3) 不可重复读&lt;/h2&gt;
+&lt;h2 id=&#34;不可重复读&#34;&gt;不可重复读&lt;/h2&gt;
 &lt;p&gt;T2 读取一个数据，T1 对这个数据进行了修改。如果 T2 再次读取这个数据，此时读取的结果和第一次读取的结果不同。&lt;/p&gt;
 &lt;figure data-type=&#34;image&#34; tabindex=&#34;3&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E4%B8%8D%E5%8F%AF%E9%87%8D%E5%A4%8D%E8%AF%BB.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
-&lt;h2 id=&#34;4-幻影读&#34;&gt;(4) 幻影读&lt;/h2&gt;
+&lt;h2 id=&#34;幻影读&#34;&gt;幻影读&lt;/h2&gt;
 &lt;p&gt;T1 读取某个范围的数据，T2 在这个范围内插入新的数据，T1 再次读取这个范围内的数据，此时读取的结果和第一次读取的结果不同。&lt;/p&gt;
 &lt;figure data-type=&#34;image&#34; tabindex=&#34;4&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E5%B9%BB%E8%AF%BB.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
 &lt;blockquote&gt;
@@ -25182,14 +25387,14 @@ if (child_pid == 0) { //我是子进程.
 &lt;/blockquote&gt;
 &lt;hr&gt;
 &lt;p&gt;产生并发不一致问题主要原因是破坏了事务的隔离性，解决方法时通过并发控制来保证隔离性。并发控制可以通过封锁来实现，但是封锁操作需要用户自己控制，相当复杂。数据库管理系统提供了事务的隔离级别，让用户以一种更轻松的方式处理并发一致性问题。&lt;/p&gt;
-&lt;h1 id=&#34;6事务的隔离级别有哪些&#34;&gt;6.事务的隔离级别有哪些？&lt;/h1&gt;
-&lt;h2 id=&#34;1-读未提交read-uncommitted&#34;&gt;(1) 读未提交（READ UNCOMMITTED）&lt;/h2&gt;
+&lt;h1 id=&#34;事务的隔离级别有哪些&#34;&gt;事务的隔离级别有哪些？&lt;/h1&gt;
+&lt;h2 id=&#34;读未提交read-uncommitted&#34;&gt;读未提交（READ UNCOMMITTED）&lt;/h2&gt;
 &lt;p&gt;事务中的修改，即使没有提交，对其他事务也是可见的。&lt;/p&gt;
-&lt;h2 id=&#34;2-读已提交read-committed&#34;&gt;(2) 读已提交（READ COMMITTED）&lt;/h2&gt;
+&lt;h2 id=&#34;读已提交read-committed&#34;&gt;读已提交（READ COMMITTED）&lt;/h2&gt;
 &lt;p&gt;一个事务只能读取已经提交的事务所做的修改。换句话说，一个事务所做的修改在提交之前对其它事务是不可见的。&lt;/p&gt;
-&lt;h2 id=&#34;3-可重复读repeatable-read&#34;&gt;(3) 可重复读（REPEATABLE READ）&lt;/h2&gt;
+&lt;h2 id=&#34;可重复读repeatable-read&#34;&gt;可重复读（REPEATABLE READ）&lt;/h2&gt;
 &lt;p&gt;一个事务在第一次读取过某条记录后，即使其他事务修改了该记录的值并且提交，该&lt;strong&gt;事物之后再读该条记录时，读到的仍是第一次读到的值&lt;/strong&gt;。而不是每次都读到不同的数据，这就是可重复读。&lt;/p&gt;
-&lt;h2 id=&#34;4-可串行化serializable&#34;&gt;(4) 可串行化（SERIALIZABLE）&lt;/h2&gt;
+&lt;h2 id=&#34;可串行化serializable&#34;&gt;可串行化（SERIALIZABLE）&lt;/h2&gt;
 &lt;p&gt;强制事务串行执行。&lt;/p&gt;
 &lt;p&gt;需要加锁实现，而其它隔离级别通常不需要。&lt;/p&gt;
 &lt;table&gt;
@@ -25229,7 +25434,7 @@ if (child_pid == 0) { //我是子进程.
 &lt;/tbody&gt;
 &lt;/table&gt;
 &lt;p&gt;MySQL InnoDB 存储引擎默认的隔离级别是&lt;strong&gt;可重复读&lt;/strong&gt;。InnoDB 存储引擎在可重读事务隔离级别下使用的是 Next-Key Lock 算法，因此可以避免幻读的产生。&lt;/p&gt;
-&lt;h1 id=&#34;7-锁机制与-innodb-锁算法&#34;&gt;7. 锁机制与 InnoDB 锁算法&lt;/h1&gt;
+&lt;h1 id=&#34;锁机制与-innodb-锁算法&#34;&gt;锁机制与 InnoDB 锁算法&lt;/h1&gt;
 &lt;p&gt;MyISAM 和 InnoDB 存储引擎使用的锁&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;MyISAM 使用表级锁&lt;/li&gt;
@@ -25256,7 +25461,7 @@ if (child_pid == 0) { //我是子进程.
 &lt;li&gt;A.将事务隔离级别设置为RC&lt;/li&gt;
 &lt;li&gt;B.将参数innodb_locks_unsafe_for_binlog设置为1&lt;/li&gt;
 &lt;/ul&gt;
-&lt;h1 id=&#34;8介绍一下两段锁协议&#34;&gt;8.介绍一下两段锁协议&lt;/h1&gt;
+&lt;h1 id=&#34;介绍一下两段锁协议&#34;&gt;介绍一下两段锁协议&lt;/h1&gt;
 &lt;ul&gt;
 &lt;li&gt;阶段一：&lt;strong&gt;加锁阶段&lt;/strong&gt;。在这阶段，事务可以申请获得任何数据项上的任何类型的锁，但是不能释放任何锁。&lt;/li&gt;
 &lt;li&gt;阶段二：&lt;strong&gt;解锁阶段&lt;/strong&gt;。在这阶段，事务可以释放任何数据项上的任何类型的琐，但是不能再申请任何锁。&lt;/li&gt;
@@ -25265,7 +25470,7 @@ if (child_pid == 0) { //我是子进程.
 &lt;p&gt;注意：两段锁协议可能会导致死锁。&lt;br&gt;
 &lt;img src=&#34;https://epitomm.github.io/post-images/%E4%B8%A4%E6%AE%B5%E9%94%81%E5%AF%BC%E8%87%B4%E7%9A%84%E6%AD%BB%E9%94%81.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;h1 id=&#34;9介绍一下多版本并发控制mvcc&#34;&gt;9.介绍一下多版本并发控制（MVCC）&lt;/h1&gt;
+&lt;h1 id=&#34;介绍一下多版本并发控制mvcc&#34;&gt;介绍一下多版本并发控制（MVCC）&lt;/h1&gt;
 &lt;p&gt;多版本并发控制（MVCC）是 MySQL 的 InnoDB 存储引擎实现隔离级别的一种具体方式，用于实现读已提交和可重复读这两种隔离级别。而读未提交总是读取最新的数据行，无需使用 MVCC。可串行化隔离级别需要对所有读取的行都加锁，单纯使用 MVCC 无法实现。&lt;/p&gt;
 &lt;p&gt;对于使用 InnoDB 存储引擎的表来说，它的聚簇索引记录中都包三个隐藏列：&lt;/p&gt;
 &lt;table&gt;
@@ -25322,7 +25527,7 @@ if (child_pid == 0) { //我是子进程.
 &lt;figure data-type=&#34;image&#34; tabindex=&#34;6&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E5%8F%AF%E9%87%8D%E5%A4%8D%E8%AF%BBMVCC.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
 &lt;h2 id=&#34;mvcc总结&#34;&gt;MVCC总结&lt;/h2&gt;
 &lt;p&gt;MVCC（Multi-Version Concurrency Control ，多版本并发控制）指的就是在使用 &lt;code&gt;READ COMMITTD&lt;/code&gt;、 &lt;code&gt;REPEATABLE READ&lt;/code&gt; 这两种隔离级别的事务在执行普通的 SEELCT 操作时访问记录的版本链的过程。可以使不同事务的读-写、写-读操作并发执行，从而提升系统性能。&lt;code&gt;READ COMMITTD&lt;/code&gt;、&lt;code&gt;REPEATABLE READ&lt;/code&gt; 这两个隔离级别的一个很大不同就是：&lt;strong&gt;生成ReadView 的时机不同&lt;/strong&gt;，&lt;code&gt;READ COMMITTD&lt;/code&gt; 在每一次进行普通 SELECT 操作前都会生成一个 ReadView，而 &lt;code&gt;REPEATABLE READ&lt;/code&gt; 只在第一次进行普通 SELECT 操作前生成一个ReadView，之后的查询操作都重复使用这个ReadView就好了。&lt;/p&gt;
-&lt;h1 id=&#34;10next-key-locks&#34;&gt;10.Next-Key Locks&lt;/h1&gt;
+&lt;h1 id=&#34;next-key-locks&#34;&gt;Next-Key Locks&lt;/h1&gt;
 &lt;p&gt;Next-Key Locks 是 MySQL 的 InnoDB 存储引擎的一种锁实现。&lt;/p&gt;
 &lt;p&gt;MVCC 不能解决幻影读问题，Next-Key Locks 就是为了解决这个问题而存在的。在可重复读（&lt;code&gt;REPEATABLE READ&lt;/code&gt;）隔离级别下，使用 &lt;code&gt;MVCC + Next-Key Locks&lt;/code&gt; 可以解决幻读问题。&lt;/p&gt;
 &lt;h2 id=&#34;record-locks&#34;&gt;Record Locks&lt;/h2&gt;
@@ -25332,7 +25537,7 @@ if (child_pid == 0) { //我是子进程.
 &lt;p&gt;锁定索引之间的间隙，但是不包含索引本身。例如当一个事务执行以下语句，其它事务就不能在 t.c 中插入 15。&lt;/p&gt;
 &lt;pre&gt;&lt;code&gt;SELECT c FROM t WHERE c BETWEEN 10 and 20 FOR UPDATE;
 &lt;/code&gt;&lt;/pre&gt;
-&lt;h2 id=&#34;next-key-locks&#34;&gt;Next-Key Locks&lt;/h2&gt;
+&lt;h2 id=&#34;next-key-locks-2&#34;&gt;Next-Key Locks&lt;/h2&gt;
 &lt;p&gt;它是 Record Locks 和 Gap Locks 的结合，不仅锁定一个记录上的索引，也锁定索引之间的间隙。它锁定一个前开后闭区间，例如一个索引包含以下值：10, 11, 13, and 20，那么就需要锁定以下区间：&lt;/p&gt;
 &lt;pre&gt;&lt;code&gt;(-∞, 10]
 (10, 11]
@@ -25340,7 +25545,7 @@ if (child_pid == 0) { //我是子进程.
 (13, 20]
 (20, +∞)
 &lt;/code&gt;&lt;/pre&gt;
-&lt;h1 id=&#34;11大表优化&#34;&gt;11.大表优化&lt;/h1&gt;
+&lt;h1 id=&#34;大表优化&#34;&gt;大表优化&lt;/h1&gt;
 &lt;p&gt;当 MySQL 单表记录数过大时，数据库的 CRUD 性能会明显下降，一些常见的优化措施如下：&lt;/p&gt;
 &lt;h2 id=&#34;限定数据的范围&#34;&gt;限定数据的范围&lt;/h2&gt;
 &lt;p&gt;务必禁止不带任何限制数据范围条件的查询语句。比如：我们当用户在查询历史订单的时候，我们可以控制在一个月的范围内；&lt;/p&gt;
@@ -25366,7 +25571,7 @@ if (child_pid == 0) { //我是子进程.
 &lt;li&gt;中间件代理：在应用和数据中间加了一个代理层。分片逻辑统一维护在中间件服务中。我们现在谈的Mycat、360的Atlas、网易的DDB等等都是这种架构的实现。&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;详细内容可以参考：MySQL大表优化方案：&lt;a href=&#34;https://segmentfault.com/a/1190000006158186&#34;&gt;https://segmentfault.com/a/1190000006158186&lt;/a&gt;&lt;/p&gt;
-&lt;h1 id=&#34;12分库分表之后id-主键如何处理&#34;&gt;12.分库分表之后，id 主键如何处理？&lt;/h1&gt;
+&lt;h1 id=&#34;分库分表之后id-主键如何处理&#34;&gt;分库分表之后，id 主键如何处理？&lt;/h1&gt;
 &lt;p&gt;因为要分成多个表之后，每个表都是从 1 开始累加，这样是不对的，我们需要一个全局唯一的 id 来支持。&lt;/p&gt;
 &lt;p&gt;生成全局 id 有一下这几种方式：&lt;/p&gt;
 &lt;ul&gt;
@@ -25375,7 +25580,7 @@ if (child_pid == 0) { //我是子进程.
 &lt;li&gt;&lt;strong&gt;利用 redis 生成 id&lt;/strong&gt;：性能比较好，灵活方便，不依赖于数据库。但是，引入了新的组件造成系统更加复杂，可用性降低，编码更加复杂，增加了系统成本。&lt;/li&gt;
 &lt;li&gt;......&lt;/li&gt;
 &lt;/ul&gt;
-&lt;h1 id=&#34;13查询语句不同元素where-join-limit-group-by-having等的先后执行顺序&#34;&gt;13.查询语句不同元素（where、join、limit、group by、having等）的先后执行顺序？&lt;/h1&gt;
+&lt;h1 id=&#34;查询语句不同元素where-join-limit-group-by-having等的先后执行顺序&#34;&gt;查询语句不同元素（where、join、limit、group by、having等）的先后执行顺序？&lt;/h1&gt;
 &lt;p&gt;查询中使用到的关键字主要包含六个，并且它们的书写顺序依次为：&lt;/p&gt;
 &lt;p&gt;select —— from —— where —— group by —— having  —— order by&lt;/p&gt;
 &lt;p&gt;其中 select 和 from 是必须的，其他关键词是可选的，这六个关键词的执行顺序与 sql 语句的书写顺序并不是一样的，而是按照下面的顺序来执行。&lt;/p&gt;
@@ -25389,7 +25594,7 @@ if (child_pid == 0) { //我是子进程.
 &lt;/ul&gt;
 &lt;p&gt;from 后面的表关联，是自右向左解析，而 where 条件的解析顺序是自下向上的。&lt;/p&gt;
 &lt;p&gt;也就是说，在写 SQL 的时候，尽量把数据量小的表放在最右边来进行关联（用小表去匹配大表），而把筛选出销量数据的条件尽量放在 where 语句的最左边（用小表去匹配大表）。&lt;/p&gt;
-&lt;h1 id=&#34;14关系型数据库与非关系型数据库&#34;&gt;14.关系型数据库与非关系型数据库&lt;/h1&gt;
+&lt;h1 id=&#34;关系型数据库与非关系型数据库&#34;&gt;关系型数据库与非关系型数据库&lt;/h1&gt;
 &lt;p&gt;(1) 关系型数据库&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;使用 SQL 语句方便的在一个表以及多个表之间做非常&lt;strong&gt;复杂的数据查询&lt;/strong&gt;。&lt;/li&gt;
@@ -25400,12 +25605,12 @@ if (child_pid == 0) { //我是子进程.
 &lt;li&gt;NoSQL 基于键值对，不需要经过 SQL 层的解析，&lt;strong&gt;性能高&lt;/strong&gt;。&lt;/li&gt;
 &lt;li&gt;给予减会对，数据之间没有耦合性，&lt;strong&gt;容易水平扩展&lt;/strong&gt;。&lt;/li&gt;
 &lt;/ul&gt;
-&lt;h1 id=&#34;15b-树的数据结构&#34;&gt;15.B+ 树的数据结构？&lt;/h1&gt;
+&lt;h1 id=&#34;b-树的数据结构&#34;&gt;B+ 树的数据结构？&lt;/h1&gt;
 &lt;p&gt;B Tree 指的是 Balance Tree，也就是平衡树。平衡树是一颗查找树，并且所有叶子节点位于同一层。&lt;/p&gt;
 &lt;p&gt;B+ Tree 是基于 B Tree 和叶子节点顺序访问指针进行实现，它具有 B Tree 的平衡性，并且通过顺序访问指针来提高区间查询的性能。&lt;/p&gt;
 &lt;p&gt;在 B+ Tree 中，一个节点中的 key 从左到右非递减排列，如果某个指针的左右相邻 key 分别是 keyi 和 keyi+1，且不为 null，则该指针指向节点的所有 key 大于等于 keyi 且小于等于 keyi+1。&lt;/p&gt;
 &lt;figure data-type=&#34;image&#34; tabindex=&#34;9&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/B+%E6%A0%91%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
-&lt;h1 id=&#34;16为什么使用-b-树索引而不用红黑树&#34;&gt;16.为什么使用 B+ 树索引，而不用红黑树？&lt;/h1&gt;
+&lt;h1 id=&#34;为什么使用-b-树索引而不用红黑树&#34;&gt;为什么使用 B+ 树索引，而不用红黑树？&lt;/h1&gt;
 &lt;p&gt;红黑树等平衡树也可以用来实现索引，但是文件系统及数据库系统普遍采用 B+ Tree 作为索引结构，主要有以下两个原因：&lt;/p&gt;
 &lt;p&gt;（一）更少的查找次数&lt;/p&gt;
 &lt;p&gt;平衡树查找操作的时间复杂度和树高 h 相关，O(h)=O(logdN)，其中 d 为每个节点的出度。&lt;/p&gt;
@@ -25418,7 +25623,7 @@ if (child_pid == 0) { //我是子进程.
 因为B树不管叶子节点还是非叶子节点，都会保存数据，这样导致在非叶子节点中能保存的指针数量变（有些资料也称为扇出）&lt;br&gt;
 指针少的情况下要保存大量数据，只能增加树的高度，导致IO操作变多，查询性能变低；&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;h1 id=&#34;17mysql-读写分离-主从复制&#34;&gt;17.MySQL 读写分离、主从复制&lt;/h1&gt;
+&lt;h1 id=&#34;mysql-读写分离-主从复制&#34;&gt;MySQL 读写分离、主从复制&lt;/h1&gt;
 &lt;h2 id=&#34;读写分离-2&#34;&gt;读写分离&lt;/h2&gt;
 &lt;figure data-type=&#34;image&#34; tabindex=&#34;10&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E8%AF%BB%E5%86%99%E5%88%86%E7%A6%BB.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
 &lt;p&gt;MySQL 读写分离基本原理是让 &lt;strong&gt;master 数据库处理写操作，slave 数据库处理读操作&lt;/strong&gt;。master 将写操作的变更同步到各个 slave 节点。&lt;/p&gt;
@@ -25429,7 +25634,7 @@ if (child_pid == 0) { //我是子进程.
 &lt;li&gt;slave服务器会在一定时间间隔内对master二进制日志进行探测其是否发生改变，如果发生改变，则开始一个I/OThread请求master二进制事件&lt;/li&gt;
 &lt;li&gt;同时主节点为每个I/O线程启动一个dump线程，用于向其发送二进制事件，并保存至从节点本地的中继日志中，从节点将启动SQL线程从中继日志中读取二进制日志，在本地重放，使得其数据和主节点的保持一致，最后I/OThread和SQLThread将进入睡眠状态，等待下一次被唤醒。&lt;/li&gt;
 &lt;/ul&gt;
-&lt;h1 id=&#34;18分页&#34;&gt;18.分页&lt;/h1&gt;
+&lt;h1 id=&#34;分页&#34;&gt;分页&lt;/h1&gt;
 &lt;p&gt;LIMIT 接受一个或两个数字参数。参数必须是一个整数常量。&lt;br&gt;
 如果给定两个参数，第一个参数指定第一个返回记录行的偏移量，第二个参数指定返回记录行的最大数目。初始记录行的偏移量是 0(而不是 1)。&lt;/p&gt;
 &lt;pre&gt;&lt;code&gt;//如果只给定一个参数，它表示返回最大的记录行数目：
@@ -25437,7 +25642,7 @@ mysql&amp;gt; SELECT * FROM table LIMIT 5; //检索前 5 个记录行
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;换句话说，LIMIT n 等价于 LIMIT 0,n。&lt;br&gt;
 &lt;a href=&#34;https://segmentfault.com/a/1190000008859706&#34;&gt;https://segmentfault.com/a/1190000008859706&lt;/a&gt;&lt;/p&gt;
-&lt;h1 id=&#34;19mybatis如何防止sql注入的&#34;&gt;19.MyBatis如何防止SQL注入的？&lt;/h1&gt;
+&lt;h1 id=&#34;mybatis如何防止sql注入的&#34;&gt;MyBatis如何防止SQL注入的？&lt;/h1&gt;
 &lt;p&gt;mybatis的#{}和&lt;span class=&#39;katex-error&#39; title=&#39;ParseError: KaTeX parse error: Expected &amp;#039;EOF&amp;#039;, got &amp;#039;#&amp;#039; at position 21: …以及order by注入问题
 #̲{}：相当于 JDBC 中的 …&#39;&gt;{}的区别以及order by注入问题
 #{}：相当于 JDBC 中的 PreparedStatement
@@ -25451,14 +25656,14 @@ mysql&amp;gt; SELECT * FROM table LIMIT 5; //检索前 5 个记录行
       
       <div class="item">
         <a class="result-title" style="opacity: 0;" href="https://epitomm.github.io/post/mian-shi-ti-xi-lie-jvm/"" data-c="
-          &lt;h1 id=&#34;1-比较-jvm-jre-jdk&#34;&gt;1. 比较 JVM 、JRE、JDK&lt;/h1&gt;
+          &lt;h1 id=&#34;比较-jvm-jre-jdk&#34;&gt;比较 JVM 、JRE、JDK&lt;/h1&gt;
 &lt;figure data-type=&#34;image&#34; tabindex=&#34;1&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/jre-jvm-jdk.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
 &lt;ul&gt;
 &lt;li&gt;JVM：Java Virtual Machine：Java 虚拟机&lt;/li&gt;
 &lt;li&gt;JRE：Java Runtime Environment：Java 运行环境（JVM + 基础类库）&lt;/li&gt;
 &lt;li&gt;JDK：JVM + 基础类库 + 编译工具（java、javac、javap）&lt;/li&gt;
 &lt;/ul&gt;
-&lt;h1 id=&#34;2-介绍下-java-内存区域-结构运行时数据区&#34;&gt;2. 介绍下 Java 内存区域 / 结构（运行时数据区）&lt;/h1&gt;
+&lt;h1 id=&#34;介绍下-java-内存区域-结构运行时数据区&#34;&gt;介绍下 Java 内存区域 / 结构（运行时数据区）&lt;/h1&gt;
 &lt;h2 id=&#34;线程私有的&#34;&gt;线程私有的：&lt;/h2&gt;
 &lt;h3 id=&#34;程序计数器&#34;&gt;程序计数器&lt;/h3&gt;
 &lt;ul&gt;
@@ -25531,13 +25736,13 @@ mysql&amp;gt; SELECT * FROM table LIMIT 5; //检索前 5 个记录行
 &lt;p&gt;HotSpot 1.8 虚拟机内存结构：&lt;br&gt;
 方法区还是一个概念上的东西，方法区的实现使用&lt;strong&gt;元空间&lt;/strong&gt;。元空间内包含了：Class 类信息、类加载器、常量池，不过他已经不再占用堆内存了（不是由 JVM 管理它的内存结构），移出到本地内存（&lt;strong&gt;操作系统内存&lt;/strong&gt;）中。本地内存中还会放一些其他进程，有一块是元空间。StringTable 串被移动到了堆中。&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;h1 id=&#34;3-介绍下-java-内存模型&#34;&gt;3. 介绍下 Java 内存模型&lt;/h1&gt;
+&lt;h1 id=&#34;介绍下-java-内存模型&#34;&gt;介绍下 Java 内存模型&lt;/h1&gt;
 &lt;ul&gt;
 &lt;li&gt;JMM：Java Memory Mmodel&lt;/li&gt;
 &lt;li&gt;Java 内存模型定义了一套在&lt;strong&gt;多线程&lt;/strong&gt;读写共享数据时，对数据的可见性、有序性和原子性的保障。&lt;/li&gt;
 &lt;/ul&gt;
 &lt;figure data-type=&#34;image&#34; tabindex=&#34;4&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/jmm.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
-&lt;h1 id=&#34;4-如何判断对象是否死亡&#34;&gt;4. 如何判断对象是否死亡？&lt;/h1&gt;
+&lt;h1 id=&#34;如何判断对象是否死亡&#34;&gt;如何判断对象是否死亡？&lt;/h1&gt;
 &lt;h2 id=&#34;引用计数法&#34;&gt;引用计数法&lt;/h2&gt;
 &lt;p&gt;为每个对象添加一个&lt;strong&gt;引用计数器&lt;/strong&gt;，每当有一个引用指向这个对象，就把引用计数器的值 +1，当引用失效，计数器值 -1，直到引用计数器的值为 0，表示不再有引用指向这个对象，就可判定这个对象已死亡。&lt;/p&gt;
 &lt;p&gt;因为无法解决对象间&lt;strong&gt;循环引用&lt;/strong&gt;的问题，所以主流的 Java 虚拟机中没有采用这种方法来管理内存。&lt;/p&gt;
@@ -25550,7 +25755,7 @@ mysql&amp;gt; SELECT * FROM table LIMIT 5; //检索前 5 个记录行
 &lt;li&gt;方法区静态属性引用的对象&lt;/li&gt;
 &lt;li&gt;方法区中的常量引用的对象&lt;/li&gt;
 &lt;/ul&gt;
-&lt;h1 id=&#34;5-介绍一下-强引用-软引用-弱引用-虚引用&#34;&gt;5. 介绍一下 强引用、软引用、弱引用、虚引用&lt;/h1&gt;
+&lt;h1 id=&#34;介绍一下-强引用-软引用-弱引用-虚引用&#34;&gt;介绍一下 强引用、软引用、弱引用、虚引用&lt;/h1&gt;
 &lt;h2 id=&#34;强引用&#34;&gt;强引用&lt;/h2&gt;
 &lt;p&gt;只要一个对象还有&lt;strong&gt;强引用&lt;/strong&gt;指向它，它就不会被回收。&lt;/p&gt;
 &lt;p&gt;使用 &lt;code&gt;new&lt;/code&gt;一个对象的方式来创建强引用。&lt;/p&gt;
@@ -25578,7 +25783,7 @@ obj = null;
 PhantomReference &amp;lt;Object&amp;gt; wf = new PhantomReference &amp;lt;Object&amp;gt;(obj, null);
 obj = null;
 &lt;/code&gt;&lt;/pre&gt;
-&lt;h1 id=&#34;6-垃圾收集有哪些算法各自的特点&#34;&gt;6. 垃圾收集有哪些算法？各自的特点？&lt;/h1&gt;
+&lt;h1 id=&#34;垃圾收集有哪些算法各自的特点&#34;&gt;垃圾收集有哪些算法？各自的特点？&lt;/h1&gt;
 &lt;h2 id=&#34;标记清除算法&#34;&gt;标记清除算法&lt;/h2&gt;
 &lt;figure data-type=&#34;image&#34; tabindex=&#34;5&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E6%A0%87%E8%AE%B0%E6%B8%85%E9%99%A4.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
 &lt;p&gt;过程：&lt;/p&gt;
@@ -25623,9 +25828,9 @@ obj = null;
 &lt;li&gt;新生代使用：复制算法&lt;/li&gt;
 &lt;li&gt;老年代使用：标记-清除 算法 或 标记-整理 算法&lt;/li&gt;
 &lt;/ul&gt;
-&lt;h1 id=&#34;7-hotspot-为什么要分为新生代和老年代&#34;&gt;7. HotSpot 为什么要分为新生代和老年代？&lt;/h1&gt;
+&lt;h1 id=&#34;hotspot-为什么要分为新生代和老年代&#34;&gt;HotSpot 为什么要分为新生代和老年代？&lt;/h1&gt;
 &lt;p&gt;HotSpot 根据对象存活周期的不同将内存划分为新生代和老年代，&lt;strong&gt;新生代&lt;/strong&gt;在垃圾回收后，只有少部分对象会被保留，所以采用&lt;strong&gt;复制算法&lt;/strong&gt;；而&lt;strong&gt;老年代则&lt;/strong&gt;有大部分对象被保留，使用&lt;strong&gt;标记-清除&lt;/strong&gt; 或 &lt;strong&gt;标记-整理&lt;/strong&gt; 算法。&lt;/p&gt;
-&lt;h1 id=&#34;8-方法区的回收&#34;&gt;8. 方法区的回收&lt;/h1&gt;
+&lt;h1 id=&#34;方法区的回收&#34;&gt;方法区的回收&lt;/h1&gt;
 &lt;p&gt;主要是对常量池的回收和类的回收。&lt;/p&gt;
 &lt;p&gt;类的回收需要满足三个条件：&lt;/p&gt;
 &lt;ul&gt;
@@ -25633,7 +25838,7 @@ obj = null;
 &lt;li&gt;该类的类加载器已经被回收。&lt;/li&gt;
 &lt;li&gt;该类的类对象没有在任何地方被引用，且通过反射也无法获得该类方法。&lt;/li&gt;
 &lt;/ul&gt;
-&lt;h1 id=&#34;9-hotspot-gc-的触发条件&#34;&gt;9. HotSpot GC 的触发条件&lt;/h1&gt;
+&lt;h1 id=&#34;hotspot-gc-的触发条件&#34;&gt;HotSpot GC 的触发条件&lt;/h1&gt;
 &lt;h2 id=&#34;minor-gc&#34;&gt;Minor GC&lt;/h2&gt;
 &lt;p&gt;新生代中的 Eden 区域内存不足时触发 Minor GC。&lt;/p&gt;
 &lt;blockquote&gt;
@@ -25651,14 +25856,14 @@ obj = null;
 &lt;blockquote&gt;
 &lt;p&gt;Full GC 回收老年代和新生代，老年代对象其存活时间长，因此 Full GC 很少执行，执行速度会比 Minor GC 慢很多。&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;h1 id=&#34;10-什么情况下新生代对象会晋升到老年代&#34;&gt;10. 什么情况下新生代对象会晋升到老年代？&lt;/h1&gt;
+&lt;h1 id=&#34;什么情况下新生代对象会晋升到老年代&#34;&gt;什么情况下新生代对象会晋升到老年代？&lt;/h1&gt;
 &lt;ul&gt;
 &lt;li&gt;晋升年龄达到阈值的对象，会晋升到老年代。&lt;/li&gt;
 &lt;li&gt;大对象直接进入老年代：避免在 Eden 和 Survior 之间来回进行大量复制。&lt;/li&gt;
 &lt;li&gt;Minor GC 后，如果对象太大无法进入 Survior 区，则直接进入老年代。&lt;/li&gt;
 &lt;li&gt;如果在 Survior 区中相同年龄所有对象大小的总和大于 Survivor 空间的一半，年龄大于或等于该年龄对象就可以直接进入老年代，无须等年龄达到晋升阈值。&lt;/li&gt;
 &lt;/ul&gt;
-&lt;h1 id=&#34;11-常见的垃圾收集器有哪些&#34;&gt;11. 常见的垃圾收集器有哪些？&lt;/h1&gt;
+&lt;h1 id=&#34;常见的垃圾收集器有哪些&#34;&gt;常见的垃圾收集器有哪些？&lt;/h1&gt;
 &lt;figure data-type=&#34;image&#34; tabindex=&#34;10&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E5%9E%83%E5%9C%BE%E6%94%B6%E9%9B%86%E5%99%A8.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
 &lt;p&gt;以上是 HotSpot 虚拟机中的 7 个垃圾收集器，连线表示垃圾收集器可以配合使用。&lt;/p&gt;
 &lt;ul&gt;
@@ -25751,7 +25956,7 @@ obj = null;
 &lt;/ul&gt;
 &lt;h1 id=&#34;12-类加载的过程&#34;&gt;12. 类加载的过程&lt;/h1&gt;
 &lt;p&gt;包含了加载、验证、准备、解析和初始化这 5 个阶段。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;1. 加载&lt;/strong&gt;&lt;/p&gt;
+&lt;h2 id=&#34;加载&#34;&gt;加载&lt;/h2&gt;
 &lt;p&gt;加载是类加载的一个阶段，注意不要混淆。&lt;/p&gt;
 &lt;p&gt;加载过程完成以下三件事：&lt;/p&gt;
 &lt;ul&gt;
@@ -25766,9 +25971,9 @@ obj = null;
 &lt;li&gt;运行时计算生成，例如动态代理技术，在 java.lang.reflflect.Proxy 使用 ProxyGenerator.generateProxyClass 的代理类的二进制字节流。&lt;/li&gt;
 &lt;li&gt;由其他文件生成，例如由 JSP 文件生成对应的 Class 类。&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;&lt;strong&gt;2. 验证&lt;/strong&gt;&lt;/p&gt;
+&lt;h2 id=&#34;验证&#34;&gt;验证&lt;/h2&gt;
 &lt;p&gt;确保 Class 文件的字节流中包含的信息符合当前虚拟机的要求，并且不会危害虚拟机自身的安全。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;3. 准备&lt;/strong&gt;&lt;/p&gt;
+&lt;h2 id=&#34;准备&#34;&gt;准备&lt;/h2&gt;
 &lt;p&gt;类变量是被 static 修饰的变量，准备阶段为类变量分配内存并设置初始值，使用的是方法区的内存。&lt;/p&gt;
 &lt;p&gt;实例变量不会在这阶段分配内存，它会在对象实例化时随着对象一起被分配在堆中。应该注意到，实例化不是类加载的一个过程，类加载发生在所有实例化操作之前，并且类加载只进行一次，实例化可以进行多次。&lt;/p&gt;
 &lt;p&gt;初始值一般为 0 值，例如下面的类变量 value 被初始化为 0 而不是 123。&lt;/p&gt;
@@ -25777,10 +25982,10 @@ obj = null;
 &lt;p&gt;如果类变量是常量，那么它将初始化为表达式所定义的值而不是 0。例如下面的常量 value 被初始化为 123 而不是 0。&lt;/p&gt;
 &lt;pre&gt;&lt;code&gt;public static final int value = 123; 
 &lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;strong&gt;4. 解析&lt;/strong&gt;&lt;br&gt;
-将常量池的符号引用替换为直接引用的过程。&lt;/p&gt;
+&lt;h2 id=&#34;解析&#34;&gt;解析&lt;/h2&gt;
+&lt;p&gt;将常量池的符号引用替换为直接引用的过程。&lt;/p&gt;
 &lt;p&gt;其中解析过程在某些情况下可以在初始化阶段之后再开始，这是为了支持 Java 的动态绑定。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;5. 初始化&lt;/strong&gt;&lt;/p&gt;
+&lt;h2 id=&#34;初始化&#34;&gt;初始化&lt;/h2&gt;
 &lt;p&gt;初始化阶段才真正开始执行类中定义的 Java 程序代码。初始化阶段是虚拟机执行类构造器 &lt;clinit&gt;() 方法的过程。在准备阶段，类变量已经赋过一次系统要求的初始值，而在初始化阶段，根据程序员通过程序制定的主观计划去初始化类变量和其它资源。&lt;/p&gt;
 &lt;p&gt;&lt;clinit&gt;() 是由编译器自动收集类中所有类变量的赋值动作和静态语句块中的语句合并产生的，编译器收集的顺序由语句在源文件中出现的顺序决定。特别注意的是，静态语句块只能访问到定义在它之前的类变量，定义在它之后的类变量只能赋值，不能访问。例如以下代码：&lt;/p&gt;
 &lt;pre&gt;&lt;code&gt;public class Test { 
@@ -25808,8 +26013,8 @@ public static void main(String[] args) {
 &lt;p&gt;接口中不可以使用静态语句块，但仍然有类变量初始化的赋值操作，因此接口与类一样都会生成 &lt;clinit&gt;() 方法。但接口与类不同的是，执行接口的 &lt;clinit&gt;() 方法不需要先执行父接口的 &lt;clinit&gt;() 方法。只有当父接口中定义的变量使&lt;br&gt;
 用时，父接口才会初始化。另外，接口的实现类在初始化时也一样不会执行接口的 &lt;clinit&gt;() 方法。&lt;/p&gt;
 &lt;p&gt;虚拟机会保证一个类的 &lt;clinit&gt;() 方法在多线程环境下被正确的加锁和同步，如果多个线程同时初始化一个类，只会有一个线程执行这个类的 &lt;clinit&gt;() 方法，其它线程都会阻塞等待，直到活动线程执行 &lt;clinit&gt;() 方法完毕。如果在一 个类的 &lt;clinit&gt;() 方法中有耗时的操作，就可能造成多个线程阻塞，在实际过程中此种阻塞很隐蔽。&lt;/p&gt;
-&lt;h1 id=&#34;13-类初始化时机&#34;&gt;13. 类初始化时机&lt;/h1&gt;
-&lt;p&gt;&lt;strong&gt;1. 主动引用&lt;/strong&gt;&lt;/p&gt;
+&lt;h1 id=&#34;类初始化时机&#34;&gt;类初始化时机&lt;/h1&gt;
+&lt;h2 id=&#34;主动引用&#34;&gt;主动引用&lt;/h2&gt;
 &lt;p&gt;虚拟机规范中并没有强制约束何时进行加载，但是规范严格规定了有且只有下列五种情况必须对类进行初始化（加载、验证、准备都会随之发生）：&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;遇到 new、getstatic、putstatic、invokestatic 这四条字节码指令时，如果类没有进行过初始化，则必须先触发其初始化。最常见的生成这 4 条指令的场景是：使用 new 关键字实例化对象的时候；读取或设置一个类的静态字段（被 fifinal 修饰、已在编译期把结果放入常量池的静态字段除外）的时候；以及调用一个类的静态方法的时候。&lt;/li&gt;
@@ -25818,7 +26023,7 @@ public static void main(String[] args) {
 &lt;li&gt;当虚拟机启动时，用户需要指定一个要执行的主类（包含 main() 方法的那个类），虚拟机会先初始化这个主类；&lt;/li&gt;
 &lt;li&gt;当使用 JDK 1.7 的动态语言支持时，如果一个 java.lang.invoke.MethodHandle 实例最后的解析结果为 REF_getStatic, REF_putStatic, REF_invokeStatic 的方法句柄，并且这个方法句柄所对应的类没有进行过初始化，则需要先触发其初始化；&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;&lt;strong&gt;2. 被动引用&lt;/strong&gt;&lt;/p&gt;
+&lt;h2 id=&#34;被动引用&#34;&gt;被动引用&lt;/h2&gt;
 &lt;p&gt;以上 5 种场景中的行为称为对一个类进行主动引用。除此之外，所有引用类的方式都不会触发初始化，称为被动引 用。被动引用的常见例子包括：&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;通过子类引用父类的静态字段，不会导致子类初始化。&lt;/li&gt;
@@ -25831,7 +26036,7 @@ public static void main(String[] args) {
 &lt;p&gt;常量在编译阶段会存入调用类的常量池中，本质上并没有直接引用到定义常量的类，因此不会触发定义常量的类的初始化。&lt;/p&gt;
 &lt;pre&gt;&lt;code&gt;System.out.println(ConstClass.HELLOWORLD);
 &lt;/code&gt;&lt;/pre&gt;
-&lt;h1 id=&#34;14-java-虚拟机中有哪些类加载器&#34;&gt;14. Java 虚拟机中有哪些类加载器？&lt;/h1&gt;
+&lt;h1 id=&#34;java-虚拟机中有哪些类加载器&#34;&gt;Java 虚拟机中有哪些类加载器？&lt;/h1&gt;
 &lt;table&gt;
 &lt;thead&gt;
 &lt;tr&gt;
@@ -25863,11 +26068,11 @@ public static void main(String[] args) {
 &lt;/tr&gt;
 &lt;/tbody&gt;
 &lt;/table&gt;
-&lt;h1 id=&#34;15-什么是双亲委派模型&#34;&gt;15. 什么是双亲委派模型？&lt;/h1&gt;
+&lt;h1 id=&#34;什么是双亲委派模型&#34;&gt;什么是双亲委派模型？&lt;/h1&gt;
 &lt;p&gt;如果一个类加载器收到了类加载请求，它首先不会自己去尝试加载这个类，而是把类加载的请求委派给父类加载器去完成，每一层次的类加载器都是如此，因此所有的加载请求最终都会传送到顶层的启动类加载器中，只有当父类无法处理这个加载请求（它的搜索范围中没有找到所需的类）时，子加载器才会尝试自己去加载。&lt;/p&gt;
-&lt;h1 id=&#34;16-使用双亲委派模型有什么好处&#34;&gt;16. 使用双亲委派模型有什么好处？&lt;/h1&gt;
+&lt;h1 id=&#34;使用双亲委派模型有什么好处&#34;&gt;使用双亲委派模型有什么好处？&lt;/h1&gt;
 &lt;p&gt;双亲委派模型保证了 Java 程序的稳定运行，可以&lt;strong&gt;避免类的重复加载&lt;/strong&gt;（JVM 区分类的方式不仅仅根据类名，相同的类文件被不同的类加载器加载产生的是两个不同的类），也&lt;strong&gt;保证了 Java 的核心 API 不被篡改&lt;/strong&gt;。如果没有使用双亲委派模型，而是每个类加载器加载自己的话就会出现一些问题，比如我们编写一个 java.lang.Object 类的话，那么程序运行的时候，系统就会出现多个不同的 Object 类。&lt;/p&gt;
-&lt;h1 id=&#34;17-内存分配策略&#34;&gt;17. 内存分配策略&lt;/h1&gt;
+&lt;h1 id=&#34;内存分配策略&#34;&gt;内存分配策略&lt;/h1&gt;
 &lt;h2 id=&#34;对象优先在-eden-分配&#34;&gt;对象优先在 Eden 分配&lt;/h2&gt;
 &lt;p&gt;大多数情况下，对象在新生代 Eden 上分配，当 Eden 空间不足时，触发 Minor GC。&lt;/p&gt;
 &lt;h2 id=&#34;大对象直接进入老年代&#34;&gt;大对象直接进入老年代&lt;/h2&gt;
@@ -25882,7 +26087,7 @@ public static void main(String[] args) {
 &lt;h2 id=&#34;空间分配担保&#34;&gt;空间分配担保&lt;/h2&gt;
 &lt;p&gt;在发生 Minor GC 之前，虚拟机先检查老年代最大可用的连续空间是否大于新生代所有对象总空间，如果条件成立的话，那么 Minor GC 可以确认是安全的。&lt;br&gt;
 如果不成立的话虚拟机会查看 HandlePromotionFailure 的值是否允许担保失败，如果允许那么就会继续检查老年代最大可用的连续空间是否大于历次晋升到老年代对象的平均大小，如果大于，将尝试着进行一次 Minor GC；如果小于，或者 HandlePromotionFailure 的值不允许冒险，那么就要进行一次 Full GC。&lt;/p&gt;
-&lt;h1 id=&#34;18-说一下-java-对象的创建过程&#34;&gt;18. 说一下 Java 对象的创建过程&lt;/h1&gt;
+&lt;h1 id=&#34;说一下-java-对象的创建过程&#34;&gt;说一下 Java 对象的创建过程&lt;/h1&gt;
 &lt;p&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/java%E5%AF%B9%E8%B1%A1%E7%9A%84%E5%88%9B%E5%BB%BA%E8%BF%87%E7%A8%8B.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;br&gt;
 ① &lt;strong&gt;类加载检查&lt;/strong&gt;：虚拟机遇到一条 new 指令时，首先将去检查这个指令的参数是否能在常量池中定位到这个类的符号引用，并且检查这个符号引用代表的类是否已被加载过、解析和初始化过。如果没有，那必须先执行相应的类加载过程。&lt;br&gt;
 ② &lt;strong&gt;分配内存&lt;/strong&gt;：在类加载检查通过后，接下来虚拟机将为新生代对象分配内存。对象所需的内存大小在类加载完成后便可确定，为对象分配空间的任务等同于把一块确定大小的内存从 Java 堆中划分出来。分配方式有 “指针碰撞” 和 “空闲列表” 两种，选择哪种方式由 Java 堆是否规整决定，而 Java 堆是否规整又由所采用的垃圾收集器是否带有压缩整理功能决定。&lt;/p&gt;
@@ -25903,13 +26108,13 @@ public static void main(String[] args) {
       
       <div class="item">
         <a class="result-title" style="opacity: 0;" href="https://epitomm.github.io/post/mian-shi-ti-xi-lie-java-ji-he/"" data-c="
-          &lt;h1 id=&#34;1-说一说-list-set-map-三者的区别&#34;&gt;1. 说一说 List、Set、Map 三者的区别&lt;/h1&gt;
+          &lt;h1 id=&#34;说一说-list-set-map-三者的区别&#34;&gt;说一说 List、Set、Map 三者的区别&lt;/h1&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;code&gt;List&lt;/code&gt; 是存储&lt;strong&gt;有序&lt;/strong&gt;的集合&lt;/li&gt;
 &lt;li&gt;&lt;code&gt;Set&lt;/code&gt; 集合元素&lt;strong&gt;不可重复&lt;/strong&gt;&lt;/li&gt;
 &lt;li&gt;&lt;code&gt;Map&lt;/code&gt; 是存储&lt;strong&gt;键值对&lt;/strong&gt;的集合&lt;/li&gt;
 &lt;/ul&gt;
-&lt;h1 id=&#34;2-arraylist-与-linkedlist-的区别&#34;&gt;2. ArrayList 与 LinkedList 的区别&lt;/h1&gt;
+&lt;h1 id=&#34;arraylist-与-linkedlist-的区别&#34;&gt;ArrayList 与 LinkedList 的区别&lt;/h1&gt;
 &lt;ol&gt;
 &lt;li&gt;底层存储数据结构：&lt;/li&gt;
 &lt;/ol&gt;
@@ -25957,7 +26162,7 @@ public static void main(String[] args) {
     }
 }
 &lt;/code&gt;&lt;/pre&gt;
-&lt;h1 id=&#34;3-arraylist-扩容机制&#34;&gt;3. ArrayList 扩容机制&lt;/h1&gt;
+&lt;h1 id=&#34;arraylist-扩容机制&#34;&gt;ArrayList 扩容机制&lt;/h1&gt;
 &lt;pre&gt;&lt;code&gt;public boolean add(E e) {
     // 确保数组容量能容纳下当前数组内实际的元素个数+1
     ensureCapacityInternal(size + 1);  // Increments modCount!!
@@ -25993,7 +26198,7 @@ private void ensureExplicitCapacity(int minCapacity) {
 &lt;blockquote&gt;
 &lt;p&gt;上述代码基于 JDK1.8&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;h1 id=&#34;4-arraylist-和-vector-的区别&#34;&gt;4. ArrayList 和 Vector 的区别&lt;/h1&gt;
+&lt;h1 id=&#34;arraylist-和-vector-的区别&#34;&gt;ArrayList 和 Vector 的区别&lt;/h1&gt;
 &lt;p&gt;线程安全&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;code&gt;ArrayList&lt;/code&gt; 线程不安全&lt;/li&gt;
@@ -26004,7 +26209,7 @@ private void ensureExplicitCapacity(int minCapacity) {
 &lt;li&gt;&lt;code&gt;ArrayList&lt;/code&gt; 扩容后的容量为原来的 1.5 倍&lt;/li&gt;
 &lt;li&gt;&lt;code&gt;Vector&lt;/code&gt; 扩容后的容量 是原来的 2 倍&lt;/li&gt;
 &lt;/ul&gt;
-&lt;h1 id=&#34;5-hashmap-和-hashtable的区别&#34;&gt;5. HashMap 和 Hashtable的区别&lt;/h1&gt;
+&lt;h1 id=&#34;hashmap-和-hashtable的区别&#34;&gt;HashMap 和 Hashtable的区别&lt;/h1&gt;
 &lt;p&gt;线程安全：&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;code&gt;HashMap&lt;/code&gt; 线程不安全&lt;/li&gt;
@@ -26020,7 +26225,7 @@ private void ensureExplicitCapacity(int minCapacity) {
 &lt;li&gt;&lt;code&gt;HashMap&lt;/code&gt; 允许 null 键值&lt;/li&gt;
 &lt;li&gt;&lt;code&gt;Hashtable&lt;/code&gt; 不允许 null 键值&lt;/li&gt;
 &lt;/ul&gt;
-&lt;h1 id=&#34;6-hashmap-的-put-方法的具体流程&#34;&gt;6. HashMap 的 put 方法的具体流程&lt;/h1&gt;
+&lt;h1 id=&#34;hashmap-的-put-方法的具体流程&#34;&gt;HashMap 的 put 方法的具体流程&lt;/h1&gt;
 &lt;pre&gt;&lt;code&gt;public V put(K key, V value) {
     return putVal(hash(key), key, value, false, true);
 }
@@ -26097,12 +26302,12 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
 &lt;li&gt;如果发生碰撞，判断时红黑树还是链表，然后调用相应的插入方法&lt;/li&gt;
 &lt;li&gt;HashMap 的 resize() 扩容方法&lt;/li&gt;
 &lt;/ol&gt;
-&lt;h1 id=&#34;7-hashmap-的-resize-扩容方法&#34;&gt;7. HashMap 的 resize() 扩容方法&lt;/h1&gt;
+&lt;h1 id=&#34;hashmap-的-resize-扩容方法&#34;&gt;HashMap 的 resize() 扩容方法&lt;/h1&gt;
 &lt;p&gt;如果当前size &amp;gt; 阈值（容量 * 装填因子），则扩容&lt;/p&gt;
 &lt;figure data-type=&#34;image&#34; tabindex=&#34;2&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/resize.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
-&lt;h1 id=&#34;8-hashmap-容量为什么是-2-的幂次&#34;&gt;8. HashMap 容量为什么是 2 的幂次&lt;/h1&gt;
+&lt;h1 id=&#34;hashmap-容量为什么是-2-的幂次&#34;&gt;HashMap 容量为什么是 2 的幂次&lt;/h1&gt;
 &lt;p&gt;减少 &lt;code&gt;hash&lt;/code&gt; 冲突，因为要用 &lt;code&gt;hash &amp;amp; (n-1)&lt;/code&gt; 确定元素存在数组中的下标位置，如果 n 是 2 的幂（1000），那么 n-1 得到的结果就全为 1 （10000 - 1 = 1111），这样 &lt;code&gt;(n-1) &amp;amp; hash&lt;/code&gt; 的值就是 hash。如果 n-1 中有某位为 0，那么 0 与任何数 &amp;amp; 结果都为0，增加了hash 冲突的概率。&lt;/p&gt;
-&lt;h1 id=&#34;9-hashmap-17-18-对比&#34;&gt;9. HashMap 1.7 1.8 对比&lt;/h1&gt;
+&lt;h1 id=&#34;hashmap-17-18-对比&#34;&gt;HashMap 1.7 1.8 对比&lt;/h1&gt;
 &lt;ul&gt;
 &lt;li&gt;JDK1.7&lt;/li&gt;
 &lt;/ul&gt;
@@ -26132,16 +26337,16 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
 &lt;p&gt;贴一张比较详细的图：&lt;br&gt;
 &lt;img src=&#34;https://epitomm.github.io/post-images/hashmap.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/p&gt;
 &lt;p&gt;图片来源；&lt;a href=&#34;https://mp.weixin.qq.com/s?__biz=MzI4Njg5MDA5NA==&amp;amp;mid=2247485685&amp;amp;idx=2&amp;amp;sn=b393e444487c88e8c204821faddff370&amp;amp;chksm=ebd749f4dca0c0e257e15c656f4504f224456495ad78e8aeb9ea370214ebd4b5c455b15e6045&amp;amp;token=1948873548&amp;amp;lang=zh_CN#rd&#34;&gt;https://mp.weixin.qq.com/s?__biz=MzI4Njg5MDA5NA==&amp;amp;mid=2247485685&amp;amp;idx=2&amp;amp;sn=b393e444487c88e8c204821faddff370&amp;amp;chksm=ebd749f4dca0c0e257e15c656f4504f224456495ad78e8aeb9ea370214ebd4b5c455b15e6045&amp;amp;token=1948873548&amp;amp;lang=zh_CN#rd&lt;/a&gt;&lt;/p&gt;
-&lt;h1 id=&#34;10-hashmap-是怎么解决哈希冲突的&#34;&gt;10. HashMap 是怎么解决哈希冲突的&lt;/h1&gt;
+&lt;h1 id=&#34;hashmap-是怎么解决哈希冲突的&#34;&gt;HashMap 是怎么解决哈希冲突的&lt;/h1&gt;
 &lt;p&gt;什么是哈希冲突：两个不同的输入值，根据同一散列函数，计算出相同的散列值。&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;使用&lt;strong&gt;拉链法&lt;/strong&gt;来链接具有相同 hash 值的数据&lt;/li&gt;
 &lt;li&gt;使用&lt;strong&gt;两次扰动函数&lt;/strong&gt;（hash 函数）来降低哈希冲突的概率，使得&lt;strong&gt;数据分布更均匀&lt;/strong&gt;&lt;/li&gt;
 &lt;li&gt;引入&lt;strong&gt;红黑树&lt;/strong&gt;降低查找的时间复杂度&lt;/li&gt;
 &lt;/ul&gt;
-&lt;h1 id=&#34;11-hashmap-17-18多线程操作导致死循环问题&#34;&gt;11. HashMap 1.7 1.8多线程操作导致死循环问题&lt;/h1&gt;
+&lt;h1 id=&#34;hashmap-17-18多线程操作导致死循环问题&#34;&gt;HashMap 1.7 1.8多线程操作导致死循环问题&lt;/h1&gt;
 &lt;p&gt;参考链接：&lt;a href=&#34;https://coolshell.cn/articles/9606.html&#34;&gt;https://coolshell.cn/articles/9606.html&lt;/a&gt;&lt;/p&gt;
-&lt;h1 id=&#34;12-hashmap-的-key-值要是为类对象则该类需要满足什么条件&#34;&gt;12. HashMap 的 key 值要是为类对象则该类需要满⾜什么条件？&lt;/h1&gt;
+&lt;h1 id=&#34;hashmap-的-key-值要是为类对象则该类需要满足什么条件&#34;&gt;HashMap 的 key 值要是为类对象则该类需要满⾜什么条件？&lt;/h1&gt;
 &lt;p&gt;&lt;strong&gt;重写 hashCode() 和 equals() 方法。&lt;/strong&gt;&lt;/p&gt;
 &lt;p&gt;&lt;code&gt;Hashmap&lt;/code&gt; 中放入相同的 &lt;code&gt;key&lt;/code&gt;，会覆盖 &lt;code&gt;value&lt;/code&gt; 值，而不是重新添加一个 &lt;code&gt;key-value&lt;/code&gt; 对，这就要求我们判断 &lt;code&gt;key&lt;/code&gt; 是否相同。&lt;/p&gt;
 &lt;p&gt;以下为 &lt;code&gt;HashMap&lt;/code&gt; 的 &lt;code&gt;final V putVal(int hash, K key, V value, boolean onlyIfAbsent, boolean evict)&lt;/code&gt; 方法：&lt;/p&gt;
@@ -26149,7 +26354,7 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
     ((k = p.key) == key || (key != null &amp;amp;&amp;amp; key.equals(k))))
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;从源码得知判断分为三个步骤：①判断 &lt;code&gt;key&lt;/code&gt; 的 &lt;code&gt;hash&lt;/code&gt; 值是否相同，这就要求我们重写 &lt;code&gt;hashCode()&lt;/code&gt; 方法；② 通过 &lt;code&gt;==&lt;/code&gt; 判断 &lt;code&gt;key&lt;/code&gt; 对象引用是否相等；③ 使用 &lt;code&gt;equals()&lt;/code&gt; 判断对象是否相等，这就要求我们重写 &lt;code&gt;equals()&lt;/code&gt; 方法。&lt;/p&gt;
-&lt;h1 id=&#34;13-concurrenthashmap-的底层实现方式&#34;&gt;13. ConcurrentHashMap 的底层实现方式&lt;/h1&gt;
+&lt;h1 id=&#34;concurrenthashmap-的底层实现方式&#34;&gt;ConcurrentHashMap 的底层实现方式&lt;/h1&gt;
 &lt;p&gt;JDK1.7&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;数据结构：分段数组（&lt;code&gt;Segment&lt;/code&gt; 继承了 &lt;code&gt;ReentrantLock&lt;/code&gt;，每个段都有一个锁） + 链表（&lt;code&gt;HashEntry&lt;/code&gt;）&lt;/li&gt;
@@ -26160,7 +26365,7 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
 &lt;li&gt;数据结构：数组 + 链表 + 红黑树&lt;/li&gt;
 &lt;li&gt;线程安全：部分锁定 + CAS。&lt;code&gt;synchronized&lt;/code&gt; 只锁定&lt;strong&gt;当前链表或红黑二叉树的首节点&lt;/strong&gt;，这样只要 hash 不冲突，就不会产生并发。&lt;/li&gt;
 &lt;/ul&gt;
-&lt;h1 id=&#34;14-concurrenthashmap-和-hashtable-的区别&#34;&gt;14. ConcurrentHashMap 和 Hashtable 的区别&lt;/h1&gt;
+&lt;h1 id=&#34;concurrenthashmap-和-hashtable-的区别&#34;&gt;ConcurrentHashMap 和 Hashtable 的区别&lt;/h1&gt;
 &lt;ul&gt;
 &lt;li&gt;
 &lt;p&gt;Hashtable&lt;br&gt;
@@ -26178,7 +26383,7 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
 通过在部分加锁和利用CAS算法来实现同步。&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ul&gt;
-&lt;h1 id=&#34;15-如何选用集合&#34;&gt;15. 如何选用集合&lt;/h1&gt;
+&lt;h1 id=&#34;如何选用集合&#34;&gt;如何选用集合&lt;/h1&gt;
 &lt;ul&gt;
 &lt;li&gt;如果存储键值对，选 &lt;code&gt;Map&lt;/code&gt; 接口下的集合
 &lt;ul&gt;
@@ -26204,7 +26409,7 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
       
       <div class="item">
         <a class="result-title" style="opacity: 0;" href="https://epitomm.github.io/post/zookeeper-mian-shi-ti/"" data-c="
-          &lt;h1 id=&#34;1-谈谈你对-zookeeper-的认识&#34;&gt;1. 谈谈你对 Zookeeper 的认识&lt;/h1&gt;
+          &lt;h1 id=&#34;谈谈你对-zookeeper-的认识&#34;&gt;谈谈你对 Zookeeper 的认识&lt;/h1&gt;
 &lt;p&gt;&lt;code&gt;Zookeeper&lt;/code&gt; 是一个&lt;strong&gt;分布式协调服务&lt;/strong&gt;的开源框架。主要用来解决分布式集群中应用系统的&lt;strong&gt;一致性&lt;/strong&gt;问题，例如怎样避免同时操作同一数据造成脏读的问题。&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;&lt;code&gt;ZooKeeper&lt;/code&gt; 本质上是一个分布式的小文件存储系统&lt;/strong&gt;。提供基于类似于文件系统的目录树方式的数据存储，并且可以对树中的节点进行有效管理。从而用来维护和监控你存储的数据的状态变化。通过监控这些数据状态的变化，从而可以达到基于数据的集群管理。诸如：统一命名服务、分布式配置管理、分布式消息队列、分布式锁、分布式协调等功能。&lt;/p&gt;
 &lt;h2 id=&#34;zookeeper-集群角色&#34;&gt;Zookeeper 集群角色&lt;/h2&gt;
@@ -26223,7 +26428,7 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
 &lt;h3 id=&#34;observer&#34;&gt;Observer:&lt;/h3&gt;
 &lt;p&gt;观察者角色，观察 Zookeeper 集群的最新状态变化并将这些状态同步过来，其对于非事务请求可以进行独立处理，对于事务请求，则会转发给 Leader 服务器进行处理。&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;不会参与任何形式的投票&lt;/strong&gt;只提供非事务服务，通常用于在不影响集群事务处理能力的前提下提升集群的非事务处理能力。&lt;/p&gt;
-&lt;h1 id=&#34;2-zookeeper-特性&#34;&gt;2. ZooKeeper 特性&lt;/h1&gt;
+&lt;h1 id=&#34;zookeeper-特性&#34;&gt;ZooKeeper 特性&lt;/h1&gt;
 &lt;ol&gt;
 &lt;li&gt;&lt;strong&gt;全局数据一致&lt;/strong&gt;：集群中每个服务器保存一份相同的数据副本，&lt;code&gt;client&lt;/code&gt; 无论连接到哪个服务器，展示的数据都是一致的，这是最重要的特征；&lt;br&gt;
 &lt;img src=&#34;https://epitomm.github.io/post-images/zk%E5%85%A8%E5%B1%80%E4%B8%80%E8%87%B4%E6%80%A7.png&#34; alt=&#34;&#34; loading=&#34;lazy&#34;&gt;&lt;/li&gt;
@@ -26233,7 +26438,7 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
 &lt;li&gt;&lt;strong&gt;数据更新原子性&lt;/strong&gt;：一次数据更新要么成功（半数以上节点成功），要么失败，不存在中间状态。&lt;/li&gt;
 &lt;li&gt;&lt;strong&gt;实时性&lt;/strong&gt;：&lt;code&gt;Zookeeper&lt;/code&gt; 保证客户端将在一个时间间隔范围内获得服务器的更新信息，或者服务器失效的信息。&lt;/li&gt;
 &lt;/ol&gt;
-&lt;h1 id=&#34;3-zookeeper-数据模型&#34;&gt;3． ZooKeeper 数据模型&lt;/h1&gt;
+&lt;h1 id=&#34;zookeeper-数据模型&#34;&gt;ZooKeeper 数据模型&lt;/h1&gt;
 &lt;p&gt;&lt;code&gt;ZooKeeper&lt;/code&gt; 的数据模型，在结构上和标准文件系统的非常相似，拥有一个层次的命名空间，都是采用&lt;strong&gt;树形层次结构&lt;/strong&gt;，&lt;code&gt;ZooKeeper&lt;/code&gt; 树中的每个节点被称为— &lt;strong&gt;&lt;code&gt;Znode&lt;/code&gt;&lt;/strong&gt;。和文件系统的目录树一样，&lt;code&gt;ZooKeeper&lt;/code&gt; 树中的每个节点可以拥有子节点。但也有不同之处：&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;&lt;strong&gt;&lt;code&gt;Znode&lt;/code&gt; 兼具文件和目录两种特点&lt;/strong&gt;。既像文件一样维护着数据、元信息、ACL、时间戳等数据结构，又像目录一样可以作为路径标识的一部分，并可以具有子 &lt;code&gt;Znode&lt;/code&gt;。用户对 &lt;code&gt;Znode&lt;/code&gt; 具有增、删、改、查等操作（权限允许的情况下）。&lt;/li&gt;
@@ -26241,7 +26446,7 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
 &lt;li&gt;&lt;strong&gt;&lt;code&gt;Znode&lt;/code&gt; 存储数据大小有限制&lt;/strong&gt;。&lt;code&gt;ZooKeeper&lt;/code&gt; 虽然可以关联一些数据，但并没有被设计为常规的数据库或者大数据存储，相反的是，它用来管理调度数据，比如分布式应用中的配置文件信息、状态信息、汇集位置等等。这些数据的共同特性就是它们都是很小的数据，&lt;strong&gt;通常以 KB 为大小单位&lt;/strong&gt;。ZooKeeper 的服务器和客户端都被设计为严格检查并限制每个 Znode 的数据大小至多 1M，当时常规使用中应该远小于此值。&lt;/li&gt;
 &lt;li&gt;&lt;strong&gt;&lt;code&gt;Znode&lt;/code&gt; 通过路径引用&lt;/strong&gt;，如同 &lt;code&gt;Unix&lt;/code&gt; 中的文件路径。&lt;strong&gt;路径必须是绝对的&lt;/strong&gt;，因此他们必须&lt;strong&gt;由斜杠字符来开头&lt;/strong&gt;。除此以外，他们必须是唯一的，也就是说每一个路径只有一个表示，因此这些路径不能改变。在 &lt;code&gt;ZooKeeper&lt;/code&gt; 中，路径由 &lt;code&gt;Unicode&lt;/code&gt; 字符串组成，并且有一些限制。字符串&amp;quot;/zookeeper&amp;quot;用以保存管理信息，比如关键配额信息。&lt;/li&gt;
 &lt;/ol&gt;
-&lt;h2 id=&#34;31数据结构图&#34;&gt;3.1．数据结构图&lt;/h2&gt;
+&lt;h2 id=&#34;数据结构图&#34;&gt;数据结构图&lt;/h2&gt;
 &lt;p&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/1584240732240.jpg&#34; alt=&#34;&#34; loading=&#34;lazy&#34;&gt;&lt;br&gt;
 图中的每个节点称为一个 &lt;code&gt;Znode&lt;/code&gt;。 每个 &lt;code&gt;Znode&lt;/code&gt; 由 3 部分组成:&lt;/p&gt;
 &lt;ul&gt;
@@ -26249,7 +26454,7 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
 &lt;li&gt;&lt;code&gt;data&lt;/code&gt;：与该 &lt;code&gt;Znode&lt;/code&gt; 关联的数据&lt;/li&gt;
 &lt;li&gt;&lt;code&gt;children&lt;/code&gt;：该 &lt;code&gt;Znode&lt;/code&gt; 下的子节点&lt;/li&gt;
 &lt;/ul&gt;
-&lt;h2 id=&#34;32节点类型&#34;&gt;3.2．节点类型&lt;/h2&gt;
+&lt;h2 id=&#34;节点类型&#34;&gt;节点类型&lt;/h2&gt;
 &lt;p&gt;&lt;code&gt;Znode&lt;/code&gt; 有两种，分别为&lt;strong&gt;临时节点&lt;/strong&gt;和&lt;strong&gt;永久节点&lt;/strong&gt;。&lt;/p&gt;
 &lt;p&gt;节点的类型&lt;strong&gt;在创建时即被确定，并且不能改变。&lt;/strong&gt;&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;临时节点&lt;/strong&gt;：该节点的生命周期依赖于创建它们的会话。一旦&lt;strong&gt;会话结束，临时节点将被自动删除&lt;/strong&gt;，当然可以也可以手动删除。&lt;strong&gt;临时节点不允许拥有子节点&lt;/strong&gt;。&lt;/p&gt;
@@ -26263,45 +26468,45 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
 &lt;li&gt;&lt;code&gt;PERSISTENT_SEQUENTIAL&lt;/code&gt;：永久节点、序列化&lt;/li&gt;
 &lt;li&gt;&lt;code&gt;EPHEMERAL_SEQUENTIAL&lt;/code&gt;：临时节点、序列化&lt;/li&gt;
 &lt;/ul&gt;
-&lt;h1 id=&#34;4-zookeeper-watcher&#34;&gt;4． ZooKeeper Watcher&lt;/h1&gt;
+&lt;h1 id=&#34;zookeeper-watcher&#34;&gt;ZooKeeper Watcher&lt;/h1&gt;
 &lt;p&gt;&lt;code&gt;ZooKeeper&lt;/code&gt; 提供了分布式数据&lt;strong&gt;发布/订阅功能&lt;/strong&gt;，一个典型的发布/订阅模型系统定义了一种一对多的订阅关系，能让多个订阅者同时监听某一个主题对象，当这个主题对象自身状态变化时，会通知所有订阅者，使他们能够做出相应的处理。&lt;/p&gt;
 &lt;p&gt;&lt;code&gt;ZooKeeper&lt;/code&gt; 中，引入了 &lt;strong&gt;Watcher 机制来实现这种分布式的通知功能&lt;/strong&gt; 。 &lt;code&gt;ZooKeeper&lt;/code&gt; 允许客户端向服务端注册一个 &lt;code&gt;Watcher&lt;/code&gt; 监听，当服务端的一些事件触发了这个 &lt;code&gt;Watcher&lt;/code&gt;，那么就会向指定客户端发送一个事件通知来实现分布式的通知功能。&lt;/p&gt;
 &lt;p&gt;触发事件种类很多，如：节点创建，节点删除，节点改变，子节点改变等。&lt;/p&gt;
 &lt;p&gt;总的来说可以概括 &lt;code&gt;Watcher&lt;/code&gt; 为以下三个过程：&lt;strong&gt;客户端向服务端注册 &lt;code&gt;Watcher&lt;/code&gt;、服务端事件发生触发 &lt;code&gt;Watcher&lt;/code&gt;、客户端回调 &lt;code&gt;Watcher&lt;/code&gt; 得到触发事件情况&lt;/strong&gt;&lt;/p&gt;
-&lt;h2 id=&#34;41-watch-机制特点&#34;&gt;4.1． Watch 机制特点&lt;/h2&gt;
-&lt;h3 id=&#34;一次性触发&#34;&gt;&lt;strong&gt;一次性触发&lt;/strong&gt;&lt;/h3&gt;
+&lt;h2 id=&#34;watch-机制特点&#34;&gt;Watch 机制特点&lt;/h2&gt;
+&lt;h3 id=&#34;一次性触发&#34;&gt;一次性触发&lt;/h3&gt;
 &lt;p&gt;事件发生触发监听，一个 &lt;code&gt;watcher event&lt;/code&gt; 就会被发送到设置监听的客户端，这种效果是一次性的，后续再次发生同样的事件，不会再次触发。&lt;/p&gt;
-&lt;h3 id=&#34;事件封装&#34;&gt;&lt;strong&gt;事件封装&lt;/strong&gt;&lt;/h3&gt;
+&lt;h3 id=&#34;事件封装&#34;&gt;事件封装&lt;/h3&gt;
 &lt;p&gt;&lt;code&gt;ZooKeeper&lt;/code&gt; 使用 &lt;code&gt;WatchedEvent&lt;/code&gt; 对象来封装服务端事件并传递。&lt;/p&gt;
 &lt;p&gt;&lt;code&gt;WatchedEvent&lt;/code&gt; 包含了每一个事件的三个基本属性：&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;通知状态（&lt;code&gt;keeperState&lt;/code&gt;），事件类型（&lt;code&gt;EventType&lt;/code&gt;）和节点路径（&lt;code&gt;path&lt;/code&gt;）&lt;/strong&gt;&lt;/p&gt;
-&lt;h3 id=&#34;event-异步发送&#34;&gt;&lt;strong&gt;event 异步发送&lt;/strong&gt;&lt;/h3&gt;
+&lt;h3 id=&#34;event-异步发送&#34;&gt;event 异步发送&lt;/h3&gt;
 &lt;p&gt;&lt;code&gt;watcher&lt;/code&gt; 的通知事件从服务端发送到客户端是异步的。&lt;/p&gt;
-&lt;h3 id=&#34;先注册再触发&#34;&gt;&lt;strong&gt;先注册再触发&lt;/strong&gt;&lt;/h3&gt;
+&lt;h3 id=&#34;先注册再触发&#34;&gt;先注册再触发&lt;/h3&gt;
 &lt;p&gt;&lt;code&gt;Zookeeper&lt;/code&gt; 中的 &lt;code&gt;watch&lt;/code&gt; 机制，必须客户端先去服务端注册监听，这样事件发送才会触发监听，通知给客户端。&lt;/p&gt;
-&lt;h1 id=&#34;5-zookeeper-选举机制&#34;&gt;5． ZooKeeper 选举机制&lt;/h1&gt;
+&lt;h1 id=&#34;zookeeper-选举机制&#34;&gt;ZooKeeper 选举机制&lt;/h1&gt;
 &lt;p&gt;&lt;code&gt;zookeeper&lt;/code&gt; 默认的算法是 &lt;code&gt;FastLeaderElection&lt;/code&gt;，采用投票数大于半数则胜出的逻辑。&lt;/p&gt;
-&lt;h2 id=&#34;51-概念&#34;&gt;5.1． 概念&lt;/h2&gt;
-&lt;p&gt;&lt;strong&gt;服务器 ID&lt;/strong&gt;&lt;/p&gt;
+&lt;h2 id=&#34;概念&#34;&gt;概念&lt;/h2&gt;
+&lt;h3 id=&#34;服务器-id&#34;&gt;服务器 ID&lt;/h3&gt;
 &lt;ul&gt;
 &lt;li&gt;比如有三台服务器，编号分别是 1,2,3。&lt;/li&gt;
 &lt;li&gt;编号越大在选择算法中的权重越大。&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;&lt;strong&gt;选举状态&lt;/strong&gt;&lt;/p&gt;
+&lt;h3 id=&#34;选举状态&#34;&gt;选举状态&lt;/h3&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;code&gt;LOOKING&lt;/code&gt;，竞选状态。&lt;/li&gt;
 &lt;li&gt;&lt;code&gt;FOLLOWING&lt;/code&gt;，随从状态，同步 &lt;code&gt;leader&lt;/code&gt; 状态，参与投票。&lt;/li&gt;
 &lt;li&gt;&lt;code&gt;OBSERVING&lt;/code&gt;，观察状态,同步 &lt;code&gt;leader&lt;/code&gt; 状态，不参与投票。&lt;/li&gt;
 &lt;li&gt;&lt;code&gt;LEADING&lt;/code&gt;，领导者状态。&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;&lt;strong&gt;数据 ID&lt;/strong&gt;&lt;/p&gt;
+&lt;h3 id=&#34;数据-id&#34;&gt;数据 ID&lt;/h3&gt;
 &lt;ul&gt;
 &lt;li&gt;服务器中存放的最新数据 &lt;code&gt;version&lt;/code&gt;。&lt;/li&gt;
 &lt;li&gt;值越大说明数据越新，在选举算法中数据越新权重越大。&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;&lt;strong&gt;逻辑时钟&lt;/strong&gt;&lt;/p&gt;
+&lt;h3 id=&#34;逻辑时钟&#34;&gt;逻辑时钟&lt;/h3&gt;
 &lt;p&gt;也叫投票的次数，同一轮投票过程中的逻辑时钟值是相同的。每投完一次票这个数据就会增加，然后与接收到的其它服务器返回的投票信息中的数值相比，根据不同的值做出不同的判断。&lt;/p&gt;
-&lt;h2 id=&#34;52-全新集群选举&#34;&gt;5.2． 全新集群选举&lt;/h2&gt;
+&lt;h2 id=&#34;全新集群选举&#34;&gt;全新集群选举&lt;/h2&gt;
 &lt;figure data-type=&#34;image&#34; tabindex=&#34;3&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/1584240883089.png&#34; alt=&#34;&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
 &lt;p&gt;假设目前有 5 台服务器，&lt;strong&gt;每台服务器均没有数据&lt;/strong&gt;，它们的编号分别是1,2,3,4,5,&lt;strong&gt;按编号依次启动&lt;/strong&gt;，它们的选择举过程如下：&lt;/p&gt;
 &lt;ul&gt;
@@ -26311,7 +26516,7 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
 &lt;li&gt;服务器 4 启动，给自己投票，同时与之前启动的服务器 1,2,3 交换信息，尽管服务器 4 的编号大，但之前服务器 3 已经胜出，所以服务器 4 只能成为小弟。&lt;/li&gt;
 &lt;li&gt;服务器 5 启动，后面的逻辑同服务器 4 成为小弟。&lt;/li&gt;
 &lt;/ul&gt;
-&lt;h2 id=&#34;53-非全新集群选举&#34;&gt;5.3． 非全新集群选举&lt;/h2&gt;
+&lt;h2 id=&#34;非全新集群选举&#34;&gt;非全新集群选举&lt;/h2&gt;
 &lt;p&gt;对于运行正常的 &lt;code&gt;zookeeper&lt;/code&gt; 集群，中途有机器 &lt;code&gt;down&lt;/code&gt; 掉，需要重新选举时，选举过程就需要加入&lt;strong&gt;数据 ID&lt;/strong&gt;、&lt;strong&gt;服务器 ID&lt;/strong&gt; 和&lt;strong&gt;逻辑时钟&lt;/strong&gt;。&lt;/p&gt;
 &lt;p&gt;数据 ID：数据新的 &lt;code&gt;version&lt;/code&gt; 就大，数据每次更新都会更新 &lt;code&gt;version&lt;/code&gt;。&lt;/p&gt;
 &lt;p&gt;服务器 ID：就是我们配置的 &lt;code&gt;myid&lt;/code&gt; 中的值，每个机器一个。&lt;/p&gt;
@@ -26320,26 +26525,26 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
 &lt;p&gt;1、逻辑时钟小的选举结果被忽略，重新投票；&lt;/p&gt;
 &lt;p&gt;2、统一逻辑时钟后，数据 id 大的胜出；&lt;/p&gt;
 &lt;p&gt;3、数据 id 相同的情况下，服务器 id 大的胜出；根据这个规则选出 &lt;code&gt;leader&lt;/code&gt;。&lt;/p&gt;
-&lt;h1 id=&#34;6-zookeeper-典型应用&#34;&gt;6． ZooKeeper 典型应用&lt;/h1&gt;
-&lt;h2 id=&#34;61-数据发布与订阅配置中心&#34;&gt;6.1． 数据发布与订阅（配置中心）&lt;/h2&gt;
+&lt;h1 id=&#34;zookeeper-典型应用&#34;&gt;ZooKeeper 典型应用&lt;/h1&gt;
+&lt;h2 id=&#34;数据发布与订阅配置中心&#34;&gt;数据发布与订阅（配置中心）&lt;/h2&gt;
 &lt;figure data-type=&#34;image&#34; tabindex=&#34;4&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/1584241030128.png&#34; alt=&#34;&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
 &lt;p&gt;发布与订阅模型，即所谓的配置中心，顾名思义就是&lt;strong&gt;发布者将数据发布到 ZK节点上，供订阅者动态获取数据，实现配置信息的集中式管理和动态更新&lt;/strong&gt;。&lt;/p&gt;
 &lt;p&gt;应用在启动的时候会主动来获取一次配置，同时，在节点上注册一个 &lt;code&gt;Watcher&lt;/code&gt;，这样一来，以后每次配置有更新的时候，都会实时通知到订阅的客户端，从来达到获取最新配置信息的目的。比如：&lt;/p&gt;
 &lt;p&gt;分布式搜索服务中，索引的元信息和服务器集群机器的节点状态存放在 ZK 的一些指定节点，供各个客户端订阅使用。&lt;/p&gt;
 &lt;p&gt;注意：适合&lt;strong&gt;数据量很小的场景&lt;/strong&gt;，这样数据更新可能会比较快。&lt;/p&gt;
-&lt;h2 id=&#34;62-命名服务naming-service&#34;&gt;6.2． 命名服务(Naming Service)&lt;/h2&gt;
+&lt;h2 id=&#34;命名服务naming-service&#34;&gt;命名服务(Naming Service)&lt;/h2&gt;
 &lt;p&gt;在分布式系统中，&lt;strong&gt;通过使用命名服务，客户端应用能够根据指定名字来获取资源或服务的地址，提供者等信息&lt;/strong&gt;。被命名的实体通常可以是集群中的机器，提供的服务地址，远程对象等等——这些我们都可以统称他们为名字（Name）。其中较为常见的就是一些分布式服务框架中的服务地址列表。通过&lt;strong&gt;调用 ZK 提供的创建节点的 API&lt;/strong&gt;，能够很容易创建一个&lt;strong&gt;全局唯一的 path&lt;/strong&gt;，这个 path 就可以作为一个名称。&lt;/p&gt;
 &lt;p&gt;阿里巴巴集团开源的分布式服务框架 &lt;strong&gt;Dubbo 中使用 ZooKeeper 来作为其命名服务&lt;/strong&gt;，维护全局的服务地址列表。&lt;/p&gt;
-&lt;h2 id=&#34;63-分布式锁&#34;&gt;6.3． 分布式锁&lt;/h2&gt;
+&lt;h2 id=&#34;分布式锁&#34;&gt;分布式锁&lt;/h2&gt;
 &lt;p&gt;分布式锁，这个主要得益于 &lt;code&gt;ZooKeeper&lt;/code&gt; 保证了数据的强一致性。锁服务可以分为两类，一个是&lt;strong&gt;保持独占&lt;/strong&gt;，另一个是&lt;strong&gt;控制时序&lt;/strong&gt;。&lt;/p&gt;
 &lt;figure data-type=&#34;image&#34; tabindex=&#34;5&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/1584241059824.png&#34; alt=&#34;&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
 &lt;p&gt;所谓&lt;strong&gt;保持独占&lt;/strong&gt;，就是所有试图来获取这个锁的客户端，最终只有一个可以成功获得这把锁。通常的做法是把 zk 上的一个 &lt;code&gt;znode&lt;/code&gt; 看作是一把锁，通过 &lt;code&gt;create znode&lt;/code&gt; 的方式来实现。所有客户端都去创建 &lt;code&gt;/distribute_lock&lt;/code&gt; &lt;strong&gt;临时非序列化&lt;/strong&gt;节点，最终成功创建的那个客户端也即拥有了这把锁。&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;控制时序&lt;/strong&gt;，就是所有试图来获取这个锁的客户端，最终都是会被安排执行，只是有个全局时序了。做法和上面基本类似，只是这里&lt;code&gt;/distribute_lock&lt;/code&gt; 已经预先存在，客户端在它下面创建&lt;strong&gt;临时有序&lt;/strong&gt;节点（这个可以通过节点的属性控制：&lt;code&gt;CreateMode.EPHEMERAL_SEQUENTIAL&lt;/code&gt; 来指定）。Zk 的父节点（&lt;code&gt;/distribute_lock&lt;/code&gt;）维持一份 &lt;code&gt;sequence&lt;/code&gt;,保证子节点创建的时序性，从而也形成了每个客户端的全局时序。&lt;/p&gt;
-&lt;h1 id=&#34;7-zab-协议&#34;&gt;7． ZAB 协议？&lt;/h1&gt;
+&lt;h1 id=&#34;zab-协议&#34;&gt;ZAB 协议？&lt;/h1&gt;
 &lt;p&gt;ZAB 协议是为分布式协调服务 Zookeeper 专门设计的一种支持崩溃恢复的原子广播协议。&lt;br&gt;
 ZAB 协议包括两种基本的模式：&lt;strong&gt;崩溃恢复&lt;/strong&gt;和&lt;strong&gt;消息广播&lt;/strong&gt;。&lt;br&gt;
 当整个 zookeeper 集群刚刚启动或者 Leader 服务器宕机、重启或者网络故障导致不存在过半的服务器与 Leader 服务器保持正常通信时，所有进程（服务器）进入崩溃恢复模式，首先选举产生新的 Leader 服务器，然后集群中 Follower 服务器开始与新的 Leader 服务器进行数据同步，当集群中超过半数机器与该 Leader服务器完成数据同步之后，退出恢复模式进入消息广播模式，Leader 服务器开始接收客户端的事务请求生成事物提案来进行事务请求处理。&lt;/p&gt;
-&lt;h1 id=&#34;7-cap-定理&#34;&gt;7． CAP 定理？&lt;/h1&gt;
+&lt;h1 id=&#34;cap-定理&#34;&gt;CAP 定理？&lt;/h1&gt;
 &lt;p&gt;一个分布式系统不可能同时满足以下三种,&lt;strong&gt;一致性&lt;/strong&gt;（C:Consistency）,&lt;strong&gt;可用性&lt;/strong&gt;（A:Available）,&lt;strong&gt;分区容错性&lt;/strong&gt;（P:Partition Tolerance）.在此ZooKeeper保证的是CP，ZooKeeper不能保证每次服务请求的可用性，在极端环境下，ZooKeeper可能会丢弃一些请求，消费者程序需要重新请求才能获得结果。另外在进行leader选举时集群都是不可用，所以说，ZooKeeper不能保证服务可用性。（Base理论CA强一致性和最终一致性）&lt;/p&gt;
 ">面试题系列 —— Zookeeper</a>
       </div>
