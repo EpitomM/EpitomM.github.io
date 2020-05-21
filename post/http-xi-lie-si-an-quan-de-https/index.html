@@ -9,7 +9,7 @@
 <meta name="description" content="热心善良的老学姐">
 <meta name="theme-color" content="#000">
 <title>HTTP系列（四）安全的HTTPS | SSM</title>
-<link rel="shortcut icon" href="/favicon.ico?v=1590025031866">
+<link rel="shortcut icon" href="/favicon.ico?v=1590044038626">
 <link rel="stylesheet" href="/media/css/gemini.css">
 <link rel="stylesheet" href="/media/fonts/font-awesome.css">
 <link
@@ -1085,19 +1085,375 @@ Ocsp：在线证书状态协议，维护服务器和其他网络资源安全性�
       
       <div class="item">
         <a class="result-title" style="opacity: 0;" href="https://epitomm.github.io/post/mybatis-xi-lie-er-mybatis-huan-cun/"" data-c="
-          &lt;h1 id=&#34;缓存&#34;&gt;缓存&lt;/h1&gt;
+          &lt;h1 id=&#34;spring-中的-mybatis-缓存&#34;&gt;Spring 中的 MyBatis 缓存&lt;/h1&gt;
 &lt;h2 id=&#34;一级缓存&#34;&gt;一级缓存&lt;/h2&gt;
 &lt;figure data-type=&#34;image&#34; tabindex=&#34;1&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/MyBatis%E4%B8%80%E7%BA%A7%E7%BC%93%E5%AD%98.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
 &lt;p&gt;如果不使用 Spring，执行三行相同的查询，只会打印一条 SQL 语句，证明一级缓存有效。&lt;/p&gt;
 &lt;p&gt;但是使用 Spring 后，执行三行相同的查询，会打印三条 SQL 语句，证明&lt;strong&gt;一级缓存失效&lt;/strong&gt;。&lt;/p&gt;
 &lt;p&gt;一级缓存基于 SqlSession，当执行 list() 方法时，在代理类中，会得到一个 SqlSession 对象，并且把它设置到当前线程中去，&lt;strong&gt;当完成一个查询后，会关闭 SqlSession&lt;/strong&gt;，这是 Spring 做的，所以一级缓存失效了。&lt;/p&gt;
 &lt;figure data-type=&#34;image&#34; tabindex=&#34;2&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E4%B8%8D%E5%90%8C%E7%94%A8%E6%88%B7%E6%97%A0%E6%B3%95%E5%85%B1%E4%BA%ABMyBatis%E4%B8%80%E7%BA%A7%E7%BC%93%E5%AD%98.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;h2 id=&#34;spring当中为什么失效&#34;&gt;spring当中为什么失效&lt;/h2&gt;
+&lt;p&gt;因为 mybatis 和 spring 的集成包当中扩展了一个类 SqlSessionTemplate，这个类在 spring 容器启动的时候被注入给了 mapper 这个类替代了原来的 DefulatSqlSession，SqlSessionTemplate当中的所有查询方法不是直接查询，而是经过一个代理对象，代理对象增强了查询方法，主要是关闭了session。&lt;/p&gt;
+&lt;h3 id=&#34;先来看一个-mybatis-spring-的-demo&#34;&gt;先来看一个 mybatis-spring 的 demo&lt;/h3&gt;
+&lt;p&gt;准备一个 Mapper 接口：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public interface UserMapper {
+    @Select(&amp;quot;select * from t1&amp;quot;)
+    List&amp;lt;Map&amp;lt;String,Object&amp;gt;&amp;gt; list();
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;测试类调用 mapper 接口中的 list() 方法两次，查询两次数据库，MyBatis 一级缓存失效：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class Test {
+    public static void main(String[] args) throws IOException {
+        AnnotationConfigApplicationContext configApplicationContext = new AnnotationConfigApplicationContext(AppConfig.class);
+        UserMapper mapper = configApplicationContext.getBean(UserMapper.class);
+        System.out.println(mapper.list());
+        System.out.println(mapper.list());
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;3&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/spring-mybatis%E4%B8%80%E7%BA%A7%E7%BC%93%E5%AD%98%E5%A4%B1%E6%95%88.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p&gt;执行 list() 方法是通过 ImportBeanDefinitionRegistrar&lt;/p&gt;
+&lt;p&gt;MyBatis 底层 生成的是 MapperFactoryBean 对象，&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.TYPE)
+@Documented
+@Import(MapperScannerRegistrar.class)
+public @interface MapperScan {
+&lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class MapperScannerRegistrar implements ImportBeanDefinitionRegistrar, ResourceLoaderAware {
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;在 Spring 容器中，有多少个 mapper，就有多少个 MapperFactoryBean&lt;/strong&gt;，&lt;br&gt;
+当调用 getSqlSession() 时，使用了代理，因为 mapper 是接口，肯定会为它产生一个代理类，就是通过 getSqlSession() 产生一个代理对象出来，&lt;/p&gt;
+&lt;p&gt;MapperFactoryBean#getObject&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public T getObject() throws Exception {
+  return getSqlSession().getMapper(this.mapperInterface);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;SqlSessionTemplate#getMapper&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public &amp;lt;T&amp;gt; T getMapper(Class&amp;lt;T&amp;gt; type) {
+  return getConfiguration().getMapper(type, this);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Configuration#getMapper&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public &amp;lt;T&amp;gt; T getMapper(Class&amp;lt;T&amp;gt; type, SqlSession sqlSession) {
+  return mapperRegistry.getMapper(type, sqlSession);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;MapperRegistry#getMapper&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public &amp;lt;T&amp;gt; T getMapper(Class&amp;lt;T&amp;gt; type, SqlSession sqlSession) {
+  final MapperProxyFactory&amp;lt;T&amp;gt; mapperProxyFactory = (MapperProxyFactory&amp;lt;T&amp;gt;) knownMappers.get(type);
+  if (mapperProxyFactory == null) {
+    throw new BindingException(&amp;quot;Type &amp;quot; + type + &amp;quot; is not known to the MapperRegistry.&amp;quot;);
+  }
+  try {
+    return mapperProxyFactory.newInstance(sqlSession);
+  } catch (Exception e) {
+    throw new BindingException(&amp;quot;Error getting mapper instance. Cause: &amp;quot; + e, e);
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;MapperProxyFactory#newInstance&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public T newInstance(SqlSession sqlSession) {
+  final MapperProxy&amp;lt;T&amp;gt; mapperProxy = new MapperProxy&amp;lt;T&amp;gt;(sqlSession, mapperInterface, methodCache);
+  return newInstance(mapperProxy);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;MapperProxyFactory#newInstance&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;protected T newInstance(MapperProxy&amp;lt;T&amp;gt; mapperProxy) {
+  // mapperInterface 就是接口 UserMapper，为 UserMapper 产生一个代理对象，产生代理对象需要传递一个 InvocationHandler 参数：mapperProxy
+  return (T) Proxy.newProxyInstance(mapperInterface.getClassLoader(), new Class[] { mapperInterface }, mapperProxy);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;4&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E8%B0%83%E7%94%A8mapper%E7%9A%84list%E6%96%B9%E6%B3%95.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p&gt;&lt;strong&gt;当调用 userMapper.list() 时，实际执行的逻辑是实现 InvocationHandler 接口的类中的 invoke() 方法&lt;/strong&gt;。&lt;/p&gt;
+&lt;p&gt;mapperProxy 是一个 InvocationHandler：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class MapperProxy&amp;lt;T&amp;gt; implements InvocationHandler, Serializable {
+    // ...
+    @Override
+    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+      try {
+        if (Object.class.equals(method.getDeclaringClass())) {
+          return method.invoke(this, args);
+        } else if (isDefaultMethod(method)) {
+          return invokeDefaultMethod(proxy, method, args);
+        }
+      } catch (Throwable t) {
+        throw ExceptionUtil.unwrapThrowable(t);
+      }
+      // MapperMethod 相当于 Spring 当中的 BeanDefinition，包含了：返回类型、缓存级别
+      final MapperMethod mapperMethod = cachedMapperMethod(method);
+      return mapperMethod.execute(sqlSession, args);
+    }
+    // ...
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;5&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/sqlSessionTemplate.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p&gt;这里的 sqlSession 是一个 SqlSessionTemplate 对象，&lt;/p&gt;
+&lt;p&gt;UserMapper 代理对象&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;// 代理类
+class UserMapperProxy{
+  private InvocationHandler h;
+  // 构造方法
+  public UserMapperProxy(InvocationHandler h){
+     this.h = h;
+  }
+  list(){
+    // 执行 InvocationHandler 的 invoke() 方法
+    return h.invoke();
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;当 configApplicationContext.getBean(UserMapper.class); 时就拿出了 UserMapper 的代理对象。&lt;br&gt;
+MapperMethod#execute&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public Object execute(SqlSession sqlSession, Object[] args) {
+  Object result;
+  switch (command.getType()) {
+    case INSERT: {
+    Object param = method.convertArgsToSqlCommandParam(args);
+      result = rowCountResult(sqlSession.insert(command.getName(), param));
+      break;
+    }
+    case UPDATE: {
+      Object param = method.convertArgsToSqlCommandParam(args);
+      result = rowCountResult(sqlSession.update(command.getName(), param));
+      break;
+    }
+    case DELETE: {
+      Object param = method.convertArgsToSqlCommandParam(args);
+      result = rowCountResult(sqlSession.delete(command.getName(), param));
+      break;
+    }
+    case SELECT:
+      if (method.returnsVoid() &amp;amp;&amp;amp; method.hasResultHandler()) {
+        executeWithResultHandler(sqlSession, args);
+        result = null;
+      } else if (method.returnsMany()) {
+        // 返回值是 Map，查询多条，所以走这个分支
+        result = executeForMany(sqlSession, args);
+      } else if (method.returnsMap()) {
+        result = executeForMap(sqlSession, args);
+      } else if (method.returnsCursor()) {
+        result = executeForCursor(sqlSession, args);
+      } else {
+        Object param = method.convertArgsToSqlCommandParam(args);
+        result = sqlSession.selectOne(command.getName(), param);
+      }
+      break;
+    case FLUSH:
+      result = sqlSession.flushStatements();
+      break;
+    default:
+      throw new BindingException(&amp;quot;Unknown execution method for: &amp;quot; + command.getName());
+  }
+  if (result == null &amp;amp;&amp;amp; method.getReturnType().isPrimitive() &amp;amp;&amp;amp; !method.returnsVoid()) {
+    throw new BindingException(&amp;quot;Mapper method &#39;&amp;quot; + command.getName() 
+        + &amp;quot; attempted to return null from a method with a primitive return type (&amp;quot; + method.getReturnType() + &amp;quot;).&amp;quot;);
+  }
+  return result;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/command.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;br&gt;
+&lt;img src=&#34;https://epitomm.github.io/post-images/DefaultSqlSession.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/p&gt;
+&lt;p&gt;MapperMethod#executeForMany&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;private &amp;lt;E&amp;gt; Object executeForMany(SqlSession sqlSession, Object[] args) {
+  List&amp;lt;E&amp;gt; result;
+  Object param = method.convertArgsToSqlCommandParam(args);
+  if (method.hasRowBounds()) {
+    RowBounds rowBounds = method.extractRowBounds(args);
+    result = sqlSession.&amp;lt;E&amp;gt;selectList(command.getName(), param, rowBounds);
+  } else {
+    // 因为 select *，所以走这个分支
+    result = sqlSession.&amp;lt;E&amp;gt;selectList(command.getName(), param);
+  }
+  // issue #510 Collections &amp;amp; arrays support
+  if (!method.getReturnType().isAssignableFrom(result.getClass())) {
+    if (method.getReturnType().isArray()) {
+      return convertToArray(result);
+    } else {
+      return convertToDeclaredCollection(sqlSession.getConfiguration(), result);
+    }
+  }
+  return result;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;上述代码第 9 行：SqlSessionTemplate#selectList&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public &amp;lt;E&amp;gt; List&amp;lt;E&amp;gt; selectList(String statement, Object parameter) {
+  return this.sqlSessionProxy.&amp;lt;E&amp;gt; selectList(statement, parameter);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;SqlSessionInterceptor#invoke&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+  SqlSession sqlSession = getSqlSession(
+      SqlSessionTemplate.this.sqlSessionFactory,
+      SqlSessionTemplate.this.executorType,
+      SqlSessionTemplate.this.exceptionTranslator);
+  try {
+    Object result = method.invoke(sqlSession, args);
+    if (!isSqlSessionTransactional(sqlSession, SqlSessionTemplate.this.sqlSessionFactory)) {
+      // force commit even on non-dirty sessions because some databases require
+      // a commit/rollback before calling close()
+      sqlSession.commit(true);
+    }
+    return result;
+  } catch (Throwable t) {
+    Throwable unwrapped = unwrapThrowable(t);
+    if (SqlSessionTemplate.this.exceptionTranslator != null &amp;amp;&amp;amp; unwrapped instanceof PersistenceException) {
+      // release the connection to avoid a deadlock if the translator is no loaded. See issue #22
+      closeSqlSession(sqlSession, SqlSessionTemplate.this.sqlSessionFactory);
+      sqlSession = null;
+      Throwable translated = SqlSessionTemplate.this.exceptionTranslator.translateExceptionIfPossible((PersistenceException) unwrapped);
+      if (translated != null) {
+        unwrapped = translated;
+      }
+    }
+    throw unwrapped;
+  } finally {
+    if (sqlSession != null) {
+      // 当执行完查询，关闭 sqlSession，所以 Spring+MyBatis一级缓存失效。
+      closeSqlSession(sqlSession, SqlSessionTemplate.this.sqlSessionFactory);
+    }
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;6&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/DefaultSqlSession_2.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p&gt;如果使用普通 MyBatis，执行的不是 SqlSessionTemplate 的代理方法，执行的是 DefaultSqlSession；在 Spring 过程中，执行代理对象的方法：sqlSessionProxy.&lt;E&gt; selectList(statement, parameter);&lt;/p&gt;
+&lt;p&gt;由于 sqlSessionProxy 是代理对象，所以看不到代理对象的方法，点进去只能看到 它实现的 InvocationHandler（SqlSessionInterceptor） 的 invoke 方法；与 userMapper.list(); 一样，当调用 list() 方法时，debug 下一步进入的是它实现的 InvocationHandler：MapperProxy 的 invoke() 方法。&lt;/p&gt;
+&lt;h3 id=&#34;再来看一个-mybatis-原生的-demo&#34;&gt;再来看一个 mybatis 原生的 demo&lt;/h3&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class Test {
+    public static void main(String[] args) throws IOException {
+        String resource = &amp;quot;mybatis-config.xml&amp;quot;;
+        InputStream inputStream = Resources.getResourceAsStream(resource);
+        SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
+        SqlSession sqlSession = sqlSessionFactory.openSession();
+        sqlSession.getConfiguration().addMapper(UserMapper.class);
+        UserMapper mapper = sqlSession.getMapper(UserMapper.class);
+        System.out.println(mapper.list());
+        System.out.println(mapper.list());
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;7&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/mybatis%E4%B8%80%E7%BA%A7%E7%BC%93%E5%AD%98_2.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p&gt;当调用 mapper 的 list() 方法时，执行 InvocationHandler 的实现类：MapperProxy 的 invoke() 方法，因为 mapper 是一个代理对象。&lt;/p&gt;
+&lt;p&gt;MapperProxy#invoke&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+  try {
+    if (Object.class.equals(method.getDeclaringClass())) {
+      return method.invoke(this, args);
+    } else if (isDefaultMethod(method)) {
+      return invokeDefaultMethod(proxy, method, args);
+    }
+  } catch (Throwable t) {
+    throw ExceptionUtil.unwrapThrowable(t);
+  }
+  final MapperMethod mapperMethod = cachedMapperMethod(method);
+  return mapperMethod.execute(sqlSession, args);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;8&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/mappedStatements.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p&gt;上述代码第 12 行：MapperMethod#execute&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public Object execute(SqlSession sqlSession, Object[] args) {
+  Object result;
+  switch (command.getType()) {
+    case INSERT: {
+    Object param = method.convertArgsToSqlCommandParam(args);
+      result = rowCountResult(sqlSession.insert(command.getName(), param));
+      break;
+    }
+    case UPDATE: {
+      Object param = method.convertArgsToSqlCommandParam(args);
+      result = rowCountResult(sqlSession.update(command.getName(), param));
+      break;
+    }
+    case DELETE: {
+      Object param = method.convertArgsToSqlCommandParam(args);
+      result = rowCountResult(sqlSession.delete(command.getName(), param));
+      break;
+    }
+    case SELECT:
+      if (method.returnsVoid() &amp;amp;&amp;amp; method.hasResultHandler()) {
+        executeWithResultHandler(sqlSession, args);
+        result = null;
+      } else if (method.returnsMany()) {
+        result = executeForMany(sqlSession, args);
+      } else if (method.returnsMap()) {
+        result = executeForMap(sqlSession, args);
+      } else if (method.returnsCursor()) {
+        result = executeForCursor(sqlSession, args);
+      } else {
+        Object param = method.convertArgsToSqlCommandParam(args);
+        result = sqlSession.selectOne(command.getName(), param);
+      }
+      break;
+    case FLUSH:
+      result = sqlSession.flushStatements();
+      break;
+    default:
+      throw new BindingException(&amp;quot;Unknown execution method for: &amp;quot; + command.getName());
+  }
+  if (result == null &amp;amp;&amp;amp; method.getReturnType().isPrimitive() &amp;amp;&amp;amp; !method.returnsVoid()) {
+    throw new BindingException(&amp;quot;Mapper method &#39;&amp;quot; + command.getName() 
+        + &amp;quot; attempted to return null from a method with a primitive return type (&amp;quot; + method.getReturnType() + &amp;quot;).&amp;quot;);
+  }
+  return result;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;上述代码第 24 行：MapperMethod#executeForMany&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;private &amp;lt;E&amp;gt; Object executeForMany(SqlSession sqlSession, Object[] args) {
+  List&amp;lt;E&amp;gt; result;
+  Object param = method.convertArgsToSqlCommandParam(args);
+  if (method.hasRowBounds()) {
+    RowBounds rowBounds = method.extractRowBounds(args);
+    result = sqlSession.&amp;lt;E&amp;gt;selectList(command.getName(), param, rowBounds);
+  } else {
+    result = sqlSession.&amp;lt;E&amp;gt;selectList(command.getName(), param);
+  }
+  // issue #510 Collections &amp;amp; arrays support
+  if (!method.getReturnType().isAssignableFrom(result.getClass())) {
+    if (method.getReturnType().isArray()) {
+      return convertToArray(result);
+    } else {
+      return convertToDeclaredCollection(sqlSession.getConfiguration(), result);
+    }
+  }
+  return result;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;上述代码第 8 行：DefaultSqlSession#selectList&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public &amp;lt;E&amp;gt; List&amp;lt;E&amp;gt; selectList(String statement, Object parameter) {
+  return this.selectList(statement, parameter, RowBounds.DEFAULT);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;MyBatis 直接调用 DefaultSqlSession 的 selectList 方法；而 Spring 调用的是 DefaultSqlSession 的代理类的方法，Spring 把 sqlSession 替换成了代理对象：在完成查询后关闭 sqlSession。&lt;br&gt;
+DefaultSqlSession#selectList&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public &amp;lt;E&amp;gt; List&amp;lt;E&amp;gt; selectList(String statement, Object parameter, RowBounds rowBounds) {
+  try {
+    MappedStatement ms = configuration.getMappedStatement(statement);
+    return executor.query(ms, wrapCollection(parameter), rowBounds, Executor.NO_RESULT_HANDLER);
+  } catch (Exception e) {
+    throw ExceptionFactory.wrapException(&amp;quot;Error querying database.  Cause: &amp;quot; + e, e);
+  } finally {
+    ErrorContext.instance().reset();
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3 id=&#34;总结&#34;&gt;总结&lt;/h3&gt;
+&lt;p&gt;MyBatis --&amp;gt; SqlSession --&amp;gt; DefaultSqlSession --&amp;gt; DefaultSqlSession.select(); --&amp;gt; SQL&lt;/p&gt;
+&lt;p&gt;spring-mybatis --&amp;gt; SqlSession --&amp;gt; SqlSessionTemplate --&amp;gt;  SqlSessionTemplate.selectList(); --&amp;gt;  sqlSessionProxy.selectList();&lt;/p&gt;
+&lt;h3 id=&#34;为什么-spring-当中-mybatis-一级缓存失效&#34;&gt;为什么 Spring 当中 MyBatis 一级缓存失效&lt;/h3&gt;
+&lt;p&gt;MyBatis 整合 Spring 时，MyBatis 为 Spring 提供了一个插件包：mybatis-spring，在 mybatis-spring 中提供了一个类：SqlSessionTemplate 替代了 MyBatis 中默认的 DefaultSqlSession，对&lt;/p&gt;
+&lt;p&gt;DefaultSqlSession 的增强，在代理的代码中把 SqlSession 关闭了。&lt;/p&gt;
+&lt;h4 id=&#34;spring-为什么要关闭-sqlsession&#34;&gt;Spring 为什么要关闭 sqlSession？&lt;/h4&gt;
+&lt;p&gt;MyBatis 把 SqlSession 暴露出来，想什么时候关闭，就什么时候关闭。&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;SqlSession sqlSession = sqlSessionFactory.openSession();
+sqlSession.close();
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;而在 Spring 没有把 SqlSession 暴露出来，所以只有在源码中，使用完一次后就关闭，否则没有其他地方可以关闭。&lt;/p&gt;
 &lt;h2 id=&#34;二级缓存&#34;&gt;二级缓存&lt;/h2&gt;
 &lt;p&gt;多个线程共享二级缓存&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@CacheNamespace
 public interface IndexDao {
 &lt;/code&gt;&lt;/pre&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;3&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/MyBatis%E4%BA%8C%E7%BA%A7%E7%BC%93%E5%AD%98.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;9&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/MyBatis%E4%BA%8C%E7%BA%A7%E7%BC%93%E5%AD%98.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@CacheNamespace
 public interface IndexDao2 {
     @Update(&amp;quot;update t1 set b=1 where a=1&amp;quot;)
@@ -1156,9 +1512,131 @@ public class IndexService {
     }
 }
 &lt;/code&gt;&lt;/pre&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;4&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/MyBatis%E4%BA%8C%E7%BA%A7%E7%BC%93%E5%AD%98%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4%E7%9B%B8%E5%90%8C%E8%AF%BB%E6%95%B0%E6%8D%AE%E6%AD%A3%E7%A1%AE.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;10&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/MyBatis%E4%BA%8C%E7%BA%A7%E7%BC%93%E5%AD%98%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4%E7%9B%B8%E5%90%8C%E8%AF%BB%E6%95%B0%E6%8D%AE%E6%AD%A3%E7%A1%AE.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
 &lt;p&gt;分析：MyBatis 缓存是基于&lt;strong&gt;命名空间&lt;/strong&gt;的，当调用 indexDao.list() 查询出结果后，由于 IndexDao 添加了缓存 @CacheNamespace，把 list() 查询结果放到缓存中，存放形式：&amp;lt;&amp;quot;com.ssm.dao.IndexDao&amp;quot;, &amp;quot;list&amp;quot;&amp;gt;，当调用 update() 方法时，更新当前这个 update() 方法所在的命名空间，即 &amp;lt;&amp;quot;com.ssm.dao.IndexDao&amp;quot;, &amp;quot;更新后的list&amp;quot;&amp;gt;。&lt;/p&gt;
-">MyBatis系列（二）——MyBatis缓存</a>
+&lt;h1 id=&#34;当调用-list-时已经拿到了-sql-语句&#34;&gt;当调用 list() 时，已经拿到了 sql 语句&lt;/h1&gt;
+&lt;p&gt;当实例化一个 MapperFactoryBean 时，MyBatis 初始化：解析注解：把接口 mapper 中的 method 中的注解拿出来，把&amp;lt;id,object&amp;gt;放到 map 中。&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;protected final Map&amp;lt;String, MappedStatement&amp;gt; mappedStatements = new StrictMap&amp;lt;MappedStatement&amp;gt;(&amp;quot;Mapped Statements collection&amp;quot;);
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;在调用方法前，就实例化 mappedStatements 了。当创建 Service 时，由于 Service 会调用 putVal，putVal 就会创建 mapper，当创建 mapper 时，就 put 了一个&amp;lt;id,object&amp;gt;&lt;br&gt;
+&lt;img src=&#34;https://epitomm.github.io/post-images/DefaultSqlSession_3.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/p&gt;
+&lt;p&gt;Mapper 被实例化之后，就立刻把 sql 语句放到 map 中了。&lt;/p&gt;
+&lt;h2 id=&#34;当一个类被实例化时就去执行一些东西把-sql-放到-map-中怎么做&#34;&gt;当一个类被实例化时，就去执行一些东西（把 sql 放到 map 中）怎么做？&lt;/h2&gt;
+&lt;p&gt;实现 InitializingBean 接口，重写接口中的 afterPropertiesSet() 方法：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@Service
+public class IndexService implements InitializingBean {
+    @Autowired
+    UserMapper userMapper;
+    public List&amp;lt;Map&amp;lt;String,Object&amp;gt;&amp;gt; list(){
+        userMapper.list();
+        userMapper.list();
+        return userMapper.list();
+    }
+    public void update(){
+       userMapper.update();
+    }
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        System.out.println(&amp;quot;app...&amp;quot;);
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;打印结果：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-plain&#34;&gt;DEBUG [main] - Finished creating instance of bean &#39;userMapper&#39;
+DEBUG [main] - Autowiring by type from bean name &#39;indexService&#39; to bean named &#39;userMapper&#39;
+DEBUG [main] - Invoking afterPropertiesSet() on bean with name &#39;indexService&#39;
+app...
+DEBUG [main] - Finished creating instance of bean &#39;indexService&#39;
+DEBUG [main] - Returning cached instance of singleton bean &#39;dataSource&#39;
+DEBUG [main] - Returning cached instance of singleton bean &#39;sqlSessionFactoryBean&#39;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Spring 与 MyBatis 整合的流程：&lt;br&gt;
+MyBatis 中所有的 mapper 都是 MapperFactoryBean，MapperFactoryBean 实现了 SqlSessionDaoSupport：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class MapperFactoryBean&amp;lt;T&amp;gt; extends SqlSessionDaoSupport implements FactoryBean&amp;lt;T&amp;gt; {
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;SqlSessionDaoSupport  是 MyBatis 开发的，SqlSessionDaoSupport 继承了 DaoSupport：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;package org.mybatis.spring.support;
+public abstract class SqlSessionDaoSupport extends DaoSupport {
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;DaoSupport 是 Spring 开发的，DaoSupport 实现了 InitializingBean：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;package org.springframework.dao.support;
+public abstract class DaoSupport implements InitializingBean {
+    // ...
+    public final void afterPropertiesSet() throws IllegalArgumentException, BeanInitializationException {
+       // Let abstract subclasses check their configuration.
+       // 抽象方法，所以会调用子类的实现
+       checkDaoConfig();
+    
+       // Let concrete implementations initialize themselves.
+       try {
+          initDao();
+       }
+       catch (Exception ex) {
+          throw new BeanInitializationException(&amp;quot;Initialization of DAO failed&amp;quot;, ex);
+       }
+    }
+    //...
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;如果用 MapperFactoryBean 直接实现 InitializingBean，重写 afterPropertiesSet()，当 MapperFactoryBean 被实例化后，就会调用 DaoSupport 的 afterPropertiesSet()，而  DaoSupport 的 afterPropertiesSet() 内部会调用 checkDaoConfig()，由于 checkDaoConfig() 是抽象方法，所以会去调用子类 MapperFactoryBean 的实现：&lt;br&gt;
+MapperFactoryBean#checkDaoConfig&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;protected void checkDaoConfig() {
+  super.checkDaoConfig();
+  notNull(this.mapperInterface, &amp;quot;Property &#39;mapperInterface&#39; is required&amp;quot;);
+  // 得到 Configuration
+  Configuration configuration = getSqlSession().getConfiguration();
+  if (this.addToConfig &amp;amp;&amp;amp; !configuration.hasMapper(this.mapperInterface)) {
+    try {
+      // 初始化 mapper 这些类
+      configuration.addMapper(this.mapperInterface);
+    } catch (Exception e) {
+      logger.error(&amp;quot;Error while adding the mapper &#39;&amp;quot; + this.mapperInterface + &amp;quot;&#39; to configuration.&amp;quot;, e);
+      throw new IllegalArgumentException(e);
+    } finally {
+      ErrorContext.instance().reset();
+    }
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Configuration#addMapper&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public &amp;lt;T&amp;gt; void addMapper(Class&amp;lt;T&amp;gt; type) {
+  mapperRegistry.addMapper(type);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;MapperRegistry#addMapper&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public &amp;lt;T&amp;gt; void addMapper(Class&amp;lt;T&amp;gt; type) {
+  if (type.isInterface()) {
+    if (hasMapper(type)) {
+      throw new BindingException(&amp;quot;Type &amp;quot; + type + &amp;quot; is already known to the MapperRegistry.&amp;quot;);
+    }
+    boolean loadCompleted = false;
+    try {
+      // 放到 map 中
+      knownMappers.put(type, new MapperProxyFactory&amp;lt;T&amp;gt;(type));
+      // It&#39;s important that the type is added before the parser is run
+      // otherwise the binding may automatically be attempted by the
+      // mapper parser. If the type is already known, it won&#39;t try.
+      MapperAnnotationBuilder parser = new MapperAnnotationBuilder(config, type);
+      // 解析
+      parser.parse();
+      loadCompleted = true;
+    } finally {
+      if (!loadCompleted) {
+        knownMappers.remove(type);
+      }
+    }
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h1 id=&#34;spring-和-mybatis-结合如何初始化&#34;&gt;Spring 和 MyBatis 结合如何初始化？&lt;/h1&gt;
+&lt;h2 id=&#34;springbean-实例化之前的工作&#34;&gt;SpringBean 实例化之前的工作：&lt;/h2&gt;
+&lt;p&gt;通过分析源码可以得出 @MapperScan 主要做了3个事情：&lt;/p&gt;
+&lt;p&gt;1.扫描出来所有的 mapper 所对应的 BeanDefinition&lt;/p&gt;
+&lt;p&gt;2.把 mapper 变成 FactoryBean，MapperFactoryBean  和 BeanDefinition&lt;/p&gt;
+&lt;p&gt;3.为BeanDefinition 添加一个构造方法的值，因为 MyBatis 的 MapperFactoryBean 有一个有参构造方法，Spring 在实例化这个对象的时候需要一个构造方法的值，这个值是一个 class，后面 Spring 在实例化过程中根据这个 class 返回我们的代理对象&lt;/p&gt;
+&lt;h2 id=&#34;springbean-实例化之中和之后的工作&#34;&gt;SpringBean 实例化之中和之后的工作：&lt;/h2&gt;
+&lt;p&gt;mybatis 主要利用 spring 的初始方法扩展点来完成对 mapper 信息的初始化，比如 sql 语句的初始化。这里的 spring 扩展点主要就是 afterPropertiesSet，说白了就是利用 MapperFactoryBean 去实现 InitializingBean 接口，由于 MapperFactoryBean 是一个 FactoryBean，我们理解为就是一个 mapper，把 &amp;lt;id,object&amp;gt; 缓存到 map 中。&lt;/p&gt;
+">MyBatis系列（二）MyBatis缓存</a>
       </div>
       
       <div class="item">
@@ -1578,7 +2056,7 @@ public boolean isDebugEnabled() {
 &lt;h1 id=&#34;架构系统如何考虑日志&#34;&gt;架构系统如何考虑日志&lt;/h1&gt;
 &lt;p&gt;old:jcl+log4j&lt;/p&gt;
 &lt;p&gt;new:slf4j+jul&lt;/p&gt;
-">MyBatis系列（一）——MyBatis日志</a>
+">MyBatis系列（一）MyBatis日志</a>
       </div>
       
       <div class="item">
