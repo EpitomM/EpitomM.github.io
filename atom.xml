@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://epitomm.github.io</id>
     <title>SSM</title>
-    <updated>2020-05-21T06:54:07.294Z</updated>
+    <updated>2020-05-24T14:03:57.799Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://epitomm.github.io"/>
     <link rel="self" href="https://epitomm.github.io/atom.xml"/>
@@ -10,6 +10,715 @@
     <logo>https://epitomm.github.io/images/avatar.png</logo>
     <icon>https://epitomm.github.io/favicon.ico</icon>
     <rights>All rights reserved 2020, SSM</rights>
+    <entry>
+        <title type="html"><![CDATA[MyBatis系列（三）——MyBatis源码]]></title>
+        <id>https://epitomm.github.io/post/mybatis-xi-lie-san-mybatis-huan-cun/</id>
+        <link href="https://epitomm.github.io/post/mybatis-xi-lie-san-mybatis-huan-cun/">
+        </link>
+        <updated>2020-05-24T13:59:58.000Z</updated>
+        <content type="html"><![CDATA[<pre><code class="language-java">public interface IndexMapper {
+    public void query();
+}
+</code></pre>
+<h1 id="执行代理对象的-invoke-方法">执行代理对象的 invoke 方法</h1>
+<p>动态代理为接口生成代理对象时，为什么会执行 invoke() 方法？</p>
+<pre><code class="language-java"> public class Test {
+    public static void main(String[] args) throws IOException {
+        AnnotationConfigApplicationContext configApplicationContext = new AnnotationConfigApplicationContext(AppConfig.class);
+        byte[] bytes = ProxyGenerator.generateProxyClass(&quot;mapper&quot;, new Class[]{IndexMapper.class});
+        FileOutputStream fw = new FileOutputStream(&quot;C:\\Users\\Only\\IdeaProjects\\luban\\mapper.class&quot;);
+        fw.write(bytes);
+        fw.flush();
+        fw.close();
+    }
+}
+</code></pre>
+<p>生成的代理类：</p>
+<pre><code class="language-java">public final class mapper extends Proxy implements IndexMapper {
+    private static Method m1;
+    private static Method m3;
+    private static Method m2;
+    private static Method m0;
+    public mapper(InvocationHandler var1) throws  {
+        super(var1);
+    }
+    public final boolean equals(Object var1) throws  {
+        try {
+            return (Boolean)super.h.invoke(this, m1, new Object[]{var1});
+        } catch (RuntimeException | Error var3) {
+            throw var3;
+        } catch (Throwable var4) {
+            throw new UndeclaredThrowableException(var4);
+        }
+    }
+    public final void query() throws  {
+        try {
+            super.h.invoke(this, m3, (Object[])null);
+        } catch (RuntimeException | Error var2) {
+            throw var2;
+        } catch (Throwable var3) {
+            throw new UndeclaredThrowableException(var3);
+        }
+    }
+    public final String toString() throws  {
+        try {
+            return (String)super.h.invoke(this, m2, (Object[])null);
+        } catch (RuntimeException | Error var2) {
+            throw var2;
+        } catch (Throwable var3) {
+            throw new UndeclaredThrowableException(var3);
+        }
+    }
+    public final int hashCode() throws  {
+        try {
+            return (Integer)super.h.invoke(this, m0, (Object[])null);
+        } catch (RuntimeException | Error var2) {
+            throw var2;
+        } catch (Throwable var3) {
+            throw new UndeclaredThrowableException(var3);
+        }
+    }
+    static {
+        try {
+            m1 = Class.forName(&quot;java.lang.Object&quot;).getMethod(&quot;equals&quot;, Class.forName(&quot;java.lang.Object&quot;));
+            m3 = Class.forName(&quot;com.ssm.service.IndexMapper&quot;).getMethod(&quot;query&quot;);
+            m2 = Class.forName(&quot;java.lang.Object&quot;).getMethod(&quot;toString&quot;);
+            m0 = Class.forName(&quot;java.lang.Object&quot;).getMethod(&quot;hashCode&quot;);
+        } catch (NoSuchMethodException var2) {
+            throw new NoSuchMethodError(var2.getMessage());
+        } catch (ClassNotFoundException var3) {
+            throw new NoClassDefFoundError(var3.getMessage());
+        }
+    }
+}
+</code></pre>
+<p>当调用接口的 query() 时，实际执行的是代理对象的 query() 方法：</p>
+<pre><code class="language-java">super.h.invoke(this, m3, (Object[])null);
+</code></pre>
+<p>在代理对象的 query() 方法中调用了 “实现了 InvocationHandler 接口的类” 的 invoke() 方法。</p>
+<pre><code class="language-java">public class Test {
+    public static void main(String[] args) throws IOException {
+        AnnotationConfigApplicationContext configApplicationContext = new AnnotationConfigApplicationContext(AppConfig.class);
+        configApplicationContext.getBean(IndexService.class).list();
+    }
+}
+</code></pre>
+<p>当调用 Service 中的 list() 方法时，会调用 mapper 的 list() 方法，实际调用的是 mapper 的代理对象的 list() 方法，即 实现了 InvocationHandler 接口的类的 invoke() 方法</p>
+<pre><code class="language-java">@Service
+public class IndexService implements InitializingBean {
+    @Autowired
+    UserMapper userMapper;
+    public List&lt;Map&lt;String,Object&gt;&gt; list(){
+        return userMapper.list();
+    }
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        System.out.println(&quot;app...&quot;);
+    }
+}
+</code></pre>
+<pre><code class="language-java">public interface UserMapper {
+    @Select(&quot;select * from t1&quot;)
+    List&lt;Map&lt;String,Object&gt;&gt; list();
+}
+</code></pre>
+<p>调用 Mapper 代理对象：MapperProxy 的 invoke() 方法：</p>
+<pre><code class="language-java">public class MapperProxy&lt;T&gt; implements InvocationHandler, Serializable {
+  //...
+  public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+    try {
+      if (Object.class.equals(method.getDeclaringClass())) {
+        return method.invoke(this, args);
+      } else if (isDefaultMethod(method)) {
+        return invokeDefaultMethod(proxy, method, args);
+      }
+    } catch (Throwable t) {
+      throw ExceptionUtil.unwrapThrowable(t);
+    }
+    // MapperMethod 包含了当前方法，比如 list() 的所有信息：注解
+    final MapperMethod mapperMethod = cachedMapperMethod(method);
+    // 在 spring 中，当产生代理对象时，sqlSession 已经被替换成了 SqlSessionTemplate 
+    return mapperMethod.execute(sqlSession, args);
+  }
+  //...
+}
+</code></pre>
+<p>execute() 方法判断当前注解是什么类型操作：增、删、改、查</p>
+<pre><code class="language-java">public Object execute(SqlSession sqlSession, Object[] args) {
+  Object result;
+  switch (command.getType()) {
+    case INSERT: {
+    Object param = method.convertArgsToSqlCommandParam(args);
+      result = rowCountResult(sqlSession.insert(command.getName(), param));
+      break;
+    }
+    case UPDATE: {
+      Object param = method.convertArgsToSqlCommandParam(args);
+      result = rowCountResult(sqlSession.update(command.getName(), param));
+      break;
+    }
+    case DELETE: {
+      Object param = method.convertArgsToSqlCommandParam(args);
+      result = rowCountResult(sqlSession.delete(command.getName(), param));
+      break;
+    }
+    case SELECT:
+      if (method.returnsVoid() &amp;&amp; method.hasResultHandler()) {
+        executeWithResultHandler(sqlSession, args);
+        result = null;
+      } else if (method.returnsMany()) {
+        // SELECT 返回结果有多条，执行此方法
+        result = executeForMany(sqlSession, args);
+      } else if (method.returnsMap()) {
+        result = executeForMap(sqlSession, args);
+      } else if (method.returnsCursor()) {
+        result = executeForCursor(sqlSession, args);
+      } else {
+        Object param = method.convertArgsToSqlCommandParam(args);
+        result = sqlSession.selectOne(command.getName(), param);
+      }
+      break;
+    case FLUSH:
+      result = sqlSession.flushStatements();
+      break;
+    default:
+      throw new BindingException(&quot;Unknown execution method for: &quot; + command.getName());
+  }
+  if (result == null &amp;&amp; method.getReturnType().isPrimitive() &amp;&amp; !method.returnsVoid()) {
+    throw new BindingException(&quot;Mapper method '&quot; + command.getName() 
+        + &quot; attempted to return null from a method with a primitive return type (&quot; + method.getReturnType() + &quot;).&quot;);
+  }
+  return result;
+}
+</code></pre>
+<pre><code class="language-java">private &lt;E&gt; Object executeForMany(SqlSession sqlSession, Object[] args) {
+  List&lt;E&gt; result;
+  Object param = method.convertArgsToSqlCommandParam(args);
+  if (method.hasRowBounds()) {
+    RowBounds rowBounds = method.extractRowBounds(args);
+    result = sqlSession.&lt;E&gt;selectList(command.getName(), param, rowBounds);
+  } else {
+    // 调用 sqlSession 的 selectList 方法
+    result = sqlSession.&lt;E&gt;selectList(command.getName(), param);
+  }
+  // issue #510 Collections &amp; arrays support
+  if (!method.getReturnType().isAssignableFrom(result.getClass())) {
+    if (method.getReturnType().isArray()) {
+      return convertToArray(result);
+    } else {
+      return convertToDeclaredCollection(sqlSession.getConfiguration(), result);
+    }
+  }
+  return result;
+}
+</code></pre>
+<p>如果使用 Spring，sqlSession 就是 SqlSessionTemplate 类型；如果不使用 Spring，单独使用 MyBatis，sqlSession 就是 DefaultSqlSession 类型。</p>
+<h1 id="defaultsqlsession">DefaultSqlSession</h1>
+<p>DefaultSqlSession#selectList</p>
+<pre><code class="language-java">public &lt;E&gt; List&lt;E&gt; selectList(String statement, Object parameter, RowBounds rowBounds) {
+  try {
+    MappedStatement ms = configuration.getMappedStatement(statement);
+    // 直接用 executor 执行 query 方法
+    return executor.query(ms, wrapCollection(parameter), rowBounds, Executor.NO_RESULT_HANDLER);
+  } catch (Exception e) {
+    throw ExceptionFactory.wrapException(&quot;Error querying database.  Cause: &quot; + e, e);
+  } finally {
+    ErrorContext.instance().reset();
+  }
+}
+</code></pre>
+<h1 id="sqlsessiontemplate">SqlSessionTemplate</h1>
+<p>SqlSessionTemplate#selectList</p>
+<pre><code class="language-java">public &lt;E&gt; List&lt;E&gt; selectList(String statement, Object parameter) {
+  // 调用代理对象的 selectList
+  return this.sqlSessionProxy.&lt;E&gt; selectList(statement, parameter);
+}
+</code></pre>
+<p>MapperProxy 的 invoke() 方法中的 sqlSession 已经被替换成了 SqlSessionTemplate，但它具体是在什么时候被替换的现在还不知道。<br>
+SqlSessionTemplate 肯定会被赋值给 sqlSession，但是具体什么时候赋值的不知道，于是看它什么时候被实例化，于是断点在 SqlSessionTemplate 实例化的地方进行调试。</p>
+<pre><code class="language-java">public SqlSessionTemplate(SqlSessionFactory sqlSessionFactory) {
+  this(sqlSessionFactory, sqlSessionFactory.getConfiguration().getDefaultExecutorType());
+}
+</code></pre>
+<pre><code class="language-java">public void setSqlSessionFactory(SqlSessionFactory sqlSessionFactory) {
+  if (!this.externalSqlSession) {
+    this.sqlSession = new SqlSessionTemplate(sqlSessionFactory);
+  }
+}
+</code></pre>
+<p>沿着 setSqlSessionFactory 的调用链向下找发现了：AbstractAutowireCapableBeanFactory#doCreateBean</p>
+<pre><code class="language-java">populateBean(beanName, mbd, instanceWrapper);
+</code></pre>
+<p>在创建 UserMapper 时实例化了 sqlSessionFactory</p>
+<h1 id="为什么-new-usermapper-时-setsqlsessionfactory">为什么 new UserMapper 时 setSqlSessionFactory</h1>
+<p>当创建 UserMapper 时，实际上是创建 MapperFactoryBean，当创建 MapperFactoryBean 时，为什么要 setSqlSessionFactory 呢？</p>
+<p>Spring 当中有自动装配，当创建 MapperFactoryBean 时，要看这个类里面的属性是否需要自动装配：</p>
+<pre><code class="language-java">public class MapperFactoryBean&lt;T&gt; extends SqlSessionDaoSupport implements FactoryBean&lt;T&gt; {
+  // mapperInterface 不需要自动装配 ，因为自动装配忽略 Class 类型
+  private Class&lt;T&gt; mapperInterface;
+  // addToConfig 需要自动装配
+  private boolean addToConfig = true;
+  
+  public void setAddToConfig(boolean addToConfig) {
+    this.addToConfig = addToConfig;
+  }
+}
+</code></pre>
+<p>它的父类 SqlSessionDaoSupport 中的属性是否需要自动装配：</p>
+<pre><code class="language-java">public abstract class SqlSessionDaoSupport extends DaoSupport {
+  // sqlSession 需要自动装配
+  private SqlSession sqlSession;
+  private boolean externalSqlSession;
+</code></pre>
+<p>如何判断一个类中的某个属性是否需要自动装配？</p>
+<h3 id="来看一个例子">来看一个例子：</h3>
+<h4 id="默认-autowire_no">默认 AUTOWIRE_NO</h4>
+<p>有一个 OrderClazz 类交给 Spring 管理</p>
+<pre><code class="language-java">@Component
+public class OrderClazz {
+}
+</code></pre>
+<p>UserClazz 类交给 Spring 管理，UserClazz 类依赖 OrderClazz：</p>
+<pre><code class="language-java">@Component
+public class UserClazz {
+    // orderClazz 是否会自动装配？会
+    private OrderClazz orderClazz;
+    public OrderClazz getOrderClazz() {
+        return orderClazz;
+    }
+    public void setOrderClazz(OrderClazz orderClazz) {
+        this.orderClazz = orderClazz;
+    }
+}
+</code></pre>
+<p>一个测试类：</p>
+<pre><code class="language-java">public class Test {
+    public static void main(String[] args) throws IOException {
+        AnnotationConfigApplicationContext configApplicationContext = new AnnotationConfigApplicationContext(AppConfig.class);
+        OrderClazz orderClazz = configApplicationContext.getBean(UserClazz.class).getOrderClazz();
+        System.out.println(orderClazz);
+    }
+}
+</code></pre>
+<p>打印结果：null，而不是报错没有这个 bean。<br>
+自动装配有三种类型：</p>
+<pre><code class="language-java">/**
+ * Constant that indicates no autowiring at all.
+ * @see #setAutowireMode
+ */
+public static final int AUTOWIRE_NO = AutowireCapableBeanFactory.AUTOWIRE_NO;
+/**
+ * Constant that indicates autowiring bean properties by name.
+ * @see #setAutowireMode
+ */
+public static final int AUTOWIRE_BY_NAME = AutowireCapableBeanFactory.AUTOWIRE_BY_NAME;
+/**
+ * Constant that indicates autowiring bean properties by type.
+ * @see #setAutowireMode
+ */
+public static final int AUTOWIRE_BY_TYPE = AutowireCapableBeanFactory.AUTOWIRE_BY_TYPE;
+</code></pre>
+<p>Spring 默认自动装配规则 AUTOWIRE_NO：不自动装配，但是加了 @Autowired 或 @Resource 的会自动装配：</p>
+<pre><code class="language-java">@Component
+public class UserClazz{
+  @Autowired
+  private OrderClazz orderClazz;
+}
+</code></pre>
+<p>如果使用自动装配规则 AUTOWIRE_BY_TYPE，会根据属性的 set 方法进行装配，无需 @Autowired 注解：</p>
+<pre><code class="language-java">@Component
+public class UserClazz{
+  private OrderClazz orderClazz;
+  public OrderClazz getOrderClazz() {
+    return orderClazz;
+  }
+}
+</code></pre>
+<h4 id="设置自动装配类型为-autowire_by_type">设置自动装配类型为 AUTOWIRE_BY_TYPE</h4>
+<pre><code class="language-java">public class SSMScanRegistrar implements ImportBeanDefinitionRegistrar {
+    @Override
+    public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
+        GenericBeanDefinition userClazz = (GenericBeanDefinition) registry.getBeanDefinition(&quot;userClazz&quot;);
+        // 设置自动装配类型为 AUTOWIRE_BY_TYPE
+userClazz.setAutowireMode(AbstractBeanDefinition.AUTOWIRE_BY_TYPE);
+        registry.registerBeanDefinition(&quot;userClazz&quot;,userClazz);
+    }
+}
+</code></pre>
+<p>启动类扫描 SSMScanRegistrar</p>
+<pre><code class="language-java">@Configuration
+@ComponentScan(&quot;com.ssm&quot;)
+@MapperScan(&quot;com.ssm.dao&quot;)
+@Import(SSMScanRegistrar.class)
+public class AppConfig{
+</code></pre>
+<p>测试类打印：com.ssm.manager.OrderClazz@4c12331b</p>
+<pre><code class="language-java">@Component
+public class UserClazz {
+//    private OrderClazz orderClazz;
+    public OrderClazz getOrderClazz() {
+        return null;
+    }
+    public void setOrderClazz(OrderClazz orderClazz) {
+//        this.orderClazz = orderClazz;
+        System.out.println(&quot;---------&quot;);
+    }
+}
+</code></pre>
+<p>测试类打印：---------<br>
+AUTOWIRE_BY_TYPE 读取 set 方法，当有 set 方法，就认为 set 方法的参数对应的类 OrderClazz  需要自动装配。</p>
+<p>如果去掉 set 方法：</p>
+<pre><code class="language-java">@Component
+public class UserClazz {
+    private OrderClazz orderClazz;
+    public OrderClazz getOrderClazz() {
+        return orderClazz;
+    }
+}
+</code></pre>
+<p>测试类打印：null<br>
+AUTOWIRE_BY_TYPE 根据 set 方法进行自动装配，与属性的声明无关。上述虽然声明了属性，但没有 set 方法，所以 orderClazz 并没有被赋值。</p>
+<p>当实例化 MapperFactoryBean 时：</p>
+<pre><code class="language-java">@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.TYPE)
+@Documented
+@Import(MapperScannerRegistrar.class)
+public @interface MapperScan {
+</code></pre>
+<p>MapperScannerRegistrar#registerBeanDefinitions ---&gt; ClassPathMapperScanner#doScan ---&gt; ClassPathMapperScanner#processBeanDefinitions</p>
+<pre><code class="language-java">private void processBeanDefinitions(Set&lt;BeanDefinitionHolder&gt; beanDefinitions) {
+  GenericBeanDefinition definition;
+  for (BeanDefinitionHolder holder : beanDefinitions) {
+    definition = (GenericBeanDefinition) holder.getBeanDefinition();
+    if (logger.isDebugEnabled()) {
+      logger.debug(&quot;Creating MapperFactoryBean with name '&quot; + holder.getBeanName() 
+        + &quot;' and '&quot; + definition.getBeanClassName() + &quot;' mapperInterface&quot;);
+    }
+    // the mapper interface is the original class of the bean
+    // but, the actual class of the bean is MapperFactoryBean
+    definition.getConstructorArgumentValues().addGenericArgumentValue(definition.getBeanClassName()); // issue #59
+    // 
+    definition.setBeanClass(this.mapperFactoryBean.getClass());
+    definition.getPropertyValues().add(&quot;addToConfig&quot;, this.addToConfig);
+    boolean explicitFactoryUsed = false;
+    if (StringUtils.hasText(this.sqlSessionFactoryBeanName)) {
+      definition.getPropertyValues().add(&quot;sqlSessionFactory&quot;, new RuntimeBeanReference(this.sqlSessionFactoryBeanName));
+      explicitFactoryUsed = true;
+    } else if (this.sqlSessionFactory != null) {
+      definition.getPropertyValues().add(&quot;sqlSessionFactory&quot;, this.sqlSessionFactory);
+      explicitFactoryUsed = true;
+    }
+    if (StringUtils.hasText(this.sqlSessionTemplateBeanName)) {
+      if (explicitFactoryUsed) {
+        logger.warn(&quot;Cannot use both: sqlSessionTemplate and sqlSessionFactory together. sqlSessionFactory is ignored.&quot;);
+      }
+      definition.getPropertyValues().add(&quot;sqlSessionTemplate&quot;, new RuntimeBeanReference(this.sqlSessionTemplateBeanName));
+      explicitFactoryUsed = true;
+    } else if (this.sqlSessionTemplate != null) {
+      if (explicitFactoryUsed) {
+        logger.warn(&quot;Cannot use both: sqlSessionTemplate and sqlSessionFactory together. sqlSessionFactory is ignored.&quot;);
+      }
+      definition.getPropertyValues().add(&quot;sqlSessionTemplate&quot;, this.sqlSessionTemplate);
+      explicitFactoryUsed = true;
+    }
+    if (!explicitFactoryUsed) {
+      if (logger.isDebugEnabled()) {
+        logger.debug(&quot;Enabling autowire by type for MapperFactoryBean with name '&quot; + holder.getBeanName() + &quot;'.&quot;);
+      }
+      // mapper 自动注入类型修改为 AUTOWIRE_BY_TYPE
+            definition.setAutowireMode(AbstractBeanDefinition.AUTOWIRE_BY_TYPE);
+    }
+  }
+}
+</code></pre>
+<p>当实例化 MapperFactoryBean 时，由于 addToConfig 有 set 方法，所以会自动装配 addToConfig：<br>
+MapperFactoryBean#setAddToConfig</p>
+<pre><code class="language-java">public void setAddToConfig(boolean addToConfig) {
+  this.addToConfig = addToConfig;
+}
+</code></pre>
+<p>由于 MapperFactoryBean 继承了 SqlSessionDaoSupport：<br>
+SqlSessionDaoSupport # 所有set方法：</p>
+<pre><code class="language-java">public abstract class SqlSessionDaoSupport extends DaoSupport {
+  private SqlSession sqlSession;
+  private boolean externalSqlSession;
+  public void setSqlSessionFactory(SqlSessionFactory sqlSessionFactory) {
+    if (!this.externalSqlSession) {
+      this.sqlSession = new SqlSessionTemplate(sqlSessionFactory);
+    }
+  }
+  public void setSqlSessionTemplate(SqlSessionTemplate sqlSessionTemplate) {
+    this.sqlSession = sqlSessionTemplate;
+    this.externalSqlSession = true;
+  }
+  //
+</code></pre>
+<p>因为有 setSqlSessionFactory 和  setSqlSessionTemplate 方法，所以会自动装配 sqlSessionTemplate 和 sqlSessionFactory，所以 sqlSessionTemplate 是在实例化 MapperFactoryBean 时被赋值的。<br>
+为什么不直接使用 @Autowired SqlSession sqlSesssion; 自动注入？解耦。</p>
+<p>如果写了 @Autowired，永远依赖 Spring 去编译。</p>
+<h1 id="mybatis-整合-spring-流程">MyBatis 整合 Spring 流程</h1>
+<p>扫描，实例化各种 mapper，通过 @MapperScan 把 mapper 变成 MapperFactoryBean，</p>
+<p>在实例化过程中，MyBatis 会产生两个代理对象，mapper 代理对象；往 mapper 的代理对象中注入一个 SqlSessionTemplate，执行 SqlSessionTemplate 的代理方法，代理方法中关闭 sqlSession，一级缓存 map 失效，</p>
+<p>当执行 userMapper.list() 时，实际上执行的是代理对象 MappperProxy 的 invoke()</p>
+<pre><code class="language-java">public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+  try {
+    if (Object.class.equals(method.getDeclaringClass())) {
+      return method.invoke(this, args);
+    } else if (isDefaultMethod(method)) {
+      return invokeDefaultMethod(proxy, method, args);
+    }
+  } catch (Throwable t) {
+    throw ExceptionUtil.unwrapThrowable(t);
+  }
+  final MapperMethod mapperMethod = cachedMapperMethod(method);
+  return mapperMethod.execute(sqlSession, args);
+}
+</code></pre>
+<p>上述代码第 11 行：MapperProxy#cachedMapperMethod</p>
+<pre><code class="language-java">private MapperMethod cachedMapperMethod(Method method) {
+  MapperMethod mapperMethod = methodCache.get(method);
+  if (mapperMethod == null) {
+    mapperMethod = new MapperMethod(mapperInterface, method, sqlSession.getConfiguration());
+    methodCache.put(method, mapperMethod);
+  }
+  return mapperMethod;
+}
+</code></pre>
+<p>上述代码第 4 行：</p>
+<pre><code class="language-java">public MapperMethod(Class&lt;?&gt; mapperInterface, Method method, Configuration config) {
+  this.command = new SqlCommand(config, mapperInterface, method);
+  this.method = new MethodSignature(config, mapperInterface, method);
+}
+</code></pre>
+<p>上述代码第 2 行：</p>
+<pre><code class="language-java">public SqlCommand(Configuration configuration, Class&lt;?&gt; mapperInterface, Method method) {
+  final String methodName = method.getName();
+  final Class&lt;?&gt; declaringClass = method.getDeclaringClass();
+  MappedStatement ms = resolveMappedStatement(mapperInterface, methodName, declaringClass,
+      configuration);
+  if (ms == null) {
+    if (method.getAnnotation(Flush.class) != null) {
+      name = null;
+      type = SqlCommandType.FLUSH;
+    } else {
+      throw new BindingException(&quot;Invalid bound statement (not found): &quot;
+          + mapperInterface.getName() + &quot;.&quot; + methodName);
+    }
+  } else {
+    name = ms.getId();
+    type = ms.getSqlCommandType();
+    if (type == SqlCommandType.UNKNOWN) {
+      throw new BindingException(&quot;Unknown execution method for: &quot; + name);
+    }
+  }
+}
+</code></pre>
+<p>上述代码第 4 行：<br>
+<img src="https://epitomm.github.io/post-images/mapperStatement.png" alt="图片" loading="lazy"></p>
+<p>执行完 org.apache.ibatis.binding.MapperMethod.SqlCommand#resolveMappedStatement 方法，能够得到 SQL 语句。</p>
+<pre><code class="language-java">private MappedStatement resolveMappedStatement(Class&lt;?&gt; mapperInterface, String methodName,
+    Class&lt;?&gt; declaringClass, Configuration configuration) {
+    // 方法名：List&lt;Map&lt;String,Object&gt;&gt; list(); 为什么要和 mapper 的 id：&lt;select id=&quot;list&quot; &gt; 相同：通过命名空间+方法名得到 statementId：com.ssm.mapper.UserMapper.list
+  String statementId = mapperInterface.getName() + &quot;.&quot; + methodName;
+  // 判断 configuration 是否包含 statementId
+  if (configuration.hasStatement(statementId)) {
+    // 通过 configuration 得到 statementId 对应的 MappedStatement 
+    return configuration.getMappedStatement(statementId);
+  } else if (mapperInterface.equals(declaringClass)) {
+    return null;
+  }
+  for (Class&lt;?&gt; superInterface : mapperInterface.getInterfaces()) {
+    if (declaringClass.isAssignableFrom(superInterface)) {
+      MappedStatement ms = resolveMappedStatement(superInterface, methodName,
+          declaringClass, configuration);
+      if (ms != null) {
+        return ms;
+      }
+    }
+  }
+  return null;
+}
+</code></pre>
+<p>上述代码第 8 行：</p>
+<pre><code class="language-java">public MappedStatement getMappedStatement(String id) {
+  return this.getMappedStatement(id, true);
+}
+</code></pre>
+<pre><code class="language-java">public MappedStatement getMappedStatement(String id, boolean validateIncompleteStatements) {
+  if (validateIncompleteStatements) {
+    buildAllStatements();
+  }
+  return mappedStatements.get(id);
+}
+</code></pre>
+<pre><code class="language-java">protected final Map&lt;String, MappedStatement&gt; mappedStatements = new StrictMap&lt;MappedStatement&gt;(&quot;Mapped Statements collection&quot;);
+</code></pre>
+<p>先把 SQL 语句 放到 mappedStatements 中，然后通过 mappedStatements.get(id) 拿出 SQL 语句，在 execute(sql) 执行 SQL 语句<br>
+上述 invoke 方法的第 12 行：</p>
+<p>MapperMethod#execute</p>
+<pre><code class="language-java">public Object execute(SqlSession sqlSession, Object[] args) {
+  Object result;
+  switch (command.getType()) {
+    case INSERT: {
+    Object param = method.convertArgsToSqlCommandParam(args);
+      result = rowCountResult(sqlSession.insert(command.getName(), param));
+      break;
+    }
+    case UPDATE: {
+      Object param = method.convertArgsToSqlCommandParam(args);
+      result = rowCountResult(sqlSession.update(command.getName(), param));
+      break;
+    }
+    case DELETE: {
+      Object param = method.convertArgsToSqlCommandParam(args);
+      result = rowCountResult(sqlSession.delete(command.getName(), param));
+      break;
+    }
+    case SELECT:
+      if (method.returnsVoid() &amp;&amp; method.hasResultHandler()) {
+        executeWithResultHandler(sqlSession, args);
+        result = null;
+      } else if (method.returnsMany()) {
+        result = executeForMany(sqlSession, args);
+      } else if (method.returnsMap()) {
+        result = executeForMap(sqlSession, args);
+      } else if (method.returnsCursor()) {
+        result = executeForCursor(sqlSession, args);
+      } else {
+        Object param = method.convertArgsToSqlCommandParam(args);
+        result = sqlSession.selectOne(command.getName(), param);
+      }
+      break;
+    case FLUSH:
+      result = sqlSession.flushStatements();
+      break;
+    default:
+      throw new BindingException(&quot;Unknown execution method for: &quot; + command.getName());
+  }
+  if (result == null &amp;&amp; method.getReturnType().isPrimitive() &amp;&amp; !method.returnsVoid()) {
+    throw new BindingException(&quot;Mapper method '&quot; + command.getName() 
+        + &quot; attempted to return null from a method with a primitive return type (&quot; + method.getReturnType() + &quot;).&quot;);
+  }
+  return result;
+}
+</code></pre>
+<p>上述代码第 24 行：MapperMethod#executeForMany</p>
+<pre><code class="language-java">private &lt;E&gt; Object executeForMany(SqlSession sqlSession, Object[] args) {
+  List&lt;E&gt; result;
+  Object param = method.convertArgsToSqlCommandParam(args);
+  if (method.hasRowBounds()) {
+    RowBounds rowBounds = method.extractRowBounds(args);
+    result = sqlSession.&lt;E&gt;selectList(command.getName(), param, rowBounds);
+  } else {
+    result = sqlSession.&lt;E&gt;selectList(command.getName(), param);
+  }
+  // issue #510 Collections &amp; arrays support
+  if (!method.getReturnType().isAssignableFrom(result.getClass())) {
+    if (method.getReturnType().isArray()) {
+      return convertToArray(result);
+    } else {
+      return convertToDeclaredCollection(sqlSession.getConfiguration(), result);
+    }
+  }
+  return result;
+}
+</code></pre>
+<p>DefaultSqlSession#selectList</p>
+<pre><code class="language-java">public &lt;E&gt; List&lt;E&gt; selectList(String statement, Object parameter) {
+  return this.selectList(statement, parameter, RowBounds.DEFAULT);
+}
+</code></pre>
+<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/statement.png" alt="图片" loading="lazy"></figure>
+<pre><code class="language-java">public &lt;E&gt; List&lt;E&gt; selectList(String statement, Object parameter, RowBounds rowBounds) {
+  try {
+    MappedStatement ms = configuration.getMappedStatement(statement);
+    return executor.query(ms, wrapCollection(parameter), rowBounds, Executor.NO_RESULT_HANDLER);
+  } catch (Exception e) {
+    throw ExceptionFactory.wrapException(&quot;Error querying database.  Cause: &quot; + e, e);
+  } finally {
+    ErrorContext.instance().reset();
+  }
+}
+</code></pre>
+<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/ms.png" alt="图片" loading="lazy"></figure>
+<pre><code class="language-java">@Override
+public &lt;E&gt; List&lt;E&gt; query(MappedStatement ms, Object parameterObject, RowBounds rowBounds, ResultHandler resultHandler) throws SQLException {
+  BoundSql boundSql = ms.getBoundSql(parameterObject);
+  CacheKey key = createCacheKey(ms, parameterObject, rowBounds, boundSql);
+  return query(ms, parameterObject, rowBounds, resultHandler, key, boundSql);
+}
+</code></pre>
+<figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/BoundSql.png" alt="图片" loading="lazy"></figure>
+<p>MyBatis 中的所有信息，包括 SQL 语句、返回类型信息都存在了 mappedStatements 中。</p>
+<p>什么时候把 mapper 信息放到 mappedStatements 中的？</p>
+<pre><code class="language-java">public void addMappedStatement(MappedStatement ms) {
+  mappedStatements.put(ms.getId(), ms);
+}
+</code></pre>
+<p>调用链如下：<br>
+<img src="https://epitomm.github.io/post-images/ms%E8%B0%83%E7%94%A8%E9%93%BE.png" alt="图片" loading="lazy"></p>
+<p>Spring 容器初始化 UserMapper 时，就拿到 mapper 里的所有信息，放到 mapperStatements 中，</p>
+<p>一个对象被实例化后，由于实例化的是 MapperFactoryBean，MapperFactoryBean 继承了 SqlSessionDaoSupport 接口，SqlSessionDaoSupport 继承了 DaoSupport，所以会执行 DaoSupport#afterPropertiesSet() ---&gt; DaoSupport#checkDaoConfig(); ---&gt; Configuration#addMapper ---&gt; MapperRegistry#addMapper --&gt; MapperAnnotationBuilder#parse()</p>
+<pre><code class="language-java">public void parse() {
+  String resource = type.toString();
+  if (!configuration.isResourceLoaded(resource)) {
+    loadXmlResource();
+    configuration.addLoadedResource(resource);
+    assistant.setCurrentNamespace(type.getName());
+    parseCache();
+    parseCacheRef();
+    Method[] methods = type.getMethods();
+    for (Method method : methods) {
+      try {
+        // issue #237
+        if (!method.isBridge()) {
+          parseStatement(method);
+        }
+      } catch (IncompleteElementException e) {
+        configuration.addIncompleteMethod(new MethodResolver(this, method));
+      }
+    }
+  }
+  parsePendingMethods();
+}
+</code></pre>
+<p>上述代码第 14 行：</p>
+<pre><code class="language-java">void parseStatement(Method method) {
+  Class&lt;?&gt; parameterTypeClass = getParameterType(method);
+  LanguageDriver languageDriver = getLanguageDriver(method);
+  
+  SqlSource sqlSource = getSqlSourceFromAnnotations(method, parameterTypeClass, languageDriver);
+  // ......
+}
+</code></pre>
+<p>上述代码第 5 行：</p>
+<pre><code class="language-java">private SqlSource getSqlSourceFromAnnotations(Method method, Class&lt;?&gt; parameterType, LanguageDriver languageDriver) {
+  try {
+    // 判断 sqlAnnotationType  是不是 SELECT、INSERT 等
+    Class&lt;? extends Annotation&gt; sqlAnnotationType = getSqlAnnotationType(method);
+    // 判断注解是否是 @SelectProvider
+    Class&lt;? extends Annotation&gt; sqlProviderAnnotationType = getSqlProviderAnnotationType(method);
+    if (sqlAnnotationType != null) {
+      if (sqlProviderAnnotationType != null) {
+        // @SelectProvider 与 @Select 注解不能同时存在
+        throw new BindingException(&quot;You cannot supply both a static SQL and SqlProvider to method named &quot; + method.getName());
+      }
+      Annotation sqlAnnotation = method.getAnnotation(sqlAnnotationType);
+      // 获取 SQL 语句，可以是个数组：@Select({&quot;select * from city&quot;},{&quot;xxx&quot;})
+      final String[] strings = (String[]) sqlAnnotation.getClass().getMethod(&quot;value&quot;).invoke(sqlAnnotation);
+      return buildSqlSourceFromStrings(strings, parameterType, languageDriver);
+    } else if (sqlProviderAnnotationType != null) {
+      Annotation sqlProviderAnnotation = method.getAnnotation(sqlProviderAnnotationType);
+      return new ProviderSqlSource(assistant.getConfiguration(), sqlProviderAnnotation, type, method);
+    }
+    return null;
+  } catch (Exception e) {
+    throw new BuilderException(&quot;Could not find value method on SQL annotation.  Cause: &quot; + e, e);
+  }
+}
+</code></pre>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[MyBatis系列（二）MyBatis缓存]]></title>
         <id>https://epitomm.github.io/post/mybatis-xi-lie-er-mybatis-huan-cun/</id>
@@ -8765,469 +9474,6 @@ public class IndexService implements ApplicationContextAware {
        System.out.println(applicationContext.getBean(&quot;indexDaoImpl&quot;));
     }
 }
-</code></pre>
-]]></content>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[Spring系列（五）BeanFactory和FactoryBean的区别]]></title>
-        <id>https://epitomm.github.io/post/spring-xi-lie-wu-beanfactory-he-factorybean-de-qu-bie/</id>
-        <link href="https://epitomm.github.io/post/spring-xi-lie-wu-beanfactory-he-factorybean-de-qu-bie/">
-        </link>
-        <updated>2020-05-05T03:37:51.000Z</updated>
-        <content type="html"><![CDATA[<h1 id="beanfactory-和-factorybean-的区别">BeanFactory 和 FactoryBean 的区别？</h1>
-<ul>
-<li>BeanFactory 是 Spring 提供的一个工厂，能够产生对象。通过 getBean(&quot;xxx&quot;) 能够得到一个 Bean。</li>
-<li>FactoryBean 是一个 Bean：把一个对象交给 Spring 管理，就可以称之为一个 Bean，就是一个对象，FactoryBean 就是一个受 Spring 管理的对象。
-<ul>
-<li>当一个类的依赖关系很复杂，而我们想对外提供简单的关系，就让外部可以使用时，就使用 FactoryBean，经典场景：MyBatis 中的 SqlSessionFactoryBean 对象。</li>
-<li>如果类实现了 FactoryBean，那么 Spring 容器当中存在两个对象，一个是 getObject() 方法返回的对象（name=当前类名）；还有一个是当前对象（name=&amp;+当前类名）。</li>
-</ul>
-</li>
-</ul>
-<h1 id="spring-中声明一个-bean-的方式">Spring 中声明一个 Bean 的方式</h1>
-<ul>
-<li>
-<bean>
-</li>
-<li>@Service</li>
-<li>@Bean</li>
-</ul>
-<h1 id="factorybean">FactoryBean</h1>
-<pre><code class="language-java">// 表明这是一个 xml 文件
-@Configuration
-// 注解扫描包
-@ComponentScan(&quot;com.ssm&quot;)
-public class SpringConfig {
-}
-</code></pre>
-<p>如果类实现了 FactoryBean，那么 Spring 容器当中存在两个对象，一个是 getObject() 方法返回的对象 TempDaoFactoryBean；还有一个是当前对象 DaoFactoryBean。</p>
-<p>在 Spring 容器中存储时，存储的 name 值是：</p>
-<p>getObject() 得到对象：TempDaoFactoryBean 存的名字是当前类指定的名字：daoFactoryBean；</p>
-<p>当前对象 DaoFactoryBean 是 &quot;&amp;&quot; + 当前类的名字：&amp;daoFactoryBean</p>
-<pre><code class="language-java">@Component(&quot;daoFactoryBean&quot;)
-public class DaoFactoryBean implements FactoryBean {
-
-    public void testBean(){
-        System.out.println(&quot;testBean...&quot;);
-    }
-
-    @Override
-    public Object getObject() throws Exception {
-        return new TempDaoFactoryBean();
-    }
-
-    @Override
-    public Class&lt;?&gt; getObjectType() {
-        return TempDaoFactoryBean.class;
-    }
-
-    @Override
-    public boolean isSingleton() {
-        return true;
-    }
-}
-</code></pre>
-<pre><code class="language-java">public class Test {
-    public static void main(String[] args) {
-        // AnnotationConfigApplicationContext：注解配置应用程序
-        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(SpringConfig.class);
-        DaoFactoryBean daoFactoryBean = (DaoFactoryBean) context.getBean(&quot;daoFactoryBean&quot;);
-        daoFactoryBean.testBean();
-    }
-}
-</code></pre>
-<pre><code>Exception in thread &quot;main&quot; java.lang.ClassCastException: com.ssm.dao.TempDaoFactoryBean cannot be cast to com.ssm.dao.DaoFactoryBean	at com.ssm.test.Test.main(Test.java:13)
-</code></pre>
-<p>ClassCastException：类型转换异常。将一个对象通过 @Component(&quot;daoFactoryBean&quot;) 放到 Spring 容器中，然后通过context.getBean(&quot;daoFactoryBean&quot;) 结果却类型转换异常。</p>
-<pre><code class="language-java">public class Test {
-    public static void main(String[] args) {
-        // AnnotationConfigApplicationContext：注解配置应用程序
-        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(SpringConfig.class);
-        TempDaoFactoryBean daoFactoryBean = (TempDaoFactoryBean) context.getBean(&quot;daoFactoryBean&quot;);
-        daoFactoryBean.test();
-
-    }
-}
-</code></pre>
-<pre><code>FactoryBean...
-</code></pre>
-<pre><code class="language-java">public class Test {
-    public static void main(String[] args) {
-        // AnnotationConfigApplicationContext：注解配置应用程序
-        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(SpringConfig.class);
-        TempDaoFactoryBean daoFactoryBean = (TempDaoFactoryBean) context.getBean(&quot;daoFactoryBean&quot;);
-        daoFactoryBean.test();
-
-        DaoFactoryBean bean = (DaoFactoryBean) context.getBean(&quot;&amp;daoFactoryBean&quot;);
-        bean.testBean();
-
-    }
-}
-</code></pre>
-<pre><code>FactoryBean...
-testBean...
-</code></pre>
-<h2 id="final-string-beanname-transformedbeannamename">final String beanName = transformedBeanName(name);</h2>
-<ul>
-<li>通过 name 获取 beanName</li>
-</ul>
-<p>通过 name 获取 beanName，这里不使用 name 直接作为 beanName 有两个原因：</p>
-<p>1.name 可能会以 &amp; 字符开头，表名调用者想获取 FactoryBean 本身，而非 FactoryBean 实现类锁创建的 bean。在 Spring 工厂中，FactoryBean 的实现类和其他的普通 bean 存储方式是一致的，即&lt;beanName, bean&gt;，beanName 中是没有 &amp; 这个字符的。所以我们需要将 name 的首字符 &amp; 移除，这样才能从缓存里取到 FactoryBean 实例。</p>
-<p>2.还是别名的问题 <alias>.，转换需要</p>
-<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/transformedBeanName.png" alt="图片" loading="lazy"></figure>
-<p>如果有一个类相当复杂，里面有很多依赖，就要配置很多 <property>，有可能有的依赖还得不到。</p>
-<pre><code class="language-xml">&lt;bean id=&quot;temp&quot; class=&quot;com.ssm.dao.TempDaoFactoryBean&quot;&gt;
-  &lt;!--假设这个类内有很多属性，就要配置很多 &lt;property&gt;--&gt;
-&lt;/bean&gt;
-</code></pre>
-<pre><code class="language-java">public class TempDaoFactoryBean{
-  Util util;
-  Config config;
-  String str1;
-  String str2;
-}
-</code></pre>
-<p>假如上述类是第三方框架写的，由于是第三方框架代码，不可能到它的源码上去添加@Component注解：</p>
-<p>解决办法1.在 xml 配置这个类；</p>
-<p>解决办法2.通过 JavConfig 把它 new 出来，然后添加一个 @Bean 标签</p>
-<pre><code class="language-java">// 表明这是一个 xml 文件
-@Configuration
-// 注解扫描包
-@ComponentScan(&quot;com.ssm&quot;)
-public class SpringConfig {
-
-    @Bean
-    public DataSource dataSource(){
-        DriverManagerDataSource dataSource = new DriverManagerDataSource();
-        dataSource.setDriverClassName(&quot;com.mysql.jdbc.Driver&quot;);
-        dataSource.setUsername(&quot;root&quot;);
-        dataSource.setPassword(&quot;123456&quot;);
-        dataSource.setUrl(&quot;jdbc:mysql://localhost:3306/test&quot;);
-        return dataSource;
-    }
-
-    @Bean
-    public SqlSessionFactoryBean sqlSessionFactoryBean(DataSource dataSource){
-        SqlSessionFactoryBean sqlSessionFactoryBean =  new SqlSessionFactoryBean();
-        sqlSessionFactoryBean.setDataSource(dataSource);
-        return sqlSessionFactoryBean;
-    }
-}
-</code></pre>
-<h1 id="比如在-spring-中引入第三方工具-mybatis">比如在 Spring 中引入第三方工具 Mybatis</h1>
-<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/%E5%BC%95%E5%85%A5%E7%AC%AC%E4%B8%89%E6%96%B9%E5%B7%A5%E5%85%B7.png" alt="图片" loading="lazy"></figure>
-<p>1.在 bean 中配置一个 SqlSessionFactory</p>
-<pre><code class="language-xml">&lt;bean id=&quot;sqlSessionFactory&quot; class=&quot;org.apache.ibatis.session.defaults.DefaultSqlSessionFactory&quot;&gt;&lt;/bean&gt;
-</code></pre>
-<p>2.我们发现 SqlSessionFactory 依赖了 Configuration，于是在 <bean> 配置 Configuration</p>
-<figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/SqlSessionFactory%E4%BE%9D%E8%B5%96Configuration.png" alt="图片" loading="lazy"></figure>
-<pre><code class="language-xml">&lt;bean id=&quot;configuration&quot; class=&quot;org.apache.ibatis.session.Configuration&quot;&gt;&lt;/bean&gt;
-&lt;bean id=&quot;sqlSessionFactory&quot; class=&quot;org.apache.ibatis.session.defaults.DefaultSqlSessionFactory&quot;&gt;
-    &lt;constructor-arg ref=&quot;configuration&quot;&gt;&lt;/constructor-arg&gt;
-&lt;/bean&gt;
-</code></pre>
-<p>3.Configuration 有超级多依赖，就需要在 <bean> 内添加很多 <property></p>
-<figure data-type="image" tabindex="4"><img src="https://epitomm.github.io/post-images/Configuration%E6%9C%89%E5%BE%88%E5%A4%9A%E4%BE%9D%E8%B5%96.png" alt="图片" loading="lazy"></figure>
-<pre><code class="language-xml">&lt;bean id=&quot;configuration&quot; class=&quot;org.apache.ibatis.session.Configuration&quot;&gt;
-  &lt;property&gt;&lt;/property&gt;
-  &lt;property&gt;&lt;/property&gt;
-  &lt;property&gt;&lt;/property&gt;
-  &lt;property&gt;&lt;/property&gt;
-  // ......
-  &lt;property&gt;&lt;/property&gt;
-  &lt;property&gt;&lt;/property&gt;
-  &lt;property&gt;&lt;/property&gt;
-&lt;/bean&gt;
-&lt;bean id=&quot;sqlSessionFactory&quot; class=&quot;org.apache.ibatis.session.defaults.DefaultSqlSessionFactory&quot;&gt;
-    &lt;constructor-arg ref=&quot;configuration&quot;&gt;&lt;/constructor-arg&gt;
-&lt;/bean&gt;
-</code></pre>
-<p>如此自己配置第三方依赖，操作太过复杂，最好的办法是 MyBatis 自己把 Configuration 这些复杂依赖关系都维护好，我们直接引入即可：</p>
-<pre><code class="language-xml">&lt;bean id=&quot;dao&quot; ref=&quot;sqlSessionFactory&quot;&gt;&lt;/bean&gt;
-</code></pre>
-<p>但是 MyBatis 无法更改我们的配置文件，所以它没有地方去配置，于是它提供了一个 SqlSessionFactoryBean 类，在这个类中把这些依赖关系都维护好了。</p>
-<h2 id="sqlsessionfactorybean">SqlSessionFactoryBean</h2>
-<p>Mybatis在 SqlSessionFactoryBean 内部维护了各种依赖关系：</p>
-<figure data-type="image" tabindex="5"><img src="https://epitomm.github.io/post-images/SqlSessionFactoryBean.png" alt="图片" loading="lazy"></figure>
-<p>最终返回的对象是 SqlSessionFactory</p>
-<figure data-type="image" tabindex="6"><img src="https://epitomm.github.io/post-images/SqlSessionFactoryBean%E8%BF%94%E5%9B%9ESqlSessionFactory.png" alt="图片" loading="lazy"></figure>
-<p>afterPropertiesSet()</p>
-<figure data-type="image" tabindex="7"><img src="https://epitomm.github.io/post-images/afterPropertiesSet.png" alt="图片" loading="lazy"></figure>
-<p>buildSqlSessionFactory()</p>
-<figure data-type="image" tabindex="8"><img src="https://epitomm.github.io/post-images/buildSqlSessionFactory.png" alt="图片" loading="lazy"></figure>
-<p>MyBatis 内部通过 SqlSessionFactoryBean 维护了各种依赖关系，我们只需直接使用 SqlSessionFactoryBean 对象即可获得 SqlSessionFactory，无需再手动维护各种依赖。</p>
-<h2 id="mybatis-通过-sqlsessionfactorybeansetdatasourcedatasource">MyBatis 通过 sqlSessionFactoryBean.setDataSource(dataSource);</h2>
-<pre><code class="language-java">@Bean
-public DataSource dataSource(){
-    DriverManagerDataSource dataSource = new DriverManagerDataSource();
-    dataSource.setDriverClassName(&quot;com.mysql.jdbc.Driver&quot;);
-    dataSource.setUsername(&quot;root&quot;);
-    dataSource.setPassword(&quot;123456&quot;);
-    dataSource.setUrl(&quot;jdbc:mysql://localhost:3306/test&quot;);
-    return dataSource;
-}
-@Bean
-public SqlSessionFactoryBean sqlSessionFactoryBean(DataSource dataSource){
-    SqlSessionFactoryBean sqlSessionFactoryBean =  new SqlSessionFactoryBean();
-    sqlSessionFactoryBean.setDataSource(dataSource);
-    return sqlSessionFactoryBean;
-}
-</code></pre>
-<h2 id="自定义通过-tempdaofactorybeansetmsg1str">自定义通过 TempDaoFactoryBean.setMsg1(str);</h2>
-<p>1.JavaConfig 配置文件</p>
-<pre><code class="language-java">// 表明这是一个 xml 文件
-@Configuration
-// 注解扫描包
-@ComponentScan(&quot;com.ssm&quot;)
-// 扫描 xml 配置文件
-@ImportResource(&quot;classpath:spring.xml&quot;)
-public class SpringConfig {
-}
-</code></pre>
-<p>2.配置文件 xml 内配置 DaoFactoryBean 对象</p>
-<pre><code class="language-xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
-&lt;beans xmlns=&quot;http://www.springframework.org/schema/beans&quot;
-       xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot;
-       xmlns:context=&quot;http://www.springframework.org/schema/context&quot;
-       xsi:schemaLocation=&quot;http://www.springframework.org/schema/beans
-       http://www.springframework.org/schema/beans/spring-beans.xsd
-       http://www.springframework.org/schema/context
-       http://www.springframework.org/schema/context/spring-context.xsd&quot;&gt;
-       
-    &lt;bean id=&quot;daoFactory&quot; class=&quot;com.ssm.dao.DaoFactoryBean&quot;&gt;
-        &lt;property name=&quot;msg&quot; value=&quot;msg1,msg2,msg3&quot;&gt;&lt;/property&gt;
-    &lt;/bean&gt;
-&lt;/beans&gt;
-</code></pre>
-<p>3.DaoFactoryBean 内有一属性 msg</p>
-<pre><code class="language-java">public class DaoFactoryBean implements FactoryBean {
-    private String msg;
-    public void setMsg(String msg) {
-        this.msg = msg;
-    }
-    @Override
-    public Object getObject() throws Exception {
-        TempDaoFactoryBean temp = new TempDaoFactoryBean();
-        String[] msgArray = msg.split(&quot;,&quot;);
-        temp.setMsg1(msgArray[0]);
-        temp.setMsg2(msgArray[1]);
-        temp.setMsg3(msgArray[2]);
-        return temp;
-    }
-    @Override
-    public Class&lt;?&gt; getObjectType() {
-        return TempDaoFactoryBean.class;
-    }
-    @Override
-    public boolean isSingleton() {
-        return true;
-    }
-}
-</code></pre>
-<p>4.TempDaoFactoryBean 内有三个属性：msg1、msg2、msg3</p>
-<pre><code class="language-java">public class TempDaoFactoryBean {
-
-    private String msg1;
-    private String msg2;
-    private String msg3;
-
-    public void test(){
-        System.out.println(&quot;FactoryBean...&quot;);
-    }
-
-    public void setMsg1(String msg1) {
-        this.msg1 = msg1;
-    }
-
-    public void setMsg2(String msg2) {
-        this.msg2 = msg2;
-    }
-
-    public void setMsg3(String msg3) {
-        this.msg3 = msg3;
-    }
-
-    public String getMsg1() {
-        return msg1;
-    }
-
-    public String getMsg2() {
-        return msg2;
-    }
-
-    public String getMsg3() {
-        return msg3;
-    }
-}
-</code></pre>
-<p>5.测试类</p>
-<pre><code class="language-java">public class Test {
-    public static void main(String[] args) {
-        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(SpringConfig.class);
-        TempDaoFactoryBean temp = (TempDaoFactoryBean) context.getBean(&quot;daoFactory&quot;);
-        System.out.println(temp.getMsg1());
-
-    }
-}
-</code></pre>
-<p>6.测试结果：</p>
-<pre><code>msg1
-</code></pre>
-<pre><code class="language-java">@PostConstruct // 当 bean 实例化时，回调这个注解修饰的方法，进行初始化操作，比如 Redis 预热场景。
-public void init(){
-}
-</code></pre>
-<h1 id="spring-如何完成扫描">Spring 如何完成扫描</h1>
-<h2 id="如何初始化-spring-环境">如何初始化 Spring 环境？</h2>
-<ul>
-<li>xml：ClassPathXmlApplicationContext；
-<ul>
-<li>类的扫描</li>
-<li>单独 bean 的注册：在 xml 中写一个<bean>，只要这个 xml 被解析，Spring 就帮助完成了 bean 的声明（定义<bean>）和注册（Spring 会自动创建一个对象放到容器中）</li>
-</ul>
-</li>
-<li>注解 Annotation：必须借助 xml:&lt;context:component-scan base-package=&quot;com.ssm&quot;/&gt;或 JavaConfig:@ComponentScan 完成对类的扫描；</li>
-<li>JavaConfig：AnnotationConfigApplicationContext。
-<ul>
-<li>类的扫描</li>
-<li>类的定义：如果只是写了一个@Component，并没有扫描这个类，称为只是定义一个 bean，并没有类的注册（因为没有被扫描 ）</li>
-</ul>
-</li>
-</ul>
-<p>为什么要初始化 Spring 环境？</p>
-<p>把我们交给 Spring 管理的类实例化</p>
-<pre><code class="language-java">@Servicepublic class IndexService {}
-</code></pre>
-<pre><code class="language-java">// 表明这是一个 xml 文件
-@Configuration
-// 注解扫描包
-@ComponentScan(&quot;com.ssm&quot;)
-public class SpringConfig {
-</code></pre>
-<p>register() 可以注册两种类型的 bean：1.加了 @Configuration 的 bean；2.普通的 bean</p>
-<pre><code class="language-java">public class Test {
-    public static void main(String[] args) {
-        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
-
-        context.register(SpringConfig.class);
-        context.refresh();
-
-        // register() 可以注册两种类型的 bean：加了 @Configuration 的 bean；普通的 bean
-//        context.register(TestService.class);
-        IndexService indexService = (IndexService) context.getBean(&quot;indexService&quot;);
-        System.out.println(indexService);
-    }
-}
-</code></pre>
-<p>运行结果：</p>
-<pre><code>com.ssm.service.IndexService@1a451d4d
-</code></pre>
-<p>AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(SpringConfig.class);</p>
-<p>![图片](https://epitomm.github.io/post-images/通过配置文件new AnnotationConfigApplicationContext.png)<br>
-<img src="https://epitomm.github.io/post-images/register.png" alt="图片" loading="lazy"></p>
-<p>context.register(SpringConfig.class);</p>
-<figure data-type="image" tabindex="9"><img src="https://epitomm.github.io/post-images/register.png" alt="图片" loading="lazy"></figure>
-<p>配置文件不扫描包，使用 register() 单独注册某个类</p>
-<pre><code class="language-java">// 表明这是一个 xml 文件
-@Configuration
-// 注解扫描包
-//@ComponentScan(&quot;com.ssm&quot;)
-public class SpringConfig {
-</code></pre>
-<pre><code class="language-java">public class Test {
-    public static void main(String[] args) {
-        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
-        // register() 注册加了 @Configuration 的 bean
-        context.register(SpringConfig.class);
-        // register() 注册普通的 bean
-        context.register(IndexService.class);
-        context.refresh();
-
-        IndexService indexService = (IndexService) context.getBean(&quot;indexService&quot;);
-        System.out.println(indexService);
-    }
-}
-</code></pre>
-<figure data-type="image" tabindex="10"><img src="https://epitomm.github.io/post-images/%E8%AF%BB%E5%8F%96JavaConfig%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6.png" alt="图片" loading="lazy"></figure>
-<figure data-type="image" tabindex="11"><img src="https://epitomm.github.io/post-images/AnnotationConfigApplicationContext%E6%BA%90%E7%A0%81.png" alt="图片" loading="lazy"></figure>
-<figure data-type="image" tabindex="12"><img src="https://epitomm.github.io/post-images/register%E6%BA%90%E7%A0%81.png" alt="图片" loading="lazy"></figure>
-<figure data-type="image" tabindex="13"><img src="https://epitomm.github.io/post-images/register%E6%BA%90%E7%A0%81_2.png" alt="图片" loading="lazy"></figure>
-<figure data-type="image" tabindex="14"><img src="https://epitomm.github.io/post-images/registerBean%E6%BA%90%E7%A0%81.png" alt="图片" loading="lazy"></figure>
-<p>context.scan(&quot;com.ssm&quot;); 也可以完成扫描：</p>
-<pre><code class="language-java">public class Test {
-    public static void main(String[] args) {
-        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
-
-        context.register(SpringConfig.class);
-        context.scan(&quot;com.ssm&quot;);
-        context.refresh();
-
-        IndexService indexService = (IndexService) context.getBean(&quot;indexService&quot;);
-        System.out.println(indexService);
-
-    }
-}
-</code></pre>
-<p><img src="https://epitomm.github.io/post-images/scan%E6%BA%90%E7%A0%81.png" alt="图片" loading="lazy"><br>
-<img src="https://epitomm.github.io/post-images/scan%E6%BA%90%E7%A0%81_2.png" alt="图片" loading="lazy"><br>
-<img src="https://epitomm.github.io/post-images/doScan.png" alt="图片" loading="lazy"><br>
-<img src="https://epitomm.github.io/post-images/doScan%E6%89%AB%E6%8F%8F%E5%AE%8C%E6%88%90.png" alt="图片" loading="lazy"></p>
-<p>进行类的扫描时，添加一个依赖，就可以按索引扫描，加快扫描速度。<br>
-<img src="https://epitomm.github.io/post-images/findCandidateComponents.png" alt="图片" loading="lazy"></p>
-<figure data-type="image" tabindex="15"><img src="https://epitomm.github.io/post-images/scanCandidateComponents.png" alt="图片" loading="lazy"></figure>
-<pre><code class="language-java">@Retention(RetentionPolicy.RUNTIME)
-public @interface Anno {
-    public String value();
-}
-</code></pre>
-<pre><code class="language-java">@Anno(&quot;userServiceImpl&quot;)
-public class UserServiceImpl implements UserService {
-</code></pre>
-<pre><code class="language-java">public class AnnotationConfigApplicationContext {
-
-    public void scan(String basePackage){
-        // 1.通过文件名得到 .class 文件，然后去掉 .class 就是最终的类名
-        // 得到根目录
-        String rootPath = this.getClass().getResource(&quot;/&quot;).getPath();
-        // 2. 将 com.ssm 变为 com/ssm/
-        String basePackagePath = basePackage.replaceAll(&quot;\\.&quot;,&quot;\\\\&quot;);
-
-        File file = new File(rootPath + &quot;//&quot; + basePackagePath);
-        // 得到所有文件名的数组
-        String[] names = file.list();
-        for (String name : names) {
-            // 去掉文件的 .class 就得到了类名
-            name = name.replaceAll(&quot;.class&quot;,&quot;&quot;);
-            // 得到所有的文件名
-            try {
-                Class&lt;?&gt; clazz = Class.forName(basePackage + &quot;.&quot; + name);
-                // 判断是否属于 @Service、@Component...
-                // 判断是否加了 @Anno 注解
-                if(clazz.isAnnotationPresent(Anno.class)){
-                    Anno annotation = (Anno)clazz.getAnnotation(Anno.class);
-                    System.out.println(annotation.value());
-                    System.out.println(clazz.newInstance());
-                }
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
-            } catch (InstantiationException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-}
-</code></pre>
-<pre><code class="language-java">public class TestAnno {
-    public static void main(String[] args) throws SpringException {
-        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
-        context.scan(&quot;com.ssm.service.impl&quot;);
-    }
-}
-</code></pre>
-<pre><code>userServiceImpl
-com.ssm.service.impl.UserServiceImpl@1d44bcfa
 </code></pre>
 ]]></content>
     </entry>
