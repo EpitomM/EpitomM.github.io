@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://epitomm.github.io</id>
     <title>SSM</title>
-    <updated>2020-05-24T14:03:57.799Z</updated>
+    <updated>2020-05-25T05:18:07.691Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://epitomm.github.io"/>
     <link rel="self" href="https://epitomm.github.io/atom.xml"/>
@@ -250,8 +250,7 @@ SqlSessionTemplate 肯定会被赋值给 sqlSession，但是具体什么时候�
 <pre><code class="language-java">populateBean(beanName, mbd, instanceWrapper);
 </code></pre>
 <p>在创建 UserMapper 时实例化了 sqlSessionFactory</p>
-<h1 id="为什么-new-usermapper-时-setsqlsessionfactory">为什么 new UserMapper 时 setSqlSessionFactory</h1>
-<p>当创建 UserMapper 时，实际上是创建 MapperFactoryBean，当创建 MapperFactoryBean 时，为什么要 setSqlSessionFactory 呢？</p>
+<h1 id="哪些属性需要自动装配">哪些属性需要自动装配？</h1>
 <p>Spring 当中有自动装配，当创建 MapperFactoryBean 时，要看这个类里面的属性是否需要自动装配：</p>
 <pre><code class="language-java">public class MapperFactoryBean&lt;T&gt; extends SqlSessionDaoSupport implements FactoryBean&lt;T&gt; {
   // mapperInterface 不需要自动装配 ，因为自动装配忽略 Class 类型
@@ -266,13 +265,266 @@ SqlSessionTemplate 肯定会被赋值给 sqlSession，但是具体什么时候�
 </code></pre>
 <p>它的父类 SqlSessionDaoSupport 中的属性是否需要自动装配：</p>
 <pre><code class="language-java">public abstract class SqlSessionDaoSupport extends DaoSupport {
-  // sqlSession 需要自动装配
+  // 不需要自动装配，因为没有对应的 set 方法
   private SqlSession sqlSession;
+  // 不需要自动装配，因为没有对应的 set 方法
   private boolean externalSqlSession;
+  // sqlSessionFactory 需要自动装配，因为有 set 方法
+  public void setSqlSessionFactory(SqlSessionFactory sqlSessionFactory) {
+    if (!this.externalSqlSession) {
+      this.sqlSession = new SqlSessionTemplate(sqlSessionFactory);
+    }
+  }
+  // sqlSessionTemplate 需要自动装配，因为有 set 方法
+  public void setSqlSessionTemplate(SqlSessionTemplate sqlSessionTemplate) {
+    this.sqlSession = sqlSessionTemplate;
+    this.externalSqlSession = true;
+  }
+  //......
+}
 </code></pre>
-<p>如何判断一个类中的某个属性是否需要自动装配？</p>
-<h3 id="来看一个例子">来看一个例子：</h3>
-<h4 id="默认-autowire_no">默认 AUTOWIRE_NO</h4>
+<p>sqlSessionFactory 和 sqlSessionTemplate 由于有 set 方法，所以需要自动装配。<br>
+Spring 在创建 IndexService 时，发现它依赖了 UserMapper：</p>
+<pre><code class="language-java">@Service
+public class IndexService implements InitializingBean {
+    @Autowired
+    UserMapper userMapper;
+</code></pre>
+<p>于是就去创建 UserMapper，发现 MapperFactoryBean 中有很多依赖，然后决定是否注入这些依赖。<br>
+断点在：</p>
+<pre><code class="language-java">public void setSqlSessionFactory(SqlSessionFactory sqlSessionFactory) {
+  if (!this.externalSqlSession) {
+    this.sqlSession = new SqlSessionTemplate(sqlSessionFactory);
+  }
+}
+</code></pre>
+<p>调用链如下：<br>
+<img src="https://epitomm.github.io/post-images/setSqlSessionFactory%E8%B0%83%E7%94%A8%E9%93%BE.png" alt="图片" loading="lazy"><br>
+<img src="https://epitomm.github.io/post-images/%E7%AC%AC%E4%B8%80%E6%AC%A1%E8%AF%BB%E5%8F%96indexService.png" alt="图片" loading="lazy"></p>
+<p>populateBean 用来设置类的属性的，发现 IndexService 类中有一个属性 UserMapper，于是就去创建 UserMapper</p>
+<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/indexService%E6%9C%89%E4%B8%80%E4%B8%AA%E5%B1%9E%E6%80%A7UserMapper.png" alt="图片" loading="lazy"></figure>
+<p>当自动装配时，如果属性的类型是 Class 的直接忽略</p>
+<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/%E6%8B%BF%E5%88%B0%E4%B9%8B%E5%89%8D%E6%B7%BB%E5%8A%A0%E7%9A%84addToConfig.png" alt="图片" loading="lazy"></figure>
+<p>类中的属性如何拿到？</p>
+<pre><code class="language-java">protected void populateBean(String beanName, RootBeanDefinition mbd, BeanWrapper bw) {
+   PropertyValues pvs = mbd.getPropertyValues();
+   if (bw == null) {
+      if (!pvs.isEmpty()) {
+         throw new BeanCreationException(
+               mbd.getResourceDescription(), beanName, &quot;Cannot apply property values to null instance&quot;);
+      }
+      else {
+         // Skip property population phase for null instance.
+         return;
+      }
+   }
+   // Give any InstantiationAwareBeanPostProcessors the opportunity to modify the
+   // state of the bean before properties are set. This can be used, for example,
+   // to support styles of field injection.
+   boolean continueWithPropertyPopulation = true;
+   if (!mbd.isSynthetic() &amp;&amp; hasInstantiationAwareBeanPostProcessors()) {
+      for (BeanPostProcessor bp : getBeanPostProcessors()) {
+         if (bp instanceof InstantiationAwareBeanPostProcessor) {
+            InstantiationAwareBeanPostProcessor ibp = (InstantiationAwareBeanPostProcessor) bp;
+            if (!ibp.postProcessAfterInstantiation(bw.getWrappedInstance(), beanName)) {
+               continueWithPropertyPopulation = false;
+               break;
+            }
+         }
+      }
+   }
+   if (!continueWithPropertyPopulation) {
+      return;
+   }
+    
+   // 拿出当前对象自动注入的模型，如果是 BY_NAME 或 BY_TYPE，才会进入这个 if 分支
+   if (mbd.getResolvedAutowireMode() == RootBeanDefinition.AUTOWIRE_BY_NAME ||
+         mbd.getResolvedAutowireMode() == RootBeanDefinition.AUTOWIRE_BY_TYPE) {
+      //  用原来的 pvs 定义一个新的 newPvs
+      MutablePropertyValues newPvs = new MutablePropertyValues(pvs);
+      // Add property values based on autowire by name if applicable.
+      if (mbd.getResolvedAutowireMode() == RootBeanDefinition.AUTOWIRE_BY_NAME) {
+         autowireByName(beanName, mbd, bw, newPvs);
+      }
+      // Add property values based on autowire by type if applicable.
+      if (mbd.getResolvedAutowireMode() == RootBeanDefinition.AUTOWIRE_BY_TYPE) {
+         autowireByType(beanName, mbd, bw, newPvs);
+      }
+      pvs = newPvs;
+   }
+   boolean hasInstAwareBpps = hasInstantiationAwareBeanPostProcessors();
+   boolean needsDepCheck = (mbd.getDependencyCheck() != RootBeanDefinition.DEPENDENCY_CHECK_NONE);
+   if (hasInstAwareBpps || needsDepCheck) {
+      PropertyDescriptor[] filteredPds = filterPropertyDescriptorsForDependencyCheck(bw, mbd.allowCaching);
+      if (hasInstAwareBpps) {
+         for (BeanPostProcessor bp : getBeanPostProcessors()) {
+            if (bp instanceof InstantiationAwareBeanPostProcessor) {
+               InstantiationAwareBeanPostProcessor ibp = (InstantiationAwareBeanPostProcessor) bp;
+               pvs = ibp.postProcessPropertyValues(pvs, filteredPds, bw.getWrappedInstance(), beanName);
+               if (pvs == null) {
+                  return;
+               }
+            }
+         }
+      }
+      if (needsDepCheck) {
+         checkDependencies(beanName, mbd, filteredPds, pvs);
+      }
+   }
+   applyPropertyValues(beanName, mbd, bw, pvs);
+}
+</code></pre>
+<figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/newPvs.png" alt="图片" loading="lazy"></figure>
+<p>所以分析是上面的 autowireByType 注入了 sqlSessionFactory 属性</p>
+<pre><code class="language-java">protected void autowireByType(
+      String beanName, AbstractBeanDefinition mbd, BeanWrapper bw, MutablePropertyValues pvs) {
+   TypeConverter converter = getCustomTypeConverter();
+   if (converter == null) {
+      converter = bw;
+   }
+   Set&lt;String&gt; autowiredBeanNames = new LinkedHashSet&lt;String&gt;(4);
+   String[] propertyNames = unsatisfiedNonSimpleProperties(mbd, bw);
+   for (String propertyName : propertyNames) {
+      try {
+         PropertyDescriptor pd = bw.getPropertyDescriptor(propertyName);
+         // Don't try autowiring by type for type Object: never makes sense,
+         // even if it technically is a unsatisfied, non-simple property.
+         if (Object.class != pd.getPropertyType()) {
+            MethodParameter methodParam = BeanUtils.getWriteMethodParameter(pd);
+            // Do not allow eager init for type matching in case of a prioritized post-processor.
+            boolean eager = !PriorityOrdered.class.isAssignableFrom(bw.getWrappedClass());
+            DependencyDescriptor desc = new AutowireByTypeDependencyDescriptor(methodParam, eager);
+            Object autowiredArgument = resolveDependency(desc, beanName, autowiredBeanNames, converter);
+            if (autowiredArgument != null) {
+               pvs.add(propertyName, autowiredArgument);
+            }
+            for (String autowiredBeanName : autowiredBeanNames) {
+               registerDependentBean(autowiredBeanName, beanName);
+               if (logger.isDebugEnabled()) {
+                  logger.debug(&quot;Autowiring by type from bean name '&quot; + beanName + &quot;' via property '&quot; +
+                        propertyName + &quot;' to bean named '&quot; + autowiredBeanName + &quot;'&quot;);
+               }
+            }
+            autowiredBeanNames.clear();
+         }
+      }
+      catch (BeansException ex) {
+         throw new UnsatisfiedDependencyException(mbd.getResourceDescription(), beanName, propertyName, ex);
+      }
+   }
+}
+</code></pre>
+<figure data-type="image" tabindex="4"><img src="https://epitomm.github.io/post-images/propertyNames.png" alt="图片" loading="lazy"></figure>
+<p>字符串中有两个值，addToConfig 已经被包含了，mapperInterface 是 Class 不注入，所以共有 sqlSessionFactory 和 sqlSessionTemplate 两个属性。</p>
+<p>接下来看 unsatisfiedNonSimpleProperties 方法是如何得到这两个值的？</p>
+<pre><code class="language-java">protected String[] unsatisfiedNonSimpleProperties(AbstractBeanDefinition mbd, BeanWrapper bw) {
+   Set&lt;String&gt; result = new TreeSet&lt;String&gt;();
+   PropertyValues pvs = mbd.getPropertyValues();
+   // PropertyDescriptor 属性描述器：拿出所有的属性
+   PropertyDescriptor[] pds = bw.getPropertyDescriptors();
+   for (PropertyDescriptor pd : pds) {
+      if (pd.getWriteMethod() != null &amp;&amp; !isExcludedFromDependencyCheck(pd) &amp;&amp; !pvs.contains(pd.getName()) &amp;&amp;
+            !BeanUtils.isSimpleProperty(pd.getPropertyType())) {
+         result.add(pd.getName());
+      }
+   }
+   return StringUtils.toStringArray(result);
+}
+</code></pre>
+<figure data-type="image" tabindex="5"><img src="https://epitomm.github.io/post-images/pds%E6%8B%BF%E5%87%BA%E6%89%80%E6%9C%89%E7%9A%84%E5%B1%9E%E6%80%A7.png" alt="图片" loading="lazy"></figure>
+<h2 id="spring-如何判断一个类是一个属性">Spring 如何判断一个类是一个属性</h2>
+<p>readMethod：有 get 方法就认为这是一个属性；writeMethod：有 set 方法就认为这是一个属性</p>
+<figure data-type="image" tabindex="6"><img src="https://epitomm.github.io/post-images/pds_addToConfig.png" alt="图片" loading="lazy"></figure>
+<ul>
+<li>addToConfig：因为 MapperFactoryBean 类中有这个属性</li>
+</ul>
+<figure data-type="image" tabindex="7"><img src="https://epitomm.github.io/post-images/pds_class.png" alt="图片" loading="lazy"></figure>
+<ul>
+<li>class
+<ul>
+<li>为什么会有一个 class 属性？任意一个对象都可以 xxx.getClass()，所以认为 class 是一个属性</li>
+</ul>
+</li>
+</ul>
+<figure data-type="image" tabindex="8"><img src="https://epitomm.github.io/post-images/pds_mapperInterface.png" alt="图片" loading="lazy"></figure>
+<ul>
+<li>mapperInterface：因为 MapperFactoryBean 类中有这个属性</li>
+</ul>
+<figure data-type="image" tabindex="9"><img src="https://epitomm.github.io/post-images/pds_object.png" alt="图片" loading="lazy"></figure>
+<ul>
+<li>object：MapperFactoryBean  是一个 FactoryBean，Bean 当中都有一个 getObject() 方法，因为有 getObject() 方法，所以认为 object 是一个属性</li>
+</ul>
+<figure data-type="image" tabindex="10"><img src="https://epitomm.github.io/post-images/pds_objectType.png" alt="图片" loading="lazy"></figure>
+<ul>
+<li>objectType：因为有 getObjectType() 方法，所以任务 objectType 是一个属性</li>
+</ul>
+<figure data-type="image" tabindex="11"><img src="https://epitomm.github.io/post-images/pds_singleton.png" alt="图片" loading="lazy"></figure>
+<ul>
+<li>single：boolean flag; 默认将 getFlag() 改成 isFlag()，因为有 isFlag() 属性，所以认为 singleton 是一个属性。</li>
+</ul>
+<figure data-type="image" tabindex="12"><img src="https://epitomm.github.io/post-images/pds_sqlSession.png" alt="图片" loading="lazy"></figure>
+<ul>
+<li>sqlSession：因为 SqlSessionDaoSupport 中有 getSqlSession(); 所以认为 sqlSession 是一个属性。</li>
+</ul>
+<figure data-type="image" tabindex="13"><img src="https://epitomm.github.io/post-images/pds_sqlSessionFactory.png" alt="图片" loading="lazy"></figure>
+<ul>
+<li>sqlSessionFactory</li>
+</ul>
+<figure data-type="image" tabindex="14"><img src="https://epitomm.github.io/post-images/pds_sqlSessionTmplate.png" alt="图片" loading="lazy"></figure>
+<ul>
+<li>sqlSessionTemplate</li>
+</ul>
+<h2 id="判断哪些类需要自动装配">判断哪些类需要自动装配</h2>
+<pre><code class="language-java">protected String[] unsatisfiedNonSimpleProperties(AbstractBeanDefinition mbd, BeanWrapper bw) {
+   Set&lt;String&gt; result = new TreeSet&lt;String&gt;();
+   PropertyValues pvs = mbd.getPropertyValues();
+   PropertyDescriptor[] pds = bw.getPropertyDescriptors();
+   for (PropertyDescriptor pd : pds) {
+      if (pd.getWriteMethod() != null &amp;&amp; !isExcludedFromDependencyCheck(pd) &amp;&amp; !pvs.contains(pd.getName()) &amp;&amp;
+            !BeanUtils.isSimpleProperty(pd.getPropertyType())) {
+         result.add(pd.getName());
+      }
+   }
+   return StringUtils.toStringArray(result);
+}
+</code></pre>
+<p>判断哪些类需要自动装配的核心代码第 6-7 行：</p>
+<pre><code class="language-java">if (pd.getWriteMethod() != null &amp;&amp; !isExcludedFromDependencyCheck(pd) &amp;&amp; !pvs.contains(pd.getName()) &amp;&amp;
+            !BeanUtils.isSimpleProperty(pd.getPropertyType()))
+</code></pre>
+<p>先看第一个条件：pd.getWriteMethod() != null：将 name=class、name=object、name=objectType、name=singleton、name=sqlSession 这5 个属性忽略掉，即它们不需要自动装配，因为它们的 writeMethod=null。<br>
+这也就解释了 AUTOWIRED_BY_TYPE 只关心 set 方法，因为如果没有 set 方法，writeMethod=null，不满足 pd.getWriteMethod() != null 条件，就会被过滤掉，不会自动装配。</p>
+<p>经过第一个条件判断后还剩下 4 个属性：addToConfig、mapperInterface、SqlSessionFactory、SqlSessionTemplate</p>
+<p>接下来看第二个条件：!isExcludedFromDependencyCheck(pd)：自定义设置过滤接口，由于没有自行设置过滤，所以可暂时忽略这个条件判断。</p>
+<p>下面看第三个条件：!pvs.contains(pd.getName())：pvs 不包含 pd.getName()，如果一个类在 pd 中，就会被过滤掉，不自动装配，比如 addToConfig 就会被过滤掉。</p>
+<figure data-type="image" tabindex="15"><img src="https://epitomm.github.io/post-images/pvs%E5%8C%85%E5%90%ABpd.png" alt="图片" loading="lazy"></figure>
+<p>pvs 是 Spring 自动设置给它的，</p>
+<p>@Mapper --- &gt; @Import(MapperScannerRegistrar.class) ---&gt; MapperScannerRegistrar#registerBeanDefinitions ---&gt; ClassPathMapperScanner#doScan ---&gt; org.mybatis.spring.mapper.ClassPathMapperScanner#processBeanDefinitions</p>
+<pre><code class="language-java">definition.getPropertyValues().add(&quot;addToConfig&quot;, this.addToConfig);
+</code></pre>
+<p>自己设置一个值，不需要自动装配，放到 pd 中。<br>
+经过上述三个判断条件后还剩下 3 个属性：mapperInterface、SqlSessionFactory、SqlSessionTemplate</p>
+<p>接下来来第四个条件：!BeanUtils.isSimpleProperty(pd.getPropertyType()：不是简单类型，来看一下什么是简单类型</p>
+<pre><code class="language-java">public static boolean isSimpleProperty(Class&lt;?&gt; clazz) {
+   Assert.notNull(clazz, &quot;Class must not be null&quot;);
+   return isSimpleValueType(clazz) || (clazz.isArray() &amp;&amp; isSimpleValueType(clazz.getComponentType()));
+}
+</code></pre>
+<pre><code class="language-java">public static boolean isSimpleValueType(Class&lt;?&gt; clazz) {
+   return (ClassUtils.isPrimitiveOrWrapper(clazz) ||
+         Enum.class.isAssignableFrom(clazz) ||
+         CharSequence.class.isAssignableFrom(clazz) ||
+         Number.class.isAssignableFrom(clazz) ||
+         Date.class.isAssignableFrom(clazz) ||
+         URI.class == clazz || URL.class == clazz ||
+         Locale.class == clazz || Class.class == clazz);
+}
+</code></pre>
+<p>由上述代码可知，简单类型为：Enum、CharSequence、Number、Date、URI、URI、Locale、Class<br>
+所以第四个判断条件会过滤掉 mapperInterface，name = mapperInterface 的属性 getPropertyType() 方法返回 java.lang.Class</p>
+<p>最终，经过四个判断后，还剩下 SqlSessionFactory、SqlSessionTemplate 这两个属性。</p>
+<h1 id="如何判断一个类中的某个属性是否需要自动装配">如何判断一个类中的某个属性是否需要自动装配？</h1>
+<h3 id="默认-autowire_no">默认 AUTOWIRE_NO</h3>
 <p>有一个 OrderClazz 类交给 Spring 管理</p>
 <pre><code class="language-java">@Component
 public class OrderClazz {
@@ -334,7 +586,7 @@ public class UserClazz{
   }
 }
 </code></pre>
-<h4 id="设置自动装配类型为-autowire_by_type">设置自动装配类型为 AUTOWIRE_BY_TYPE</h4>
+<h3 id="设置自动装配类型为-autowire_by_type">设置自动装配类型为 AUTOWIRE_BY_TYPE</h3>
 <pre><code class="language-java">public class SSMScanRegistrar implements ImportBeanDefinitionRegistrar {
     @Override
     public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
@@ -451,7 +703,7 @@ SqlSessionDaoSupport # 所有set方法：</p>
     this.sqlSession = sqlSessionTemplate;
     this.externalSqlSession = true;
   }
-  //
+  //......
 </code></pre>
 <p>因为有 setSqlSessionFactory 和  setSqlSessionTemplate 方法，所以会自动装配 sqlSessionTemplate 和 sqlSessionFactory，所以 sqlSessionTemplate 是在实例化 MapperFactoryBean 时被赋值的。<br>
 为什么不直接使用 @Autowired SqlSession sqlSesssion; 自动注入？解耦。</p>
@@ -628,7 +880,7 @@ SqlSessionDaoSupport # 所有set方法：</p>
   return this.selectList(statement, parameter, RowBounds.DEFAULT);
 }
 </code></pre>
-<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/statement.png" alt="图片" loading="lazy"></figure>
+<figure data-type="image" tabindex="16"><img src="https://epitomm.github.io/post-images/statement.png" alt="图片" loading="lazy"></figure>
 <pre><code class="language-java">public &lt;E&gt; List&lt;E&gt; selectList(String statement, Object parameter, RowBounds rowBounds) {
   try {
     MappedStatement ms = configuration.getMappedStatement(statement);
@@ -640,7 +892,7 @@ SqlSessionDaoSupport # 所有set方法：</p>
   }
 }
 </code></pre>
-<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/ms.png" alt="图片" loading="lazy"></figure>
+<figure data-type="image" tabindex="17"><img src="https://epitomm.github.io/post-images/ms.png" alt="图片" loading="lazy"></figure>
 <pre><code class="language-java">@Override
 public &lt;E&gt; List&lt;E&gt; query(MappedStatement ms, Object parameterObject, RowBounds rowBounds, ResultHandler resultHandler) throws SQLException {
   BoundSql boundSql = ms.getBoundSql(parameterObject);
@@ -648,7 +900,7 @@ public &lt;E&gt; List&lt;E&gt; query(MappedStatement ms, Object parameterObject,
   return query(ms, parameterObject, rowBounds, resultHandler, key, boundSql);
 }
 </code></pre>
-<figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/BoundSql.png" alt="图片" loading="lazy"></figure>
+<figure data-type="image" tabindex="18"><img src="https://epitomm.github.io/post-images/BoundSql.png" alt="图片" loading="lazy"></figure>
 <p>MyBatis 中的所有信息，包括 SQL 语句、返回类型信息都存在了 mappedStatements 中。</p>
 <p>什么时候把 mapper 信息放到 mappedStatements 中的？</p>
 <pre><code class="language-java">public void addMappedStatement(MappedStatement ms) {
