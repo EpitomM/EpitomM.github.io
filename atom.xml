@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://epitomm.github.io</id>
     <title>SSM</title>
-    <updated>2020-05-25T05:18:07.691Z</updated>
+    <updated>2020-05-25T06:09:27.333Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://epitomm.github.io"/>
     <link rel="self" href="https://epitomm.github.io/atom.xml"/>
@@ -434,46 +434,43 @@ public class IndexService implements InitializingBean {
 <figure data-type="image" tabindex="5"><img src="https://epitomm.github.io/post-images/pds%E6%8B%BF%E5%87%BA%E6%89%80%E6%9C%89%E7%9A%84%E5%B1%9E%E6%80%A7.png" alt="图片" loading="lazy"></figure>
 <h2 id="spring-如何判断一个类是一个属性">Spring 如何判断一个类是一个属性</h2>
 <p>readMethod：有 get 方法就认为这是一个属性；writeMethod：有 set 方法就认为这是一个属性</p>
-<figure data-type="image" tabindex="6"><img src="https://epitomm.github.io/post-images/pds_addToConfig.png" alt="图片" loading="lazy"></figure>
+<h3 id="addtoconfig">addToConfig</h3>
 <ul>
-<li>addToConfig：因为 MapperFactoryBean 类中有这个属性</li>
+<li>因为 MapperFactoryBean 类中有这个属性<br>
+<img src="https://epitomm.github.io/post-images/pds_addToConfig.png" alt="图片" loading="lazy"></li>
 </ul>
-<figure data-type="image" tabindex="7"><img src="https://epitomm.github.io/post-images/pds_class.png" alt="图片" loading="lazy"></figure>
+<h3 id="class">class</h3>
+<p>为什么会有一个 class 属性？任意一个对象都可以 xxx.getClass()，所以认为 class 是一个属性<br>
+<img src="https://epitomm.github.io/post-images/pds_class.png" alt="图片" loading="lazy"></p>
+<h3 id="mapperinterface">mapperInterface</h3>
 <ul>
-<li>class
+<li>因为 MapperFactoryBean 类中有这个属性<br>
+<img src="https://epitomm.github.io/post-images/pds_mapperInterface.png" alt="图片" loading="lazy"></li>
+</ul>
+<h3 id="object">object</h3>
 <ul>
-<li>为什么会有一个 class 属性？任意一个对象都可以 xxx.getClass()，所以认为 class 是一个属性</li>
+<li>MapperFactoryBean  是一个 FactoryBean，Bean 当中都有一个 getObject() 方法，因为有 getObject() 方法，所以认为 object 是一个属性<br>
+<img src="https://epitomm.github.io/post-images/pds_object.png" alt="图片" loading="lazy"></li>
 </ul>
-</li>
-</ul>
-<figure data-type="image" tabindex="8"><img src="https://epitomm.github.io/post-images/pds_mapperInterface.png" alt="图片" loading="lazy"></figure>
+<h3 id="objecttype">objectType</h3>
 <ul>
-<li>mapperInterface：因为 MapperFactoryBean 类中有这个属性</li>
+<li>因为有 getObjectType() 方法，所以任务 objectType 是一个属性<br>
+<img src="https://epitomm.github.io/post-images/pds_objectType.png" alt="图片" loading="lazy"></li>
 </ul>
-<figure data-type="image" tabindex="9"><img src="https://epitomm.github.io/post-images/pds_object.png" alt="图片" loading="lazy"></figure>
+<h3 id="single">single</h3>
 <ul>
-<li>object：MapperFactoryBean  是一个 FactoryBean，Bean 当中都有一个 getObject() 方法，因为有 getObject() 方法，所以认为 object 是一个属性</li>
+<li>boolean flag; 默认将 getFlag() 改成 isFlag()，因为有 isFlag() 属性，所以认为 singleton 是一个属性。<br>
+<img src="https://epitomm.github.io/post-images/pds_singleton.png" alt="图片" loading="lazy"></li>
 </ul>
-<figure data-type="image" tabindex="10"><img src="https://epitomm.github.io/post-images/pds_objectType.png" alt="图片" loading="lazy"></figure>
+<h3 id="sqlsession">sqlSession</h3>
 <ul>
-<li>objectType：因为有 getObjectType() 方法，所以任务 objectType 是一个属性</li>
+<li>因为 SqlSessionDaoSupport 中有 getSqlSession(); 所以认为 sqlSession 是一个属性。<br>
+<img src="https://epitomm.github.io/post-images/pds_sqlSession.png" alt="图片" loading="lazy"></li>
 </ul>
-<figure data-type="image" tabindex="11"><img src="https://epitomm.github.io/post-images/pds_singleton.png" alt="图片" loading="lazy"></figure>
-<ul>
-<li>single：boolean flag; 默认将 getFlag() 改成 isFlag()，因为有 isFlag() 属性，所以认为 singleton 是一个属性。</li>
-</ul>
-<figure data-type="image" tabindex="12"><img src="https://epitomm.github.io/post-images/pds_sqlSession.png" alt="图片" loading="lazy"></figure>
-<ul>
-<li>sqlSession：因为 SqlSessionDaoSupport 中有 getSqlSession(); 所以认为 sqlSession 是一个属性。</li>
-</ul>
-<figure data-type="image" tabindex="13"><img src="https://epitomm.github.io/post-images/pds_sqlSessionFactory.png" alt="图片" loading="lazy"></figure>
-<ul>
-<li>sqlSessionFactory</li>
-</ul>
-<figure data-type="image" tabindex="14"><img src="https://epitomm.github.io/post-images/pds_sqlSessionTmplate.png" alt="图片" loading="lazy"></figure>
-<ul>
-<li>sqlSessionTemplate</li>
-</ul>
+<h3 id="sqlsessionfactory">sqlSessionFactory</h3>
+<figure data-type="image" tabindex="6"><img src="https://epitomm.github.io/post-images/pds_sqlSessionFactory.png" alt="图片" loading="lazy"></figure>
+<h3 id="sqlsessiontemplate-2">sqlSessionTemplate</h3>
+<figure data-type="image" tabindex="7"><img src="https://epitomm.github.io/post-images/pds_sqlSessionTmplate.png" alt="图片" loading="lazy"></figure>
 <h2 id="判断哪些类需要自动装配">判断哪些类需要自动装配</h2>
 <pre><code class="language-java">protected String[] unsatisfiedNonSimpleProperties(AbstractBeanDefinition mbd, BeanWrapper bw) {
    Set&lt;String&gt; result = new TreeSet&lt;String&gt;();
@@ -497,7 +494,7 @@ public class IndexService implements InitializingBean {
 <p>经过第一个条件判断后还剩下 4 个属性：addToConfig、mapperInterface、SqlSessionFactory、SqlSessionTemplate</p>
 <p>接下来看第二个条件：!isExcludedFromDependencyCheck(pd)：自定义设置过滤接口，由于没有自行设置过滤，所以可暂时忽略这个条件判断。</p>
 <p>下面看第三个条件：!pvs.contains(pd.getName())：pvs 不包含 pd.getName()，如果一个类在 pd 中，就会被过滤掉，不自动装配，比如 addToConfig 就会被过滤掉。</p>
-<figure data-type="image" tabindex="15"><img src="https://epitomm.github.io/post-images/pvs%E5%8C%85%E5%90%ABpd.png" alt="图片" loading="lazy"></figure>
+<figure data-type="image" tabindex="8"><img src="https://epitomm.github.io/post-images/pvs%E5%8C%85%E5%90%ABpd.png" alt="图片" loading="lazy"></figure>
 <p>pvs 是 Spring 自动设置给它的，</p>
 <p>@Mapper --- &gt; @Import(MapperScannerRegistrar.class) ---&gt; MapperScannerRegistrar#registerBeanDefinitions ---&gt; ClassPathMapperScanner#doScan ---&gt; org.mybatis.spring.mapper.ClassPathMapperScanner#processBeanDefinitions</p>
 <pre><code class="language-java">definition.getPropertyValues().add(&quot;addToConfig&quot;, this.addToConfig);
@@ -880,7 +877,7 @@ SqlSessionDaoSupport # 所有set方法：</p>
   return this.selectList(statement, parameter, RowBounds.DEFAULT);
 }
 </code></pre>
-<figure data-type="image" tabindex="16"><img src="https://epitomm.github.io/post-images/statement.png" alt="图片" loading="lazy"></figure>
+<figure data-type="image" tabindex="9"><img src="https://epitomm.github.io/post-images/statement.png" alt="图片" loading="lazy"></figure>
 <pre><code class="language-java">public &lt;E&gt; List&lt;E&gt; selectList(String statement, Object parameter, RowBounds rowBounds) {
   try {
     MappedStatement ms = configuration.getMappedStatement(statement);
@@ -892,7 +889,7 @@ SqlSessionDaoSupport # 所有set方法：</p>
   }
 }
 </code></pre>
-<figure data-type="image" tabindex="17"><img src="https://epitomm.github.io/post-images/ms.png" alt="图片" loading="lazy"></figure>
+<figure data-type="image" tabindex="10"><img src="https://epitomm.github.io/post-images/ms.png" alt="图片" loading="lazy"></figure>
 <pre><code class="language-java">@Override
 public &lt;E&gt; List&lt;E&gt; query(MappedStatement ms, Object parameterObject, RowBounds rowBounds, ResultHandler resultHandler) throws SQLException {
   BoundSql boundSql = ms.getBoundSql(parameterObject);
@@ -900,7 +897,7 @@ public &lt;E&gt; List&lt;E&gt; query(MappedStatement ms, Object parameterObject,
   return query(ms, parameterObject, rowBounds, resultHandler, key, boundSql);
 }
 </code></pre>
-<figure data-type="image" tabindex="18"><img src="https://epitomm.github.io/post-images/BoundSql.png" alt="图片" loading="lazy"></figure>
+<figure data-type="image" tabindex="11"><img src="https://epitomm.github.io/post-images/BoundSql.png" alt="图片" loading="lazy"></figure>
 <p>MyBatis 中的所有信息，包括 SQL 语句、返回类型信息都存在了 mappedStatements 中。</p>
 <p>什么时候把 mapper 信息放到 mappedStatements 中的？</p>
 <pre><code class="language-java">public void addMappedStatement(MappedStatement ms) {
