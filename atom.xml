@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://epitomm.github.io</id>
     <title>SSM</title>
-    <updated>2020-05-27T11:56:55.422Z</updated>
+    <updated>2020-05-27T12:19:17.393Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://epitomm.github.io"/>
     <link rel="self" href="https://epitomm.github.io/atom.xml"/>
@@ -70,7 +70,7 @@ public class OrderDaoImpl implements OrderDao {
 }
 </code></pre>
 <p>测试结果：</p>
-<pre><code class="language-plain">proxy before
+<pre><code>proxy before
 query...
 </code></pre>
 <h2 id="一个需求根据参数在-service-内调用不同-dao">一个需求：根据参数在 service 内调用不同 dao</h2>
@@ -1041,7 +1041,7 @@ AbstractBeanFactory#doGetBean</p>
 }
 </code></pre>
 <p>先看第 2 行代码的判断：</p>
-<pre><code class="language-plain">if (config.isOptimize() || config.isProxyTargetClass() || hasNoUserSuppliedProxyInterfaces(config)) {
+<pre><code>if (config.isOptimize() || config.isProxyTargetClass() || hasNoUserSuppliedProxyInterfaces(config)) {
 </code></pre>
 <p>第一个条件：config.isOptimize()：可以在 xml 中配置 optimize，如果不配置默认 optimize=false;<br>
 <img src="https://epitomm.github.io/post-images/xPRuOoTpWagSzEsK.png" alt="图片" loading="lazy"></p>
@@ -1056,7 +1056,7 @@ AbstractBeanFactory#doGetBean</p>
 }
 </code></pre>
 <p>接下来进入 getProxy 方法：</p>
-<pre><code class="language-plain">public Object getProxy(@Nullable ClassLoader classLoader) {
+<pre><code class="language-java">public Object getProxy(@Nullable ClassLoader classLoader) {
    if (logger.isDebugEnabled()) {
       logger.debug(&quot;Creating JDK dynamic proxy: target source is &quot; + this.advised.getTargetSource());
    }

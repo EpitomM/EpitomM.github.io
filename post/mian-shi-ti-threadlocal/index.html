@@ -9,7 +9,7 @@
 <meta name="description" content="热心善良的老学姐">
 <meta name="theme-color" content="#000">
 <title>面试题 —— 由浅入深全面解析 ThreadLocal | SSM</title>
-<link rel="shortcut icon" href="/favicon.ico?v=1590579203840">
+<link rel="shortcut icon" href="/favicon.ico?v=1590581949482">
 <link rel="stylesheet" href="/media/css/gemini.css">
 <link rel="stylesheet" href="/media/fonts/font-awesome.css">
 <link
@@ -2126,7 +2126,7 @@ public class OrderDaoImpl implements OrderDao {
 }
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;测试结果：&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&#34;language-plain&#34;&gt;proxy before
+&lt;pre&gt;&lt;code&gt;proxy before
 query...
 &lt;/code&gt;&lt;/pre&gt;
 &lt;h2 id=&#34;一个需求根据参数在-service-内调用不同-dao&#34;&gt;一个需求：根据参数在 service 内调用不同 dao&lt;/h2&gt;
@@ -3097,7 +3097,7 @@ AbstractBeanFactory#doGetBean&lt;/p&gt;
 }
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;先看第 2 行代码的判断：&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&#34;language-plain&#34;&gt;if (config.isOptimize() || config.isProxyTargetClass() || hasNoUserSuppliedProxyInterfaces(config)) {
+&lt;pre&gt;&lt;code&gt;if (config.isOptimize() || config.isProxyTargetClass() || hasNoUserSuppliedProxyInterfaces(config)) {
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;第一个条件：config.isOptimize()：可以在 xml 中配置 optimize，如果不配置默认 optimize=false;&lt;br&gt;
 &lt;img src=&#34;https://epitomm.github.io/post-images/xPRuOoTpWagSzEsK.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/p&gt;
@@ -3112,7 +3112,7 @@ AbstractBeanFactory#doGetBean&lt;/p&gt;
 }
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;接下来进入 getProxy 方法：&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&#34;language-plain&#34;&gt;public Object getProxy(@Nullable ClassLoader classLoader) {
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public Object getProxy(@Nullable ClassLoader classLoader) {
    if (logger.isDebugEnabled()) {
       logger.debug(&amp;quot;Creating JDK dynamic proxy: target source is &amp;quot; + this.advised.getTargetSource());
    }
