@@ -9,7 +9,7 @@
 <meta name="description" content="热心善良的老学姐">
 <meta name="theme-color" content="#000">
 <title>Spring系列（十三）——Spring AOP源码分析 | SSM</title>
-<link rel="shortcut icon" href="/favicon.ico?v=1590717339751">
+<link rel="shortcut icon" href="/favicon.ico?v=1590765595173">
 <link rel="stylesheet" href="/media/css/gemini.css">
 <link rel="stylesheet" href="/media/fonts/font-awesome.css">
 <link
@@ -260,7 +260,7 @@
 </ul>
 </li>
 <li><a href="#finishbeanfactoryinitialization">finishBeanFactoryInitialization</a></li>
-<li><a href="#aop-%E5%A6%82%E4%BD%95%E5%A4%84%E7%90%86-aop">AOP 如何处理 AOP？</a>
+<li><a href="#spring-%E5%A6%82%E4%BD%95%E5%A4%84%E7%90%86-aop">Spring 如何处理 AOP？</a>
 <ul>
 <li><a href="#%E5%90%8E%E7%BD%AE%E5%A4%84%E7%90%86%E5%99%A8%E5%9C%A8%E5%93%AA%E9%87%8C%E5%A4%84%E7%90%86">后置处理器在哪里处理</a></li>
 </ul>
@@ -1620,7 +1620,7 @@ AbstractBeanFactory#doGetBean</p>
 </code></pre>
 <p>总结：<br>
 bean new出来 --&gt; BeanPostProcessor --&gt; doCreateBean() --&gt; BeanWrapper --&gt; beanWrapper.getBean() --&gt; for(8个后置处理器)</p>
-<h1 id="aop-如何处理-aop">AOP 如何处理 AOP？</h1>
+<h1 id="spring-如何处理-aop">Spring 如何处理 AOP？</h1>
 <ul>
 <li>在后置处理器 AnnotationAwareAspectJAutoProxyCreator 内处理</li>
 </ul>
@@ -2971,7 +2971,7 @@ AbstractBeanFactory#doGetBean&lt;/p&gt;
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;总结：&lt;br&gt;
 bean new出来 --&amp;gt; BeanPostProcessor --&amp;gt; doCreateBean() --&amp;gt; BeanWrapper --&amp;gt; beanWrapper.getBean() --&amp;gt; for(8个后置处理器)&lt;/p&gt;
-&lt;h1 id=&#34;aop-如何处理-aop&#34;&gt;AOP 如何处理 AOP？&lt;/h1&gt;
+&lt;h1 id=&#34;spring-如何处理-aop&#34;&gt;Spring 如何处理 AOP？&lt;/h1&gt;
 &lt;ul&gt;
 &lt;li&gt;在后置处理器 AnnotationAwareAspectJAutoProxyCreator 内处理&lt;/li&gt;
 &lt;/ul&gt;
