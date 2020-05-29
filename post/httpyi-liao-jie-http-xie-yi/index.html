@@ -9,7 +9,7 @@
 <meta name="description" content="热心善良的老学姐">
 <meta name="theme-color" content="#000">
 <title>HTTP系列（一）了解 HTTP 协议 | SSM</title>
-<link rel="shortcut icon" href="/favicon.ico?v=1590716315030">
+<link rel="shortcut icon" href="/favicon.ico?v=1590717339751">
 <link rel="stylesheet" href="/media/css/gemini.css">
 <link rel="stylesheet" href="/media/fonts/font-awesome.css">
 <link
@@ -26738,13 +26738,13 @@ root      9045  8545  0 18:46 pts/10   00:00:00 grep --color=auto redis-
 // --cluster-replicas 1：一个 master 连接一个 slave；2：一个 master 连接两个 slave
 &lt;/code&gt;&lt;/pre&gt;
 &lt;figure data-type=&#34;image&#34; tabindex=&#34;9&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA%E8%BF%90%E8%A1%8C%E7%BB%93%E6%9E%9C.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
-&lt;p&gt;输入 yes 重写配置文件后：&lt;/p&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;10&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA%E8%BF%90%E8%A1%8C%E7%BB%93%E6%9E%9C2.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p&gt;输入 yes 重写配置文件后：&lt;br&gt;
+&lt;img src=&#34;https://epitomm.github.io/post-images/%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA%E8%BF%90%E8%A1%8C%E7%BB%93%E6%9E%9C2.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/p&gt;
 &lt;h2 id=&#34;解析-master-和-slave-日志信息&#34;&gt;解析 master 和 slave 日志信息&lt;/h2&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;11&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E9%9B%86%E7%BE%A4master%E6%97%A5%E5%BF%97.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
-&lt;p&gt;master：6379 日志&lt;/p&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;12&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E9%9B%86%E7%BE%A4slave%E6%97%A5%E5%BF%97.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
-&lt;p&gt;slave：6382 日志&lt;/p&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;10&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E9%9B%86%E7%BE%A4master%E6%97%A5%E5%BF%97.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p style = &#34;text-align:center;font-family:楷体&#34;&gt;master：6379 日志&lt;/p&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;11&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E9%9B%86%E7%BE%A4slave%E6%97%A5%E5%BF%97.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p style = &#34;text-align:center;font-family:楷体&#34;&gt;slave：6382 日志&lt;/p&gt;
 &lt;h2 id=&#34;设置与获取数据&#34;&gt;设置与获取数据&lt;/h2&gt;
 &lt;pre&gt;&lt;code&gt;[root@iZ2ze4u2bufi0915gyi843Z ~]# redis-cli
 127.0.0.1:6379&amp;gt; set name itheima   // 把 name 对应的 key 进行转化后，对应的槽在 6380，不能在 6379 set
@@ -26766,26 +26766,26 @@ OK
 &lt;/code&gt;&lt;/pre&gt;
 &lt;h2 id=&#34;主从下线与主从切换&#34;&gt;主从下线与主从切换&lt;/h2&gt;
 &lt;h3 id=&#34;slave6382-下线&#34;&gt;slave:6382 下线&lt;/h3&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;13&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/slave%E4%B8%8B%E7%BA%BF%E4%B8%BB%E8%8A%82%E7%82%B9%E6%97%A5%E5%BF%97.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
-&lt;p&gt;master:6381（slave:6382 的 master） 日志打印&lt;/p&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;14&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/slave%E4%B8%8B%E7%BA%BFmaster%E6%97%A5%E5%BF%97.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
-&lt;p&gt;master:6379 日志打印&lt;/p&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;12&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/slave%E4%B8%8B%E7%BA%BF%E4%B8%BB%E8%8A%82%E7%82%B9%E6%97%A5%E5%BF%97.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p style = &#34;text-align:center;font-family:楷体&#34;&gt;master:6381（slave:6382 的 master） 日志打印&lt;/p&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;13&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/slave%E4%B8%8B%E7%BA%BFmaster%E6%97%A5%E5%BF%97.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p style = &#34;text-align:center;font-family:楷体&#34;&gt;master:6379 日志打印&lt;/p&gt;
 &lt;h3 id=&#34;slave6382-重新上线&#34;&gt;slave:6382 重新上线&lt;/h3&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;15&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/slave%E9%87%8D%E6%96%B0%E4%B8%8A%E7%BA%BFmaster%E6%97%A5%E5%BF%97.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;14&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/slave%E9%87%8D%E6%96%B0%E4%B8%8A%E7%BA%BFmaster%E6%97%A5%E5%BF%97.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
 &lt;p&gt;master:6381（slave:6382 的 master） 日志打印&lt;br&gt;
 &lt;img src=&#34;https://epitomm.github.io/post-images/%E9%87%8D%E6%96%B0%E4%B8%8A%E7%BA%BF%E7%9A%84master%E5%8F%98%E6%88%90slave%E4%BA%86.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/p&gt;
 &lt;p&gt;master:6379 日志打印&lt;/p&gt;
 &lt;h3 id=&#34;master6379-下线&#34;&gt;master:6379 下线&lt;/h3&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;16&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/master%E4%B8%8B%E7%BA%BFslave%E6%97%A5%E5%BF%97.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
-&lt;p&gt;slave:6383（master:6379 的 slave）日志打印&lt;/p&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;15&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/master%E4%B8%8B%E7%BA%BFslave%E6%97%A5%E5%BF%97.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p style = &#34;text-align:center;font-family:楷体&#34;&gt;slave:6383（master:6379 的 slave）日志打印&lt;/p&gt;
 &lt;p&gt;查看 cluster 信息：&lt;/p&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;17&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/master%E4%B8%8B%E7%BA%BFcluster%E6%97%A5%E5%BF%97.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
-&lt;p&gt;slave:6383 自己当 master&lt;/p&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;16&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/master%E4%B8%8B%E7%BA%BFcluster%E6%97%A5%E5%BF%97.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p style = &#34;text-align:center;font-family:楷体&#34;&gt;slave:6383 自己当 master&lt;/p&gt;
 &lt;h3 id=&#34;master6379-重新上线&#34;&gt;master:6379 重新上线&lt;/h3&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;18&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/master%E9%87%8D%E6%96%B0%E4%B8%8A%E7%BA%BFmaster%E6%97%A5%E5%BF%97.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
-&lt;p&gt;&lt;strong&gt;master:6383&lt;/strong&gt;（slave:6379 的 master） 日志信息&lt;/p&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;19&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E9%87%8D%E6%96%B0%E4%B8%8A%E7%BA%BF%E7%9A%84master%E5%8F%98%E6%88%90slave%E4%BA%86.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
-&lt;p&gt;再次上线的 6379 变成 slave 了&lt;/p&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;17&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/master%E9%87%8D%E6%96%B0%E4%B8%8A%E7%BA%BFmaster%E6%97%A5%E5%BF%97.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p style = &#34;text-align:center;font-family:楷体&#34;&gt;**master:6383**（slave:6379 的 master） 日志信息&lt;/p&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;18&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E9%87%8D%E6%96%B0%E4%B8%8A%E7%BA%BF%E7%9A%84master%E5%8F%98%E6%88%90slave%E4%BA%86.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p style = &#34;text-align:center;font-family:楷体&#34;&gt;再次上线的 6379 变成 slave 了&lt;/p&gt;
 &lt;h1 id=&#34;总结-2&#34;&gt;总结&lt;/h1&gt;
 &lt;p&gt;&lt;strong&gt;集群&lt;/strong&gt;&lt;/p&gt;
 &lt;ul&gt;
