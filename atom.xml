@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://epitomm.github.io</id>
     <title>SSM</title>
-    <updated>2020-05-27T12:19:17.393Z</updated>
+    <updated>2020-05-29T01:39:36.558Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://epitomm.github.io"/>
     <link rel="self" href="https://epitomm.github.io/atom.xml"/>
@@ -417,7 +417,7 @@ public void preInstantiateSingletons() throws BeansException {
    for (String beanName : beanNames) {
       // 通过 beanName 得到 BeanDefinition，合并父类 BeanDefinition
       RootBeanDefinition bd = getMergedLocalBeanDefinition(beanName);
-      // 如果这个 bd 是抽象、单例、非懒加载的
+      // 如果这个 bd 是非抽象、单例、非懒加载的
       if (!bd.isAbstract() &amp;&amp; bd.isSingleton() &amp;&amp; !bd.isLazyInit()) {
          if (isFactoryBean(beanName)) {
             Object bean = getBean(FACTORY_BEAN_PREFIX + beanName);
@@ -473,7 +473,7 @@ public Object getBean(String name) throws BeansException {
    final String beanName = transformedBeanName(name);
    Object bean;
    // Eagerly check singleton cache for manually registered singletons.
-   // Spring 在完成初始化后先 getSingleton(beanName)，如果拿不到，再去初始化
+   // 先 getSingleton(beanName)，如果拿不到，再去初始化
    Object sharedInstance = getSingleton(beanName);
    if (sharedInstance != null &amp;&amp; args == null) {
       if (logger.isDebugEnabled()) {
@@ -490,7 +490,6 @@ public Object getBean(String name) throws BeansException {
    else {
       // Fail if we're already creating this bean instance:
       // We're assumably within a circular reference.
-      // 判断当前两个类是否相同：如果我们已经在创建这个bean实例，则失败：大概是循环引用。
       if (isPrototypeCurrentlyInCreation(beanName)) {
          throw new BeanCurrentlyInCreationException(beanName);
       }

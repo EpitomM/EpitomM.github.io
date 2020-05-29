@@ -9,7 +9,7 @@
 <meta name="description" content="热心善良的老学姐">
 <meta name="theme-color" content="#000">
 <title>SSM</title>
-<link rel="shortcut icon" href="/favicon.ico?v=1590581949482">
+<link rel="shortcut icon" href="/favicon.ico?v=1590716315030">
 <link rel="stylesheet" href="/media/css/gemini.css">
 <link rel="stylesheet" href="/media/fonts/font-awesome.css">
 <link
@@ -1538,7 +1538,7 @@ public void preInstantiateSingletons() throws BeansException {
    for (String beanName : beanNames) {
       // 通过 beanName 得到 BeanDefinition，合并父类 BeanDefinition
       RootBeanDefinition bd = getMergedLocalBeanDefinition(beanName);
-      // 如果这个 bd 是抽象、单例、非懒加载的
+      // 如果这个 bd 是非抽象、单例、非懒加载的
       if (!bd.isAbstract() &amp;amp;&amp;amp; bd.isSingleton() &amp;amp;&amp;amp; !bd.isLazyInit()) {
          if (isFactoryBean(beanName)) {
             Object bean = getBean(FACTORY_BEAN_PREFIX + beanName);
@@ -1594,7 +1594,7 @@ public Object getBean(String name) throws BeansException {
    final String beanName = transformedBeanName(name);
    Object bean;
    // Eagerly check singleton cache for manually registered singletons.
-   // Spring 在完成初始化后先 getSingleton(beanName)，如果拿不到，再去初始化
+   // 先 getSingleton(beanName)，如果拿不到，再去初始化
    Object sharedInstance = getSingleton(beanName);
    if (sharedInstance != null &amp;amp;&amp;amp; args == null) {
       if (logger.isDebugEnabled()) {
@@ -1611,7 +1611,6 @@ public Object getBean(String name) throws BeansException {
    else {
       // Fail if we&#39;re already creating this bean instance:
       // We&#39;re assumably within a circular reference.
-      // 判断当前两个类是否相同：如果我们已经在创建这个bean实例，则失败：大概是循环引用。
       if (isPrototypeCurrentlyInCreation(beanName)) {
          throw new BeanCurrentlyInCreationException(beanName);
       }
