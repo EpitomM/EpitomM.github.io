@@ -8,7 +8,7 @@
 <meta name="keywords" content="Gridea静态个人博客">
 <meta name="description" content="热心善良的老学姐">
 <meta name="theme-color" content="#000">
-<title>SSM</title>
+<title>Spring系列（十四）Spring源码解析——类的实例化过程 | SSM</title>
 <link rel="shortcut icon" href="/favicon.ico?v=1590890738379">
 <link rel="stylesheet" href="/media/css/gemini.css">
 <link rel="stylesheet" href="/media/fonts/font-awesome.css">
@@ -38,6 +38,8 @@
 
 
 
+  <meta name="description" content="Spring系列（十四）Spring源码解析——类的实例化过程" />
+  <meta name="keywords" content="Spring" />
 </head>
 
 <body>
@@ -73,7 +75,7 @@
             
               
             
-            <li class="nav-item nav-item-active">
+            <li class="nav-item ">
               
               
                 <a href="/" target="_self">
@@ -172,8 +174,24 @@
     <div
       class="section-layout gemini ">
       <div class="section-layout-wrapper">
-        <div id="sidebarMeta" class="sidebar">
-    
+        
+
+<div class="sidebar">
+  
+    <div class="sidebar-box box-shadow-wrapper bg-color right-motion" id="sidebar">
+      
+        <div class="post-list-sidebar">
+          <div class="sidebar-title">
+            <span id="tocSideBar" class="sidebar-title-item sidebar-title-active language" data-lan="index">文章目录</span>
+            <span id="metaSideBar" class="sidebar-title-item language" data-lan="preview">站点概览</span>
+          </div>
+        </div>
+      
+      <div class="sidebar-body gemini" id="sidebar_body">
+        
+          
+            <div class="post-side-meta" id="post_side_meta">
+              
 <div class="sidebar-wrapper box-shadow-wrapper bg-color">
   <div class="sidebar-item">
     <img class="site-author-image right-motion" src="/images/avatar.png"/>
@@ -208,30 +226,301 @@
 
 
 </div>
+            </div>
+            <div class="post-toc sidebar-body-active" id="post_toc" style="opacity: 1;">
+              <div class="toc-box right-motion">
+  <div class="toc-wrapper auto-number auto"
+    id="toc_wrapper">
+    <ul class="markdownIt-TOC">
+<li><a href="#preinstantiatesingletons">preInstantiateSingletons</a>
+<ul>
+<li><a href="#getbeanbeanname">getBean(beanName);</a>
+<ul>
+<li><a href="#dogetbean">doGetBean</a>
+<ul>
+<li><a href="#createbeaninstance">createBeanInstance</a></li>
+<li><a href="#%E6%BC%94%E7%A4%BA-factorymethod-%E7%9A%84-demo1">演示 FactoryMethod 的 demo1</a></li>
+<li><a href="#%E6%BC%94%E7%A4%BA-factorymethod-%E7%9A%84-demo2">演示 FactoryMethod 的 demo2</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#shortcut-%E5%BF%AB%E6%8D%B7%E6%96%B9%E5%BC%8F">Shortcut 快捷方式</a>
+<ul>
+<li><a href="#%E6%97%A0%E5%8F%82%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95">无参构造方法</a></li>
+<li><a href="#%E6%9C%89%E5%8F%82%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95">有参构造方法</a></li>
+<li><a href="#%E4%B8%80%E4%B8%AA%E6%9C%89%E5%8F%82-%E4%B8%80%E4%B8%AA%E6%97%A0%E5%8F%82%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95">一个有参、一个无参构造方法</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
 </div>
+
 <script>
-  let sidebarMeta = document.querySelector('#sidebarMeta');
-  let scheme = 'gemini';
-  let sidebarWrapper = document.querySelector('.sidebar-wrapper');
-  if (sidebarMeta && (scheme === 'pisces' || scheme === 'gemini')) {
-    document.addEventListener('scroll', function(e) {
-      if (document.scrollingElement.scrollTop > parseInt(sidebarMeta.style.marginTop) + 10) {
-        sidebarWrapper.classList.add('home-sidebar-fixed')
-      } else {
-        sidebarWrapper.classList.remove('home-sidebar-fixed')
+
+  let lastTop = 0, lList = [], hList = [], postBody, lastIndex = -1;
+  let active = 'active-show', activeClass = 'active-current';
+  let tocWrapper = document.querySelector('#toc_wrapper');
+  let tocContent = tocWrapper.children[0];
+  let autoNumber = tocWrapper && tocWrapper.classList.contains('auto-number');
+
+  function addTocNumber(elem, deep) {
+    if (!elem) {
+      return;
+    }
+    let prop = elem.__proto__;
+
+    if (prop === HTMLUListElement.prototype) {
+      for (let i = 0; i < elem.children.length; i++) {
+        addTocNumber(elem.children[i], deep + (i + 1) + '.');
       }
+    } else if (prop === HTMLLIElement.prototype) {
+      // 保存li元素
+      if (elem.children[0].__proto__ === HTMLAnchorElement.prototype) {
+        lList.push(elem);
+      }
+      for (let i = 0; i < elem.children.length; i++) {
+        let cur = elem.children[i];
+        if (cur.__proto__ === HTMLAnchorElement.prototype) {
+          if (autoNumber) {
+            cur.text = deep + ' ' + cur.text;
+          }
+        } else if (cur.__proto__ === HTMLUListElement.prototype) {
+          addTocNumber(cur, deep);
+        }
+      }
+    }
+  }
+
+  function removeParentActiveClass() {
+    let parents = tocContent.querySelectorAll('.' + active)
+    parents.forEach(function (elem) {
+      elem.classList.remove(active);
     });
   }
-  </script>
-        <div class="section-box gemini">
-          <section class="section  posts-expand slide-down-in">
-            
-  <article class="post-list-box  post box-shadow-wrapper">
-    <div class="article-wrapper bg-color">
-      <header class="post-header">
+
+  function addActiveClass(index) {
+    if (index >= 0 && index < hList.length) {
+      lList[index].classList.add(activeClass);
+    }
+  }
+
+  function removeActiveClass(index) {
+    if (index >= 0 && index < hList.length) {
+      lList[index].classList.remove(activeClass);
+    }
+  }
+
+  function addActiveLiElemment(elem, parent) {
+    if (!elem || elem === parent) {
+      return;
+    } else {
+      if (elem.__proto__ === HTMLLIElement.prototype) {
+        elem.classList.add(active);
+      }
+      addActiveLiElemment(elem.parentElement, parent);
+    }
+  }
+
+  function showToc() {
+    if (tocWrapper) {
+      postBody = document.querySelector('#post_body');
+      for (let i = 0; i < postBody.children.length; i++) {
+        if (postBody.children[i].__proto__ === HTMLHeadingElement.prototype) {
+          hList.push(postBody.children[i]);
+        }
+      }
+      if (tocWrapper.classList.contains('compress')) {
+        tocContent.classList.add('closed');
+      } else if (tocWrapper.classList.contains('no_compress')) {
+        tocContent.classList.add('expanded');
+      } else {
+        if (hList.length > 10) {
+          active = 'active-hidden'
+          tocContent.classList.add('closed');
+        } else {
+          tocContent.classList.add('expanded');
+        }
+      }
+    }
+  }
+
+  (function () {
+    // 处理不是从#一级标题开始目录
+    if (tocContent.children.length === 1 && tocContent.children[0].__proto__ === HTMLLIElement.prototype) {
+      let con = tocContent.children[0].children[0];
+      tocContent.innerHTML = con.innerHTML;
+    }
+    let markdownItTOC = document.querySelector('.markdownIt-TOC');
+    let innerHeight = window.innerHeight;
+    markdownItTOC.style = `max-height: ${innerHeight - 80 > 0 ? innerHeight - 80 : innerHeight}px`
+    addTocNumber(tocContent, '');
+  })();
+
+  document.addEventListener('scroll', function (e) {
+    if (lList.length <= 0) {
+      return;
+    }
+    let scrollTop = document.scrollingElement.scrollTop + 10;
+    let dir;
+
+    if (lastTop - scrollTop > 0) {
+      dir = 'up';
+    } else {
+      dir = 'down';
+    }
+
+    lastTop = scrollTop;
+    if (scrollTop <= 0) {
+      if (lastIndex >= 0 && lastIndex < hList.length) {
+        lList[lastIndex].classList.remove(activeClass);
+      }
+      return;
+    }
+
+    let current = 0, hasFind = false;
+    for (let i = 0; i < hList.length; i++) {
+      if (hList[i].offsetTop > scrollTop) {
+        current = i;
+        hasFind = true;
+        break;
+      }
+    }
+    if (!hasFind && scrollTop > lList[lList.length - 1].offsetTop) {
+      current = hList.length - 1;
+    } else {
+      current--;
+    }
+    if (dir === 'down') {
+      if (current > lastIndex) {
+        addActiveClass(current);
+        removeActiveClass(lastIndex)
+        lastIndex = current;
+        removeParentActiveClass();
+        lList[current] && addActiveLiElemment(lList[current].parentElement, tocContent);
+      }
+    } else {
+      if (current < lastIndex) {
+        addActiveClass(current);
+        removeActiveClass(lastIndex);
+        lastIndex = current;
+        removeParentActiveClass();
+        lList[current] && addActiveLiElemment(lList[current].parentElement, tocContent);
+      }
+    }
+  });
+
+
+  window.addEventListener('load', function () {
+    showToc();
+    document.querySelector('#sidebar').style = 'display: block;';
+    tocWrapper.classList.add('toc-active');
+    setTimeout(function () {
+      if ("createEvent" in document) {
+        let evt = document.createEvent("HTMLEvents");
+        evt.initEvent("scroll", false, true);
+        document.dispatchEvent(evt);
+      }
+      else {
+        document.fireEvent("scroll");
+      }
+    }, 500)
+  })
+
+</script>
+            </div>
+          
+        
+      </div>
+    </div>
+  
+</div>
+<script>
+  const SIDEBAR_TITLE_ACTIVE = 'sidebar-title-active';
+  const SIDEBAR_BODY_ACTIVE = 'sidebar-body-active';
+  const SLIDE_UP_IN = 'slide-up-in';
+
+  let sidebar = document.querySelector('#sidebar'),
+  tocSideBar = document.querySelector('#tocSideBar'),
+  metaSideBar = document.querySelector('#metaSideBar'),
+  postToc = document.querySelector('#post_toc'),
+  postSiteMeta = document.querySelector('#post_side_meta'),
+  sidebarTitle = document.querySelector('.sidebar-title'),
+  sidebarBody = document.querySelector('#sidebar_body');
+
+  tocSideBar && tocSideBar.addEventListener('click', (e) => {
+    toggleSidebar(e);
+  });
+
+  metaSideBar && metaSideBar.addEventListener('click', (e) => {
+    toggleSidebar(e);
+  });
+
+  function toggleSidebar(e) {
+    let currentTitle = document.querySelector("."+SIDEBAR_TITLE_ACTIVE);
+    if (currentTitle == e.srcElement) {
+      return ;
+    }
+    let current, showElement, hideElement;
+    if (e.srcElement == metaSideBar) {
+      showElement = postSiteMeta;
+      hideElement = postToc;
+    } else if (e.srcElement == tocSideBar){
+      showElement = postToc;
+      hideElement = postSiteMeta;
+    }
+    currentTitle.classList.remove(SIDEBAR_TITLE_ACTIVE);
+    e.srcElement.classList.add(SIDEBAR_TITLE_ACTIVE);
+
+    window.Velocity(hideElement, 'stop');
+    window.Velocity(hideElement, 'transition.slideUpOut', {
+      display: 'none',
+      duration: 200,
+      complete: function () {
+        window.Velocity(showElement, 'transition.slideDownIn', {
+          duration: 200
+        });
+      }
+    })
+    hideElement.classList.remove(SIDEBAR_BODY_ACTIVE);
+    showElement.classList.add(SIDEBAR_BODY_ACTIVE);
+  }
+
+  postToc && postToc.addEventListener('transitionend', function() {
+    this.classList.remove(SLIDE_UP_IN);
+  });
+
+  if (sidebarBody) {
+    if (sidebarBody.classList.contains('pisces') || sidebarBody.classList.contains('gemini')) {
+      let hasFix = false;
+      let scrollEl = document.querySelector('.main-continer');
+      let limitTop = document.querySelector('#nav_ul').children.length * 42 + 162;
+      window.addEventListener('scroll', function(e) {
+        if (document.scrollingElement.scrollTop >= limitTop) {
+          if (!hasFix) {
+            sidebar.classList.add('sidebar-fixed');
+            hasFix = true;
+          }
+        } else {
+          if (hasFix) {
+            sidebar.classList.remove('sidebar-fixed');
+            hasFix = false;
+          }
+        }
+      });
+    }
+  }
+  
+</script>
+        <div class="section-box box-shadow-wrapper">
+          <div class="section bg-color post post-page">
+            <header class="post-header">
   <h1 class="post-title">
-    <a class="post-title-link" href="https://epitomm.github.io/post/spring-xi-lie-qi-spring-yuan-ma-jie-xi/">
-      Spring系列（七）Spring源码解析
+    <a class="post-title-link" href="https://epitomm.github.io/post/spring-xi-lie-shi-si-spring-yuan-ma-jie-xi/">
+      Spring系列（十四）Spring源码解析——类的实例化过程
     </a>
   </h1>
   <div class="post-meta">
@@ -239,7 +528,7 @@
     <span class="meta-item pc-show">
       <i class="fa fa-calendar-o"></i>
       <span class="language" data-lan="publish">发布于</span>
-      <span>2020-05-08</span>
+      <span>2020-05-31</span>
       <span class="post-meta-divider pc-show">|</span>
     </span>
     
@@ -263,625 +552,1451 @@
     <span class="meta-item">
       <span class="post-meta-divider">|</span>
       <i class="fa fa-file-word-o"></i>
-      <span>7954<span class="pc-show language" data-lan="words">字数</span></span>
+      <span>7974<span class="pc-show language" data-lan="words">字数</span></span>
     </span>
     
   </div>
 </header>
-      <div class="post-body">
-        
-        
-          
-        
-        
-        <div class="post-button text-center">
-          <a class="btn language" data-lan="read-more" href="https://epitomm.github.io/post/spring-xi-lie-qi-spring-yuan-ma-jie-xi/" rel="contents">
-            阅读全文 »
-          </a>
-        </div>
-        
-      </div>
+            <div class="post-body next-md-body" id="post_body">
+              <h1 id="preinstantiatesingletons">preInstantiateSingletons</h1>
+<p>AnnotationConfigApplicationContext#refresh() --&gt; AbstractApplicationContext#finishBeanFactoryInitialization --&gt; DefaultListableBeanFactory#preInstantiateSingletons：准备实例化单例对象</p>
+<pre><code class="language-java">public void preInstantiateSingletons() throws BeansException {
+   if (logger.isDebugEnabled()) {
+      logger.debug(&quot;Pre-instantiating singletons in &quot; + this);
+   }
+   // Iterate over a copy to allow for init methods which in turn register new bean definitions.
+   // While this may not be part of the regular factory bootstrap, it does otherwise work fine.
+   // beanNames：BeanDefinitionMap中所有类的名字
+   List&lt;String&gt; beanNames = new ArrayList&lt;&gt;(this.beanDefinitionNames);
+   // Trigger initialization of all non-lazy singleton beans...
+   // 触发所有非 Lazy 单例 beans 的初始化，主要步骤为调用 getBean
+   for (String beanName : beanNames) {
+      // 通过 beanName 得到 BeanDefinition，合并父类 BeanDefinition
+      RootBeanDefinition bd = getMergedLocalBeanDefinition(beanName);
+      // 如果这个 bd 是非抽象的、单例、非懒加载的：懒加载一开始不会实例化
+      if (!bd.isAbstract() &amp;&amp; bd.isSingleton() &amp;&amp; !bd.isLazyInit()) {
+         if (isFactoryBean(beanName)) {
+            // 如果是 FactoryBean 则加上 &amp;
+            Object bean = getBean(FACTORY_BEAN_PREFIX + beanName);
+            // 判断这个 bean 是不是 FactoryBean
+            if (bean instanceof FactoryBean) {
+               final FactoryBean&lt;?&gt; factory = (FactoryBean&lt;?&gt;) bean;
+               boolean isEagerInit;
+               if (System.getSecurityManager() != null &amp;&amp; factory instanceof SmartFactoryBean) {
+                  isEagerInit = AccessController.doPrivileged((PrivilegedAction&lt;Boolean&gt;)
+                              ((SmartFactoryBean&lt;?&gt;) factory)::isEagerInit,
+                        getAccessControlContext());
+               }
+               else {
+                  isEagerInit = (factory instanceof SmartFactoryBean &amp;&amp;
+                        ((SmartFactoryBean&lt;?&gt;) factory).isEagerInit());
+               }
+               if (isEagerInit) {
+                  getBean(beanName);
+               }
+            }
+         }
+         else {
+            getBean(beanName);
+         }
+      }
+   }
+   // Trigger post-initialization callback for all applicable beans...
+   for (String beanName : beanNames) {
+      Object singletonInstance = getSingleton(beanName);
+      if (singletonInstance instanceof SmartInitializingSingleton) {
+         final SmartInitializingSingleton smartSingleton = (SmartInitializingSingleton) singletonInstance;
+         if (System.getSecurityManager() != null) {
+            AccessController.doPrivileged((PrivilegedAction&lt;Object&gt;) () -&gt; {
+               smartSingleton.afterSingletonsInstantiated();
+               return null;
+            }, getAccessControlContext());
+         }
+         else {
+            smartSingleton.afterSingletonsInstantiated();
+         }
+      }
+   }
+}
+</code></pre>
+<p>上述代码第 15行合并父类，案例如下：</p>
+<pre><code class="language-xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;beans xmlns=&quot;http://www.springframework.org/schema/beans&quot;
+       xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot;
+       xsi:schemaLocation=&quot;http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd&quot;&gt;
+   &lt;bean id=&quot;parent&quot; class=&quot;com.ssm.service.IndexService&quot;&gt;
+      &lt;property name=&quot;name&quot; value=&quot;parent&quot;&gt;&lt;/property&gt;
+   &lt;/bean&gt;
+   &lt;bean id=&quot;child&quot; parent=&quot;parent&quot;&gt;
+      &lt;property name=&quot;name&quot; value=&quot;children&quot;&gt;&lt;/property&gt;
+   &lt;/bean&gt;
+&lt;/beans&gt;
+</code></pre>
+<pre><code class="language-java">@Configuration
+@ComponentScan(&quot;com.ssm&quot;)
+@ImportResource(&quot;classpath:spring.xml&quot;)
+public class AppConfig {
+</code></pre>
+<pre><code class="language-java">public class IndexService {
+   private String name;
+   public String getName(){
+      return name;
+   }
+   public void setName(String name){
+      this.name = name;
+   }
+}
+</code></pre>
+<pre><code class="language-java">public class Test {
+   public static void main(String[] args) {
+      AnnotationConfigApplicationContext context =
+            new AnnotationConfigApplicationContext(AppConfig.class);
+      IndexService indexService = (IndexService) context.getBean(&quot;parent&quot;);
+      System.out.println(indexService.getName());
+      IndexService child = (IndexService) context.getBean(&quot;child&quot;);
+      System.out.println(child.getName());
+   }
+}
+</code></pre>
+<p>运行结果：</p>
+<pre><code class="language-plain">parent
+children
+</code></pre>
+<p>当 Spring 实例化时，首先把所有类都扫描出来，放到 BeanDefinitionMap 中，从 map 中把所有名字都拿出来。<br>
+Spring 工厂的 IOC 容器两方面体现：</p>
+<ul>
+<li>宏观方面：Spring环境，包括Bean工厂，包括Spring内部处理器，包括读取器、注册器...</li>
+<li>微观方面：private final Map&lt;String, Object&gt; singletonObjects = new ConcurrentHashMap&lt;&gt;(256);</li>
+</ul>
+<h2 id="getbeanbeanname">getBean(beanName);</h2>
+<p>上述代码第 40 行：</p>
+<pre><code class="language-java">getBean(beanName);
+</code></pre>
+<p>AbstractBeanFactory#getBean</p>
+<pre><code class="language-java">public Object getBean(String name) throws BeansException {
+   return doGetBean(name, null, null, false);
+}
+</code></pre>
+<h3 id="dogetbean">doGetBean</h3>
+<p>AbstractBeanFactory#doGetBean</p>
+<pre><code class="language-java">protected &lt;T&gt; T doGetBean(final String name, @Nullable final Class&lt;T&gt; requiredType,
+      @Nullable final Object[] args, boolean typeCheckOnly) throws BeansException {
+   /**
+    * 通过 name 获取 beanName，这里不使用 name 直接作为 beanName 有两个原因：
+    *     1.name 可能会以 &amp; 字符开头，表名调用者想获取 FactoryBean 本身，而非 FactoryBean
+    *     实现类锁创建的 bean。在 Spring 工厂中，FactoryBean 的实现类和其他的普通 bean 存储
+    *     方式是一致的，即&lt;beanName, bean&gt;，beanName 中是没有 &amp; 这个字符的。所以我们需要
+    *     将 name 的首字符 &amp; 移除，这样才能从缓存里取到 FactoryBean 实例。
+    * 2.还是别名的问题，转换需要
+    */
+   final String beanName = transformedBeanName(name);
+   Object bean;
+   /**
+    * 这个方法在初始化的时候会调用，在 getBean 的时候也会调用
+    * 为什么需要这么做呢？
+    * 也就是说 Spring 在初始化的时候先获取这个对象，判断这个对象是否被实例化好了
+    * （一般情况下为空，因为在初始化阶段，还未初始化结束，所以为空 === 有一种情况可能不为空）
+    * 从 Spring 的 Bean 容器中获取一个 bean，由于 Spring 中 Bean 容器是一个 map（singletonObjects）
+    * 所以可以理解 getSingleton(beanName) 等于 beanMap.get(beanName)
+    * 由于方法会在 Spring 环境初始化的时候（就是对象被创建的时候调用一次）调用一次
+    * 还会在 getBean 的时候调用一次
+    * 所以在调试的时候需要特别注意，不能直接断点在这里，
+    * 需要先进入到 annotationConfigApplicationContext.getBean(IndexService.class)
+    * 之后再来断点，这样就确保了我们是在获取这个 bean 的时候调用的
+    *
+    * 需要说明的是在初始化时候调用一般都是返回 null
+    */
+   // Eagerly check singleton cache for manually registered singletons.
+   // 先 getSingleton(beanName)，如果拿不到，再去初始化
+   Object sharedInstance = getSingleton(beanName);
+   if (sharedInstance != null &amp;&amp; args == null) {
+      if (logger.isDebugEnabled()) {
+         if (isSingletonCurrentlyInCreation(beanName)) {
+            logger.debug(&quot;Returning eagerly cached instance of singleton bean '&quot; + beanName +
+                  &quot;' that is not fully initialized yet - a consequence of a circular reference&quot;);
+         }
+         else {
+            logger.debug(&quot;Returning cached instance of singleton bean '&quot; + beanName + &quot;'&quot;);
+         }
+      }
+      bean = getObjectForBeanInstance(sharedInstance, name, beanName, null);
+   }
+   else {
+      // Fail if we're already creating this bean instance:
+      // We're assumably within a circular reference.
+      /**
+       * 原型
+       * 如果是原型不应该在初始化的时候创建
+       */
+      if (isPrototypeCurrentlyInCreation(beanName)) {
+         throw new BeanCurrentlyInCreationException(beanName);
+      }
+      // Check if bean definition exists in this factory.
+      BeanFactory parentBeanFactory = getParentBeanFactory();
+      if (parentBeanFactory != null &amp;&amp; !containsBeanDefinition(beanName)) {
+         // Not found -&gt; check parent.
+         String nameToLookup = originalBeanName(name);
+         if (parentBeanFactory instanceof AbstractBeanFactory) {
+            return ((AbstractBeanFactory) parentBeanFactory).doGetBean(
+                  nameToLookup, requiredType, args, typeCheckOnly);
+         }
+         else if (args != null) {
+            // Delegation to parent with explicit args.
+            return (T) parentBeanFactory.getBean(nameToLookup, args);
+         }
+         else {
+            // No args -&gt; delegate to standard getBean method.
+            return parentBeanFactory.getBean(nameToLookup, requiredType);
+         }
+      }
+      if (!typeCheckOnly) {
+         // 添加到 alreadyCreated set集合中，表示他已经创建过一次
+         markBeanAsCreated(beanName);
+      }
+      try {
+         final RootBeanDefinition mbd = getMergedLocalBeanDefinition(beanName);
+         checkMergedBeanDefinition(mbd, beanName, args);
+         // Guarantee initialization of beans that the current bean depends on.
+         String[] dependsOn = mbd.getDependsOn();
+         if (dependsOn != null) {
+            for (String dep : dependsOn) {
+               if (isDependent(beanName, dep)) {
+                  throw new BeanCreationException(mbd.getResourceDescription(), beanName,
+                        &quot;Circular depends-on relationship between '&quot; + beanName + &quot;' and '&quot; + dep + &quot;'&quot;);
+               }
+               registerDependentBean(dep, beanName);
+               try {
+                  getBean(dep);
+               }
+               catch (NoSuchBeanDefinitionException ex) {
+                  throw new BeanCreationException(mbd.getResourceDescription(), beanName,
+                        &quot;'&quot; + beanName + &quot;' depends on missing bean '&quot; + dep + &quot;'&quot;, ex);
+               }
+            }
+         }
+         // Create bean instance.
+         if (mbd.isSingleton()) {
+            sharedInstance = getSingleton(beanName, () -&gt; {
+               try {
+                  return createBean(beanName, mbd, args);
+               }
+               catch (BeansException ex) {
+                  // Explicitly remove instance from singleton cache: It might have been put there
+                  // eagerly by the creation process, to allow for circular reference resolution.
+                  // Also remove any beans that received a temporary reference to the bean.
+                  destroySingleton(beanName);
+                  throw ex;
+               }
+            });
+            bean = getObjectForBeanInstance(sharedInstance, name, beanName, mbd);
+         }
+         else if (mbd.isPrototype()) {
+            // It's a prototype -&gt; create a new instance.
+            Object prototypeInstance = null;
+            try {
+               beforePrototypeCreation(beanName);
+               prototypeInstance = createBean(beanName, mbd, args);
+            }
+            finally {
+               afterPrototypeCreation(beanName);
+            }
+            bean = getObjectForBeanInstance(prototypeInstance, name, beanName, mbd);
+         }
+         else {
+            String scopeName = mbd.getScope();
+            final Scope scope = this.scopes.get(scopeName);
+            if (scope == null) {
+               throw new IllegalStateException(&quot;No Scope registered for scope name '&quot; + scopeName + &quot;'&quot;);
+            }
+            try {
+               Object scopedInstance = scope.get(beanName, () -&gt; {
+                  beforePrototypeCreation(beanName);
+                  try {
+                     return createBean(beanName, mbd, args);
+                  }
+                  finally {
+                     afterPrototypeCreation(beanName);
+                  }
+               });
+               bean = getObjectForBeanInstance(scopedInstance, name, beanName, mbd);
+            }
+            catch (IllegalStateException ex) {
+               throw new BeanCreationException(beanName,
+                     &quot;Scope '&quot; + scopeName + &quot;' is not active for the current thread; consider &quot; +
+                     &quot;defining a scoped proxy for this bean if you intend to refer to it from a singleton&quot;,
+                     ex);
+            }
+         }
+      }
+      catch (BeansException ex) {
+         cleanupAfterBeanCreationFailure(beanName);
+         throw ex;
+      }
+   }
+   // Check if required type matches the type of the actual bean instance.
+   if (requiredType != null &amp;&amp; !requiredType.isInstance(bean)) {
+      try {
+         T convertedBean = getTypeConverter().convertIfNecessary(bean, requiredType);
+         if (convertedBean == null) {
+            throw new BeanNotOfRequiredTypeException(name, requiredType, bean.getClass());
+         }
+         return convertedBean;
+      }
+      catch (TypeMismatchException ex) {
+         if (logger.isDebugEnabled()) {
+            logger.debug(&quot;Failed to convert bean '&quot; + name + &quot;' to required type '&quot; +
+                  ClassUtils.getQualifiedName(requiredType) + &quot;'&quot;, ex);
+         }
+         throw new BeanNotOfRequiredTypeException(name, requiredType, bean.getClass());
+      }
+   }
+   return (T) bean;
+}
+</code></pre>
+<p>上述代码第 32 行：</p>
+<pre><code class="language-java">Object sharedInstance = getSingleton(beanName);
+</code></pre>
+<p>DefaultSingletonBeanRegistry#getSingleton</p>
+<pre><code class="language-java">public Object getSingleton(String beanName) {
+   return getSingleton(beanName, true);
+}
+</code></pre>
+<p>DefaultSingletonBeanRegistry#getSingleton</p>
+<pre><code class="language-java">protected Object getSingleton(String beanName, boolean allowEarlyReference) {
+   // 从 map 中获取 bean 如果不为空直接返回，不再进行初始化工作
+   Object singletonObject = this.singletonObjects.get(beanName);
+   // 第一次 getSingleton() 返回空原因：
+   // singletonObject=null
+   // isSingletonCurrentlyInCreation:Spring认为还没有到需要创建对象的时候
+   if (singletonObject == null &amp;&amp; isSingletonCurrentlyInCreation(beanName)) {
+      synchronized (this.singletonObjects) {
+         singletonObject = this.earlySingletonObjects.get(beanName);
+         if (singletonObject == null &amp;&amp; allowEarlyReference) {
+            ObjectFactory&lt;?&gt; singletonFactory = this.singletonFactories.get(beanName);
+            if (singletonFactory != null) {
+               singletonObject = singletonFactory.getObject();
+               this.earlySingletonObjects.put(beanName, singletonObject);
+               this.singletonFactories.remove(beanName);
+            }
+         }
+      }
+   }
+   return singletonObject;
+}
+</code></pre>
+<p>上述代码第 7 行：</p>
+<pre><code class="language-java">/**  正在创建的 bean 名字 */
+private final Set&lt;String&gt; singletonsCurrentlyInCreation =
+      Collections.newSetFromMap(new ConcurrentHashMap&lt;&gt;(16));
       
-    </div>
-  </article>
+public boolean isSingletonCurrentlyInCreation(String beanName) {
+   return this.singletonsCurrentlyInCreation.contains(beanName);
+}
+</code></pre>
+<p>doGetBean 的第 32 行：第一次调用 getSingleton() 返回空，因为上述 getSingleton 的第 7 行判断：singletonObject=null 且 isSingletonCurrentlyInCreation 为 false :Spring认为还没有到需要创建对象的时候。使用：context.getBean() --&gt; getBeanFactory().getBean(name); --&gt; doGetBean(name, null, null, false);<br>
+doGetBean 的第 106 行：第二次调用 getSingleton() 不为空，因为 Spring 已经做了该做的验证（比如 checkMergedBeanDefinition 验证 BeanDefinitionMap 有没有错误，有没有DependsOn），如果都成立则把类放到 alreadyCreated set 集合中，然后调用 getSingleton，如果为空则创建对象。使用：初始化时 new</p>
+<pre><code class="language-java">sharedInstance = getSingleton(beanName, () -&gt; {
+</code></pre>
+<pre><code class="language-java">public Object getSingleton(String beanName, ObjectFactory&lt;?&gt; singletonFactory) {
+      Assert.notNull(beanName, &quot;Bean name must not be null&quot;);
+   synchronized (this.singletonObjects) {
+      Object singletonObject = this.singletonObjects.get(beanName);
+      if (singletonObject == null) {
+         if (this.singletonsCurrentlyInDestruction) {
+            throw new BeanCreationNotAllowedException(beanName,
+                  &quot;Singleton bean creation not allowed while singletons of this factory are in destruction &quot; +
+                  &quot;(Do not request a bean from a BeanFactory in a destroy method implementation!)&quot;);
+         }
+         if (logger.isDebugEnabled()) {
+            logger.debug(&quot;Creating shared instance of singleton bean '&quot; + beanName + &quot;'&quot;);
+         }
+         /**
+          * 将 beanName 添加到 singletonCurrentlyInCreation 这样一个 set 集合中
+          * 表示 beanName 对应的 bean 正在创建中
+          */
+         beforeSingletonCreation(beanName);
+         boolean newSingleton = false;
+         boolean recordSuppressedExceptions = (this.suppressedExceptions == null);
+         if (recordSuppressedExceptions) {
+            this.suppressedExceptions = new LinkedHashSet&lt;&gt;();
+         }
+         try {
+            singletonObject = singletonFactory.getObject();
+            newSingleton = true;
+         }
+         catch (IllegalStateException ex) {
+            // Has the singleton object implicitly appeared in the meantime -&gt;
+            // if yes, proceed with it since the exception indicates that state.
+            singletonObject = this.singletonObjects.get(beanName);
+            if (singletonObject == null) {
+               throw ex;
+            }
+         }
+         catch (BeanCreationException ex) {
+            if (recordSuppressedExceptions) {
+               for (Exception suppressedException : this.suppressedExceptions) {
+                  ex.addRelatedCause(suppressedException);
+               }
+            }
+            throw ex;
+         }
+         finally {
+            if (recordSuppressedExceptions) {
+               this.suppressedExceptions = null;
+            }
+            afterSingletonCreation(beanName);
+         }
+         if (newSingleton) {
+            addSingleton(beanName, singletonObject);
+         }
+      }
+      return singletonObject;
+   }
+}
+</code></pre>
+<p>上述代码第 18 行：将 beanName 添加到 singletonCurrentlyInCreation 这样一个 set 集合中，表示 beanName 对应的 bean 正在创建中</p>
+<pre><code class="language-java">protected void beforeSingletonCreation(String beanName) {
+   if (!this.inCreationCheckExclusions.contains(beanName) &amp;&amp; !this.singletonsCurrentlyInCreation.add(beanName)) {
+      throw new BeanCurrentlyInCreationException(beanName);
+   }
+} 
+private final Set&lt;String&gt; singletonsCurrentlyInCreation =
+      Collections.newSetFromMap(new ConcurrentHashMap&lt;&gt;(16));
+</code></pre>
+<p>断点在上述代码第 25 行：</p>
+<pre><code class="language-java">singletonObject = singletonFactory.getObject();
+</code></pre>
+<p>然后会执行：</p>
+<pre><code class="language-java">return createBean(beanName, mbd, args);
+</code></pre>
+<p>接下来点进 createBean 方法：</p>
+<pre><code class="language-java">protected Object createBean(String beanName, RootBeanDefinition mbd, @Nullable Object[] args)
+      throws BeanCreationException {
+   if (logger.isDebugEnabled()) {
+      logger.debug(&quot;Creating instance of bean '&quot; + beanName + &quot;'&quot;);
+   }
+   RootBeanDefinition mbdToUse = mbd;
+   // Make sure bean class is actually resolved at this point, and
+   // clone the bean definition in case of a dynamically resolved Class
+   // which cannot be stored in the shared merged bean definition.
+   Class&lt;?&gt; resolvedClass = resolveBeanClass(mbd, beanName);
+   if (resolvedClass != null &amp;&amp; !mbd.hasBeanClass() &amp;&amp; mbd.getBeanClassName() != null) {
+      mbdToUse = new RootBeanDefinition(mbd);
+      mbdToUse.setBeanClass(resolvedClass);
+   }
+   // Prepare method overrides.
+   // 处理 lookup-method 和 replace-method 配置，Spring 将这两个配置统称为 MethodOverrides
+   try {
+      mbdToUse.prepareMethodOverrides();
+   }
+   catch (BeanDefinitionValidationException ex) {
+      throw new BeanDefinitionStoreException(mbdToUse.getResourceDescription(),
+            beanName, &quot;Validation of method overrides failed&quot;, ex);
+   }
+   try {
+      // Give BeanPostProcessors a chance to return a proxy instead of the target bean instance.
+      // 在 bean 实例化前应用后置处理，如果后置处理返回的 bean 不为空，则直接返回，我们这里并没有实现 InstantiationAwareBeanPostProcessor 后置处理器，所以返回的 bean=null
+      Object bean = resolveBeforeInstantiation(beanName, mbdToUse);
+      if (bean != null) {
+         return bean;
+      }
+   }
+   catch (Throwable ex) {
+      throw new BeanCreationException(mbdToUse.getResourceDescription(), beanName,
+            &quot;BeanPostProcessor before instantiation of bean failed&quot;, ex);
+   }
+   try {
+      Object beanInstance = doCreateBean(beanName, mbdToUse, args);
+      if (logger.isDebugEnabled()) {
+         logger.debug(&quot;Finished creating instance of bean '&quot; + beanName + &quot;'&quot;);
+      }
+      return beanInstance;
+   }
+   catch (BeanCreationException | ImplicitlyAppearedSingletonException ex) {
+      // A previously detected exception with proper bean creation context already,
+      // or illegal singleton state to be communicated up to DefaultSingletonBeanRegistry.
+      throw ex;
+   }
+   catch (Throwable ex) {
+      throw new BeanCreationException(
+            mbdToUse.getResourceDescription(), beanName, &quot;Unexpected exception during bean creation&quot;, ex);
+   }
+}
+</code></pre>
+<p>上述代码第 31 行：</p>
+<pre><code class="language-java">Object bean = resolveBeforeInstantiation(beanName, mbdToUse);
+</code></pre>
+<pre><code class="language-java">protected Object resolveBeforeInstantiation(String beanName, RootBeanDefinition mbd) {
+   Object bean = null;
+   if (!Boolean.FALSE.equals(mbd.beforeInstantiationResolved)) {
+      // Make sure bean class is actually resolved at this point.
+      if (!mbd.isSynthetic() &amp;&amp; hasInstantiationAwareBeanPostProcessors()) {
+         Class&lt;?&gt; targetType = determineTargetType(beanName, mbd);
+         if (targetType != null) {
+            // 执行后置处理器，如果有一个类中有一些属性不需要交给 Spring 处理，就实现InstantiationAwareBeanPostProcessor后置处理器，通过这个后置处理器返回一个 Bean
+            bean = applyBeanPostProcessorsBeforeInstantiation(targetType, beanName);
+            if (bean != null) {
+               bean = applyBeanPostProcessorsAfterInitialization(bean, beanName);
+            }
+         }
+      }
+      mbd.beforeInstantiationResolved = (bean != null);
+   }
+   return bean;
+} 
+</code></pre>
+<p>执行了一个后置处理器，后置处理器是对 Bean 的生产进行插手的，但是现在这个 Bean 并没有产生出来，后置处理器是做什么的呢？<br>
+如果有一个类中有一些属性不需要交给 Spring 处理，就实现 InstantiationAwareBeanPostProcessor 后置处理器，通过这个后置处理器返回一个 Bean，如果这个 Bean 不为空，就直接返回这个 Bean。</p>
+<p>上述代码第 9 行：</p>
+<pre><code class="language-java">protected Object applyBeanPostProcessorsBeforeInstantiation(Class&lt;?&gt; beanClass, String beanName) {
+   for (BeanPostProcessor bp : getBeanPostProcessors()) {
+      // 如果一个类实现了 InstantiationAwareBeanPostProcessor 后置处理器
+      if (bp instanceof InstantiationAwareBeanPostProcessor) {
+         InstantiationAwareBeanPostProcessor ibp = (InstantiationAwareBeanPostProcessor) bp;
+         // 实现了 InstantiationAwareBeanPostProcessor 后置处理器的类，就可以通过重写 postProcessBeforeInstantiation 方法返回一个真实的 Bean 对象
+         Object result = ibp.postProcessBeforeInstantiation(beanClass, beanName);
+         if (result != null) {
+            return result;
+         }
+      }
+   }
+   return null;
+}
+</code></pre>
+<p>实现了 InstantiationAwareBeanPostProcessor 后置处理器的类，可以通过重写 postProcessBeforeInstantiation 方法返回一个真实的 Bean 对象：</p>
+<pre><code class="language-java">default Object postProcessBeforeInstantiation(Class&lt;?&gt; beanClass, String beanName) throws BeansException {
+   return null;
+}
+</code></pre>
+<p>上述代码 createBean 方法第 42 行：</p>
+<pre><code class="language-java">Object beanInstance = doCreateBean(beanName, mbdToUse, args);
+</code></pre>
+<pre><code class="language-java">protected Object doCreateBean(final String beanName, final RootBeanDefinition mbd, final @Nullable Object[] args)
+      throws BeanCreationException {
+   // Instantiate the bean.
+   BeanWrapper instanceWrapper = null;
+   if (mbd.isSingleton()) {
+      instanceWrapper = this.factoryBeanInstanceCache.remove(beanName);
+   }
+   if (instanceWrapper == null) {
+      /**
+       * 创建 bean 实例，并将实例包裹在 BeanWrapper 实现类对象中返回。
+       * createBeanInstance中包含三种创建 bean 实例的方式：
+       *     1.通过工厂方法创建 bean 实例
+       *     2.通过构造方法自动注入（autowire by constructor）的方式创建 bean 实例
+       *     3.通过无参构造方法创建 bean 实例
+       *
+       *     若 bean 的配置信息中配置了 lookup-method 和 replace-method，则会
+       *     增强 bean 实例。
+       */
+      instanceWrapper = createBeanInstance(beanName, mbd, args);
+   }
+   final Object bean = instanceWrapper.getWrappedInstance();
+   Class&lt;?&gt; beanType = instanceWrapper.getWrappedClass();
+   if (beanType != NullBean.class) {
+      mbd.resolvedTargetType = beanType;
+   }
+   // Allow post-processors to modify the merged bean definition.
+   synchronized (mbd.postProcessingLock) {
+      if (!mbd.postProcessed) {
+         try {
+            applyMergedBeanDefinitionPostProcessors(mbd, beanType, beanName);
+         }
+         catch (Throwable ex) {
+            throw new BeanCreationException(mbd.getResourceDescription(), beanName,
+                  &quot;Post-processing of merged bean definition failed&quot;, ex);
+         }
+         mbd.postProcessed = true;
+      }
+   }
+   // Eagerly cache singletons to be able to resolve circular references
+   // even when triggered by lifecycle interfaces like BeanFactoryAware.
+   boolean earlySingletonExposure = (mbd.isSingleton() &amp;&amp; this.allowCircularReferences &amp;&amp;
+         isSingletonCurrentlyInCreation(beanName));
+   if (earlySingletonExposure) {
+      if (logger.isDebugEnabled()) {
+         logger.debug(&quot;Eagerly caching bean '&quot; + beanName +
+               &quot;' to allow for resolving potential circular references&quot;);
+      }
+      addSingletonFactory(beanName, () -&gt; getEarlyBeanReference(beanName, mbd, bean));
+   }
+   // Initialize the bean instance.
+   Object exposedObject = bean;
+   try {
+      // 设置属性，非常重要
+      populateBean(beanName, mbd, instanceWrapper);
+      // 执行后置处理器，AOP就是在这里完成的处理
+      exposedObject = initializeBean(beanName, exposedObject, mbd);
+   }
+   catch (Throwable ex) {
+      if (ex instanceof BeanCreationException &amp;&amp; beanName.equals(((BeanCreationException) ex).getBeanName())) {
+         throw (BeanCreationException) ex;
+      }
+      else {
+         throw new BeanCreationException(
+               mbd.getResourceDescription(), beanName, &quot;Initialization of bean failed&quot;, ex);
+      }
+   }
+   if (earlySingletonExposure) {
+      Object earlySingletonReference = getSingleton(beanName, false);
+      if (earlySingletonReference != null) {
+         if (exposedObject == bean) {
+            exposedObject = earlySingletonReference;
+         }
+         else if (!this.allowRawInjectionDespiteWrapping &amp;&amp; hasDependentBean(beanName)) {
+            String[] dependentBeans = getDependentBeans(beanName);
+            Set&lt;String&gt; actualDependentBeans = new LinkedHashSet&lt;&gt;(dependentBeans.length);
+            for (String dependentBean : dependentBeans) {
+               if (!removeSingletonIfCreatedForTypeCheckOnly(dependentBean)) {
+                  actualDependentBeans.add(dependentBean);
+               }
+            }
+            if (!actualDependentBeans.isEmpty()) {
+               throw new BeanCurrentlyInCreationException(beanName,
+                     &quot;Bean with name '&quot; + beanName + &quot;' has been injected into other beans [&quot; +
+                     StringUtils.collectionToCommaDelimitedString(actualDependentBeans) +
+                     &quot;] in its raw version as part of a circular reference, but has eventually been &quot; +
+                     &quot;wrapped. This means that said other beans do not use the final version of the &quot; +
+                     &quot;bean. This is often the result of over-eager type matching - consider using &quot; +
+                     &quot;'getBeanNamesOfType' with the 'allowEagerInit' flag turned off, for example.&quot;);
+            }
+         }
+      }
+   }
+   // Register bean as disposable.
+   try {
+      registerDisposableBeanIfNecessary(beanName, bean, mbd);
+   }
+   catch (BeanDefinitionValidationException ex) {
+      throw new BeanCreationException(
+            mbd.getResourceDescription(), beanName, &quot;Invalid destruction signature&quot;, ex);
+   }
+   return exposedObject;
+}
+</code></pre>
+<h4 id="createbeaninstance">createBeanInstance</h4>
+<p>上述代码第 20 行：</p>
+<pre><code class="language-java">protected BeanWrapper createBeanInstance(String beanName, RootBeanDefinition mbd, @Nullable Object[] args) {
+   // Make sure bean class is actually resolved at this point.
+   Class&lt;?&gt; beanClass = resolveBeanClass(mbd, beanName);
+   /**
+    * 检测一个类的访问权限 Spring 默认情况下对于非 public 的类是允许访问的。
+    */
+   if (beanClass != null &amp;&amp; !Modifier.isPublic(beanClass.getModifiers()) &amp;&amp; !mbd.isNonPublicAccessAllowed()) {
+      throw new BeanCreationException(mbd.getResourceDescription(), beanName,
+            &quot;Bean class isn't public, and non-public access not allowed: &quot; + beanClass.getName());
+   }
+   Supplier&lt;?&gt; instanceSupplier = mbd.getInstanceSupplier();
+   if (instanceSupplier != null) {
+      return obtainFromSupplier(instanceSupplier, beanName);
+   }
+   /**
+    * 如果工厂方法不为空，则通过工厂方法创建 bean 对象，在这里直接 return，就不会再去执行下面的 Shortcut 等语句了。
+    * 这种构建 bean 的方式可以参考以下 demo
+    */
+   if (mbd.getFactoryMethodName() != null) {
+      return instantiateUsingFactoryMethod(beanName, mbd, args);
+   }
+   // Shortcut when re-creating the same bean...
+   /**
+    * 从 Spring 的原始注释可以知道这是一个 Shortcut，什么意思呢？
+    * 当多次构建同一个 bean 时，可以使用这个 Shortcut，
+    * 也就是说不在需要此腿短应该使用哪种方式构造 bean
+    * 比如在多次构建同一个 prototype 类型的 bean 时，就可以走此处的 Shortcut
+    * 这里的 resolved  和 mbd.constructorArgumentsResolved 将会在 bean 第一次实例化的过程中被设置，后面来证明
+    */
+   boolean resolved = false;
+   boolean autowireNecessary = false;
+   if (args == null) {
+      synchronized (mbd.constructorArgumentLock) {
+         if (mbd.resolvedConstructorOrFactoryMethod != null) {
+            resolved = true;
+            // 如果已经解析了构造方法的参数，则必须要通过一个带参构造方法来实例
+            autowireNecessary = mbd.constructorArgumentsResolved;
+         }
+      }
+   }
+   if (resolved) {
+      if (autowireNecessary) {
+         // 通过构造方法自动装配的方式构造 bean 对象
+         return autowireConstructor(beanName, mbd, null, null);
+      }
+      else {
+         // 通过默认的无参构造方法进行
+         return instantiateBean(beanName, mbd);
+      }
+   }
+   // Candidate constructors for autowiring?
+   // 由后置处理器决定返回哪些构造方法
+   Constructor&lt;?&gt;[] ctors = determineConstructorsFromBeanPostProcessors(beanClass, beanName);
+   if (ctors != null || mbd.getResolvedAutowireMode() == AUTOWIRE_CONSTRUCTOR ||
+         mbd.hasConstructorArgumentValues() || !ObjectUtils.isEmpty(args)) {
+      return autowireConstructor(beanName, mbd, ctors, args);
+   }
+   // No special handling: simply use no-arg constructor.
+   // 使用默认的无参构造方法进行初始化
+   return instantiateBean(beanName, mbd);
+}
+</code></pre>
+<h4 id="演示-factorymethod-的-demo1">演示 FactoryMethod 的 demo1</h4>
+<p>上述代码第 22 行：</p>
+<pre><code class="language-java">//  按照以下demo，当执行到这行代码，发现有一个 FactoryMethod， 就调用 instantiateUsingFactoryMethod 方法去创建
+if (mbd.getFactoryMethodName() != null) {
+  return instantiateUsingFactoryMethod(beanName, mbd, args);
+</code></pre>
+<p>Spring 要实例化一个 Bean，会经过一个 getSingleton() 方法，经过一系列判断后，会进入 createBeanInstance() 方法：先判断这个 BeanDefinition 中有没有 FactoryMethod 属性，如果有，则调用 FactoryMethod 去创建对象。</p>
+<pre><code class="language-xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;beans xmlns=&quot;http://www.springframework.org/schema/beans&quot;
+       xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot;
+       xsi:schemaLocation=&quot;http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd&quot;&gt;
+   &lt;bean id=&quot;order&quot; class=&quot;com.ssm.service.OrderService&quot; factory-method=&quot;query&quot;&gt;
+   &lt;/bean&gt;
+&lt;/beans&gt;
+</code></pre>
+<pre><code class="language-java">@Configuration
+@ComponentScan(&quot;com.ssm&quot;)
+@ImportResource(&quot;classpath:spring.xml&quot;)
+public class AppConfig {
+</code></pre>
+<pre><code class="language-java">public class Luban {
+}
+</code></pre>
+<pre><code class="language-java">public class OrderService {
+   public static Object query(){
+      return new Luban();
+   }
+}
+</code></pre>
+<p>因为在 xml 中使用了 factory-method 进行配置，所以会将 Luban 对象放到 Spring 容器中去，因此通过 beanName=&quot;order&quot; 拿出的对象也是 Luban。<br>
+测试类：</p>
+<pre><code class="language-java">public class Test {
+   public static void main(String[] args) {
+      AnnotationConfigApplicationContext context =
+            new AnnotationConfigApplicationContext(AppConfig.class);
+      System.out.println(context.getBean(&quot;order&quot;));
+      System.out.println(context.getBean(OrderService.class));
+      System.out.println(context.getBean(Luban.class));
+   }
+}
+</code></pre>
+<p>输出结果：</p>
+<pre><code class="language-plain">com.ssm.app.Luban@7c30a502
+com.ssm.service.OrderService@49e4cb85
+com.ssm.app.Luban@7c30a502
+</code></pre>
+<h4 id="演示-factorymethod-的-demo2">演示 FactoryMethod 的 demo2</h4>
+<p>另一个演示 FactoryMethod 的 demo，被 @Bean 修饰的 static 相当于给这个 bean 添加了一个 factory-method：</p>
+<pre><code class="language-java">@Configuration
+@ComponentScan(&quot;com.ssm&quot;)
+public class AppConfig {
+   @Bean
+   public static IndexService indexService(){
+      return new IndexService();
+   }
+   @Bean
+   public OrderService orderService(){
+      indexService();
+      return new OrderService();
+   }
+}
+</code></pre>
+<p>按照上述代码，IndexService 会调用两次初始化。</p>
+<pre><code class="language-java">@Service
+public class IndexService {
+   public IndexService(){
+      System.out.println(&quot;IndexService...constructor&quot;);
+   }
+}
+</code></pre>
+<p>输出结果：</p>
+<pre><code class="language-plain">IndexService...constructor
+IndexService...constructor
+</code></pre>
+<p>但是如果去掉 static，IndexService 只会调用一次初始化。</p>
+<pre><code class="language-java">@Configuration
+@ComponentScan(&quot;com.ssm&quot;)
+public class AppConfig {
+   @Bean
+   public IndexService indexService(){
+      return new IndexService();
+   }
+   @Bean
+   public OrderService orderService(){
+      indexService();
+      return new OrderService();
+   }
+}
+</code></pre>
+<pre><code class="language-plain">IndexService...constructor
+</code></pre>
+<p>ConfigurationClassPostProcessor#processConfigBeanDefinitions：</p>
+<pre><code class="language-java">// configClasses 拿到了 @Import、@Service、@Bean
+this.reader.loadBeanDefinitions(configClasses);
+</code></pre>
+<p>ConfigurationClassBeanDefinitionReader#loadBeanDefinitions --&gt; ConfigurationClassBeanDefinitionReader#loadBeanDefinitionsForConfigurationClass：</p>
+<pre><code class="language-java">// 如果一个类是 @Bean，会循环拿出所有加了 @Bean 的方法
+for (BeanMethod beanMethod : configClass.getBeanMethods()) {
+   loadBeanDefinitionsForBeanMethod(beanMethod);
+}
+</code></pre>
+<p>ConfigurationClassBeanDefinitionReader#loadBeanDefinitionsForBeanMethod：</p>
+<pre><code class="language-java">// 如果这个方法是 static 的，相当于为这个 Bean 配置了一个 factory-method=&quot;index&quot;， 即&lt;bean id=&quot;indexService&quot; class=&quot;com.ssm.service.IndexService&quot; factory-method=&quot;indexService&quot;&gt;
+if (metadata.isStatic()) {
+   // static @Bean method
+   beanDef.setBeanClassName(configClass.getMetadata().getClassName());
+   // 设置 FactoryMethod
+   beanDef.setFactoryMethodName(methodName);
+}
+// 如果这个方法不是 static 的
+else {
+   // instance @Bean method
+   beanDef.setFactoryBeanName(configClass.getBeanName());
+   // 设置  UniqueFactoryMethod
+   beanDef.setUniqueFactoryMethodName(methodName);
+}
+</code></pre>
+<h1 id="shortcut-快捷方式">Shortcut 快捷方式</h1>
+<h2 id="无参构造方法">无参构造方法</h2>
+<p>首先声明 IndexService 中有一个无参构造方法：</p>
+<pre><code class="language-java">@Service
+public class IndexService {
+   public IndexService(){
+      System.out.println(&quot;IndexService...constructor&quot;);
+   }
+}
+</code></pre>
+<ul>
+<li>当重新创建同一个 Bean 的时候使用 Shortcut 快捷方式</li>
+</ul>
+<p>createBeanInstance 的第 27-67 行：</p>
+<pre><code class="language-java">// 当重新创建同一个 Bean 的时候使用 Shortcut 快捷方式
+/**
+ * 从 Spring 的原始注释可以知道这是一个 Shortcut，什么意思呢？
+ * 当多次构建同一个 bean 时，可以使用这个 Shortcut，
+ * 也就是说不在需要此腿短应该使用哪种方式构造 bean
+ * 比如在多次构建同一个 prototype 类型的 bean 时，就可以走此处的 Shortcut
+ * 这里的 resolved  和 mbd.constructorArgumentsResolved 将会在 bean 第一次实例化的过程中被设置，后面来证明
+ */
+boolean resolved = false;
+// 必须自动装配
+boolean autowireNecessary = false;
+if (args == null) {
+   synchronized (mbd.constructorArgumentLock) {
+      // 如果是一个 FactoryMethod 创建的，就会把 resolved 设置为 true
+      if (mbd.resolvedConstructorOrFactoryMethod != null) {
+         resolved = true;
+         // 如果已经解析了构造方法的参数，则必须要通过一个带参构造方法来实例
+         autowireNecessary = mbd.constructorArgumentsResolved;
+      }
+   }
+}
+if (resolved) {
+   if (autowireNecessary) {
+      // 通过构造方法自动装配的方式构造 bean 对象
+      return autowireConstructor(beanName, mbd, null, null);
+   }
+   else {
+      // 通过默认的无参构造方法进行
+      return instantiateBean(beanName, mbd);
+   }
+}
+// Candidate constructors for autowiring?
+// 由后置处理器决定返回哪些构造方法
+   Constructor&lt;?&gt;[] ctors = determineConstructorsFromBeanPostProcessors(beanClass, beanName);
+if (ctors != null || mbd.getResolvedAutowireMode() == AUTOWIRE_CONSTRUCTOR ||
+      mbd.hasConstructorArgumentValues() || !ObjectUtils.isEmpty(args)) {
+   return autowireConstructor(beanName, mbd, ctors, args);
+}
+// No special handling: simply use no-arg constructor.
+// 使用默认的无参构造方法进行初始化
+return instantiateBean(beanName, mbd);
+</code></pre>
+<p>Spring 在构建对象的时候，要知道这个对象如何构建，利用构造方法还是默认的构造方法，通过 autowireNecessary 值来记录，当第二次被实例化时，直接判断 autowireNecessary 的值即可。<br>
+上述代码第 35 行：</p>
+<pre><code class="language-java">//  拿出构造方法，然后决定用哪个构造方法进行实例化
+Constructor&lt;?&gt;[] ctors = determineConstructorsFromBeanPostProcessors(beanClass, beanName);
+</code></pre>
+<figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/FZ9Tj8MwpTCVHFpr.png" alt="图片" loading="lazy"></figure>
+<p>Spring 得到构造方法，然后通过构造方法去 new 对象。</p>
+<p>IndexService 中有一个无参构造方法，Spring 会认为它没有构造方法，如上图 determineConstructorsFromBeanPostProcessors 方法返回 null，然后执行 instantiateBean 方法去创建对象。</p>
+<pre><code class="language-java">protected Constructor&lt;?&gt;[] determineConstructorsFromBeanPostProcessors(@Nullable Class&lt;?&gt; beanClass, String beanName)
+      throws BeansException {
+   // 是否有 InstantiationAwareBeanPostProcessors 后置处理器
+   if (beanClass != null &amp;&amp; hasInstantiationAwareBeanPostProcessors()) {
+      for (BeanPostProcessor bp : getBeanPostProcessors()) {
+         // 如果有 SmartInstantiationAwareBeanPostProcessor 后置处理器
+         if (bp instanceof SmartInstantiationAwareBeanPostProcessor) {
+            SmartInstantiationAwareBeanPostProcessor ibp = (SmartInstantiationAwareBeanPostProcessor) bp;
+            Constructor&lt;?&gt;[] ctors = ibp.determineCandidateConstructors(beanClass, beanName);
+            if (ctors != null) {
+               return ctors;
+            }
+         }
+      }
+   }
+   return null;
+}
+</code></pre>
+<p>上述代码第 9 行，首先这个 SmartInstantiationAwareBeanPostProcessor 后置处理器什么都没做，直接 return null;</p>
+<pre><code class="language-java">public Constructor&lt;?&gt;[] determineCandidateConstructors(Class&lt;?&gt; beanClass, String beanName) throws BeansException {
+   return null;
+}
+</code></pre>
+<p>再进行下一轮循环，这个后置处理器的操作非常复杂了：</p>
+<pre><code class="language-java">public Constructor&lt;?&gt;[] determineCandidateConstructors(Class&lt;?&gt; beanClass, final String beanName)
+      throws BeanCreationException {
+   // Let's check for lookup methods here...
+   if (!this.lookupMethodsChecked.contains(beanName)) {
+      try {
+         ReflectionUtils.doWithMethods(beanClass, method -&gt; {
+            Lookup lookup = method.getAnnotation(Lookup.class);
+            if (lookup != null) {
+               Assert.state(this.beanFactory != null, &quot;No BeanFactory available&quot;);
+               LookupOverride override = new LookupOverride(method, lookup.value());
+               try {
+                  RootBeanDefinition mbd = (RootBeanDefinition)
+                        this.beanFactory.getMergedBeanDefinition(beanName);
+                  mbd.getMethodOverrides().addOverride(override);
+               }
+               catch (NoSuchBeanDefinitionException ex) {
+                  throw new BeanCreationException(beanName,
+                        &quot;Cannot apply @Lookup to beans without corresponding bean definition&quot;);
+               }
+            }
+         });
+      }
+      catch (IllegalStateException ex) {
+         throw new BeanCreationException(beanName, &quot;Lookup method resolution failed&quot;, ex);
+      }
+      this.lookupMethodsChecked.add(beanName);
+   }
+   // Quick check on the concurrent map first, with minimal locking.
+   // 从构造方法的缓存中拿一个构造方法
+   Constructor&lt;?&gt;[] candidateConstructors = this.candidateConstructorsCache.get(beanClass);
+   if (candidateConstructors == null) {
+      // Fully synchronized resolution now...
+      synchronized (this.candidateConstructorsCache) {
+         candidateConstructors = this.candidateConstructorsCache.get(beanClass);
+         if (candidateConstructors == null) {
+            Constructor&lt;?&gt;[] rawCandidates;
+            try {
+               // 通过反射得到 IndexService 的构造方法
+               rawCandidates = beanClass.getDeclaredConstructors();
+            }
+            catch (Throwable ex) {
+               throw new BeanCreationException(beanName,
+                     &quot;Resolution of declared constructors on bean Class [&quot; + beanClass.getName() +
+                     &quot;] from ClassLoader [&quot; + beanClass.getClassLoader() + &quot;] failed&quot;, ex);
+            }
+            List&lt;Constructor&lt;?&gt;&gt; candidates = new ArrayList&lt;&gt;(rawCandidates.length);
+            Constructor&lt;?&gt; requiredConstructor = null;
+            Constructor&lt;?&gt; defaultConstructor = null;
+            Constructor&lt;?&gt; primaryConstructor = BeanUtils.findPrimaryConstructor(beanClass);
+            int nonSyntheticConstructors = 0;
+            for (Constructor&lt;?&gt; candidate : rawCandidates) {
+               if (!candidate.isSynthetic()) {
+                  nonSyntheticConstructors++;
+               }
+               else if (primaryConstructor != null) {
+                  continue;
+               }
+               AnnotationAttributes ann = findAutowiredAnnotation(candidate);
+               if (ann == null) {
+                  Class&lt;?&gt; userClass = ClassUtils.getUserClass(beanClass);
+                  if (userClass != beanClass) {
+                     try {
+                        Constructor&lt;?&gt; superCtor =
+                              userClass.getDeclaredConstructor(candidate.getParameterTypes());
+                        ann = findAutowiredAnnotation(superCtor);
+                     }
+                     catch (NoSuchMethodException ex) {
+                        // Simply proceed, no equivalent superclass constructor found...
+                     }
+                  }
+               }
+               if (ann != null) {
+                  if (requiredConstructor != null) {
+                     throw new BeanCreationException(beanName,
+                           &quot;Invalid autowire-marked constructor: &quot; + candidate +
+                           &quot;. Found constructor with 'required' Autowired annotation already: &quot; +
+                           requiredConstructor);
+                  }
+                  boolean required = determineRequiredStatus(ann);
+                  if (required) {
+                     if (!candidates.isEmpty()) {
+                        throw new BeanCreationException(beanName,
+                              &quot;Invalid autowire-marked constructors: &quot; + candidates +
+                              &quot;. Found constructor with 'required' Autowired annotation: &quot; +
+                              candidate);
+                     }
+                     requiredConstructor = candidate;
+                  }
+                  candidates.add(candidate);
+               }
+               // 如果构造方法的参数=0，即无参构造方法
+               else if (candidate.getParameterCount() == 0) {
+                  defaultConstructor = candidate;
+               }
+            }
+            if (!candidates.isEmpty()) {
+               // Add default constructor to list of optional constructors, as fallback.
+               if (requiredConstructor == null) {
+                  if (defaultConstructor != null) {
+                     candidates.add(defaultConstructor);
+                  }
+                  else if (candidates.size() == 1 &amp;&amp; logger.isWarnEnabled()) {
+                     logger.warn(&quot;Inconsistent constructor declaration on bean with name '&quot; + beanName +
+                           &quot;': single autowire-marked constructor flagged as optional - &quot; +
+                           &quot;this constructor is effectively required since there is no &quot; +
+                           &quot;default constructor to fall back to: &quot; + candidates.get(0));
+                  }
+               }
+               candidateConstructors = candidates.toArray(new Constructor&lt;?&gt;[0]);
+            }
+            // 如果有 1个 构造方法，且构造方法有参数
+            else if (rawCandidates.length == 1 &amp;&amp; rawCandidates[0].getParameterCount() &gt; 0) {
+               candidateConstructors = new Constructor&lt;?&gt;[] {rawCandidates[0]};
+            }
+            // 如果有 2个 构造方法，且主要的构造方法不为空且...
+            else if (nonSyntheticConstructors == 2 &amp;&amp; primaryConstructor != null &amp;&amp;
+                  defaultConstructor != null &amp;&amp; !primaryConstructor.equals(defaultConstructor)) {
+               candidateConstructors = new Constructor&lt;?&gt;[] {primaryConstructor, defaultConstructor};
+            }
+            // 如果有 1个 构造方法，且构造方法参数不为空
+            else if (nonSyntheticConstructors == 1 &amp;&amp; primaryConstructor != null) {
+               candidateConstructors = new Constructor&lt;?&gt;[] {primaryConstructor};
+            }
+            else {
+               // 因为  IndexService 内有一个无参构造方法，所以上述三个 else if 判断都不成立，所以会进入 else 分支
+               candidateConstructors = new Constructor&lt;?&gt;[0];
+            }
+            this.candidateConstructorsCache.put(beanClass, candidateConstructors);
+         }
+      }
+   }
+   return (candidateConstructors.length &gt; 0 ? candidateConstructors : null);
+}
+</code></pre>
+<p>上述代码第 41 行：</p>
+<pre><code class="language-java">rawCandidates = beanClass.getDeclaredConstructors();
+</code></pre>
+<p><img src="https://epitomm.github.io/post-images/mWIAbxNGJdjVMIGW.png" alt="图片" loading="lazy"><br>
+<img src="https://epitomm.github.io/post-images/6pMDddCa1pKMHuyv.png" alt="图片" loading="lazy"></p>
+<h2 id="有参构造方法">有参构造方法</h2>
+<p>如果为 IndexService 添加了一个 有参构造方法：</p>
+<pre><code class="language-java">@Service
+public class IndexService {
+   public IndexService(String str){
+      System.out.println(&quot;IndexService...constructor&quot;);
+   }
+}
+</code></pre>
+<figure data-type="image" tabindex="2"><img src="https://epitomm.github.io/post-images/PMA5pOIPRlLi8GVH.png" alt="图片" loading="lazy"></figure>
+<pre><code class="language-java">Constructor&lt;?&gt;[] ctors = determineConstructorsFromBeanPostProcessors(beanClass, beanName);
+if (ctors != null || mbd.getResolvedAutowireMode() == AUTOWIRE_CONSTRUCTOR ||
+      mbd.hasConstructorArgumentValues() || !ObjectUtils.isEmpty(args)) {
+   return autowireConstructor(beanName, mbd, ctors, args);
+}
+</code></pre>
+<p>有参构造方法就会调用 autowireConstructor 方法创建对象。</p>
+<pre><code class="language-java">protected BeanWrapper autowireConstructor(
+      String beanName, RootBeanDefinition mbd, @Nullable Constructor&lt;?&gt;[] ctors, @Nullable Object[] explicitArgs) {
+   return new ConstructorResolver(this).autowireConstructor(beanName, mbd, ctors, explicitArgs);
+}
+</code></pre>
+<pre><code class="language-java">public ConstructorResolver(AbstractAutowireCapableBeanFactory beanFactory) {
+   this.beanFactory = beanFactory;
+   this.logger = beanFactory.getLogger();
+}
+</code></pre>
+<pre><code class="language-java">public BeanWrapper autowireConstructor(String beanName, RootBeanDefinition mbd,
+      @Nullable Constructor&lt;?&gt;[] chosenCtors, @Nullable Object[] explicitArgs) {
+   // 实例一个 BeanWrapperImpl 对象
+   // 前面外部返回的 BeanWrapper 其实就是这个 BeanWrapperImpl
+   // 因为 BeanWrapper 是个接口
+   BeanWrapperImpl bw = new BeanWrapperImpl();
+   this.beanFactory.initBeanWrapper(bw);
+   // Spring 决定采用哪个构造方法来实例化 bean，把这个构造方法使用 constructorToUse 变量暂存起来
+   // 代码执行到这里 Spring 已经决定要采用一个特殊构造方法来实例 bean
+   Constructor&lt;?&gt; constructorToUse = null;
+   // 构造方法的值，构造方法通过反射来实例化一个对象
+   // 但是这里需要注意的是 argsHolderToUse 是一个数据结构
+   // argsToUse[] 才是真正的值
+   ArgumentsHolder argsHolderToUse = null;
+   Object[] argsToUse = null;
+   // 确定参数值列表
+   /**
+    * explicitArgs 是从 createBeanInstance 方法传过来的，构造方法的值
+    * org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory#createBeanInstance
+    * 可以看到如果从 createBeanInstance 调用那么永远为空
+    */
+   if (explicitArgs != null) {
+      argsToUse = explicitArgs;
+   }
+   else {
+      Object[] argsToResolve = null;
+      synchronized (mbd.constructorArgumentLock) {
+         constructorToUse = (Constructor&lt;?&gt;) mbd.resolvedConstructorOrFactoryMethod;
+         if (constructorToUse != null &amp;&amp; mbd.constructorArgumentsResolved) {
+            // Found a cached constructor...
+            argsToUse = mbd.resolvedConstructorArguments;
+            if (argsToUse == null) {
+               argsToResolve = mbd.preparedConstructorArguments;
+            }
+         }
+      }
+      if (argsToResolve != null) {
+         argsToUse = resolvePreparedArguments(beanName, mbd, bw, constructorToUse, argsToResolve);
+      }
+   }
+   if (constructorToUse == null) {
+      // Need to resolve the constructor.
+      // 如果没有已经解析的构造方法
+      // 则需要去解析构造方法
+      // 判断构造方法是否为空，判断是否根据构造方法自动注入，此时 IndexService 有一个有参构造方法，所以 autowiring =true
+      boolean autowiring = (chosenCtors != null ||
+            mbd.getResolvedAutowireMode() == AutowireCapableBeanFactory.AUTOWIRE_CONSTRUCTOR);
+      ConstructorArgumentValues resolvedValues = null;
+      // 定义了最小参数个数
+      // 如果构造方法的参数列表给定了具体的值
+      // 那么这里指的就是构造方法参数的个数
+      int minNrOfArgs;
+      if (explicitArgs != null) {
+         minNrOfArgs = explicitArgs.length;
+      }
+      else {
+         /**
+          * cargs 获取构造方法的值，注意是值，不是类型和列表
+          */
+         ConstructorArgumentValues cargs = mbd.getConstructorArgumentValues();
+         resolvedValues = new ConstructorArgumentValues();
+         /**
+          * 把 cargs 的内容给 resolvedValues 比那里并且确定构造方法参数数量，假设有如下配置：
+          *     &lt;bean id=&quot;luban&quot; class=&quot;com.luban.Luban&quot;&gt;
+          *        &lt;constructor-arg index=&quot;0&quot; value=&quot;str1&quot;/&gt;
+          *        &lt;constructor-arg index=&quot;1&quot; value=&quot;1&quot;/&gt;
+          *        &lt;constructor-arg index=&quot;2&quot; value=&quot;str2&quot;/&gt;
+          *      &lt;/bean&gt;
+          *
+          * 那么 minNrOfArgs=3
+          * 或者你通过 Spring 的各种扩展点给了 Spring 一些构造方法的值，那么也能确定
+          * 为什么要确定？
+          * 因为我们的构造方法有多个，
+          * 那么类型和个数是 Spring 用来确定使用哪个构造方法的重要信息
+          */
+         minNrOfArgs = resolveConstructorArguments(beanName, mbd, bw, cargs, resolvedValues);
+      }
+      // Take specified constructors, if any.
+      Constructor&lt;?&gt;[] candidates = chosenCtors;
+      if (candidates == null) {
+         Class&lt;?&gt; beanClass = mbd.getBeanClass();
+         try {
+            // 得到所有的构造方法
+            candidates = (mbd.isNonPublicAccessAllowed() ?
+                  beanClass.getDeclaredConstructors() : beanClass.getConstructors());
+         }
+         catch (Throwable ex) {
+            throw new BeanCreationException(mbd.getResourceDescription(), beanName,
+                  &quot;Resolution of declared constructors on bean Class [&quot; + beanClass.getName() +
+                  &quot;] from ClassLoader [&quot; + beanClass.getClassLoader() + &quot;] failed&quot;, ex);
+         }
+      }
+      // 构造方法进行排序 
+      AutowireUtils.sortConstructors(candidates);
+      // 定义了一个差异变量，默认为 Integer 最大值
+      int minTypeDiffWeight = Integer.MAX_VALUE;
+      // 有歧义的构造方法 public IndexService(Class clazz){} 和 public IndexService(Object obj){}
+      Set&lt;Constructor&lt;?&gt;&gt; ambiguousConstructors = null;
+      // 循环所有的构造方法
+      LinkedList&lt;UnsatisfiedDependencyException&gt; causes = null;
+      for (Constructor&lt;?&gt; candidate : candidates) {
+         Class&lt;?&gt;[] paramTypes = candidate.getParameterTypes();
+         // 需要循环寻找构造方法，
+         // 因为：比如传参为 (&quot;hello&quot;, &quot;world&quot;, 120)
+         // 比如有这样这样一个这样的构造方法：public void IndexService(Object o1, Object o2, Object o3) ，Spring 会认为它符合；但是还有一个 public void IndexService(String str, String str2, Integer i2):这个构造方法更符合传参的类型，所以会循环不断寻找构造方法，为了找到更匹配的。
+         // 如果构造方法参数个数(3) &gt; 当前这个构造方法参数个数(2)，则不再继续向下找。因为当前构造方法是按照参数个数进行排好序的，当前构造方法个数为2了，表明后面不会有更匹配的了，于是终止。 
+         if (constructorToUse != null &amp;&amp; argsToUse.length &gt; paramTypes.length) {
+            // Already found greedy constructor that can be satisfied -&gt;
+            // do not look any further, there are only less greedy constructors left.
+            break;
+         }
+         if (paramTypes.length &lt; minNrOfArgs) {
+            continue;
+         }
+         ArgumentsHolder argsHolder;
+         if (resolvedValues != null) {
+            try {
+               String[] paramNames = ConstructorPropertiesChecker.evaluate(candidate, paramTypes.length);
+               if (paramNames == null) {
+                  ParameterNameDiscoverer pnd = this.beanFactory.getParameterNameDiscoverer();
+                  if (pnd != null) {
+                     paramNames = pnd.getParameterNames(candidate);
+                  }
+               }
+               argsHolder = createArgumentArray(beanName, mbd, resolvedValues, bw, paramTypes, paramNames,
+                     getUserDeclaredConstructor(candidate), autowiring);
+            }
+            catch (UnsatisfiedDependencyException ex) {
+               if (logger.isTraceEnabled()) {
+                  logger.trace(&quot;Ignoring constructor [&quot; + candidate + &quot;] of bean '&quot; + beanName + &quot;': &quot; + ex);
+               }
+               // Swallow and try next constructor.
+               if (causes == null) {
+                  causes = new LinkedList&lt;&gt;();
+               }
+               causes.add(ex);
+               continue;
+            }
+         }
+         else {
+            // Explicit arguments given -&gt; arguments length must match exactly.
+            if (paramTypes.length != explicitArgs.length) {
+               continue;
+            }
+            argsHolder = new ArgumentsHolder(explicitArgs);
+         }
+         int typeDiffWeight = (mbd.isLenientConstructorResolution() ?
+               argsHolder.getTypeDifferenceWeight(paramTypes) : argsHolder.getAssignabilityWeight(paramTypes));
+         // Choose this constructor if it represents the closest match.
+         if (typeDiffWeight &lt; minTypeDiffWeight) {
+            constructorToUse = candidate;
+            argsHolderToUse = argsHolder;
+            argsToUse = argsHolder.arguments;
+            minTypeDiffWeight = typeDiffWeight;
+            ambiguousConstructors = null;
+         }
+         else if (constructorToUse != null &amp;&amp; typeDiffWeight == minTypeDiffWeight) {
+            if (ambiguousConstructors == null) {
+               ambiguousConstructors = new LinkedHashSet&lt;&gt;();
+               ambiguousConstructors.add(constructorToUse);
+            }
+            ambiguousConstructors.add(candidate);
+         }
+      }
+      if (constructorToUse == null) {
+         if (causes != null) {
+            UnsatisfiedDependencyException ex = causes.removeLast();
+            for (Exception cause : causes) {
+               this.beanFactory.onSuppressedException(cause);
+            }
+            throw ex;
+         }
+         throw new BeanCreationException(mbd.getResourceDescription(), beanName,
+               &quot;Could not resolve matching constructor &quot; +
+               &quot;(hint: specify index/type/name arguments for simple parameters to avoid type ambiguities)&quot;);
+      }
+      else if (ambiguousConstructors != null &amp;&amp; !mbd.isLenientConstructorResolution()) {
+         throw new BeanCreationException(mbd.getResourceDescription(), beanName,
+               &quot;Ambiguous constructor matches found in bean '&quot; + beanName + &quot;' &quot; +
+               &quot;(hint: specify index/type/name arguments for simple parameters to avoid type ambiguities): &quot; +
+               ambiguousConstructors);
+      }
+      if (explicitArgs == null) {
+         argsHolderToUse.storeCache(mbd, constructorToUse);
+      }
+   }
+   try {
+      final InstantiationStrategy strategy = beanFactory.getInstantiationStrategy();
+      Object beanInstance;
+      if (System.getSecurityManager() != null) {
+         final Constructor&lt;?&gt; ctorToUse = constructorToUse;
+         final Object[] argumentsToUse = argsToUse;
+         beanInstance = AccessController.doPrivileged((PrivilegedAction&lt;Object&gt;) () -&gt;
+               strategy.instantiate(mbd, beanName, beanFactory, ctorToUse, argumentsToUse),
+               beanFactory.getAccessControlContext());
+      }
+      else {
+         beanInstance = strategy.instantiate(mbd, beanName, this.beanFactory, constructorToUse, argsToUse);
+      }
+      bw.setBeanInstance(beanInstance);
+      return bw;
+   }
+   catch (Throwable ex) {
+      throw new BeanCreationException(mbd.getResourceDescription(), beanName,
+            &quot;Bean instantiation via constructor failed&quot;, ex);
+   }
+}
+</code></pre>
+<p>上述第 116 行代码：</p>
+<pre><code class="language-plain">if (constructorToUse != null &amp;&amp; argsToUse.length &gt; paramTypes.length){
+</code></pre>
+<p>constructorToUse != null：因为 Spring 会有多次循环，当循环第一次如果找到了匹配的构造方法，会把构造方法赋值给 constructorToUse；第二次循环时 constructorToUse != null，然后判断 argsToUse.length 参数长度<br>
+需要循环寻找构造方法，因为：比如传参为 (&quot;hello&quot;, &quot;world&quot;, 120)</p>
+<p>比如有这样这样一个这样的构造方法：public void IndexService(Object o1, Object o2, Object o3) ，Spring 会认为它符合；</p>
+<p>但是还有一个 public void IndexService(String str, String str2, Integer i2):这个构造方法更符合传参的类型，所以会循环不断寻找构造方法，为了找到更匹配的。</p>
+<p>如果构造方法参数个数(3) &gt; 当前这个构造方法参数个数(2)，则不再继续向下找。因为当前构造方法是按照参数个数进行排好序的，当前构造方法个数为2了，表明后面不会有更匹配的了，于是终止。</p>
+<h2 id="一个有参-一个无参构造方法">一个有参、一个无参构造方法</h2>
+<p>当 IndexService 有一个无参、一个有参构造方法时：</p>
+<pre><code class="language-java">@Service
+public class IndexService {
+   public IndexService(String str){
+      System.out.println(&quot;IndexService...constructor&quot;);
+   }
+   public IndexService(){
+   }
+}
+</code></pre>
+<figure data-type="image" tabindex="3"><img src="https://epitomm.github.io/post-images/S7iCrnxWKpwY5lkQ.png" alt="图片" loading="lazy"></figure>
+<p>Spring 不知道你到底要调用哪个构造方法，于是干脆返回 null，调用无参构造方法。</p>
+<p>createBeanInstance 中使用默认构造方法进行实例化：</p>
+<pre><code class="language-java">// 使用默认的无参构造方法进行初始化
+return instantiateBean(beanName, mbd);
+</code></pre>
+<pre><code class="language-java">protected BeanWrapper instantiateBean(final String beanName, final RootBeanDefinition mbd) {
+   try {
+      Object beanInstance;
+      final BeanFactory parent = this;
+      if (System.getSecurityManager() != null) {
+         beanInstance = AccessController.doPrivileged((PrivilegedAction&lt;Object&gt;) () -&gt;
+               getInstantiationStrategy().instantiate(mbd, beanName, parent),
+               getAccessControlContext());
+      }
+      else {
+         // getInstantiationStrategy() 得到类的实例化策略
+         // 默认情况下是得到一个反射的实例化策略
+         beanInstance = getInstantiationStrategy().instantiate(mbd, beanName, parent);
+      }
+      BeanWrapper bw = new BeanWrapperImpl(beanInstance);
+      initBeanWrapper(bw);
+      return bw;
+   }
+   catch (Throwable ex) {
+      throw new BeanCreationException(
+            mbd.getResourceDescription(), beanName, &quot;Instantiation of bean failed&quot;, ex);
+   }
+}
+</code></pre>
+<p>上述代码第 13 行：</p>
+<pre><code class="language-java">beanInstance = getInstantiationStrategy().instantiate(mbd, beanName, parent);
+</code></pre>
+<figure data-type="image" tabindex="4"><img src="https://epitomm.github.io/post-images/cVEHVfWfsTFkJTj5__thumbnail.png" alt="图片" loading="lazy"></figure>
+<pre><code class="language-java">public Object instantiate(RootBeanDefinition bd, @Nullable String beanName, BeanFactory owner) {
+   // Don't override the class with CGLIB if no overrides.
+   // 检查 bean 配置中是否配置了 lookup-method 或 replace-method
+   // 如果配置了就需要使用 CGLIB 构建 bean 对象
+   if (!bd.hasMethodOverrides()) {
+      Constructor&lt;?&gt; constructorToUse;
+      synchronized (bd.constructorArgumentLock) {
+         // constructorToUse： 使用哪个构造方法
+         constructorToUse = (Constructor&lt;?&gt;) bd.resolvedConstructorOrFactoryMethod;
+         if (constructorToUse == null) {
+            final Class&lt;?&gt; clazz = bd.getBeanClass();
+            // 如果 clazz 是接口，抛出异常
+            if (clazz.isInterface()) {
+               throw new BeanInstantiationException(clazz, &quot;Specified class is an interface&quot;);
+            }
+            try {
+               if (System.getSecurityManager() != null) {
+                  constructorToUse = AccessController.doPrivileged(
+                        (PrivilegedExceptionAction&lt;Constructor&lt;?&gt;&gt;) clazz::getDeclaredConstructor);
+               }
+               else {
+                  // getDeclaredConstructor：得到默认构造方法，constructorToUse：表示 Spring 使用哪个构造方法实例对象
+                  constructorToUse = clazz.getDeclaredConstructor();
+               }
+               bd.resolvedConstructorOrFactoryMethod = constructorToUse;
+            }
+            catch (Throwable ex) {
+               throw new BeanInstantiationException(clazz, &quot;No default constructor found&quot;, ex);
+            }
+         }
+      }
+      return BeanUtils.instantiateClass(constructorToUse);
+   }
+   else {
+      // Must generate CGLIB subclass.
+      return instantiateWithMethodInjection(bd, beanName, owner);
+   }
+}
+</code></pre>
+<p>上述代码第 23 行：<br>
+<img src="https://epitomm.github.io/post-images/AxQHvIdwrp1K1Dd2__thumbnail.png" alt="图片" loading="lazy"></p>
+<p>上述代码第 32 行，反射完成 Bean 的实例化：</p>
+<pre><code class="language-java">public static &lt;T&gt; T instantiateClass(Constructor&lt;T&gt; ctor, Object... args) throws BeanInstantiationException {
+   Assert.notNull(ctor, &quot;Constructor must not be null&quot;);
+   try {
+      // 设置构造方法可访问
+      ReflectionUtils.makeAccessible(ctor);
+      // 反射创建对象
+      return (KotlinDetector.isKotlinType(ctor.getDeclaringClass()) ?
+            KotlinDelegate.instantiateClass(ctor, args) : ctor.newInstance(args));
+   }
+   catch (InstantiationException ex) {
+      throw new BeanInstantiationException(ctor, &quot;Is it an abstract class?&quot;, ex);
+   }
+   catch (IllegalAccessException ex) {
+      throw new BeanInstantiationException(ctor, &quot;Is the constructor accessible?&quot;, ex);
+   }
+   catch (IllegalArgumentException ex) {
+      throw new BeanInstantiationException(ctor, &quot;Illegal arguments for constructor&quot;, ex);
+   }
+   catch (InvocationTargetException ex) {
+      throw new BeanInstantiationException(ctor, &quot;Constructor threw exception&quot;, ex.getTargetException());
+   }
+}
+</code></pre>
 
-  <article class="post-list-box  post box-shadow-wrapper">
-    <div class="article-wrapper bg-color">
-      <header class="post-header">
-  <h1 class="post-title">
-    <a class="post-title-link" href="https://epitomm.github.io/post/spring-xi-lie-liu-spring-yuan-ma-jie-xi/">
-      Spring系列（六）Spring源码解析
-    </a>
-  </h1>
-  <div class="post-meta">
-    
-    <span class="meta-item pc-show">
-      <i class="fa fa-calendar-o"></i>
-      <span class="language" data-lan="publish">发布于</span>
-      <span>2020-05-06</span>
-      <span class="post-meta-divider pc-show">|</span>
-    </span>
-    
-    <span class="meta-item">
-      <i class="fa fa-folder-o"></i>
-      <span class="pc-show language" data-lan="category-in">分类于</span>
-      
-      
-      <a href="https://epitomm.github.io/tag/A43qp3xVg/">
-        <span>Spring</span>
-      </a>
-      
-      
-    </span>
-    <span class="post-meta-divider">|</span>
-    
-    <span class="meta-item">
-      <i class="fa fa-clock-o"></i>
-      <span>32<span class="language" data-lan="minute">分钟</span></span>
-    </span>
-    <span class="meta-item">
-      <span class="post-meta-divider">|</span>
-      <i class="fa fa-file-word-o"></i>
-      <span>6623<span class="pc-show language" data-lan="words">字数</span></span>
-    </span>
-    
-  </div>
-</header>
-      <div class="post-body">
-        
-        
-          
-        
-        
-        <div class="post-button text-center">
-          <a class="btn language" data-lan="read-more" href="https://epitomm.github.io/post/spring-xi-lie-liu-spring-yuan-ma-jie-xi/" rel="contents">
-            阅读全文 »
-          </a>
-        </div>
-        
-      </div>
-      
-    </div>
-  </article>
-
-  <article class="post-list-box  post box-shadow-wrapper">
-    <div class="article-wrapper bg-color">
-      <header class="post-header">
-  <h1 class="post-title">
-    <a class="post-title-link" href="https://epitomm.github.io/post/spring-xi-lie-wu-beanfactory-he-factorybean-de-qu-bie/">
-      Spring系列（五）BeanFactory和FactoryBean的区别
-    </a>
-  </h1>
-  <div class="post-meta">
-    
-    <span class="meta-item pc-show">
-      <i class="fa fa-calendar-o"></i>
-      <span class="language" data-lan="publish">发布于</span>
-      <span>2020-05-05</span>
-      <span class="post-meta-divider pc-show">|</span>
-    </span>
-    
-    <span class="meta-item">
-      <i class="fa fa-folder-o"></i>
-      <span class="pc-show language" data-lan="category-in">分类于</span>
-      
-      
-      <a href="https://epitomm.github.io/tag/A43qp3xVg/">
-        <span>Spring</span>
-      </a>
-      
-      
-    </span>
-    <span class="post-meta-divider">|</span>
-    
-    <span class="meta-item">
-      <i class="fa fa-clock-o"></i>
-      <span>12<span class="language" data-lan="minute">分钟</span></span>
-    </span>
-    <span class="meta-item">
-      <span class="post-meta-divider">|</span>
-      <i class="fa fa-file-word-o"></i>
-      <span>2465<span class="pc-show language" data-lan="words">字数</span></span>
-    </span>
-    
-  </div>
-</header>
-      <div class="post-body">
-        
-        
-          
-        
-        
-        <div class="post-button text-center">
-          <a class="btn language" data-lan="read-more" href="https://epitomm.github.io/post/spring-xi-lie-wu-beanfactory-he-factorybean-de-qu-bie/" rel="contents">
-            阅读全文 »
-          </a>
-        </div>
-        
-      </div>
-      
-    </div>
-  </article>
-
-  <article class="post-list-box  post box-shadow-wrapper">
-    <div class="article-wrapper bg-color">
-      <header class="post-header">
-  <h1 class="post-title">
-    <a class="post-title-link" href="https://epitomm.github.io/post/spring-xi-lie-si-xml-mo-ni-springioc/">
-      Spring系列（四）XML模拟SpringIOC
-    </a>
-  </h1>
-  <div class="post-meta">
-    
-    <span class="meta-item pc-show">
-      <i class="fa fa-calendar-o"></i>
-      <span class="language" data-lan="publish">发布于</span>
-      <span>2020-05-05</span>
-      <span class="post-meta-divider pc-show">|</span>
-    </span>
-    
-    <span class="meta-item">
-      <i class="fa fa-folder-o"></i>
-      <span class="pc-show language" data-lan="category-in">分类于</span>
-      
-      
-      <a href="https://epitomm.github.io/tag/A43qp3xVg/">
-        <span>Spring</span>
-      </a>
-      
-      
-    </span>
-    <span class="post-meta-divider">|</span>
-    
-    <span class="meta-item">
-      <i class="fa fa-clock-o"></i>
-      <span>16<span class="language" data-lan="minute">分钟</span></span>
-    </span>
-    <span class="meta-item">
-      <span class="post-meta-divider">|</span>
-      <i class="fa fa-file-word-o"></i>
-      <span>3207<span class="pc-show language" data-lan="words">字数</span></span>
-    </span>
-    
-  </div>
-</header>
-      <div class="post-body">
-        
-        
-          
-        
-        
-        <div class="post-button text-center">
-          <a class="btn language" data-lan="read-more" href="https://epitomm.github.io/post/spring-xi-lie-si-xml-mo-ni-springioc/" rel="contents">
-            阅读全文 »
-          </a>
-        </div>
-        
-      </div>
-      
-    </div>
-  </article>
-
-  <article class="post-list-box  post box-shadow-wrapper">
-    <div class="article-wrapper bg-color">
-      <header class="post-header">
-  <h1 class="post-title">
-    <a class="post-title-link" href="https://epitomm.github.io/post/yi-pian-wen-zhang-xue-hui-jdk-dong-tai-dai-li-bing-shou-dong-mo-ni-yi-ge-dong-tai-dai-li/">
-      Spring系列（三）一篇文章学会 JDK 动态代理并手动模拟一个动态代理
-    </a>
-  </h1>
-  <div class="post-meta">
-    
-    <span class="meta-item pc-show">
-      <i class="fa fa-calendar-o"></i>
-      <span class="language" data-lan="publish">发布于</span>
-      <span>2020-05-03</span>
-      <span class="post-meta-divider pc-show">|</span>
-    </span>
-    
-    <span class="meta-item">
-      <i class="fa fa-folder-o"></i>
-      <span class="pc-show language" data-lan="category-in">分类于</span>
-      
-      
-      <a href="https://epitomm.github.io/tag/3UjOAhPz9/">
-        <span>设计模式</span>
-      </a>、
-      
-      
-      
-      <a href="https://epitomm.github.io/tag/A43qp3xVg/">
-        <span>Spring</span>
-      </a>
-      
-      
-    </span>
-    <span class="post-meta-divider">|</span>
-    
-    <span class="meta-item">
-      <i class="fa fa-clock-o"></i>
-      <span>18<span class="language" data-lan="minute">分钟</span></span>
-    </span>
-    <span class="meta-item">
-      <span class="post-meta-divider">|</span>
-      <i class="fa fa-file-word-o"></i>
-      <span>3610<span class="pc-show language" data-lan="words">字数</span></span>
-    </span>
-    
-  </div>
-</header>
-      <div class="post-body">
-        
-        
-          
-        
-        
-        <div class="post-button text-center">
-          <a class="btn language" data-lan="read-more" href="https://epitomm.github.io/post/yi-pian-wen-zhang-xue-hui-jdk-dong-tai-dai-li-bing-shou-dong-mo-ni-yi-ge-dong-tai-dai-li/" rel="contents">
-            阅读全文 »
-          </a>
-        </div>
-        
-      </div>
-      
-    </div>
-  </article>
-
-  <article class="post-list-box  post box-shadow-wrapper">
-    <div class="article-wrapper bg-color">
-      <header class="post-header">
-  <h1 class="post-title">
-    <a class="post-title-link" href="https://epitomm.github.io/post/springaop-ying-yong/">
-      Spring系列（二）SpringAOP 应用
-    </a>
-  </h1>
-  <div class="post-meta">
-    
-    <span class="meta-item pc-show">
-      <i class="fa fa-calendar-o"></i>
-      <span class="language" data-lan="publish">发布于</span>
-      <span>2020-05-02</span>
-      <span class="post-meta-divider pc-show">|</span>
-    </span>
-    
-    <span class="meta-item">
-      <i class="fa fa-folder-o"></i>
-      <span class="pc-show language" data-lan="category-in">分类于</span>
-      
-      
-      <a href="https://epitomm.github.io/tag/A43qp3xVg/">
-        <span>Spring</span>
-      </a>
-      
-      
-    </span>
-    <span class="post-meta-divider">|</span>
-    
-    <span class="meta-item">
-      <i class="fa fa-clock-o"></i>
-      <span>35<span class="language" data-lan="minute">分钟</span></span>
-    </span>
-    <span class="meta-item">
-      <span class="post-meta-divider">|</span>
-      <i class="fa fa-file-word-o"></i>
-      <span>7610<span class="pc-show language" data-lan="words">字数</span></span>
-    </span>
-    
-  </div>
-</header>
-      <div class="post-body">
-        
-        
-          
-        
-        
-        <div class="post-button text-center">
-          <a class="btn language" data-lan="read-more" href="https://epitomm.github.io/post/springaop-ying-yong/" rel="contents">
-            阅读全文 »
-          </a>
-        </div>
-        
-      </div>
-      
-    </div>
-  </article>
-
-  <article class="post-list-box  post box-shadow-wrapper">
-    <div class="article-wrapper bg-color">
-      <header class="post-header">
-  <h1 class="post-title">
-    <a class="post-title-link" href="https://epitomm.github.io/post/spring-ioc/">
-      Spring系列（一）Spring IoC 应用
-    </a>
-  </h1>
-  <div class="post-meta">
-    
-    <span class="meta-item pc-show">
-      <i class="fa fa-calendar-o"></i>
-      <span class="language" data-lan="publish">发布于</span>
-      <span>2020-04-30</span>
-      <span class="post-meta-divider pc-show">|</span>
-    </span>
-    
-    <span class="meta-item">
-      <i class="fa fa-folder-o"></i>
-      <span class="pc-show language" data-lan="category-in">分类于</span>
-      
-      
-      <a href="https://epitomm.github.io/tag/A43qp3xVg/">
-        <span>Spring</span>
-      </a>
-      
-      
-    </span>
-    <span class="post-meta-divider">|</span>
-    
-    <span class="meta-item">
-      <i class="fa fa-clock-o"></i>
-      <span>53<span class="language" data-lan="minute">分钟</span></span>
-    </span>
-    <span class="meta-item">
-      <span class="post-meta-divider">|</span>
-      <i class="fa fa-file-word-o"></i>
-      <span>10771<span class="pc-show language" data-lan="words">字数</span></span>
-    </span>
-    
-  </div>
-</header>
-      <div class="post-body">
-        
-        
-          
-        
-        
-        <div class="post-button text-center">
-          <a class="btn language" data-lan="read-more" href="https://epitomm.github.io/post/spring-ioc/" rel="contents">
-            阅读全文 »
-          </a>
-        </div>
-        
-      </div>
-      
-    </div>
-  </article>
-
-  <article class="post-list-box  post box-shadow-wrapper">
-    <div class="article-wrapper bg-color">
-      <header class="post-header">
-  <h1 class="post-title">
-    <a class="post-title-link" href="https://epitomm.github.io/post/java-bing-fa-cas-he-aqs/">
-      Java 并发——CAS 和 AQS
-    </a>
-  </h1>
-  <div class="post-meta">
-    
-    <span class="meta-item pc-show">
-      <i class="fa fa-calendar-o"></i>
-      <span class="language" data-lan="publish">发布于</span>
-      <span>2020-04-29</span>
-      <span class="post-meta-divider pc-show">|</span>
-    </span>
-    
-    <span class="meta-item">
-      <i class="fa fa-folder-o"></i>
-      <span class="pc-show language" data-lan="category-in">分类于</span>
-      
-      
-      <a href="https://epitomm.github.io/tag/oxh4weKge/">
-        <span>Java 并发</span>
-      </a>
-      
-      
-    </span>
-    <span class="post-meta-divider">|</span>
-    
-    <span class="meta-item">
-      <i class="fa fa-clock-o"></i>
-      <span>13<span class="language" data-lan="minute">分钟</span></span>
-    </span>
-    <span class="meta-item">
-      <span class="post-meta-divider">|</span>
-      <i class="fa fa-file-word-o"></i>
-      <span>2524<span class="pc-show language" data-lan="words">字数</span></span>
-    </span>
-    
-  </div>
-</header>
-      <div class="post-body">
-        
-        
-          
-        
-        
-        <div class="post-button text-center">
-          <a class="btn language" data-lan="read-more" href="https://epitomm.github.io/post/java-bing-fa-cas-he-aqs/" rel="contents">
-            阅读全文 »
-          </a>
-        </div>
-        
-      </div>
-      
-    </div>
-  </article>
-
-  <article class="post-list-box  post box-shadow-wrapper">
-    <div class="article-wrapper bg-color">
-      <header class="post-header">
-  <h1 class="post-title">
-    <a class="post-title-link" href="https://epitomm.github.io/post/java-bing-fa-bing-fa-suo-he-bing-fa-gong-ju/">
-      Java 并发——并发锁和并发工具
-    </a>
-  </h1>
-  <div class="post-meta">
-    
-    <span class="meta-item pc-show">
-      <i class="fa fa-calendar-o"></i>
-      <span class="language" data-lan="publish">发布于</span>
-      <span>2020-04-28</span>
-      <span class="post-meta-divider pc-show">|</span>
-    </span>
-    
-    <span class="meta-item">
-      <i class="fa fa-folder-o"></i>
-      <span class="pc-show language" data-lan="category-in">分类于</span>
-      
-      
-      <a href="https://epitomm.github.io/tag/oxh4weKge/">
-        <span>Java 并发</span>
-      </a>
-      
-      
-    </span>
-    <span class="post-meta-divider">|</span>
-    
-    <span class="meta-item">
-      <i class="fa fa-clock-o"></i>
-      <span>10<span class="language" data-lan="minute">分钟</span></span>
-    </span>
-    <span class="meta-item">
-      <span class="post-meta-divider">|</span>
-      <i class="fa fa-file-word-o"></i>
-      <span>2232<span class="pc-show language" data-lan="words">字数</span></span>
-    </span>
-    
-  </div>
-</header>
-      <div class="post-body">
-        
-        
-          
-        
-        
-        <div class="post-button text-center">
-          <a class="btn language" data-lan="read-more" href="https://epitomm.github.io/post/java-bing-fa-bing-fa-suo-he-bing-fa-gong-ju/" rel="contents">
-            阅读全文 »
-          </a>
-        </div>
-        
-      </div>
-      
-    </div>
-  </article>
-
-  <article class="post-list-box  post box-shadow-wrapper">
-    <div class="article-wrapper bg-color">
-      <header class="post-header">
-  <h1 class="post-title">
-    <a class="post-title-link" href="https://epitomm.github.io/post/http-xi-lie-si-an-quan-de-https/">
-      HTTP系列（四）安全的HTTPS
-    </a>
-  </h1>
-  <div class="post-meta">
-    
-    <span class="meta-item pc-show">
-      <i class="fa fa-calendar-o"></i>
-      <span class="language" data-lan="publish">发布于</span>
-      <span>2020-04-28</span>
-      <span class="post-meta-divider pc-show">|</span>
-    </span>
-    
-    <span class="meta-item">
-      <i class="fa fa-folder-o"></i>
-      <span class="pc-show language" data-lan="category-in">分类于</span>
-      
-      
-      <a href="https://epitomm.github.io/tag/LXiZFuZAY/">
-        <span>HTTP</span>
-      </a>、
-      
-      
-      
-      <a href="https://epitomm.github.io/tag/QxXq3bhNg/">
-        <span>计算机网络</span>
-      </a>
-      
-      
-    </span>
-    <span class="post-meta-divider">|</span>
-    
-    <span class="meta-item">
-      <i class="fa fa-clock-o"></i>
-      <span>12<span class="language" data-lan="minute">分钟</span></span>
-    </span>
-    <span class="meta-item">
-      <span class="post-meta-divider">|</span>
-      <i class="fa fa-file-word-o"></i>
-      <span>3442<span class="pc-show language" data-lan="words">字数</span></span>
-    </span>
-    
-  </div>
-</header>
-      <div class="post-body">
-        
-        
-          
-        
-        
-        <div class="post-button text-center">
-          <a class="btn language" data-lan="read-more" href="https://epitomm.github.io/post/http-xi-lie-si-an-quan-de-https/" rel="contents">
-            阅读全文 »
-          </a>
-        </div>
-        
-      </div>
-      
-    </div>
-  </article>
-  
+            </div>
             
-            
-<div class="page bg-color">
-  <ul class="pagination-ul">
-    
-      <li class="pagination-dir">
-        <a href="https://epitomm.github.io/">
-          <i class="fa fa-angle-left"></i>
-        </a>
-      </li>
-    
-    
-      
-        <li class="pagination-li ">
-            <a href="/page/../">
-              1
-            </a>
-        </li>
-      
-        <li class="pagination-li pagination-active">
-            <a href="/page/2">
-              2
-            </a>
-        </li>
-      
-        <li class="pagination-li ">
-            <a href="/page/3">
-              3
-            </a>
-        </li>
-      
-        <li class="pagination-li ">
-            <a href="/page/4">
-              4
-            </a>
-        </li>
-      
-        <li class="pagination-li ">
-            <a href="/page/5">
-              5
-            </a>
-        </li>
-      
-    
-    
-      <li class="pagination-dir">
-        <a href="/page/3">
-          <i class="fa fa-angle-right"></i>
-        </a>
-      </li>
-    
+              <div class="post-footer">
+  <ul class="post-copyright">
+    <li class="post-copyright-author">
+      <strong class="language" data-lan="author">本文作者：</strong>
+      SSM
+    </li>
+    <li class="post-copyright-link">
+      <strong class="language" data-lan="link">本文链接：</strong>
+      <a href="https://epitomm.github.io/post/spring-xi-lie-shi-si-spring-yuan-ma-jie-xi/" title="Spring系列（十四）Spring源码解析——类的实例化过程">https://epitomm.github.io/post/spring-xi-lie-shi-si-spring-yuan-ma-jie-xi/</a>
+    </li>
+    <li class="post-copyright-license">
+      <strong class="language" data-lan="copyright">版权声明： </strong>
+      本博客所有文章除特别声明外，均采用<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i> BY-NC-SA</a> 许可协议。转载请注明出处！
+    </li>
   </ul>
+  <div class="tags">
+    
+      <a href="https://epitomm.github.io/tag/A43qp3xVg/"># Spring</a>
+    
+  </div>
+  <div class="nav">
+    <div class="nav-prev">
+      
+    </div>
+    <div class="nav-next">
+      
+        <a class="nav-pc-next" title="Spring系列（十三）——Spring AOP源码分析" href="https://epitomm.github.io/post/spring-xi-lie-shi-san-spring-aop-yuan-ma-fen-xi/">Spring系列（十三）——Spring AOP源码分析</a>
+        <a class="nav-mobile-next" title="Spring系列（十三）——Spring AOP源码分析" href="https://epitomm.github.io/post/spring-xi-lie-shi-san-spring-aop-yuan-ma-fen-xi/">下一篇</a>
+        <i class="fa fa-chevron-right"></i>
+      
+    </div>
+  </div>
 </div>
-          </section>
+            
+            
+  
+    
+      <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+<script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+
+<div id="gitalk-container"></div>
+
+<script>
+  var gitalk = new Gitalk({
+    clientID: '974bd77fbbd52c2a0647',
+    clientSecret: '6344370ca1314dbd553f45e75a2121a160ef1c44',
+    repo: 'EpitomM.github.io',
+    owner: 'EpitomM',
+    admin: ['EpitomM'],
+    id: (location.pathname).substring(0, 49),      // Ensure uniqueness and length less than 50
+    distractionFreeMode: false  // Facebook-like distraction free mode
+  })
+  gitalk.render('gitalk-container')
+</script>
+    
+    
+  
+
+          </div>
         </div>
       </div>
     </div>
@@ -30809,7 +31924,6 @@ git config --global https.proxy &#39;socks5://127.0.0.1:1080&#39;
 
 
 <script src="/media/js/mouse/love.js"></script>
-
 
 
 </html>
