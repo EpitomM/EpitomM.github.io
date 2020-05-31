@@ -9,7 +9,7 @@
 <meta name="description" content="热心善良的老学姐">
 <meta name="theme-color" content="#000">
 <title>SSM</title>
-<link rel="shortcut icon" href="/favicon.ico?v=1590890738379">
+<link rel="shortcut icon" href="/favicon.ico?v=1590898696752">
 <link rel="stylesheet" href="/media/css/gemini.css">
 <link rel="stylesheet" href="/media/fonts/font-awesome.css">
 <link
@@ -798,18 +798,22 @@ public class AppConfig {
 }
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;运行结果：&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&#34;language-plain&#34;&gt;parent
-children
-&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;当 Spring 实例化时，首先把所有类都扫描出来，放到 BeanDefinitionMap 中，从 map 中把所有名字都拿出来。&lt;br&gt;
-Spring 工厂的 IOC 容器两方面体现：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;宏观方面：Spring环境，包括Bean工厂，包括Spring内部处理器，包括读取器、注册器...&lt;/li&gt;
-&lt;li&gt;微观方面：private final Map&amp;lt;String, Object&amp;gt; singletonObjects = new ConcurrentHashMap&amp;lt;&amp;gt;(256);&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h2 id=&#34;getbeanbeanname&#34;&gt;getBean(beanName);&lt;/h2&gt;
-&lt;p&gt;上述代码第 40 行：&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;getBean(beanName);
+&lt;p&gt;``&lt;br&gt;
+parent&lt;br&gt;
+children&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;
+当 Spring 实例化时，首先把所有类都扫描出来，放到 BeanDefinitionMap 中，从 map 中把所有名字都拿出来。
+Spring 工厂的 IOC 容器两方面体现：
+
+* 宏观方面：Spring环境，包括Bean工厂，包括Spring内部处理器，包括读取器、注册器...
+* 微观方面：private final Map&amp;lt;String, Object&amp;gt; singletonObjects = new ConcurrentHashMap&amp;lt;&amp;gt;(256);
+
+## getBean(beanName);
+
+上述代码第 40 行：
+
+```java
+getBean(beanName);
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;AbstractBeanFactory#getBean&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public Object getBean(String name) throws BeansException {
@@ -1419,7 +1423,7 @@ public class AppConfig {
 }
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;输出结果：&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&#34;language-plain&#34;&gt;com.ssm.app.Luban@7c30a502
+&lt;pre&gt;&lt;code&gt;com.ssm.app.Luban@7c30a502
 com.ssm.service.OrderService@49e4cb85
 com.ssm.app.Luban@7c30a502
 &lt;/code&gt;&lt;/pre&gt;
@@ -1448,7 +1452,7 @@ public class IndexService {
 }
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;输出结果：&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&#34;language-plain&#34;&gt;IndexService...constructor
+&lt;pre&gt;&lt;code&gt;IndexService...constructor
 IndexService...constructor
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;但是如果去掉 static，IndexService 只会调用一次初始化。&lt;/p&gt;
@@ -1466,7 +1470,7 @@ public class AppConfig {
    }
 }
 &lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code class=&#34;language-plain&#34;&gt;IndexService...constructor
+&lt;pre&gt;&lt;code&gt;IndexService...constructor
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;ConfigurationClassPostProcessor#processConfigBeanDefinitions：&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;// configClasses 拿到了 @Import、@Service、@Bean
@@ -1957,7 +1961,7 @@ if (ctors != null || mbd.getResolvedAutowireMode() == AUTOWIRE_CONSTRUCTOR ||
 }
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;上述第 116 行代码：&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&#34;language-plain&#34;&gt;if (constructorToUse != null &amp;amp;&amp;amp; argsToUse.length &amp;gt; paramTypes.length){
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;if (constructorToUse != null &amp;amp;&amp;amp; argsToUse.length &amp;gt; paramTypes.length){
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;constructorToUse != null：因为 Spring 会有多次循环，当循环第一次如果找到了匹配的构造方法，会把构造方法赋值给 constructorToUse；第二次循环时 constructorToUse != null，然后判断 argsToUse.length 参数长度&lt;br&gt;
 需要循环寻找构造方法，因为：比如传参为 (&amp;quot;hello&amp;quot;, &amp;quot;world&amp;quot;, 120)&lt;/p&gt;

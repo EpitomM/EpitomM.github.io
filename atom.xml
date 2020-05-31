@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://epitomm.github.io</id>
     <title>SSM</title>
-    <updated>2020-05-31T02:05:46.802Z</updated>
+    <updated>2020-05-31T04:18:24.138Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://epitomm.github.io"/>
     <link rel="self" href="https://epitomm.github.io/atom.xml"/>
@@ -117,18 +117,22 @@ public class AppConfig {
 }
 </code></pre>
 <p>运行结果：</p>
-<pre><code class="language-plain">parent
-children
-</code></pre>
-<p>当 Spring 实例化时，首先把所有类都扫描出来，放到 BeanDefinitionMap 中，从 map 中把所有名字都拿出来。<br>
-Spring 工厂的 IOC 容器两方面体现：</p>
-<ul>
-<li>宏观方面：Spring环境，包括Bean工厂，包括Spring内部处理器，包括读取器、注册器...</li>
-<li>微观方面：private final Map&lt;String, Object&gt; singletonObjects = new ConcurrentHashMap&lt;&gt;(256);</li>
-</ul>
-<h2 id="getbeanbeanname">getBean(beanName);</h2>
-<p>上述代码第 40 行：</p>
-<pre><code class="language-java">getBean(beanName);
+<p>``<br>
+parent<br>
+children</p>
+<pre><code>
+当 Spring 实例化时，首先把所有类都扫描出来，放到 BeanDefinitionMap 中，从 map 中把所有名字都拿出来。
+Spring 工厂的 IOC 容器两方面体现：
+
+* 宏观方面：Spring环境，包括Bean工厂，包括Spring内部处理器，包括读取器、注册器...
+* 微观方面：private final Map&lt;String, Object&gt; singletonObjects = new ConcurrentHashMap&lt;&gt;(256);
+
+## getBean(beanName);
+
+上述代码第 40 行：
+
+```java
+getBean(beanName);
 </code></pre>
 <p>AbstractBeanFactory#getBean</p>
 <pre><code class="language-java">public Object getBean(String name) throws BeansException {
@@ -738,7 +742,7 @@ public class AppConfig {
 }
 </code></pre>
 <p>输出结果：</p>
-<pre><code class="language-plain">com.ssm.app.Luban@7c30a502
+<pre><code>com.ssm.app.Luban@7c30a502
 com.ssm.service.OrderService@49e4cb85
 com.ssm.app.Luban@7c30a502
 </code></pre>
@@ -767,7 +771,7 @@ public class IndexService {
 }
 </code></pre>
 <p>输出结果：</p>
-<pre><code class="language-plain">IndexService...constructor
+<pre><code>IndexService...constructor
 IndexService...constructor
 </code></pre>
 <p>但是如果去掉 static，IndexService 只会调用一次初始化。</p>
@@ -785,7 +789,7 @@ public class AppConfig {
    }
 }
 </code></pre>
-<pre><code class="language-plain">IndexService...constructor
+<pre><code>IndexService...constructor
 </code></pre>
 <p>ConfigurationClassPostProcessor#processConfigBeanDefinitions：</p>
 <pre><code class="language-java">// configClasses 拿到了 @Import、@Service、@Bean
@@ -1276,7 +1280,7 @@ if (ctors != null || mbd.getResolvedAutowireMode() == AUTOWIRE_CONSTRUCTOR ||
 }
 </code></pre>
 <p>上述第 116 行代码：</p>
-<pre><code class="language-plain">if (constructorToUse != null &amp;&amp; argsToUse.length &gt; paramTypes.length){
+<pre><code class="language-java">if (constructorToUse != null &amp;&amp; argsToUse.length &gt; paramTypes.length){
 </code></pre>
 <p>constructorToUse != null：因为 Spring 会有多次循环，当循环第一次如果找到了匹配的构造方法，会把构造方法赋值给 constructorToUse；第二次循环时 constructorToUse != null，然后判断 argsToUse.length 参数长度<br>
 需要循环寻找构造方法，因为：比如传参为 (&quot;hello&quot;, &quot;world&quot;, 120)</p>
