@@ -9,7 +9,7 @@
 <meta name="description" content="热心善良的老学姐">
 <meta name="theme-color" content="#000">
 <title>Spring系列（十）Spring源码解析 | SSM</title>
-<link rel="shortcut icon" href="/favicon.ico?v=1592188350344">
+<link rel="shortcut icon" href="/favicon.ico?v=1596761790962">
 <link rel="stylesheet" href="/media/css/gemini.css">
 <link rel="stylesheet" href="/media/fonts/font-awesome.css">
 <link
@@ -17026,7 +17026,7 @@ dao
 &lt;li&gt;代理对象继承目标对象，重写需要增强的方法&lt;/li&gt;
 &lt;li&gt;缺点：会代理类过多，非常复杂&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;回到上襦代理模式引入的例子中：&lt;/p&gt;
+&lt;p&gt;回到上述代理模式引入的例子中：&lt;/p&gt;
 &lt;p&gt;3.3 继承：自定义一个类&lt;strong&gt;继承&lt;/strong&gt;原来需要添加日志的类 UserDaoImpl，在执行业务操作前添加日志打印语句。既解决了 jar 包无法修改源码的问题，又没有破坏单一职责原则。&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class UserDaoLogImpl extends UserDaoImpl {
     @Override
@@ -18711,14 +18711,14 @@ Languages: Kotlin, Groovy, dynamic languages.&lt;/p&gt;
 &lt;figure data-type=&#34;image&#34; tabindex=&#34;1&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/springIOC.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
 &lt;blockquote&gt;
 &lt;p&gt;1、定义一个类 A，把类 A 和 类 B 的关系通过应用程序描述出来：类 A 中有一个类 B 的属性&lt;br&gt;
-2、将类 A、类 B 交给 Spring 容器进行管理：使用 &lt;bean&gt;&lt;br&gt;
+2、将类 A、类 B 交给 Spring 容器进行管理：使用 &lt;code&gt;&amp;lt;bean&amp;gt;&lt;/code&gt;&lt;br&gt;
 3、在 xml 定义中描述类 A、类 B 之间的依赖关系&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;h2 id=&#34;既然我们在类中已经定义了他们之间的依赖关系那么为什么还需要在配置文件中去描述和定义呢&#34;&gt;既然我们在类中已经定义了他们之间的依赖关系那么为什么还需要在配置文件中去描述和定义呢？&lt;/h2&gt;
 &lt;p&gt;类中定义了但是 Spring 感知不到你是否需要依赖注入&lt;/p&gt;
 &lt;p&gt;配置这些信息的方法有三种分别是 xml，Annotation 和 JavaConfig&lt;/p&gt;
 &lt;p&gt;维护的过程称为&lt;strong&gt;自动注入&lt;/strong&gt;，自动注入的方法有两种：&lt;strong&gt;构造方法&lt;/strong&gt; 和 &lt;strong&gt;setter&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;自动注入的值可以是对象，数组，map，list和常量比如字符串整形等&lt;/p&gt;
+&lt;p&gt;自动注入的值可以是对象，数组，map，list和常量比如字符串整型等&lt;/p&gt;
 &lt;h1 id=&#34;spring编程的风格&#34;&gt;spring编程的风格&lt;/h1&gt;
 &lt;h2 id=&#34;schemal-based-xml&#34;&gt;schemal-based-------xml&lt;/h2&gt;
 &lt;p&gt;&lt;a href=&#34;https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#aop-schema-declaring-an-aspect&#34;&gt;https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#aop-schema-declaring-an-aspect&lt;/a&gt;&lt;/p&gt;
@@ -18784,7 +18784,7 @@ public class AppConfig {
 &lt;p&gt;参考文档：&lt;/p&gt;
 &lt;p&gt;&lt;a href=&#34;https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#beans-factory-properties-detailed&#34;&gt;https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#beans-factory-properties-detailed&lt;/a&gt;&lt;/p&gt;
 &lt;h3 id=&#34;字符串属性注入&#34;&gt;&lt;strong&gt;字符串属性注入&lt;/strong&gt;&lt;/h3&gt;
-&lt;p&gt;使用 value：&lt;property name=&#34;str&#34; value=&#34;&#34;/&gt;&lt;/p&gt;
+&lt;p&gt;使用 value：&lt;code&gt;&amp;lt;property name=&amp;quot;str&amp;quot; value=&amp;quot;&amp;quot;/&amp;gt;&lt;/code&gt;&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;package com.ssm.dao.impl;
 import com.ssm.dao.IndexDao;
 public class IndexDaoImpl implements IndexDao {
@@ -18814,8 +18814,8 @@ public class IndexDaoImpl implements IndexDao {
 &amp;lt;/bean&amp;gt;
 &lt;/code&gt;&lt;/pre&gt;
 &lt;h3 id=&#34;内部-bean&#34;&gt;内部 bean&lt;/h3&gt;
-&lt;p&gt;原来是通过在 &lt;property ref=&#34;xxx&#34;/&gt;，ref 引入外部 bean&lt;/p&gt;
-&lt;p&gt;内部 bean 是 &lt;property&gt;&lt;bean&gt;  ... &lt;/bean&gt;&lt;/property&gt;，在 property 标签内部注入 bean&lt;/p&gt;
+&lt;p&gt;原来是通过在 &lt;code&gt;&amp;lt;property ref=&amp;quot;xxx&amp;quot;/&amp;gt;&lt;/code&gt;，ref 引入外部 bean&lt;/p&gt;
+&lt;p&gt;内部 bean 是 &lt;code&gt;&amp;lt;property&amp;gt;&amp;lt;bean&amp;gt; ... &amp;lt;/bean&amp;gt;&amp;lt;/property&amp;gt;&lt;/code&gt;，在 property 标签内部注入 bean&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-xml&#34;&gt;&amp;lt;bean id=&amp;quot;outer&amp;quot; class=&amp;quot;...&amp;quot;&amp;gt;
     &amp;lt;!-- instead of using a reference to a target bean, simply define the target bean inline --&amp;gt;
     &amp;lt;property name=&amp;quot;target&amp;quot;&amp;gt;
@@ -18864,8 +18864,8 @@ public class IndexDaoImpl implements IndexDao {
 &lt;p&gt;Spring supports extensible configuration formats with namespaces, which are based on an XML Schema definition. The beans configuration format discussed in this chapter is defined in an XML Schema document. However, the p-namespace is not defined in an XSD file and exists only in the core of Spring.&lt;/p&gt;
 &lt;p&gt;Spring 支持带有名称空间的可扩展配置格式，这些名称空间基于XML模式定义。本章讨论的 bean 配置格式是在 XML 模式文档中定义的。但是，p-namespace 并没有在 XSD 文件中定义，它只存在于Spring 的核心中。&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;p&gt;1、在原有的基础上添加 xmlns:p=&amp;quot;http://www.springframework.org/schema/p&amp;quot; 命名空间&lt;/p&gt;
-&lt;p&gt;2、&lt;bean id=&#34;dao&#34; class=&#34;com.ssm.dao.impl.IndexDaoImpl&#34; p:str=&#34;Hello world&#34;&gt; 注入 等价于 原有的 &lt;property name=&#34;str&#34; value=&#34;Hello world&#34;/&gt;  注入。&lt;/p&gt;
+&lt;p&gt;1、在原有的基础上添加 &lt;code&gt;xmlns:p=&amp;quot;http://www.springframework.org/schema/p&amp;quot;&lt;/code&gt; 命名空间&lt;/p&gt;
+&lt;p&gt;2、&amp;lt;bean id=&amp;quot;dao&amp;quot; class=&amp;quot;com.ssm.dao.impl.IndexDaoImpl&amp;quot; &lt;span style=&#34;color:red&#34;&gt;p:str=&amp;quot;Hello world&amp;quot;&lt;/span&gt;&amp;gt;注入 等价于 原有的 &lt;code&gt;&amp;lt;property name=&amp;quot;str&amp;quot; value=&amp;quot;Hello world&amp;quot;/&amp;gt;&lt;/code&gt;  注入。&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-xml&#34;&gt;&amp;lt;?xml version=&amp;quot;1.0&amp;quot; encoding=&amp;quot;UTF-8&amp;quot;?&amp;gt;
 &amp;lt;beans xmlns=&amp;quot;http://www.springframework.org/schema/beans&amp;quot;
        xmlns:xsi=&amp;quot;http://www.w3.org/2001/XMLSchema-instance&amp;quot;
@@ -18878,12 +18878,14 @@ public class IndexDaoImpl implements IndexDao {
 &amp;lt;/beans&amp;gt;
 &lt;/code&gt;&lt;/pre&gt;
 &lt;h3 id=&#34;xml-shortcut-with-the-c-namespace&#34;&gt;XML Shortcut with the c-namespace&lt;/h3&gt;
-&lt;p&gt;如果类中定义了构造函数注入，但 bean 标签内没有声明 &lt;constructor-arg&gt; 就会产生 Caused by: java.lang.NoSuchMethodException: com.ssm.service.IndexService.&lt;init&gt;() 异常&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;&amp;lt;bean id=&amp;quot;service&amp;quot; class=&amp;quot;com.ssm.service.IndexService&amp;quot;&amp;gt;&amp;lt;!--        &amp;lt;constructor-arg ref=&amp;quot;dao&amp;quot;&amp;gt;&amp;lt;/constructor-arg&amp;gt;--&amp;gt;&amp;lt;/bean&amp;gt;
+&lt;p&gt;如果类中定义了构造函数注入，但 bean 标签内没有声明 &lt;code&gt;&amp;lt;constructor-arg&amp;gt;&lt;/code&gt;就会产生 &lt;code&gt;Caused by: java.lang.NoSuchMethodException: com.ssm.service.IndexService.&amp;lt;init&amp;gt;()&lt;/code&gt; 异常&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;&amp;lt;bean id=&amp;quot;service&amp;quot; class=&amp;quot;com.ssm.service.IndexService&amp;quot;&amp;gt;
+&amp;lt;!--        &amp;lt;constructor-arg ref=&amp;quot;dao&amp;quot;&amp;gt;&amp;lt;/constructor-arg&amp;gt;--&amp;gt;
+&amp;lt;/bean&amp;gt;
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;使用 c-namespace 注入：&lt;br&gt;
-1、添加 xmlns:c=&amp;quot;http://www.springframework.org/schema/c&amp;quot; 命名空间&lt;/p&gt;
-&lt;p&gt;2、&lt;bean id=&#34;service&#34; class=&#34;com.ssm.service.IndexService&#34; c:indexDao-ref=&#34;dao&#34;&gt; 注入 等价于 原来的     &lt;bean id=&#34;service&#34; class=&#34;com.ssm.service.IndexService&#34;&gt;  &lt;constructor-arg ref=&#34;dao&#34;&gt;&lt;/constructor-arg&gt;  &lt;/bean&gt;&lt;/p&gt;
+1、添加 &lt;code&gt;xmlns:c=&amp;quot;http://www.springframework.org/schema/c&amp;quot;&lt;/code&gt; 命名空间&lt;/p&gt;
+&lt;p&gt;2、&amp;lt;bean id=&amp;quot;service&amp;quot; class=&amp;quot;com.ssm.service.IndexService&amp;quot; &lt;span style=&#34;color:red&#34;&gt; c:indexDao-ref=&amp;quot;dao&amp;quot;&lt;/span&gt;&amp;gt; 注入 等价于 原来的  &lt;code&gt;&amp;lt;bean id=&amp;quot;service&amp;quot; class=&amp;quot;com.ssm.service.IndexService&amp;quot;&amp;gt; &amp;lt;constructor-arg ref=&amp;quot;dao&amp;quot;&amp;gt;&amp;lt;/constructor-arg&amp;gt; &amp;lt;/bean&amp;gt;&lt;/code&gt;&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-xml&#34;&gt;&amp;lt;?xml version=&amp;quot;1.0&amp;quot; encoding=&amp;quot;UTF-8&amp;quot;?&amp;gt;
 &amp;lt;beans xmlns=&amp;quot;http://www.springframework.org/schema/beans&amp;quot;
        xmlns:xsi=&amp;quot;http://www.w3.org/2001/XMLSchema-instance&amp;quot;
@@ -18931,7 +18933,7 @@ public class IndexDaoImpl implements IndexDao {
     }
 }
 &lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;IndexService 依赖 Index：&lt;/p&gt;
+&lt;p&gt;IndexService 依赖 IndexDao：&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;提供 setter 方法：&lt;/strong&gt;&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;package com.ssm.service;
 
@@ -18982,7 +18984,7 @@ public class Test {
 }
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;6、运行结果&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;IndexDaoImpl...注入的两种方法
+&lt;pre&gt;&lt;code&gt;IndexDaoImpl...
 &lt;/code&gt;&lt;/pre&gt;
 &lt;h3 id=&#34;constructor-based-dependency-injection&#34;&gt;Constructor-based Dependency Injection&lt;/h3&gt;
 &lt;p&gt;构造方法注入参考文档：&lt;/p&gt;
@@ -19026,7 +19028,9 @@ public class Test {
 public class IndexDaoImpl implements IndexDao {
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;3、报错：找不到 dao&lt;/p&gt;
+&lt;blockquote&gt;
 &lt;p&gt;Caused by: org.springframework.beans.factory.NoSuchBeanDefinitionException: No bean named &#39;dao&#39; available&lt;/p&gt;
+&lt;/blockquote&gt;
 &lt;p&gt;4、分析：没有开启注解、没有注解扫描&lt;/p&gt;
 &lt;h3 id=&#34;开启注解&#34;&gt;开启注解：&lt;/h3&gt;
 &lt;p&gt;1、xml 中添加 context 相关内容&lt;/p&gt;
@@ -31970,7 +31974,7 @@ if (child_pid == 0) { //我是子进程.
 &lt;ul&gt;
 &lt;li&gt;只有满足一致性，事务的执行结果才是正确的。&lt;/li&gt;
 &lt;li&gt;在无并发的情况下，事务串行执行，隔离性一定能够满足。此时只要满足原子性，就一定能满足一致性。&lt;/li&gt;
-&lt;li&gt;在并发的情况下，多个失误并行执行，事务不仅要满足原子性，还要满足隔离性，才能满足一致性。&lt;/li&gt;
+&lt;li&gt;在并发的情况下，多个事务并行执行，事务不仅要满足原子性，还要满足隔离性，才能满足一致性。&lt;/li&gt;
 &lt;li&gt;事务满足持久化是为了能应对数据库崩溃的情况。&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;&lt;strong&gt;AUTOCOMMIT&lt;/strong&gt;&lt;/p&gt;
