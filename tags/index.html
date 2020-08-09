@@ -9,7 +9,7 @@
 <meta name="description" content="热心善良的老学姐">
 <meta name="theme-color" content="#000">
 <title>SSM</title>
-<link rel="shortcut icon" href="/favicon.ico?v=1596792461758">
+<link rel="shortcut icon" href="/favicon.ico?v=1596949626891">
 <link rel="stylesheet" href="/media/css/gemini.css">
 <link rel="stylesheet" href="/media/fonts/font-awesome.css">
 <link
@@ -234,30 +234,6 @@
       
       
         
-      
-        
-      
-        
-          
-            
-      
-        
-          
-            
-      
-        
-          
-        
-      
-        
-          
-        
-      
-        
-          
-        
-      
-        
           
             
       
@@ -272,6 +248,18 @@
         
           
             
+      
+        
+          
+        
+      
+        
+          
+        
+      
+        
+          
+        
       
         
           
@@ -295,6 +283,22 @@
       
         
           
+            
+      
+        
+          
+            
+      
+        
+          
+            
+      
+        
+          
+            
+      
+        
+          
         
           
             
@@ -461,12 +465,16 @@
       
         
       
-      <a class="cloud-tag" href="https://epitomm.github.io/tag/A43qp3xVg/" rel="14">Spring</a>
+      <a class="cloud-tag" href="https://epitomm.github.io/tag/A43qp3xVg/" rel="16">Spring</a>
     
       
       
         
+          
+        
       
+        
+          
         
       
         
@@ -698,7 +706,11 @@
       
       
         
+          
+        
       
+        
+          
         
       
         
@@ -928,7 +940,11 @@
       
       
         
+          
+        
       
+        
+          
         
       
         
@@ -1156,7 +1172,11 @@
       
       
         
+          
+        
       
+        
+          
         
       
         
@@ -1380,7 +1400,11 @@
       
       
         
+          
+        
       
+        
+          
         
       
         
@@ -1612,7 +1636,11 @@
       
       
         
+          
+        
       
+        
+          
         
       
         
@@ -1842,7 +1870,11 @@
       
       
         
+          
+        
       
+        
+          
         
       
         
@@ -2068,7 +2100,11 @@
       
       
         
+          
+        
       
+        
+          
         
       
         
@@ -2300,7 +2336,11 @@
       
       
         
+          
+        
       
+        
+          
         
       
         
@@ -2530,7 +2570,11 @@
       
       
         
+          
+        
       
+        
+          
         
       
         
@@ -2762,7 +2806,11 @@
       
       
         
+          
+        
       
+        
+          
         
       
         
@@ -2992,7 +3040,11 @@
       
       
         
+          
+        
       
+        
+          
         
       
         
@@ -3222,7 +3274,11 @@
       
       
         
+          
+        
       
+        
+          
         
       
         
@@ -3454,7 +3510,11 @@
       
       
         
+          
+        
       
+        
+          
         
       
         
@@ -3684,7 +3744,11 @@
       
       
         
+          
+        
       
+        
+          
         
       
         
@@ -3914,7 +3978,11 @@
       
       
         
+          
+        
       
+        
+          
         
       
         
@@ -4146,7 +4214,11 @@
       
       
         
+          
+        
       
+        
+          
         
       
         
@@ -4376,7 +4448,11 @@
       
       
         
+          
+        
       
+        
+          
         
       
         
@@ -4608,7 +4684,11 @@
       
       
         
+          
+        
       
+        
+          
         
       
         
@@ -18487,13 +18567,13 @@ beanFactory.addBeanPostProcessor(new ApplicationContextAwareProcessor(this));
  * 查看类的关系图就可以知道 Spring 提供了以下的默认实现，由于实现类是在太多，所以只是解释几个常用的
  * 1.ApplicationContextAwareProcessor（sacap）
  *        acap 后置处理器的作用是：当应用程序定义的 Bean 实现 ApplicationContextAware 接口时注入 ApplicationContext 对象
- *        当然这是他的第一个作业，它还有其他作用，这里就不一一举例了，可以参考源码
+ *        当然这是他的第一个作用，它还有其他作用，这里就不一一举例了，可以参考源码
  *        我们可以针对 ApplicationContextAwareProcessor 写一个例子
  * 2.InitDestroyAnnotationBeanPostProcessor
  *     用来处理自定义的初始化方法和销毁方法
  *     Spring 中提供了三种自定义初始化和销毁方法分别是
- *     ① 通过 @Bean 指定 inti method 和 destroy-method 属性
- *     ② Ban 实现 InitializingBean 接口和显现 DisposableBean
+ *     ① 通过 @Bean 指定 intit method 和 destory-method 属性
+ *     ② Ban 实现 InitializingBean 接口并重写afterPropertiesSet()、实现 DisposableBean 接口并重写 destroy()
  *     ③ @PostConstruct：@PreDestroy
  *     为什么 Spring 通过这三种方式都能完成对 bean 生命周期的回调呢？
  *     可以通过 InitDestroyAnnotationBeanPostProcessor 的源码来解释
@@ -18578,7 +18658,8 @@ public interface BeanPostProcessor {
 }
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;AnnotationAwareAspectJAutoProxyCreator 并没有添加 @Component 注解，所以 Spring 不会扫描它&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@SuppressWarnings(&amp;quot;serial&amp;quot;)public class AnnotationAwareAspectJAutoProxyCreator extends AspectJAwareAdvisorAutoProxyCreator {
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@SuppressWarnings(&amp;quot;serial&amp;quot;)
+public class AnnotationAwareAspectJAutoProxyCreator extends AspectJAwareAdvisorAutoProxyCreator {
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;接下来再回回到 prepareBeanFactory(ConfigurableListableBeanFactory beanFactory) 的第 12 行内容如下：&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;beanFactory.addBeanPostProcessor(new ApplicationContextAwareProcessor(this));
@@ -20426,28 +20507,20 @@ public class CommonUtil {
         // 办法：在实体类 CityEntity 中加入注解 @Table（需要导入JPA），我们使用自定义注解来实现
         String sql = &amp;quot;select * from ? where id=? and name=?&amp;quot;;
 
-        return null;
+        return sql;
     }
 }
 &lt;/code&gt;&lt;/pre&gt;
 &lt;h4 id=&#34;3测试方法&#34;&gt;3.测试方法&lt;/h4&gt;
-&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;package com.ssm.util;
-
-public class CommonUtil {
-    /**
-     * 通过一个对象构建一条查询的 sql 语句
-     * @param obj
-     */
-    public static String buildQuerySqlForEntity(Object obj){
-
-        // 表名、字段应该根据传入的值动态变化，不应该写死
-        // 办法：在实体类 CityEntity 中加入注解 @Table（需要导入JPA），我们使用自定义注解来实现
-        String sql = &amp;quot;select * from ? where id=? and name=?&amp;quot;;
-
-        return null;
-    }
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class Test {
+  public static void main(String[] args) {
+    CommonUtil commonUtil = new CommonUtil();
+    String sql = commonUtil.buildQuerySqlForEntity(new CityEntity());
+    System.out.println(&amp;quot;sql = &amp;quot; + sql);
+  }
 }
 &lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;运行结果：&lt;code&gt;sql = select * from ? where id=? and name=?&lt;/code&gt;&lt;/p&gt;
 &lt;h3 id=&#34;二-自定义注解基本功能&#34;&gt;二、自定义注解——基本功能&lt;/h3&gt;
 &lt;h4 id=&#34;1自定义注解&#34;&gt;1.自定义注解&lt;/h4&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public @interface Entity {
@@ -20461,18 +20534,70 @@ public class CityEntity {
 &lt;/code&gt;&lt;/pre&gt;
 &lt;h3 id=&#34;三-自定义注解元注解&#34;&gt;三、自定义注解——元注解&lt;/h3&gt;
 &lt;h4 id=&#34;1实体类体会元注解&#34;&gt;1.实体类体会元注解&lt;/h4&gt;
+&lt;ul&gt;
+&lt;li&gt;@Override 只能用于修饰方法&lt;/li&gt;
+&lt;/ul&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;//@Override   
 // @Override&#39; not applicable to type：@Override 不适用修饰类
 public class CityEntity {
-
-// @Override   
-// Method does not override method from its superclass：没有父类重写的方法。表名 @Override 注解可用于修饰方法
+    // @Override 
+    // &#39;@Override&#39; not applicable to field：@Override 不适用于修饰属性
+    private Integer id;
+    // @Override   
+    // Method does not override method from its superclass：没有父类重写的方法。表名 @Override 注解可用于修饰方法
     public void setId(Integer id) {
         this.id = id;
     }    
 &lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;分析得知：@Override 注解可用于修饰方法，不可用于修饰类。&lt;br&gt;
-于是我们来改动一下我们的自定义注解 @Entity，让它只能用于修饰类，不能用于修饰方法。&lt;/p&gt;
+&lt;p&gt;分析得知：@Override 注解可用于修饰方法，不可用于修饰类。&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.SOURCE)
+public @interface Override {
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;上述 @Override 源码中的 &lt;code&gt;@Target(ElementType.METHOD)&lt;/code&gt; 就表示：@Override 只能用于修饰方法。&lt;/p&gt;
+&lt;p&gt;于是我们来改动一下我们的自定义注解 @Entity，让它只能用于修饰类，不能用于修饰方法。&lt;br&gt;
+我们可以看到 ElementType 为一个枚举类，可取的值：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public enum ElementType {
+    /** Class, interface (including annotation type), or enum declaration */
+    TYPE,
+
+    /** Field declaration (includes enum constants) */
+    FIELD,
+
+    /** Method declaration */
+    METHOD,
+
+    /** Formal parameter declaration */
+    PARAMETER,
+
+    /** Constructor declaration */
+    CONSTRUCTOR,
+
+    /** Local variable declaration */
+    LOCAL_VARIABLE,
+
+    /** Annotation type declaration */
+    ANNOTATION_TYPE,
+
+    /** Package declaration */
+    PACKAGE,
+
+    /**
+     * Type parameter declaration
+     *
+     * @since 1.8
+     */
+    TYPE_PARAMETER,
+
+    /**
+     * Use of a type
+     *
+     * @since 1.8
+     */
+    TYPE_USE
+}
+&lt;/code&gt;&lt;/pre&gt;
 &lt;h4 id=&#34;2修改自定义注解类&#34;&gt;2.修改自定义注解类&lt;/h4&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;// @Entity 注解能够出现的目标位置：TYPE：类
 @Target(ElementType.TYPE)
@@ -20489,26 +20614,75 @@ import com.ssm.anno.Entity;
 import java.lang.annotation.Annotation;
 
 public class CommonUtil {
-    public static String buildQuerySqlForEntity(Object obj){
-        // 得到类的类对象
-        Class clazz = obj.getClass();
-        // setup1 判断是否加了这个注解
-        if(clazz.isAnnotationPresent(Entity.class)){
-            // setup2 得到注解
-            Entity entity = (Entity) clazz.getDeclaredAnnotation(Entity.class);
-            // setup3 调用方法
-            String value = entity.value();
-            System.out.println(value);  // city
-        }
+  public String buildQuerySqlForEntity(Object obj){
+    String sql = &amp;quot;&amp;quot;;
 
-        // 表名、字段应该根据传入的值动态变化，不应该写死
-        // 办法：在实体类 CityEntity 中加入注解 @Table（需要导入JPA），我们使用自定义注解来实现
-        String sql = &amp;quot;select * from ? where id=? and name=?&amp;quot;;
+    // 得到类的类对象
+    Class clazz = obj.getClass();
+    // setup1 判断是否加了这个注解
+    if(clazz.isAnnotationPresent(Entity.class)){
+      // setup2 得到注解
+      Entity entity = (Entity) clazz.getDeclaredAnnotation(Entity.class);
+      // setup3 调用方法
+      String value = entity.value();  // city
 
-        return null;
+      // 表名、字段应该根据传入的值动态变化，不应该写死
+      // 办法：在实体类 CityEntity 中加入注解 @Table（需要导入JPA），我们使用自定义注解来实现
+      sql = &amp;quot;select * from &amp;quot; + value + &amp;quot; where id = ? and name = ?&amp;quot;;
     }
+    return sql;
+  }
 }
 &lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;运行测试类发现，输出结果为 sql =&lt;br&gt;
+经过 DEBUG 分析：&lt;code&gt;if(clazz.isAnnotationPresent(Entity.class)){&lt;/code&gt; 判断返回 false，&lt;br&gt;
+而 &lt;code&gt;clazz = class com.ssm.entity.CityEntity&lt;/code&gt;，CityEntity 也确实添加了 @Entity 注解呀，到底为什么 &lt;code&gt;clazz.isAnnotationPresent(Entity.class)&lt;/code&gt; 会返回 false 呢？&lt;br&gt;
+之前说过可以通过 “在实体类 CityEntity 中加入注解 @Table（需要导入JPA）”来实现读取表名的操作，于是我们添加 JPA 依赖&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-xml&#34;&gt;&amp;lt;!-- https://mvnrepository.com/artifact/org.hibernate.javax.persistence/hibernate-jpa-2.0-api --&amp;gt;
+&amp;lt;dependency&amp;gt;
+    &amp;lt;groupId&amp;gt;org.hibernate.javax.persistence&amp;lt;/groupId&amp;gt;
+    &amp;lt;artifactId&amp;gt;hibernate-jpa-2.0-api&amp;lt;/artifactId&amp;gt;
+    &amp;lt;version&amp;gt;1.0.1.Final&amp;lt;/version&amp;gt;
+&amp;lt;/dependency&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;查看 @Table 注解的源码：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@Target(TYPE)
+@Retention(RUNTIME)
+public @interface Table {
+	/**
+	 * (Optional) The name of the table.
+	 * &amp;lt;p/&amp;gt;
+	 * Defaults to the entity name.
+	 */
+	String name() default &amp;quot;&amp;quot;;
+
+	/**
+	 * (Optional) The catalog of the table.
+	 * &amp;lt;p/&amp;gt;
+	 * Defaults to the default catalog.
+	 */
+	String catalog() default &amp;quot;&amp;quot;;
+
+	/**
+	 * (Optional) The schema of the table.
+	 * &amp;lt;p/&amp;gt;
+	 * Defaults to the default schema for user.
+	 */
+	String schema() default &amp;quot;&amp;quot;;
+
+	/**
+	 * (Optional) Unique constraints that are to be placed on
+	 * the table. These are only used if table generation is in
+	 * effect. These constraints apply in addition to any constraints
+	 * specified by the &amp;lt;code&amp;gt;Column&amp;lt;/code&amp;gt; and &amp;lt;code&amp;gt;JoinColumn&amp;lt;/code&amp;gt;
+	 * annotations and constraints entailed by primary key mappings.
+	 * &amp;lt;p/&amp;gt;
+	 * Defaults to no additional constraints.
+	 */
+	UniqueConstraint[] uniqueConstraints() default { };
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;结果发现 @Table 上不仅有 &lt;code&gt;@Target(TYPE)&lt;/code&gt; 注解，而且还有一个&lt;code&gt;@Retention(RUNTIME)&lt;/code&gt; 注解，那么这个注解是用来干什么的呢？答：注解生命周期&lt;/p&gt;
 &lt;h2 id=&#34;注解生命周期&#34;&gt;注解生命周期&lt;/h2&gt;
 &lt;h3 id=&#34;retentionretentionpolicysource&#34;&gt;@Retention(RetentionPolicy.SOURCE)&lt;/h3&gt;
 &lt;p&gt;注解的生命周期：默认情况下仅仅存在于 Java 源码中，即@Retention(RetentionPolicy.SOURCE)，当 JVM 一旦把它编译成字节码，注解会自动丢失。&lt;br&gt;
@@ -20535,10 +20709,19 @@ public class CommonUtil {
 }
 &lt;/code&gt;&lt;/pre&gt;
 &lt;h3 id=&#34;retentionretentionpolicyruntime&#34;&gt;@Retention(RetentionPolicy.RUNTIME)&lt;/h3&gt;
-&lt;p&gt;只有当注解的生命周期声明为 RUNTIME 时，在执行时才会被 JVM 发觉到。&lt;br&gt;
-boolean b = clazz.isAnnotationPresent(Entity.class);//true&lt;/p&gt;
+&lt;p&gt;只有当注解的生命周期声明为 RUNTIME 时，在执行时才会被 JVM 发觉到。&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;boolean b = clazz.isAnnotationPresent(Entity.class);//true
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;于是在 @Entity 上添加 &lt;code&gt;@Retention(RetentionPolicy.RUNTIME)&lt;/code&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface Entity {
+  public String value();
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;运行测试类输出结果：&lt;code&gt;sql = select * from city where id = ? and name = ?&lt;/code&gt;&lt;/p&gt;
 &lt;h1 id=&#34;aop-是什么&#34;&gt;AOP 是什么&lt;/h1&gt;
-&lt;p&gt;与OOP对比，面向切面，传统的OOP开发中的代码逻辑是自上而下的，而这些过程会产生一些横切性问题，这些横切性的问题和我们的主业务逻辑关系不大，这些横切性问题不会影响到主逻辑实现的，但是会散落到代码的各个部分，难以维护。AOP是处理一些横切性问题，AOP的编程思想就是把这些问题和主业务逻辑分开，达到与主业务逻辑解耦的目的。使代码的重用性和开发效率更高。&lt;br&gt;
+&lt;p&gt;传统的OOP开发中的代码逻辑是自上而下的，而这些过程会产生一些横切性问题，这些横切性的问题和我们的主业务逻辑关系不大，这些横切性问题不会影响到主逻辑实现的，但是会散落到代码的各个部分，难以维护。AOP就是用来&lt;strong&gt;处理横切性问题&lt;/strong&gt;，AOP的编程思想就是把这些问题和主业务逻辑分开，达到与主业务逻辑解耦的目的。使代码的重用性和开发效率更高。&lt;br&gt;
 &lt;img src=&#34;https://epitomm.github.io/post-images/AOP%E6%98%AF%E4%BB%80%E4%B9%88.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/p&gt;
 &lt;h2 id=&#34;aop-的应用场景&#34;&gt;AOP 的应用场景&lt;/h2&gt;
 &lt;ol&gt;
@@ -20578,7 +20761,7 @@ AspectJ 是静态注入：编译（.java -&amp;gt; .class）时就完成了注�
 @AspectJ support         ------------&amp;gt;利用aspectj的注解
 Schema-based AOP support -----------&amp;gt;xml aop:config 命名空间
 
-证明:spring,通过源  码分析了,我们可以知道spring底层使用的是JDK或者CGLIB来完成的代理,并且在官网上spring给出了aspectj的文档,和springAOP是不同的
+证明：通过源码分析，我们可以知道 spring 底层使用的是 JDK 或者 CGLIB 来完成的代理，并且在官网上spring 给出了 aspectj 的文档，和 springAOP 是不同的。
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;如果您只需要建议在Spring bean上执行操作，那么Spring AOP是正确的选择。如果需要通知Spring容器没有管理的对象(通常是域对象)，则需要使用AspectJ。&lt;br&gt;
 Spring AOP的概念&lt;br&gt;
@@ -20617,12 +20800,15 @@ proceed()有重载,有个带参数的方法,可以修改目标方法的的参数
 Advice: Action taken by an aspect at a particular join point. Different types of advice include “around”, “before” and “after” advice. (Advice types are discussed later.) Many AOP frameworks, including Spring, model an advice as an interceptor and maintain a chain of interceptors around the join point.&lt;br&gt;
 &lt;img src=&#34;https://epitomm.github.io/post-images/AOP%E9%80%9A%E7%9F%A5.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/p&gt;
 &lt;ul&gt;
-&lt;li&gt;advice通知类型:&lt;/li&gt;
+&lt;li&gt;advice通知类型:
+&lt;ul&gt;
 &lt;li&gt;Before 连接点执行之前，但是无法阻止连接点的正常执行，除非该段执行抛出异常&lt;/li&gt;
 &lt;li&gt;After  连接点正常执行之后，执行过程中正常执行返回退出，非异常退出&lt;/li&gt;
 &lt;li&gt;After throwing  执行抛出异常的时候&lt;/li&gt;
 &lt;li&gt;After (finally)  无论连接点是正常退出还是异常退出，都会执行&lt;/li&gt;
 &lt;li&gt;Around advice: 围绕连接点执行，例如方法调用。这是最有用的切面方式。around通知可以在方法调用之前和之后执行自定义行为。它还负责选择是继续加入点还是通过返回自己的返回值或抛出异常来快速建议的方法执行。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
 &lt;/ul&gt;
 &lt;h3 id=&#34;after&#34;&gt;After&lt;/h3&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@After(&amp;quot;pointCutTarget()&amp;quot;)
@@ -20944,8 +21130,8 @@ public class IndexDao {
 }
 &lt;/code&gt;&lt;/pre&gt;
 &lt;h2 id=&#34;1-启用aspectj支持&#34;&gt;1、启用@AspectJ支持&lt;/h2&gt;
-&lt;p&gt;使用Java Configuration启用@AspectJ支持&lt;br&gt;
-要使用Java @Configuration启用@AspectJ支持，请添加@EnableAspectJAutoProxy注释&lt;/p&gt;
+&lt;h3 id=&#34;java-configuration&#34;&gt;Java Configuration&lt;/h3&gt;
+&lt;p&gt;要使用Java @Configuration启用@AspectJ支持，请添加@EnableAspectJAutoProxy注释&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@Configuration
 @ComponentScan(&amp;quot;com.ssm&amp;quot;)
 @EnableAspectJAutoProxy
@@ -20953,8 +21139,8 @@ public class AppConfig {
 
 }
 &lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;使用XML配置启用@AspectJ支持&lt;br&gt;
-要使用基于xml的配置启用@AspectJ支持，可以使用aop:aspectj-autoproxy元素&lt;/p&gt;
+&lt;h3 id=&#34;xml&#34;&gt;XML&lt;/h3&gt;
+&lt;p&gt;要使用基于xml的配置启用@AspectJ支持，可以使用&lt;code&gt;&amp;lt;aop:aspectj-autoproxy/&amp;gt;&lt;/code&gt;元素&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-xml&#34;&gt;&amp;lt;aop:aspectj-autoproxy/&amp;gt;
 &lt;/code&gt;&lt;/pre&gt;
 &lt;h2 id=&#34;2-声明一个aspect&#34;&gt;2、声明一个Aspect&lt;/h2&gt;
@@ -20978,13 +21164,13 @@ private void anyOldTransfer() {}// 切入点签名
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;切入点确定感兴趣的 join points（连接点），从而使我们能够控制何时执行通知。Spring AOP只支持Spring bean的方法执行 join points（连接点），所以您可以将切入点看作是匹配Spring bean上方法的执行。&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;/**
- * 申明Aspect，并且交给spring容器管理
+ * 声明Aspect，并且交给spring容器管理
  */
 @Component
 @Aspect
 public class UserAspect {
     /**
-     * 申明切入点，匹配UserDao所有方法调用
+     * 声明切入点，匹配UserDao所有方法调用
      * execution匹配方法执行连接点
      * within:将匹配限制为特定类型中的连接点
      * args：参数
@@ -20999,13 +21185,13 @@ public class UserAspect {
 &lt;h2 id=&#34;4-声明一个advice通知&#34;&gt;4、声明一个Advice通知&lt;/h2&gt;
 &lt;p&gt;advice通知与pointcut切入点表达式相关联，并在切入点匹配的方法执行@Before之前、@After之后或前后运行。&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;/**
- * 申明Aspect，并且交给spring容器管理
+ * 声明Aspect，并且交给spring容器管理
  */
 @Component
 @Aspect
 public class UserAspect {
     /**
-     * 申明切入点，匹配UserDao所有方法调用
+     * 声明切入点，匹配UserDao所有方法调用
      * execution匹配方法执行连接点
      * within:将匹配限制为特定类型中的连接点
      * args：参数
@@ -21017,7 +21203,7 @@ public class UserAspect {
         System.out.println(&amp;quot;point cut&amp;quot;);
     }
     /**
-     * 申明before通知,在pintCut切入点前执行
+     * 声明before通知,在pintCut切入点前执行
      * 通知与切入点表达式相关联，
      * 并在切入点匹配的方法执行之前、之后或前后运行。
      * 切入点表达式可以是对指定切入点的简单引用，也可以是在适当位置声明的切入点表达式。
@@ -21043,7 +21229,7 @@ query
 &lt;/code&gt;&lt;/pre&gt;
 &lt;h1 id=&#34;各种连接点-joinpoint-的意义&#34;&gt;各种连接点 JoinPoint 的意义:&lt;/h1&gt;
 &lt;h2 id=&#34;execution&#34;&gt;execution&lt;/h2&gt;
-&lt;p&gt;用于匹配方法执行连接点，最小粒度方法，在aop中主要使用。&lt;/p&gt;
+&lt;p&gt;用于匹配方法执行连接点，最小粒度&lt;strong&gt;方法&lt;/strong&gt;，在 aop 中主要使用。&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;execution(modifiers-pattern? ret-type-pattern declaring-type-pattern? name-pattern(param-pattern)
           throws-pattern?)
 &lt;/code&gt;&lt;/pre&gt;
@@ -21055,66 +21241,78 @@ name-pattern：方法名类型，如 buisinessService()；&lt;br&gt;
 param-pattern：方法的参数类型，如java.lang.String；&lt;br&gt;
 throws-pattern：方法抛出的异常类型，如java.lang.Exception；&lt;/p&gt;
 &lt;h3 id=&#34;examples&#34;&gt;Examples&lt;/h3&gt;
-&lt;p&gt;@Pointcut(&amp;quot;execution(* com.chenss.dao.&lt;em&gt;.&lt;/em&gt;(..))&amp;quot;)//匹配com.chenss.dao包下的任意接口和类的任意方法【方法返回值类型任意，方法所在类的全路径名：com.chenss.dao，方法名类型任意，方法的参数类型任意】&lt;br&gt;
-@Pointcut(&amp;quot;execution(public * com.chenss.dao.&lt;em&gt;.&lt;/em&gt;(..))&amp;quot;)//匹配com.chenss.dao包下的任意接口和类的public方法&lt;br&gt;
-@Pointcut(&amp;quot;execution(public * com.chenss.dao.&lt;em&gt;.&lt;/em&gt;())&amp;quot;)//匹配com.chenss.dao包下的任意接口和类的public 无方法参数的方法&lt;br&gt;
-@Pointcut(&amp;quot;execution(* com.chenss.dao.&lt;em&gt;.&lt;/em&gt;(java.lang.String, ..))&amp;quot;)//匹配com.chenss.dao包下的任意接口和类的第一个参数为String类型的方法&lt;br&gt;
-@Pointcut(&amp;quot;execution(* com.chenss.dao.&lt;em&gt;.&lt;/em&gt;(java.lang.String))&amp;quot;)//匹配com.chenss.dao包下的任意接口和类的只有一个参数，且参数为String类型的方法&lt;br&gt;
-@Pointcut(&amp;quot;execution(* com.chenss.dao.&lt;em&gt;.&lt;/em&gt;(java.lang.String))&amp;quot;)//匹配com.chenss.dao包下的任意接口和类的只有一个参数，且参数为String类型的方法&lt;br&gt;
-@Pointcut(&amp;quot;execution(public * &lt;em&gt;(..))&amp;quot;)//匹配任意的public方法&lt;br&gt;
-@Pointcut(&amp;quot;execution(&lt;/em&gt; te*(..))&amp;quot;)//匹配任意的以te开头的方法&lt;br&gt;
-@Pointcut(&amp;quot;execution(* com.chenss.dao.IndexDao.&lt;em&gt;(..))&amp;quot;)//匹配com.chenss.dao.IndexDao接口中任意的方法&lt;br&gt;
-@Pointcut(&amp;quot;execution(&lt;/em&gt; com.chenss.dao..&lt;em&gt;.&lt;/em&gt;(..))&amp;quot;)//匹配com.chenss.dao包及其子包中任意的方法&lt;/p&gt;
-&lt;p&gt;关于这个表达式的详细写法,可以脑补也可以参考官网很容易的,可以作为一个看spring官网文档的入门,打破你害怕看官方文档的心理,其实你会发觉官方文档也是很容易的&lt;br&gt;
+&lt;ul&gt;
+&lt;li&gt;@&lt;code&gt;Pointcut(&amp;quot;execution(* com.chenss.dao.*.*(..))&amp;quot;)&lt;/code&gt;&lt;br&gt;
+匹配com.chenss.dao包下的任意接口和类的任意方法【方法返回值类型任意，方法所在类的全路径名：com.chenss.dao，方法名类型任意，方法的参数类型任意】&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;@Pointcut(&amp;quot;execution(public * com.chenss.dao.*.*(..))&amp;quot;)&lt;/code&gt;&lt;br&gt;
+匹配com.chenss.dao包下的任意接口和类的public方法&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;@Pointcut(&amp;quot;execution(public * com.chenss.dao.*.*())&amp;quot;)&lt;/code&gt;&lt;br&gt;
+匹配com.chenss.dao包下的任意接口和类的public 无方法参数的方法&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;@Pointcut(&amp;quot;execution(* com.chenss.dao.*.*(java.lang.String, ..))&amp;quot;)&lt;/code&gt;&lt;br&gt;
+匹配com.chenss.dao包下的任意接口和类的第一个参数为String类型的方法&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;@Pointcut(&amp;quot;execution(* com.chenss.dao.*.*(java.lang.String))&amp;quot;)&lt;/code&gt;&lt;br&gt;
+匹配com.chenss.dao包下的任意接口和类的只有一个参数，且参数为String类型的方法&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;@Pointcut(&amp;quot;execution(* com.chenss.dao.*.*(java.lang.String))&amp;quot;)&lt;/code&gt;&lt;br&gt;
+匹配com.chenss.dao包下的任意接口和类的只有一个参数，且参数为String类型的方法&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;@Pointcut(&amp;quot;execution(public * *(..))&amp;quot;)&lt;/code&gt;&lt;br&gt;
+匹配任意的public方法&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;@Pointcut(&amp;quot;execution(* te*(..))&amp;quot;)&lt;/code&gt;&lt;br&gt;
+匹配任意的以te开头的方法&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;@Pointcut(&amp;quot;execution(* com.chenss.dao.IndexDao.*(..))&amp;quot;)&lt;/code&gt;&lt;br&gt;
+匹配com.chenss.dao.IndexDao接口中任意的方法&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;@Pointcut(&amp;quot;execution(* com.chenss.dao..*.*(..))&amp;quot;)&lt;/code&gt;&lt;br&gt;
+匹配com.chenss.dao包及其子包中任意的方法&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;关于这个表达式的详细写法,可以脑补也可以参考官网很容易的,可以作为一个看 Spring 官网文档的入门,打破你害怕看官方文档的心理,其实你会发觉官方文档也是很容易的&lt;br&gt;
 &lt;a href=&#34;https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#aop-pointcuts-examples&#34;&gt;https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/core.html#aop-pointcuts-examples&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;由于Spring切面粒度最小是达到方法级别，而execution表达式可以用于明确指定方法返回类型，类名，方法名和参数名等与方法相关的信息，并且在Spring中，大部分需要使用AOP的业务场景也只需要达到方法级别即可，因而execution表达式的使用是最为广泛的。&lt;/p&gt;
+&lt;p&gt;由于 Spring 切面粒度最小是达到方法级别，而 execution 表达式可以用于明确指定方法返回类型，类名，方法名和参数名等与方法相关的信息，并且在 Spring 中，大部分需要使用 AOP 的业务场景也只需要达到方法级别即可，因而 execution 表达式的使用是最为广泛的。&lt;/p&gt;
 &lt;h2 id=&#34;within&#34;&gt;within&lt;/h2&gt;
 &lt;p&gt;表达式的最小粒度为类&lt;br&gt;
-within与execution相比，粒度更大，仅能实现到包和接口、类级别。而execution可以精确到方法的返回值，参数个数、修饰符、参数类型等&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@Pointcut(&amp;quot;within(com.chenss.dao.*)&amp;quot;)//匹配com.chenss.dao包中的任意方法
-@Pointcut(&amp;quot;within(com.chenss.dao..*)&amp;quot;)//匹配com.chenss.dao包及其子包中的任意方法
+within 与 execution 相比，粒度更大，仅能实现到&lt;strong&gt;包和接口、类&lt;/strong&gt;级别。而 execution 可以精确到方法的返回值，参数个数、修饰符、参数类型等&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@Pointcut(&amp;quot;within(com.chenss.dao.*)&amp;quot;)   // 匹配com.chenss.dao包中的任意方法
+@Pointcut(&amp;quot;within(com.chenss.dao..*)&amp;quot;)  // 匹配com.chenss.dao包及其子包中的任意方法
 &lt;/code&gt;&lt;/pre&gt;
 &lt;h2 id=&#34;args&#34;&gt;args&lt;/h2&gt;
 &lt;blockquote&gt;
 &lt;p&gt;args: Limits matching to join points (the execution of methods when using Spring AOP) where the arguments are instances of the given types.&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;p&gt;限制连接点的匹配(使用Spring AOP时方法的执行)，其中的参数是给定类型的实例。&lt;br&gt;
-args表达式的作用是匹配指定参数类型和指定参数数量的方法,与包名和类名无关&lt;/p&gt;
+&lt;p&gt;限制连接点的匹配 (使用Spring AOP时方法的执行)，其中的参数是给定类型的实例。&lt;br&gt;
+args 表达式的作用是匹配&lt;strong&gt;指定参数类型和指定参数数量的方法&lt;/strong&gt;，与包名和类名无关&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;/**
  * args同execution不同的地方在于：
  * args匹配的是运行时传递给方法的参数类型
  * execution(* *(java.io.Serializable))匹配的是方法在声明时指定的方法参数类型。
  */
-@Pointcut(&amp;quot;args(java.io.Serializable)&amp;quot;)//匹配运行时传递的参数类型为指定类型的、且参数个数和顺序匹配
-@Pointcut(&amp;quot;@args(com.chenss.anno.Chenss)&amp;quot;)//接受一个参数，并且传递的参数的运行时类型具有@Classified
+@Pointcut(&amp;quot;args(java.io.Serializable)&amp;quot;)     // 匹配运行时传递的参数类型为指定类型的、且参数个数和顺序匹配
+@Pointcut(&amp;quot;@args(com.chenss.anno.Chenss)&amp;quot;)      // 接受一个参数，并且传递的参数的运行时类型具有@Classified
 &lt;/code&gt;&lt;/pre&gt;
 &lt;h2 id=&#34;this&#34;&gt;this&lt;/h2&gt;
 &lt;blockquote&gt;
 &lt;p&gt;this: Limits matching to join points (the execution of methods when using Spring AOP) where the bean reference (Spring AOP proxy) is an instance of the given type.&lt;/p&gt;
 &lt;/blockquote&gt;
-&lt;p&gt;限制连接点(使用Spring AOP时方法的执行)的匹配，其中bean引用(Spring AOP代理)是给定类型的实例。&lt;br&gt;
+&lt;p&gt;限制连接点 (使用Spring AOP时方法的执行) 的匹配，其中 bean 引用 (Spring AOP代理) 是给定类型的实例。&lt;br&gt;
 &lt;strong&gt;this JDK代理时，指向接口和代理类proxy，cglib代理时 指向接口和子类(不使用proxy)&lt;/strong&gt;&lt;/p&gt;
 &lt;h2 id=&#34;target&#34;&gt;target&lt;/h2&gt;
 &lt;p&gt;target: Limits matching to join points (the execution of methods when using Spring AOP) where the target object (application object being proxied) is an instance of the given type.&lt;br&gt;
-限制对连接点(使用Spring AOP时方法的执行)的匹配，其中目标对象(代理的应用程序对象)是给定类型的实例。&lt;br&gt;
+限制对连接点 (使用Spring AOP时方法的执行) 的匹配，其中目标对象 (代理的应用程序对象) 是给定类型的实例。&lt;br&gt;
 &lt;strong&gt;target  指向接口和子类&lt;/strong&gt;。&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;/**
  * 此处需要注意的是，如果配置设置proxyTargetClass=false，或默认为false，则是用JDK代理，否则使用的是CGLIB代理
  * JDK代理的实现方式是基于接口实现，代理类继承Proxy，实现接口。
- * 而CGLIB继承被代理的类来实现。
- * 所以使用target会保证目标不变，关联对象不会受到这个设置的影响。
- * 但是使用this对象时，会根据该选项的设置，判断是否能找到对象。
+ * 而 CGLIB 继承被代理的类来实现。
+ * 所以使用 target 会保证目标不变，关联对象不会受到这个设置的影响。
+ * 但是使用 this 对象时，会根据该选项的设置，判断是否能找到对象。
  */
-@Pointcut(&amp;quot;target(com.chenss.dao.IndexDaoImpl)&amp;quot;)//目标对象，也就是被代理的对象。限制目标对象为com.chenss.dao.IndexDaoImpl类
-@Pointcut(&amp;quot;this(com.chenss.dao.IndexDaoImpl)&amp;quot;)//当前对象，也就是代理对象，代理对象时通过代理目标对象的方式获取新的对象，与原值并非一个
-@Pointcut(&amp;quot;@target(com.chenss.anno.Chenss)&amp;quot;)//具有@Chenss的目标对象中的任意方法
-@Pointcut(&amp;quot;@within(com.chenss.anno.Chenss)&amp;quot;)//等同于@targ
+@Pointcut(&amp;quot;target(com.chenss.dao.IndexDaoImpl)&amp;quot;)    // 目标对象，也就是被代理的对象。限制目标对象为com.chenss.dao.IndexDaoImpl类
+@Pointcut(&amp;quot;this(com.chenss.dao.IndexDaoImpl)&amp;quot;)  // 当前对象，也就是代理对象，代理对象时通过代理目标对象的方式获取新的对象，与原值并非一个
+@Pointcut(&amp;quot;@target(com.chenss.anno.Chenss)&amp;quot;)    // 具有@Chenss的目标对象中的任意方法
+@Pointcut(&amp;quot;@within(com.chenss.anno.Chenss)&amp;quot;)    // 等同于@target
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;这个比较难.......&lt;br&gt;
 proxy模式里面有两个重要的术语&lt;br&gt;
 proxy Class&lt;br&gt;
 target Class&lt;br&gt;
-CGLIB和JDK有区别    JDK是基于接口   cglib是基于继承，所有this可以在cglib作用&lt;/p&gt;
+CGLIB 和 JDK 的区别：JDK 是基于接口，CGLIB 是基于继承，所有 this 可以在 CGLIB 作用&lt;/p&gt;
 &lt;h2 id=&#34;annotation&#34;&gt;@annotation&lt;/h2&gt;
 &lt;p&gt;这个很简单........&lt;br&gt;
 作用&lt;strong&gt;方法&lt;/strong&gt;级别&lt;br&gt;
@@ -21122,14 +21320,14 @@ CGLIB和JDK有区别    JDK是基于接口   cglib是基于继承，所有this�
 注意:上述所有的表达式可以混合使用,|| &amp;amp;&amp;amp; !&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@Before(&amp;quot;pointCutWithin()&amp;amp;&amp;amp;!pointCutArgs()&amp;quot;)
 &lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@Pointcut(&amp;quot;@annotation(com.chenss.anno.Chenss)&amp;quot;)//匹配带有com.chenss.anno.Chenss注解的方法
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@Pointcut(&amp;quot;@annotation(com.chenss.anno.Chenss)&amp;quot;)    // 匹配带有com.chenss.anno.Chenss注解的方法
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;如下面这个方法：&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@Chenss
 public void query(String str){
 &lt;/code&gt;&lt;/pre&gt;
 &lt;h2 id=&#34;bean&#34;&gt;bean&lt;/h2&gt;
-&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@Pointcut(&amp;quot;bean(dao1)&amp;quot;)//名称为dao1的bean上的任意方法
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@Pointcut(&amp;quot;bean(dao1)&amp;quot;)     // 名称为 dao1 的 bean 上的任意方法
 @Pointcut(&amp;quot;bean(dao*)&amp;quot;)
 &lt;/code&gt;&lt;/pre&gt;
 &lt;h1 id=&#34;aop-proxies&#34;&gt;AOP Proxies&lt;/h1&gt;
