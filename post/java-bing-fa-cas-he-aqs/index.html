@@ -9,7 +9,7 @@
 <meta name="description" content="热心善良的老学姐">
 <meta name="theme-color" content="#000">
 <title>Java 并发——CAS 和 AQS | SSM</title>
-<link rel="shortcut icon" href="/favicon.ico?v=1597025710847">
+<link rel="shortcut icon" href="/favicon.ico?v=1597031272716">
 <link rel="stylesheet" href="/media/css/gemini.css">
 <link rel="stylesheet" href="/media/fonts/font-awesome.css">
 <link
@@ -16793,36 +16793,256 @@ result = hello world
 &lt;figure data-type=&#34;image&#34; tabindex=&#34;2&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/JDK%E5%8A%A8%E6%80%81%E4%BB%A3%E7%90%86%E4%BB%A3%E7%90%86%E5%AF%B9%E8%B1%A1.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
 &lt;p&gt;自定义动态代理：&lt;/p&gt;
 &lt;figure data-type=&#34;image&#34; tabindex=&#34;3&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E8%87%AA%E5%AE%9A%E4%B9%89%E5%8A%A8%E6%80%81%E4%BB%A3%E7%90%86%E4%BB%A3%E7%90%86%E5%AF%B9%E8%B1%A1.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
-&lt;h4 id=&#34;代理类&#34;&gt;代理类&lt;/h4&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;4&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E4%BB%A3%E7%90%86%E7%B1%BB.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
-&lt;h4 id=&#34;得到代理类的构造方法&#34;&gt;得到代理类的构造方法&lt;/h4&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;5&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E5%BE%97%E5%88%B0%E4%BB%A3%E7%90%86%E7%B1%BB%E7%9A%84%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
-&lt;h4 id=&#34;使用代理类的构造方法-new-一个对象出来&#34;&gt;使用代理类的构造方法 new 一个对象出来&lt;/h4&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;6&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E4%BD%BF%E7%94%A8%E4%BB%A3%E7%90%86%E7%B1%BB%E7%9A%84%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95new%E4%B8%80%E4%B8%AA%E5%AF%B9%E8%B1%A1%E5%87%BA%E6%9D%A5.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;h4 id=&#34;解析-proxynewproxyinstance-方法&#34;&gt;解析 Proxy.newProxyInstance 方法&lt;/h4&gt;
+&lt;p&gt;JDK动态代理中最主要的方法就是 Proxy.newProxyInstance 方法，于是点进这个方法看：&lt;br&gt;
+Proxy#newProxyInstance&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;    public static Object newProxyInstance(ClassLoader loader,
+                                          Class&amp;lt;?&amp;gt;[] interfaces,
+                                          InvocationHandler h)
+        throws IllegalArgumentException
+    {
+        Objects.requireNonNull(h);
+
+        final Class&amp;lt;?&amp;gt;[] intfs = interfaces.clone();
+        final SecurityManager sm = System.getSecurityManager();
+        if (sm != null) {
+            checkProxyAccess(Reflection.getCallerClass(), loader, intfs);
+        }
+
+        /*
+         * Look up or generate the designated proxy class.
+         * 查找或生成指定的代理类 .java -&amp;gt; .class
+         */
+        Class&amp;lt;?&amp;gt; cl = getProxyClass0(loader, intfs);
+
+        /*
+         * Invoke its constructor with the designated invocation handler.
+         * 使用自己实现的 InvocationHandler 作为参数，调用构造方法，获得代理类实例
+         */
+        try {
+            if (sm != null) {
+                checkNewProxyPermission(Reflection.getCallerClass(), cl);
+            }
+
+            final Constructor&amp;lt;?&amp;gt; cons = cl.getConstructor(constructorParams);
+            final InvocationHandler ih = h;
+            if (!Modifier.isPublic(cl.getModifiers())) {
+                AccessController.doPrivileged(new PrivilegedAction&amp;lt;Void&amp;gt;() {
+                    public Void run() {
+                        cons.setAccessible(true);
+                        return null;
+                    }
+                });
+            }
+            return cons.newInstance(new Object[]{h});
+        } catch (IllegalAccessException|InstantiationException e) {
+            throw new InternalError(e.toString(), e);
+        } catch (InvocationTargetException e) {
+            Throwable t = e.getCause();
+            if (t instanceof RuntimeException) {
+                throw (RuntimeException) t;
+            } else {
+                throw new InternalError(t.toString(), t);
+            }
+        } catch (NoSuchMethodException e) {
+            throw new InternalError(e.toString(), e);
+        }
+    }
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E4%BB%A3%E7%90%86%E7%B1%BB.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;br&gt;
+可以看到通过 Class&amp;lt;?&amp;gt; cl = getProxyClass0(loader, intfs); 产生了代理对象，于是点进 getProxyClass0() 方法&lt;/p&gt;
+&lt;h4 id=&#34;生成代理类的-class-文件&#34;&gt;生成代理类的 .class 文件&lt;/h4&gt;
+&lt;p&gt;Proxy#getProxyClass0()&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;    private static Class&amp;lt;?&amp;gt; getProxyClass0(ClassLoader loader,
+                                           Class&amp;lt;?&amp;gt;... interfaces) {
+        if (interfaces.length &amp;gt; 65535) {
+            throw new IllegalArgumentException(&amp;quot;interface limit exceeded&amp;quot;);
+        }
+
+        // If the proxy class defined by the given loader implementing
+        // the given interfaces exists, this will simply return the cached copy;
+        // otherwise, it will create the proxy class via the ProxyClassFactory
+        // // JDK对代理类进行了缓存，如果已经存在相应的代理类，则直接返回，否则才会通过ProxyClassFactory来创建代理
+        return proxyClassCache.get(loader, interfaces);
+    }
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;如果缓存中不存在相应的代理类，则通过 ProxyClassFactory来创建代理，于是点进 ProxyClassFactory ：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;    private static final class ProxyClassFactory
+        implements BiFunction&amp;lt;ClassLoader, Class&amp;lt;?&amp;gt;[], Class&amp;lt;?&amp;gt;&amp;gt;
+    {
+        // prefix for all proxy class names
+        // 所有代理类名称的前缀
+        private static final String proxyClassNamePrefix = &amp;quot;$Proxy&amp;quot;;
+
+        // next number to use for generation of unique proxy class names
+        // 同步类，用来实现生成代理类名字的计数器
+        private static final AtomicLong nextUniqueNumber = new AtomicLong();
+
+        @Override
+        public Class&amp;lt;?&amp;gt; apply(ClassLoader loader, Class&amp;lt;?&amp;gt;[] interfaces) {
+
+            Map&amp;lt;Class&amp;lt;?&amp;gt;, Boolean&amp;gt; interfaceSet = new IdentityHashMap&amp;lt;&amp;gt;(interfaces.length);
+            for (Class&amp;lt;?&amp;gt; intf : interfaces) {
+                /*
+                 * Verify that the class loader resolves the name of this
+                 * interface to the same Class object.
+                 */
+                Class&amp;lt;?&amp;gt; interfaceClass = null;
+                try {
+                    interfaceClass = Class.forName(intf.getName(), false, loader);
+                } catch (ClassNotFoundException e) {
+                }
+                if (interfaceClass != intf) {
+                    throw new IllegalArgumentException(
+                        intf + &amp;quot; is not visible from class loader&amp;quot;);
+                }
+                /*
+                 * Verify that the Class object actually represents an
+                 * interface.
+                 */
+                if (!interfaceClass.isInterface()) {
+                    throw new IllegalArgumentException(
+                        interfaceClass.getName() + &amp;quot; is not an interface&amp;quot;);
+                }
+                /*
+                 * Verify that this interface is not a duplicate.
+                 */
+                if (interfaceSet.put(interfaceClass, Boolean.TRUE) != null) {
+                    throw new IllegalArgumentException(
+                        &amp;quot;repeated interface: &amp;quot; + interfaceClass.getName());
+                }
+            }
+
+            // 代理类的包名
+            String proxyPkg = null;     // package to define proxy class in
+            int accessFlags = Modifier.PUBLIC | Modifier.FINAL;
+
+            /*
+             * Record the package of a non-public proxy interface so that the
+             * proxy class will be defined in the same package.  Verify that
+             * all non-public proxy interfaces are in the same package.
+             */
+            for (Class&amp;lt;?&amp;gt; intf : interfaces) {
+                int flags = intf.getModifiers();
+                if (!Modifier.isPublic(flags)) {
+                    accessFlags = Modifier.FINAL;
+                    String name = intf.getName();
+                    int n = name.lastIndexOf(&#39;.&#39;);
+                    String pkg = ((n == -1) ? &amp;quot;&amp;quot; : name.substring(0, n + 1));
+                    if (proxyPkg == null) {
+                        proxyPkg = pkg;
+                    } else if (!pkg.equals(proxyPkg)) {
+                        throw new IllegalArgumentException(
+                            &amp;quot;non-public interfaces from different packages&amp;quot;);
+                    }
+                }
+            }
+
+            if (proxyPkg == null) {
+                // if no non-public proxy interfaces, use com.sun.proxy package
+                proxyPkg = ReflectUtil.PROXY_PACKAGE + &amp;quot;.&amp;quot;;
+            }
+
+            /*
+             * Choose a name for the proxy class to generate.
+             */
+            // 获取计数用来生成代理类的类名（proxy+num）
+            long num = nextUniqueNumber.getAndIncrement();
+            // 生成类名，默认情况下，代理类的完全限定名为：com.sun.proxy.$Proxy0，com.sun.proxy.$Proxy1……依次递增
+            String proxyName = proxyPkg + proxyClassNamePrefix + num;
+
+            /*
+             * Generate the specified proxy class.
+             */
+            // 这里才是真正的生成代理类的字节码的地方，通过ProxyGenerator.generateProxyClass方法。
+            byte[] proxyClassFile = ProxyGenerator.generateProxyClass(
+                proxyName, interfaces, accessFlags);
+            try {
+                return defineClass0(loader, proxyName,
+                                    proxyClassFile, 0, proxyClassFile.length);
+            } catch (ClassFormatError e) {
+                /*
+                 * A ClassFormatError here means that (barring bugs in the
+                 * proxy class generation code) there was some other
+                 * invalid aspect of the arguments supplied to the proxy
+                 * class creation (such as virtual machine limitations
+                 * exceeded).
+                 */
+                throw new IllegalArgumentException(e.toString());
+            }
+        }
+    }
+&lt;/code&gt;&lt;/pre&gt;
 &lt;h4 id=&#34;class-cl-getproxyclass0loader-intfs&#34;&gt;Class&amp;lt;?&amp;gt; cl = getProxyClass0(loader, intfs);&lt;/h4&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;7&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/getProxyClass0.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;4&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/getProxyClass0.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
 &lt;h4 id=&#34;public-v-getk-key-p-parameter&#34;&gt;public V get(K key, P parameter) {&lt;/h4&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;8&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/get.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;5&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/get.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
 &lt;h4 id=&#34;debugger&#34;&gt;debugger&lt;/h4&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;9&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/debugger.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;6&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/debugger.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
 &lt;h4 id=&#34;v-value-supplierget&#34;&gt;V value = supplier.get();&lt;/h4&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;10&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/suppiler.get.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;7&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/suppiler.get.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
 &lt;h4 id=&#34;public-synchronized-v-get&#34;&gt;public synchronized V get() {&lt;/h4&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;11&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E8%BF%94%E5%9B%9Evalue.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;8&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E8%BF%94%E5%9B%9Evalue.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
 &lt;h4 id=&#34;value-objectsrequirenonnullvaluefactoryapplykey-parameter&#34;&gt;value = Objects.requireNonNull(valueFactory.apply(key, parameter))&lt;/h4&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;12&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/requireNonNull.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;9&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/requireNonNull.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
 &lt;h4 id=&#34;public-class-applyclassloader-loader-class-interfaces&#34;&gt;public Class&lt;?&gt; apply(ClassLoader loader, Class&lt;?&gt;[] interfaces) {&lt;/h4&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;13&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/apply.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;10&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/apply.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
 &lt;h4 id=&#34;使用类加载器判断是否是同一个对象&#34;&gt;使用类加载器判断是否是同一个对象&lt;/h4&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;14&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E4%BD%BF%E7%94%A8%E7%B1%BB%E5%8A%A0%E8%BD%BD%E5%99%A8%E5%88%A4%E6%96%AD%E6%98%AF%E5%90%A6%E6%98%AF%E5%90%8C%E4%B8%80%E4%B8%AA%E5%AF%B9%E8%B1%A1.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;11&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E4%BD%BF%E7%94%A8%E7%B1%BB%E5%8A%A0%E8%BD%BD%E5%99%A8%E5%88%A4%E6%96%AD%E6%98%AF%E5%90%A6%E6%98%AF%E5%90%8C%E4%B8%80%E4%B8%AA%E5%AF%B9%E8%B1%A1.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
 &lt;h4 id=&#34;判断接口的权限修饰符&#34;&gt;判断接口的权限修饰符&lt;/h4&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;15&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E5%88%A4%E6%96%AD%E6%8E%A5%E5%8F%A3%E7%9A%84%E6%9D%83%E9%99%90%E4%BF%AE%E9%A5%B0%E7%AC%A6.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;12&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E5%88%A4%E6%96%AD%E6%8E%A5%E5%8F%A3%E7%9A%84%E6%9D%83%E9%99%90%E4%BF%AE%E9%A5%B0%E7%AC%A6.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
 &lt;h4 id=&#34;string-proxyname-proxypkg-proxyclassnameprefix-num&#34;&gt;String proxyName = proxyPkg + proxyClassNamePrefix + num;&lt;/h4&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;16&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/proxyName.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;13&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/proxyName.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
 &lt;p&gt;类名加上标识0，是为了防止并发情况下产生问题。&lt;/p&gt;
 &lt;h4 id=&#34;byte-proxyclassfile-proxygeneratorgenerateproxyclassproxyname-interfaces-accessflags&#34;&gt;byte[] proxyClassFile = ProxyGenerator.generateProxyClass(proxyName, interfaces, accessFlags);&lt;/h4&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;17&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/generateProxyClass.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;18&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/JDK%E4%BB%A3%E7%90%86%E8%BF%87%E7%A8%8B.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;14&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/generateProxyClass.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p&gt;上述通过 ProxyClassFactory 生成了代理类的 .class 文件。&lt;/p&gt;
+&lt;p&gt;接下来沿着 Proxy#newProxyInstance 方法继续向下看：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;        /*
+         * Invoke its constructor with the designated invocation handler.
+         * 使用自己实现的 InvocationHandler 作为参数，调用构造方法，获得代理类实例
+         */
+        try {
+            if (sm != null) {
+                checkNewProxyPermission(Reflection.getCallerClass(), cl);
+            }
+
+            final Constructor&amp;lt;?&amp;gt; cons = cl.getConstructor(constructorParams);
+            final InvocationHandler ih = h;
+            if (!Modifier.isPublic(cl.getModifiers())) {
+                AccessController.doPrivileged(new PrivilegedAction&amp;lt;Void&amp;gt;() {
+                    public Void run() {
+                        cons.setAccessible(true);
+                        return null;
+                    }
+                });
+            }
+            return cons.newInstance(new Object[]{h});
+        } catch (IllegalAccessException|InstantiationException e) {
+            throw new InternalError(e.toString(), e);
+        } catch (InvocationTargetException e) {
+            Throwable t = e.getCause();
+            if (t instanceof RuntimeException) {
+                throw (RuntimeException) t;
+            } else {
+                throw new InternalError(t.toString(), t);
+            }
+        } catch (NoSuchMethodException e) {
+            throw new InternalError(e.toString(), e);
+        }
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h4 id=&#34;得到代理类的构造方法&#34;&gt;得到代理类的构造方法&lt;/h4&gt;
+&lt;p&gt;得到上述 getProxyClass0 方法中生成的代理类 的构造方法：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;    final Constructor&amp;lt;?&amp;gt; cons = cl.getConstructor(constructorParams);
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;通过构造方法 new 对象出来&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;    return cons.newInstance(new Object[]{h});
+&lt;/code&gt;&lt;/pre&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;15&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E5%BE%97%E5%88%B0%E4%BB%A3%E7%90%86%E7%B1%BB%E7%9A%84%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;h4 id=&#34;使用代理类的构造方法-new-一个对象出来&#34;&gt;使用代理类的构造方法 new 一个对象出来&lt;/h4&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;16&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E4%BD%BF%E7%94%A8%E4%BB%A3%E7%90%86%E7%B1%BB%E7%9A%84%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95new%E4%B8%80%E4%B8%AA%E5%AF%B9%E8%B1%A1%E5%87%BA%E6%9D%A5.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;17&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/JDK%E4%BB%A3%E7%90%86%E8%BF%87%E7%A8%8B.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p&gt;JDK动态代理源码分析参考文章：&lt;a href=&#34;https://www.jianshu.com/p/71bd883744e6&#34;&gt;https://www.jianshu.com/p/71bd883744e6&lt;/a&gt;&lt;/p&gt;
 ">Spring系列（三）一篇文章学会 JDK 动态代理并手动模拟一个动态代理</a>
       </div>
       
