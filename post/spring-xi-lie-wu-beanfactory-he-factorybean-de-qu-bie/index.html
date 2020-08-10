@@ -9,7 +9,7 @@
 <meta name="description" content="热心善良的老学姐">
 <meta name="theme-color" content="#000">
 <title>Spring系列（五）BeanFactory和FactoryBean的区别 | SSM</title>
-<link rel="shortcut icon" href="/favicon.ico?v=1597031272716">
+<link rel="shortcut icon" href="/favicon.ico?v=1597044612239">
 <link rel="stylesheet" href="/media/css/gemini.css">
 <link rel="stylesheet" href="/media/fonts/font-awesome.css">
 <link
@@ -242,13 +242,18 @@
 <li><a href="#%E6%AF%94%E5%A6%82%E5%9C%A8-spring-%E4%B8%AD%E5%BC%95%E5%85%A5%E7%AC%AC%E4%B8%89%E6%96%B9%E5%B7%A5%E5%85%B7-mybatis">比如在 Spring 中引入第三方工具 Mybatis</a>
 <ul>
 <li><a href="#sqlsessionfactorybean">SqlSessionFactoryBean</a></li>
-<li><a href="#mybatis-%E9%80%9A%E8%BF%87-sqlsessionfactorybeansetdatasourcedatasource">MyBatis 通过 sqlSessionFactoryBean.setDataSource(dataSource);</a></li>
 <li><a href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E9%80%9A%E8%BF%87-tempdaofactorybeansetmsg1str">自定义通过 TempDaoFactoryBean.setMsg1(str);</a></li>
 </ul>
 </li>
 <li><a href="#spring-%E5%A6%82%E4%BD%95%E5%AE%8C%E6%88%90%E6%89%AB%E6%8F%8F">Spring 如何完成扫描</a>
 <ul>
-<li><a href="#%E5%A6%82%E4%BD%95%E5%88%9D%E5%A7%8B%E5%8C%96-spring-%E7%8E%AF%E5%A2%83">如何初始化 Spring 环境？</a></li>
+<li><a href="#%E5%A6%82%E4%BD%95%E5%88%9D%E5%A7%8B%E5%8C%96-spring-%E7%8E%AF%E5%A2%83">如何初始化 Spring 环境？</a>
+<ul>
+<li><a href="#new-annotationconfigapplicationcontextspringconfigclass">new AnnotationConfigApplicationContext(SpringConfig.class);</a></li>
+<li><a href="#%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E4%B8%8D%E6%89%AB%E6%8F%8F%E5%8C%85%E4%BD%BF%E7%94%A8-register-%E5%8D%95%E7%8B%AC%E6%B3%A8%E5%86%8C%E6%9F%90%E4%B8%AA%E7%B1%BB">配置文件不扫描包，使用 register() 单独注册某个类</a></li>
+<li><a href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E6%A8%A1%E6%8B%9F%E5%AE%9E%E7%8E%B0%E6%89%AB%E6%8F%8F%E5%8C%85-componentscan">自定义模拟实现扫描包 @ComponentScan</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -544,12 +549,12 @@
     
     <span class="meta-item">
       <i class="fa fa-clock-o"></i>
-      <span>12<span class="language" data-lan="minute">分钟</span></span>
+      <span>13<span class="language" data-lan="minute">分钟</span></span>
     </span>
     <span class="meta-item">
       <span class="post-meta-divider">|</span>
       <i class="fa fa-file-word-o"></i>
-      <span>2465<span class="pc-show language" data-lan="words">字数</span></span>
+      <span>2556<span class="pc-show language" data-lan="words">字数</span></span>
     </span>
     
   </div>
@@ -567,15 +572,12 @@
 </ul>
 <h1 id="spring-中声明一个-bean-的方式">Spring 中声明一个 Bean 的方式</h1>
 <ul>
-<li>
-<bean>
-</li>
-<li>@Service</li>
-<li>@Bean</li>
+<li>基于XML的 Bean 定义： <code>&lt;bean&gt;</code>（需提供 setter 方法）</li>
+<li>基于注解的 Bean 定义：@Component、@Controller、@Service、@Repository</li>
+<li>基于 JavaConfig 的 Bean 定义：@Bean</li>
 </ul>
 <h1 id="factorybean">FactoryBean</h1>
-<pre><code class="language-java">// 表明这是一个 xml 文件
-@Configuration
+<pre><code class="language-java">@Configuration
 // 注解扫描包
 @ComponentScan(&quot;com.ssm&quot;)
 public class SpringConfig {
@@ -608,6 +610,13 @@ public class DaoFactoryBean implements FactoryBean {
     }
 }
 </code></pre>
+<pre><code class="language-java">public class TempDaoFactoryBean {
+  public void testBean(){
+    System.out.println(&quot;FactoryBean......&quot;);
+  }
+}
+</code></pre>
+<p>测试类：</p>
 <pre><code class="language-java">public class Test {
     public static void main(String[] args) {
         // AnnotationConfigApplicationContext：注解配置应用程序
@@ -624,27 +633,18 @@ public class DaoFactoryBean implements FactoryBean {
     public static void main(String[] args) {
         // AnnotationConfigApplicationContext：注解配置应用程序
         AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(SpringConfig.class);
+        // 在 Spring 容器中：name=daoFactoryBean 对应的 Bean 为 TempDaoFactoryBean
         TempDaoFactoryBean daoFactoryBean = (TempDaoFactoryBean) context.getBean(&quot;daoFactoryBean&quot;);
         daoFactoryBean.test();
 
-    }
-}
-</code></pre>
-<pre><code>FactoryBean...
-</code></pre>
-<pre><code class="language-java">public class Test {
-    public static void main(String[] args) {
-        // AnnotationConfigApplicationContext：注解配置应用程序
-        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(SpringConfig.class);
-        TempDaoFactoryBean daoFactoryBean = (TempDaoFactoryBean) context.getBean(&quot;daoFactoryBean&quot;);
-        daoFactoryBean.test();
-
+        // 在 Spring 容器中，name=&amp;daoFactoryBean 对应的 Bean 为 DaoFactoryBean
         DaoFactoryBean bean = (DaoFactoryBean) context.getBean(&quot;&amp;daoFactoryBean&quot;);
         bean.testBean();
 
     }
 }
 </code></pre>
+<p>运行结果：</p>
 <pre><code>FactoryBean...
 testBean...
 </code></pre>
@@ -653,8 +653,8 @@ testBean...
 <li>通过 name 获取 beanName</li>
 </ul>
 <p>通过 name 获取 beanName，这里不使用 name 直接作为 beanName 有两个原因：</p>
-<p>1.name 可能会以 &amp; 字符开头，表名调用者想获取 FactoryBean 本身，而非 FactoryBean 实现类锁创建的 bean。在 Spring 工厂中，FactoryBean 的实现类和其他的普通 bean 存储方式是一致的，即&lt;beanName, bean&gt;，beanName 中是没有 &amp; 这个字符的。所以我们需要将 name 的首字符 &amp; 移除，这样才能从缓存里取到 FactoryBean 实例。</p>
-<p>2.还是别名的问题 <alias>.，转换需要</p>
+<p>1.name 可能会以 &amp; 字符开头，表名调用者想获取 FactoryBean 本身，而非 FactoryBean 实现类所创建的 bean。在 Spring 工厂中，FactoryBean 的实现类和其他的普通 bean 存储方式是一致的，即&lt;beanName, bean&gt;，beanName 中是没有 &amp; 这个字符的。所以我们需要将 name 的首字符 &amp; 移除，这样才能从缓存里取到 FactoryBean 实例。</p>
+<p>2.还是别名的问题 <code>&lt;alias&gt;</code>，转换需要</p>
 <figure data-type="image" tabindex="1"><img src="https://epitomm.github.io/post-images/transformedBeanName.png" alt="图片" loading="lazy"></figure>
 <p>如果有一个类相当复杂，里面有很多依赖，就要配置很多 <property>，有可能有的依赖还得不到。</p>
 <pre><code class="language-xml">&lt;bean id=&quot;temp&quot; class=&quot;com.ssm.dao.TempDaoFactoryBean&quot;&gt;
@@ -707,8 +707,8 @@ public class SpringConfig {
     &lt;constructor-arg ref=&quot;configuration&quot;&gt;&lt;/constructor-arg&gt;
 &lt;/bean&gt;
 </code></pre>
-<p>3.Configuration 有超级多依赖，就需要在 <bean> 内添加很多 <property></p>
-<figure data-type="image" tabindex="4"><img src="https://epitomm.github.io/post-images/Configuration%E6%9C%89%E5%BE%88%E5%A4%9A%E4%BE%9D%E8%B5%96.png" alt="图片" loading="lazy"></figure>
+<p>3.Configuration 有超级多依赖，就需要在 <code>&lt;bean&gt;</code> 内添加很多 <code>&lt;property&gt;</code></p>
+<figure data-type="image" tabindex="4"><img src="https://epitomm.github.io/post-images/Configuraion%E6%9C%89%E5%BE%88%E5%A4%9A%E4%BE%9D%E8%B5%96.png" alt="图片" loading="lazy"></figure>
 <pre><code class="language-xml">&lt;bean id=&quot;configuration&quot; class=&quot;org.apache.ibatis.session.Configuration&quot;&gt;
   &lt;property&gt;&lt;/property&gt;
   &lt;property&gt;&lt;/property&gt;
@@ -730,14 +730,16 @@ public class SpringConfig {
 <h2 id="sqlsessionfactorybean">SqlSessionFactoryBean</h2>
 <p>Mybatis在 SqlSessionFactoryBean 内部维护了各种依赖关系：</p>
 <figure data-type="image" tabindex="5"><img src="https://epitomm.github.io/post-images/SqlSessionFactoryBean.png" alt="图片" loading="lazy"></figure>
-<p>最终返回的对象是 SqlSessionFactory</p>
+<p>getObject() 最终返回的对象是 SqlSessionFactory</p>
 <figure data-type="image" tabindex="6"><img src="https://epitomm.github.io/post-images/SqlSessionFactoryBean%E8%BF%94%E5%9B%9ESqlSessionFactory.png" alt="图片" loading="lazy"></figure>
-<p>afterPropertiesSet()</p>
+<p>SqlSessionFactoryBean#afterPropertiesSet()</p>
 <figure data-type="image" tabindex="7"><img src="https://epitomm.github.io/post-images/afterPropertiesSet.png" alt="图片" loading="lazy"></figure>
-<p>buildSqlSessionFactory()</p>
+<p>SqlSessionFactoryBean#buildSqlSessionFactory()</p>
 <figure data-type="image" tabindex="8"><img src="https://epitomm.github.io/post-images/buildSqlSessionFactory.png" alt="图片" loading="lazy"></figure>
 <p>MyBatis 内部通过 SqlSessionFactoryBean 维护了各种依赖关系，我们只需直接使用 SqlSessionFactoryBean 对象即可获得 SqlSessionFactory，无需再手动维护各种依赖。</p>
-<h2 id="mybatis-通过-sqlsessionfactorybeansetdatasourcedatasource">MyBatis 通过 sqlSessionFactoryBean.setDataSource(dataSource);</h2>
+<ul>
+<li>MyBatis 通过 sqlSessionFactoryBean.setDataSource(dataSource);</li>
+</ul>
 <pre><code class="language-java">@Bean
 public DataSource dataSource(){
     DriverManagerDataSource dataSource = new DriverManagerDataSource();
@@ -756,8 +758,7 @@ public SqlSessionFactoryBean sqlSessionFactoryBean(DataSource dataSource){
 </code></pre>
 <h2 id="自定义通过-tempdaofactorybeansetmsg1str">自定义通过 TempDaoFactoryBean.setMsg1(str);</h2>
 <p>1.JavaConfig 配置文件</p>
-<pre><code class="language-java">// 表明这是一个 xml 文件
-@Configuration
+<pre><code class="language-java">@Configuration
 // 注解扫描包
 @ComponentScan(&quot;com.ssm&quot;)
 // 扫描 xml 配置文件
@@ -877,10 +878,10 @@ public void init(){
 </ul>
 <p>为什么要初始化 Spring 环境？</p>
 <p>把我们交给 Spring 管理的类实例化</p>
-<pre><code class="language-java">@Servicepublic class IndexService {}
+<pre><code class="language-java">@Service
+public class IndexService {}
 </code></pre>
-<pre><code class="language-java">// 表明这是一个 xml 文件
-@Configuration
+<pre><code class="language-java">@Configuration
 // 注解扫描包
 @ComponentScan(&quot;com.ssm&quot;)
 public class SpringConfig {
@@ -903,18 +904,25 @@ public class SpringConfig {
 <p>运行结果：</p>
 <pre><code>com.ssm.service.IndexService@1a451d4d
 </code></pre>
-<p>AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(SpringConfig.class);</p>
-<p>![图片](https://epitomm.github.io/post-images/通过配置文件new AnnotationConfigApplicationContext.png)<br>
-<img src="https://epitomm.github.io/post-images/register.png" alt="图片" loading="lazy"></p>
-<p>context.register(SpringConfig.class);</p>
-<figure data-type="image" tabindex="9"><img src="https://epitomm.github.io/post-images/register.png" alt="图片" loading="lazy"></figure>
-<p>配置文件不扫描包，使用 register() 单独注册某个类</p>
-<pre><code class="language-java">// 表明这是一个 xml 文件
-@Configuration
+<h3 id="new-annotationconfigapplicationcontextspringconfigclass">new AnnotationConfigApplicationContext(SpringConfig.class);</h3>
+<p>AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);<br>
+<img src="https://epitomm.github.io/post-images/%E8%AF%BB%E5%8F%96JavaConfig%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6.png" alt="图片" loading="lazy"></p>
+<p>AnnotationConfigApplicationContext#register：<br>
+<img src="https://epitomm.github.io/post-images/AnnotationConfigApplicationContext%E6%BA%90%E7%A0%81.png" alt="图片" loading="lazy"></p>
+<p>AnnotationConfigApplicationContext#register：<br>
+<img src="https://epitomm.github.io/post-images/register%E6%BA%90%E7%A0%81.png" alt="图片" loading="lazy"></p>
+<p>AnnotatedBeanDefinitionReader#register：<br>
+<img src="https://epitomm.github.io/post-images/register%E6%BA%90%E7%A0%81_2.png" alt="图片" loading="lazy"></p>
+<p>AnnotatedBeanDefinitionReader#registerBean：<br>
+<img src="https://epitomm.github.io/post-images/registerBean%E6%BA%90%E7%A0%81.png" alt="图片" loading="lazy"></p>
+<h3 id="配置文件不扫描包使用-register-单独注册某个类">配置文件不扫描包，使用 register() 单独注册某个类</h3>
+<p>配置类：</p>
+<pre><code class="language-java">@Configuration
 // 注解扫描包
 //@ComponentScan(&quot;com.ssm&quot;)
 public class SpringConfig {
 </code></pre>
+<p>测试类：</p>
 <pre><code class="language-java">public class Test {
     public static void main(String[] args) {
         AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
@@ -922,6 +930,7 @@ public class SpringConfig {
         context.register(SpringConfig.class);
         // register() 注册普通的 bean
         context.register(IndexService.class);
+        // 注意：无参的 AnnotationConfigApplicationContext 没有 refresh()，需要手动调用
         context.refresh();
 
         IndexService indexService = (IndexService) context.getBean(&quot;indexService&quot;);
@@ -929,12 +938,10 @@ public class SpringConfig {
     }
 }
 </code></pre>
-<figure data-type="image" tabindex="10"><img src="https://epitomm.github.io/post-images/%E8%AF%BB%E5%8F%96JavaConfig%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6.png" alt="图片" loading="lazy"></figure>
-<figure data-type="image" tabindex="11"><img src="https://epitomm.github.io/post-images/AnnotationConfigApplicationContext%E6%BA%90%E7%A0%81.png" alt="图片" loading="lazy"></figure>
-<figure data-type="image" tabindex="12"><img src="https://epitomm.github.io/post-images/register%E6%BA%90%E7%A0%81.png" alt="图片" loading="lazy"></figure>
-<figure data-type="image" tabindex="13"><img src="https://epitomm.github.io/post-images/register%E6%BA%90%E7%A0%81_2.png" alt="图片" loading="lazy"></figure>
-<figure data-type="image" tabindex="14"><img src="https://epitomm.github.io/post-images/registerBean%E6%BA%90%E7%A0%81.png" alt="图片" loading="lazy"></figure>
-<p>context.scan(&quot;com.ssm&quot;); 也可以完成扫描：</p>
+<p><img src="https://epitomm.github.io/post-images/AnnotationConfigApplicationContext%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95.png" alt="图片" loading="lazy"><br>
+context.register(SpringConfig.class); 和 context.register(IndexService.class); 调用的是同一个 register 方法：<br>
+<img src="https://epitomm.github.io/post-images/register%E6%BA%90%E7%A0%81.png" alt="图片" loading="lazy"></p>
+<p>context.scan(&quot;com.ssm&quot;); 也可以完成包扫描：</p>
 <pre><code class="language-java">public class Test {
     public static void main(String[] args) {
         AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
@@ -949,13 +956,19 @@ public class SpringConfig {
     }
 }
 </code></pre>
-<p><img src="https://epitomm.github.io/post-images/scan%E6%BA%90%E7%A0%81.png" alt="图片" loading="lazy"><br>
+<p>AnnotationConfigApplicationContext#scan：<br>
+<img src="https://epitomm.github.io/post-images/scan%E6%BA%90%E7%A0%81.png" alt="图片" loading="lazy"><br>
+ClassPathBeanDefinitionScanner#scan：<br>
 <img src="https://epitomm.github.io/post-images/scan%E6%BA%90%E7%A0%81_2.png" alt="图片" loading="lazy"><br>
+ClassPathBeanDefinitionScanner#doScan：<br>
 <img src="https://epitomm.github.io/post-images/doScan.png" alt="图片" loading="lazy"><br>
 <img src="https://epitomm.github.io/post-images/doScan%E6%89%AB%E6%8F%8F%E5%AE%8C%E6%88%90.png" alt="图片" loading="lazy"></p>
-<p>进行类的扫描时，添加一个依赖，就可以按索引扫描，加快扫描速度。<br>
+<p>ClassPathScanningCandidateComponentProvider#findCandidateComponents：<br>
+进行类的扫描时，添加一个依赖，就可以按索引扫描，加快扫描速度。<br>
 <img src="https://epitomm.github.io/post-images/findCandidateComponents.png" alt="图片" loading="lazy"></p>
-<figure data-type="image" tabindex="15"><img src="https://epitomm.github.io/post-images/scanCandidateComponents.png" alt="图片" loading="lazy"></figure>
+<p>ClassPathScanningCandidateComponentProvider#scanCandidateComponents：<br>
+<img src="https://epitomm.github.io/post-images/scanCandidateComponents.png" alt="图片" loading="lazy"></p>
+<h3 id="自定义模拟实现扫描包-componentscan">自定义模拟实现扫描包 @ComponentScan</h3>
 <pre><code class="language-java">@Retention(RetentionPolicy.RUNTIME)
 public @interface Anno {
     public String value();
@@ -970,11 +983,11 @@ public class UserServiceImpl implements UserService {
         // 1.通过文件名得到 .class 文件，然后去掉 .class 就是最终的类名
         // 得到根目录
         String rootPath = this.getClass().getResource(&quot;/&quot;).getPath();
-        // 2. 将 com.ssm 变为 com/ssm/
+        // 2. 将 com.ssm 变为 com\ssm\，执行完此行代码后：basePackagePath=com\ssm\service\impl
         String basePackagePath = basePackage.replaceAll(&quot;\\.&quot;,&quot;\\\\&quot;);
 
         File file = new File(rootPath + &quot;//&quot; + basePackagePath);
-        // 得到所有文件名的数组
+        // 得到所有文件名的数组，即 UserServiceImpl.class
         String[] names = file.list();
         for (String name : names) {
             // 去掉文件的 .class 就得到了类名
@@ -14929,15 +14942,12 @@ public class IndexService implements ApplicationContextAware {
 &lt;/ul&gt;
 &lt;h1 id=&#34;spring-中声明一个-bean-的方式&#34;&gt;Spring 中声明一个 Bean 的方式&lt;/h1&gt;
 &lt;ul&gt;
-&lt;li&gt;
-&lt;bean&gt;
-&lt;/li&gt;
-&lt;li&gt;@Service&lt;/li&gt;
-&lt;li&gt;@Bean&lt;/li&gt;
+&lt;li&gt;基于XML的 Bean 定义： &lt;code&gt;&amp;lt;bean&amp;gt;&lt;/code&gt;（需提供 setter 方法）&lt;/li&gt;
+&lt;li&gt;基于注解的 Bean 定义：@Component、@Controller、@Service、@Repository&lt;/li&gt;
+&lt;li&gt;基于 JavaConfig 的 Bean 定义：@Bean&lt;/li&gt;
 &lt;/ul&gt;
 &lt;h1 id=&#34;factorybean&#34;&gt;FactoryBean&lt;/h1&gt;
-&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;// 表明这是一个 xml 文件
-@Configuration
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@Configuration
 // 注解扫描包
 @ComponentScan(&amp;quot;com.ssm&amp;quot;)
 public class SpringConfig {
@@ -14970,6 +14980,13 @@ public class DaoFactoryBean implements FactoryBean {
     }
 }
 &lt;/code&gt;&lt;/pre&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class TempDaoFactoryBean {
+  public void testBean(){
+    System.out.println(&amp;quot;FactoryBean......&amp;quot;);
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;测试类：&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class Test {
     public static void main(String[] args) {
         // AnnotationConfigApplicationContext：注解配置应用程序
@@ -14986,27 +15003,18 @@ public class DaoFactoryBean implements FactoryBean {
     public static void main(String[] args) {
         // AnnotationConfigApplicationContext：注解配置应用程序
         AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(SpringConfig.class);
+        // 在 Spring 容器中：name=daoFactoryBean 对应的 Bean 为 TempDaoFactoryBean
         TempDaoFactoryBean daoFactoryBean = (TempDaoFactoryBean) context.getBean(&amp;quot;daoFactoryBean&amp;quot;);
         daoFactoryBean.test();
 
-    }
-}
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code&gt;FactoryBean...
-&lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class Test {
-    public static void main(String[] args) {
-        // AnnotationConfigApplicationContext：注解配置应用程序
-        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(SpringConfig.class);
-        TempDaoFactoryBean daoFactoryBean = (TempDaoFactoryBean) context.getBean(&amp;quot;daoFactoryBean&amp;quot;);
-        daoFactoryBean.test();
-
+        // 在 Spring 容器中，name=&amp;amp;daoFactoryBean 对应的 Bean 为 DaoFactoryBean
         DaoFactoryBean bean = (DaoFactoryBean) context.getBean(&amp;quot;&amp;amp;daoFactoryBean&amp;quot;);
         bean.testBean();
 
     }
 }
 &lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;运行结果：&lt;/p&gt;
 &lt;pre&gt;&lt;code&gt;FactoryBean...
 testBean...
 &lt;/code&gt;&lt;/pre&gt;
@@ -15015,8 +15023,8 @@ testBean...
 &lt;li&gt;通过 name 获取 beanName&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;通过 name 获取 beanName，这里不使用 name 直接作为 beanName 有两个原因：&lt;/p&gt;
-&lt;p&gt;1.name 可能会以 &amp;amp; 字符开头，表名调用者想获取 FactoryBean 本身，而非 FactoryBean 实现类锁创建的 bean。在 Spring 工厂中，FactoryBean 的实现类和其他的普通 bean 存储方式是一致的，即&amp;lt;beanName, bean&amp;gt;，beanName 中是没有 &amp;amp; 这个字符的。所以我们需要将 name 的首字符 &amp;amp; 移除，这样才能从缓存里取到 FactoryBean 实例。&lt;/p&gt;
-&lt;p&gt;2.还是别名的问题 &lt;alias&gt;.，转换需要&lt;/p&gt;
+&lt;p&gt;1.name 可能会以 &amp;amp; 字符开头，表名调用者想获取 FactoryBean 本身，而非 FactoryBean 实现类所创建的 bean。在 Spring 工厂中，FactoryBean 的实现类和其他的普通 bean 存储方式是一致的，即&amp;lt;beanName, bean&amp;gt;，beanName 中是没有 &amp;amp; 这个字符的。所以我们需要将 name 的首字符 &amp;amp; 移除，这样才能从缓存里取到 FactoryBean 实例。&lt;/p&gt;
+&lt;p&gt;2.还是别名的问题 &lt;code&gt;&amp;lt;alias&amp;gt;&lt;/code&gt;，转换需要&lt;/p&gt;
 &lt;figure data-type=&#34;image&#34; tabindex=&#34;1&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/transformedBeanName.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
 &lt;p&gt;如果有一个类相当复杂，里面有很多依赖，就要配置很多 &lt;property&gt;，有可能有的依赖还得不到。&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-xml&#34;&gt;&amp;lt;bean id=&amp;quot;temp&amp;quot; class=&amp;quot;com.ssm.dao.TempDaoFactoryBean&amp;quot;&amp;gt;
@@ -15069,8 +15077,8 @@ public class SpringConfig {
     &amp;lt;constructor-arg ref=&amp;quot;configuration&amp;quot;&amp;gt;&amp;lt;/constructor-arg&amp;gt;
 &amp;lt;/bean&amp;gt;
 &lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;3.Configuration 有超级多依赖，就需要在 &lt;bean&gt; 内添加很多 &lt;property&gt;&lt;/p&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;4&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/Configuration%E6%9C%89%E5%BE%88%E5%A4%9A%E4%BE%9D%E8%B5%96.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p&gt;3.Configuration 有超级多依赖，就需要在 &lt;code&gt;&amp;lt;bean&amp;gt;&lt;/code&gt; 内添加很多 &lt;code&gt;&amp;lt;property&amp;gt;&lt;/code&gt;&lt;/p&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;4&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/Configuraion%E6%9C%89%E5%BE%88%E5%A4%9A%E4%BE%9D%E8%B5%96.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
 &lt;pre&gt;&lt;code class=&#34;language-xml&#34;&gt;&amp;lt;bean id=&amp;quot;configuration&amp;quot; class=&amp;quot;org.apache.ibatis.session.Configuration&amp;quot;&amp;gt;
   &amp;lt;property&amp;gt;&amp;lt;/property&amp;gt;
   &amp;lt;property&amp;gt;&amp;lt;/property&amp;gt;
@@ -15092,14 +15100,16 @@ public class SpringConfig {
 &lt;h2 id=&#34;sqlsessionfactorybean&#34;&gt;SqlSessionFactoryBean&lt;/h2&gt;
 &lt;p&gt;Mybatis在 SqlSessionFactoryBean 内部维护了各种依赖关系：&lt;/p&gt;
 &lt;figure data-type=&#34;image&#34; tabindex=&#34;5&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/SqlSessionFactoryBean.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
-&lt;p&gt;最终返回的对象是 SqlSessionFactory&lt;/p&gt;
+&lt;p&gt;getObject() 最终返回的对象是 SqlSessionFactory&lt;/p&gt;
 &lt;figure data-type=&#34;image&#34; tabindex=&#34;6&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/SqlSessionFactoryBean%E8%BF%94%E5%9B%9ESqlSessionFactory.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
-&lt;p&gt;afterPropertiesSet()&lt;/p&gt;
+&lt;p&gt;SqlSessionFactoryBean#afterPropertiesSet()&lt;/p&gt;
 &lt;figure data-type=&#34;image&#34; tabindex=&#34;7&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/afterPropertiesSet.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
-&lt;p&gt;buildSqlSessionFactory()&lt;/p&gt;
+&lt;p&gt;SqlSessionFactoryBean#buildSqlSessionFactory()&lt;/p&gt;
 &lt;figure data-type=&#34;image&#34; tabindex=&#34;8&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/buildSqlSessionFactory.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
 &lt;p&gt;MyBatis 内部通过 SqlSessionFactoryBean 维护了各种依赖关系，我们只需直接使用 SqlSessionFactoryBean 对象即可获得 SqlSessionFactory，无需再手动维护各种依赖。&lt;/p&gt;
-&lt;h2 id=&#34;mybatis-通过-sqlsessionfactorybeansetdatasourcedatasource&#34;&gt;MyBatis 通过 sqlSessionFactoryBean.setDataSource(dataSource);&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;MyBatis 通过 sqlSessionFactoryBean.setDataSource(dataSource);&lt;/li&gt;
+&lt;/ul&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@Bean
 public DataSource dataSource(){
     DriverManagerDataSource dataSource = new DriverManagerDataSource();
@@ -15118,8 +15128,7 @@ public SqlSessionFactoryBean sqlSessionFactoryBean(DataSource dataSource){
 &lt;/code&gt;&lt;/pre&gt;
 &lt;h2 id=&#34;自定义通过-tempdaofactorybeansetmsg1str&#34;&gt;自定义通过 TempDaoFactoryBean.setMsg1(str);&lt;/h2&gt;
 &lt;p&gt;1.JavaConfig 配置文件&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;// 表明这是一个 xml 文件
-@Configuration
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@Configuration
 // 注解扫描包
 @ComponentScan(&amp;quot;com.ssm&amp;quot;)
 // 扫描 xml 配置文件
@@ -15239,10 +15248,10 @@ public void init(){
 &lt;/ul&gt;
 &lt;p&gt;为什么要初始化 Spring 环境？&lt;/p&gt;
 &lt;p&gt;把我们交给 Spring 管理的类实例化&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@Servicepublic class IndexService {}
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@Service
+public class IndexService {}
 &lt;/code&gt;&lt;/pre&gt;
-&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;// 表明这是一个 xml 文件
-@Configuration
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@Configuration
 // 注解扫描包
 @ComponentScan(&amp;quot;com.ssm&amp;quot;)
 public class SpringConfig {
@@ -15265,18 +15274,25 @@ public class SpringConfig {
 &lt;p&gt;运行结果：&lt;/p&gt;
 &lt;pre&gt;&lt;code&gt;com.ssm.service.IndexService@1a451d4d
 &lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(SpringConfig.class);&lt;/p&gt;
-&lt;p&gt;![图片](https://epitomm.github.io/post-images/通过配置文件new AnnotationConfigApplicationContext.png)&lt;br&gt;
-&lt;img src=&#34;https://epitomm.github.io/post-images/register.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/p&gt;
-&lt;p&gt;context.register(SpringConfig.class);&lt;/p&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;9&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/register.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
-&lt;p&gt;配置文件不扫描包，使用 register() 单独注册某个类&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;// 表明这是一个 xml 文件
-@Configuration
+&lt;h3 id=&#34;new-annotationconfigapplicationcontextspringconfigclass&#34;&gt;new AnnotationConfigApplicationContext(SpringConfig.class);&lt;/h3&gt;
+&lt;p&gt;AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);&lt;br&gt;
+&lt;img src=&#34;https://epitomm.github.io/post-images/%E8%AF%BB%E5%8F%96JavaConfig%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/p&gt;
+&lt;p&gt;AnnotationConfigApplicationContext#register：&lt;br&gt;
+&lt;img src=&#34;https://epitomm.github.io/post-images/AnnotationConfigApplicationContext%E6%BA%90%E7%A0%81.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/p&gt;
+&lt;p&gt;AnnotationConfigApplicationContext#register：&lt;br&gt;
+&lt;img src=&#34;https://epitomm.github.io/post-images/register%E6%BA%90%E7%A0%81.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/p&gt;
+&lt;p&gt;AnnotatedBeanDefinitionReader#register：&lt;br&gt;
+&lt;img src=&#34;https://epitomm.github.io/post-images/register%E6%BA%90%E7%A0%81_2.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/p&gt;
+&lt;p&gt;AnnotatedBeanDefinitionReader#registerBean：&lt;br&gt;
+&lt;img src=&#34;https://epitomm.github.io/post-images/registerBean%E6%BA%90%E7%A0%81.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/p&gt;
+&lt;h3 id=&#34;配置文件不扫描包使用-register-单独注册某个类&#34;&gt;配置文件不扫描包，使用 register() 单独注册某个类&lt;/h3&gt;
+&lt;p&gt;配置类：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@Configuration
 // 注解扫描包
 //@ComponentScan(&amp;quot;com.ssm&amp;quot;)
 public class SpringConfig {
 &lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;测试类：&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class Test {
     public static void main(String[] args) {
         AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
@@ -15284,6 +15300,7 @@ public class SpringConfig {
         context.register(SpringConfig.class);
         // register() 注册普通的 bean
         context.register(IndexService.class);
+        // 注意：无参的 AnnotationConfigApplicationContext 没有 refresh()，需要手动调用
         context.refresh();
 
         IndexService indexService = (IndexService) context.getBean(&amp;quot;indexService&amp;quot;);
@@ -15291,12 +15308,10 @@ public class SpringConfig {
     }
 }
 &lt;/code&gt;&lt;/pre&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;10&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E8%AF%BB%E5%8F%96JavaConfig%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;11&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/AnnotationConfigApplicationContext%E6%BA%90%E7%A0%81.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;12&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/register%E6%BA%90%E7%A0%81.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;13&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/register%E6%BA%90%E7%A0%81_2.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;14&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/registerBean%E6%BA%90%E7%A0%81.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
-&lt;p&gt;context.scan(&amp;quot;com.ssm&amp;quot;); 也可以完成扫描：&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/AnnotationConfigApplicationContext%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;br&gt;
+context.register(SpringConfig.class); 和 context.register(IndexService.class); 调用的是同一个 register 方法：&lt;br&gt;
+&lt;img src=&#34;https://epitomm.github.io/post-images/register%E6%BA%90%E7%A0%81.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/p&gt;
+&lt;p&gt;context.scan(&amp;quot;com.ssm&amp;quot;); 也可以完成包扫描：&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class Test {
     public static void main(String[] args) {
         AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
@@ -15311,13 +15326,19 @@ public class SpringConfig {
     }
 }
 &lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/scan%E6%BA%90%E7%A0%81.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;br&gt;
+&lt;p&gt;AnnotationConfigApplicationContext#scan：&lt;br&gt;
+&lt;img src=&#34;https://epitomm.github.io/post-images/scan%E6%BA%90%E7%A0%81.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;br&gt;
+ClassPathBeanDefinitionScanner#scan：&lt;br&gt;
 &lt;img src=&#34;https://epitomm.github.io/post-images/scan%E6%BA%90%E7%A0%81_2.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;br&gt;
+ClassPathBeanDefinitionScanner#doScan：&lt;br&gt;
 &lt;img src=&#34;https://epitomm.github.io/post-images/doScan.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;br&gt;
 &lt;img src=&#34;https://epitomm.github.io/post-images/doScan%E6%89%AB%E6%8F%8F%E5%AE%8C%E6%88%90.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/p&gt;
-&lt;p&gt;进行类的扫描时，添加一个依赖，就可以按索引扫描，加快扫描速度。&lt;br&gt;
+&lt;p&gt;ClassPathScanningCandidateComponentProvider#findCandidateComponents：&lt;br&gt;
+进行类的扫描时，添加一个依赖，就可以按索引扫描，加快扫描速度。&lt;br&gt;
 &lt;img src=&#34;https://epitomm.github.io/post-images/findCandidateComponents.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/p&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;15&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/scanCandidateComponents.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p&gt;ClassPathScanningCandidateComponentProvider#scanCandidateComponents：&lt;br&gt;
+&lt;img src=&#34;https://epitomm.github.io/post-images/scanCandidateComponents.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/p&gt;
+&lt;h3 id=&#34;自定义模拟实现扫描包-componentscan&#34;&gt;自定义模拟实现扫描包 @ComponentScan&lt;/h3&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@Retention(RetentionPolicy.RUNTIME)
 public @interface Anno {
     public String value();
@@ -15332,11 +15353,11 @@ public class UserServiceImpl implements UserService {
         // 1.通过文件名得到 .class 文件，然后去掉 .class 就是最终的类名
         // 得到根目录
         String rootPath = this.getClass().getResource(&amp;quot;/&amp;quot;).getPath();
-        // 2. 将 com.ssm 变为 com/ssm/
+        // 2. 将 com.ssm 变为 com\ssm\，执行完此行代码后：basePackagePath=com\ssm\service\impl
         String basePackagePath = basePackage.replaceAll(&amp;quot;\\.&amp;quot;,&amp;quot;\\\\&amp;quot;);
 
         File file = new File(rootPath + &amp;quot;//&amp;quot; + basePackagePath);
-        // 得到所有文件名的数组
+        // 得到所有文件名的数组，即 UserServiceImpl.class
         String[] names = file.list();
         for (String name : names) {
             // 去掉文件的 .class 就得到了类名
@@ -16124,7 +16145,7 @@ logger...
 &lt;h2 id=&#34;自己模拟的动态代理&#34;&gt;自己模拟的动态代理&lt;/h2&gt;
 &lt;p&gt;如何拿到一个对象？&lt;/p&gt;
 &lt;p&gt;不需要手动 new 创建类文件（因为一旦手动创建类文件，就会产生类爆炸），要通过接口反射生成一个类文件，然后调用第三方的编译技术，动态编译这个产生的类文件成 .class文件，继而利用URLClassLoader(因为这个动态产生的class不在工程当中所以需要使用URLClassLoader)把这个动态编译的类加载到 jvm 当中，最后通过反射把这个类实例化。&lt;/p&gt;
-&lt;h3 id=&#34;缺点&#34;&gt;缺点：&lt;/h3&gt;
+&lt;p&gt;缺点：&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;首先要通过接口反射生成类文件&lt;/li&gt;
 &lt;li&gt;动态编译文件，将其变为 .class 文件&lt;/li&gt;
@@ -16469,7 +16490,7 @@ public class ProxyUtil {
     }
 }
 &lt;/code&gt;&lt;/pre&gt;
-&lt;h3 id=&#34;5测试类&#34;&gt;5.测试类&lt;/h3&gt;
+&lt;h3 id=&#34;测试类-2&#34;&gt;测试类&lt;/h3&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class Test {
     public static void main(String[] args) throws Exception {
 //         自定义动态代理
@@ -16533,7 +16554,7 @@ public class TestInvocationHandler implements InvocationHandler {
     }
 }
 &lt;/code&gt;&lt;/pre&gt;
-&lt;h3 id=&#34;测试类-2&#34;&gt;测试类&lt;/h3&gt;
+&lt;h3 id=&#34;测试类-3&#34;&gt;测试类&lt;/h3&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class Test {
     public static void main(String[] args) throws Exception {
 
@@ -16620,7 +16641,8 @@ Proxy#newProxyInstance&lt;/p&gt;
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E4%BB%A3%E7%90%86%E7%B1%BB.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;br&gt;
 可以看到通过 Class&amp;lt;?&amp;gt; cl = getProxyClass0(loader, intfs); 产生了代理对象，于是点进 getProxyClass0() 方法&lt;/p&gt;
-&lt;h4 id=&#34;生成代理类的-class-文件&#34;&gt;生成代理类的 .class 文件&lt;/h4&gt;
+&lt;h4 id=&#34;class-cl-getproxyclass0loader-intfs&#34;&gt;Class&amp;lt;?&amp;gt; cl = getProxyClass0(loader, intfs);&lt;/h4&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;4&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/getProxyClass0.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
 &lt;p&gt;Proxy#getProxyClass0()&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;    private static Class&amp;lt;?&amp;gt; getProxyClass0(ClassLoader loader,
                                            Class&amp;lt;?&amp;gt;... interfaces) {
@@ -16742,8 +16764,6 @@ Proxy#newProxyInstance&lt;/p&gt;
         }
     }
 &lt;/code&gt;&lt;/pre&gt;
-&lt;h4 id=&#34;class-cl-getproxyclass0loader-intfs&#34;&gt;Class&amp;lt;?&amp;gt; cl = getProxyClass0(loader, intfs);&lt;/h4&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;4&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/getProxyClass0.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
 &lt;h4 id=&#34;public-v-getk-key-p-parameter&#34;&gt;public V get(K key, P parameter) {&lt;/h4&gt;
 &lt;figure data-type=&#34;image&#34; tabindex=&#34;5&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/get.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
 &lt;h4 id=&#34;debugger&#34;&gt;debugger&lt;/h4&gt;
@@ -16810,7 +16830,8 @@ Proxy#newProxyInstance&lt;/p&gt;
 &lt;figure data-type=&#34;image&#34; tabindex=&#34;15&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E5%BE%97%E5%88%B0%E4%BB%A3%E7%90%86%E7%B1%BB%E7%9A%84%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
 &lt;h4 id=&#34;使用代理类的构造方法-new-一个对象出来&#34;&gt;使用代理类的构造方法 new 一个对象出来&lt;/h4&gt;
 &lt;figure data-type=&#34;image&#34; tabindex=&#34;16&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E4%BD%BF%E7%94%A8%E4%BB%A3%E7%90%86%E7%B1%BB%E7%9A%84%E6%9E%84%E9%80%A0%E6%96%B9%E6%B3%95new%E4%B8%80%E4%B8%AA%E5%AF%B9%E8%B1%A1%E5%87%BA%E6%9D%A5.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;17&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/JDK%E4%BB%A3%E7%90%86%E8%BF%87%E7%A8%8B.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p&gt;自定义模拟动态代理 与 JDK动态代理&lt;br&gt;
+&lt;img src=&#34;https://epitomm.github.io/post-images/JDK%E4%BB%A3%E7%90%86%E8%BF%87%E7%A8%8B.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/p&gt;
 &lt;p&gt;JDK动态代理源码分析参考文章：&lt;a href=&#34;https://www.jianshu.com/p/71bd883744e6&#34;&gt;https://www.jianshu.com/p/71bd883744e6&lt;/a&gt;&lt;/p&gt;
 ">Spring系列（三）一篇文章学会 JDK 动态代理并手动模拟一个动态代理</a>
       </div>
