@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://epitomm.github.io</id>
     <title>SSM</title>
-    <updated>2020-08-10T07:30:32.580Z</updated>
+    <updated>2020-08-11T08:09:47.096Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://epitomm.github.io"/>
     <link rel="self" href="https://epitomm.github.io/atom.xml"/>
@@ -18,6 +18,20 @@
         <updated>2020-06-15T02:23:14.000Z</updated>
         <content type="html"><![CDATA[<h1 id="spring-循环依赖">Spring 循环依赖</h1>
 <h2 id="先准备一段循环依赖代码">先准备一段循环依赖代码</h2>
+<p>0、项目准备<br>
+打开之前编译好的 spring-framework-5.0.x 项目，新建 gradle 模块，导入依赖：<br>
+build.gradle：</p>
+<pre><code class="language-gradle">dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+    compile project(':spring-context')
+}
+</code></pre>
+<p>配置类：</p>
+<pre><code class="language-java">@Configuration
+@ComponentScan(&quot;com.ssm&quot;)
+public class AppConfig {
+}
+</code></pre>
 <p>1、IndexService 依赖 Luban</p>
 <pre><code class="language-java">@Service
 public class IndexService {
@@ -31,6 +45,21 @@ public class Luban {
    @Autowired
    IndexService indexService;
 }
+</code></pre>
+<p>测试类：</p>
+<pre><code class="language-java">public class Test {
+	public static void main(String[] args) {
+		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);
+		IndexService indexService = (IndexService) context.getBean(&quot;indexService&quot;);
+		System.out.println(indexService);
+		Luban luban = (Luban) context.getBean(&quot;luban&quot;);
+		System.out.println(luban);
+	}
+}
+</code></pre>
+<p>运行结果：</p>
+<pre><code>com.ssm.service.IndexService@3d36e4cd
+com.ssm.app.Luban@6a472554
 </code></pre>
 <p>从设置属性 populateBean 开始看起<br>
 <img src="https://epitomm.github.io/post-images/populateBean.png" alt="图片" loading="lazy"></p>
