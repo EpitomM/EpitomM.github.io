@@ -9,7 +9,7 @@
 <meta name="description" content="热心善良的老学姐">
 <meta name="theme-color" content="#000">
 <title>leetcode191. 位1的个数 | SSM</title>
-<link rel="shortcut icon" href="/favicon.ico?v=1597201577126">
+<link rel="shortcut icon" href="/favicon.ico?v=1597223811548">
 <link rel="stylesheet" href="/media/css/gemini.css">
 <link rel="stylesheet" href="/media/fonts/font-awesome.css">
 <link
@@ -10933,7 +10933,8 @@ dao...模拟查询数据库
       
       <div class="item">
         <a class="result-title" style="opacity: 0;" href="https://epitomm.github.io/post/spring-xi-lie-ba-spring-yuan-ma-jie-xi/"" data-c="
-          &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class Test {
+          &lt;p&gt;继续上篇文章的测试类：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class Test {
    public static void main(String[] args) {
       // 初始化 Spring 环境
       // 1.准备工厂=DefaultListableBeanFactory
@@ -10950,7 +10951,7 @@ dao...模拟查询数据库
    }
 }
 &lt;/code&gt;&lt;/pre&gt;
-&lt;h1 id=&#34;1new-annotationconfigapplicationcontext&#34;&gt;1.new AnnotationConfigApplicationContext();&lt;/h1&gt;
+&lt;h1 id=&#34;new-annotationconfigapplicationcontext&#34;&gt;new AnnotationConfigApplicationContext();&lt;/h1&gt;
 &lt;p&gt;第 6-7 行代码：由于 AnnotationConfigApplicationContext 有父类，所以会先调用父类构造方法。&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class AnnotationConfigApplicationContext extends GenericApplicationContext implements AnnotationConfigRegistry {
 &lt;/code&gt;&lt;/pre&gt;
@@ -10963,7 +10964,7 @@ dao...模拟查询数据库
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public AnnotationConfigApplicationContext() {
    /**
     * 父类的构造方法 super()
-    *创建一个读取注解的 Bean 定义读取器：reader 能读取被加了注解的类
+    * 创建一个读取注解的 Bean 定义读取器：reader 能读取被加了注解的类
     * 什么是 bean 定义？BeanDefinition
     */
    this.reader = new AnnotatedBeanDefinitionReader(this);
@@ -10975,9 +10976,10 @@ dao...模拟查询数据库
    this.scanner = new ClassPathBeanDefinitionScanner(this);
 }
 &lt;/code&gt;&lt;/pre&gt;
-&lt;h2 id=&#34;11-new-annotatedbeandefinitionreaderthis&#34;&gt;1.1 new AnnotatedBeanDefinitionReader(this)&lt;/h2&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;1&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/7%E4%B8%AA%E5%AF%B9%E8%B1%A1%E7%B1%BB%E5%9E%8B.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
-&lt;h1 id=&#34;2contextrefresh&#34;&gt;2.context.refresh();&lt;/h1&gt;
+&lt;h2 id=&#34;new-annotatedbeandefinitionreaderthis&#34;&gt;new AnnotatedBeanDefinitionReader(this)&lt;/h2&gt;
+&lt;p&gt;&lt;code&gt;AnnotatedBeanDefinitionReader#AnnotatedBeanDefinitionReader(BeanDefinitionRegistry registry)&lt;/code&gt;--&amp;gt; &lt;code&gt;AnnotatedBeanDefinitionReader#AnnotatedBeanDefinitionReader(BeanDefinitionRegistry registry, Environment environment)&lt;/code&gt; --&amp;gt; &lt;code&gt;AnnotationConfigUtils#registerAnnotationConfigProcessors(BeanDefinitionRegistry registry)&lt;/code&gt; --&amp;gt; &lt;code&gt;AnnotationConfigUtils#registerAnnotationConfigProcessors(BeanDefinitionRegistry registry, @Nullable Object source)&lt;/code&gt;&lt;br&gt;
+&lt;img src=&#34;https://epitomm.github.io/post-images/7%E4%B8%AA%E5%AF%B9%E8%B1%A1%E7%B1%BB%E5%9E%8B.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/p&gt;
+&lt;h1 id=&#34;contextrefresh&#34;&gt;context.refresh();&lt;/h1&gt;
 &lt;p&gt;Test 类第 12 行代码：&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;context.refresh();
 &lt;/code&gt;&lt;/pre&gt;
@@ -10999,7 +11001,7 @@ dao...模拟查询数据库
          postProcessBeanFactory(beanFactory);
          // Invoke factory processors registered as beans in the context.
          // 在 Spring 的环境中执行已经被注册的 factory processors
-         // 设置执行自定义的 ProcessBeanFactory 和 Spring 内部自己定义的，比如 ConfigurationClassPostProcessor
+         // 设置执行自定义的 BeanFactoryPostProcessor 和 Spring 内部自己定义的，比如 ConfigurationClassPostProcessor
          invokeBeanFactoryPostProcessors(beanFactory);
          // Register bean processors that intercept bean creation.
          registerBeanPostProcessors(beanFactory);
@@ -11036,7 +11038,7 @@ dao...模拟查询数据库
    }
 }
 &lt;/code&gt;&lt;/pre&gt;
-&lt;h2 id=&#34;21-preparebeanfactory&#34;&gt;2.1 prepareBeanFactory&lt;/h2&gt;
+&lt;h2 id=&#34;preparebeanfactory&#34;&gt;prepareBeanFactory&lt;/h2&gt;
 &lt;p&gt;上述代码第 12 行准备 Bean 工厂：&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;/**
  * 配置工厂标准的特征，比如上下文的加载器 ClassLoader 和 post-processors 回调
@@ -11076,13 +11078,14 @@ protected void prepareBeanFactory(ConfigurableListableBeanFactory beanFactory) {
       // Set a temporary ClassLoader for type matching.
       beanFactory.setTempClassLoader(new ContextTypeMatchClassLoader(beanFactory.getBeanClassLoader()));
    }
-   // 意思是如果自定义的 Bean 中没有名为 &amp;quot;systemProperties&amp;quot; 和 &amp;quot;systemEnvironment&amp;quot; 的 Bean
-   // 则注册两个 Bean，key 为 &amp;quot;systemProperties&amp;quot; 和 &amp;quot;systemEnvironment&amp;quot;, value 为 map
-   // 这两个 Bean 就是一些系统配置和系统环境信息
+  
    // Register default environment beans.
    if (!beanFactory.containsLocalBean(ENVIRONMENT_BEAN_NAME)) {
       beanFactory.registerSingleton(ENVIRONMENT_BEAN_NAME, getEnvironment());
    }
+    // 意思是如果自定义的 Bean 中没有名为 &amp;quot;systemProperties&amp;quot; 和 &amp;quot;systemEnvironment&amp;quot; 的 Bean
+   // 则注册两个 Bean，key 为 &amp;quot;systemProperties&amp;quot; 和 &amp;quot;systemEnvironment&amp;quot;, value 为 map
+   // 这两个 Bean 就是一些系统配置和系统环境信息
    if (!beanFactory.containsLocalBean(SYSTEM_PROPERTIES_BEAN_NAME)) {
       beanFactory.registerSingleton(SYSTEM_PROPERTIES_BEAN_NAME, getEnvironment().getSystemProperties());
    }
@@ -11091,7 +11094,7 @@ protected void prepareBeanFactory(ConfigurableListableBeanFactory beanFactory) {
    }
 }
 &lt;/code&gt;&lt;/pre&gt;
-&lt;h2 id=&#34;22-invokebeanfactorypostprocessors&#34;&gt;2.2 invokeBeanFactoryPostProcessors&lt;/h2&gt;
+&lt;h2 id=&#34;invokebeanfactorypostprocessors&#34;&gt;invokeBeanFactoryPostProcessors&lt;/h2&gt;
 &lt;p&gt;看 refresh 方法的第 23 行 ：&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;invokeBeanFactoryPostProcessors(beanFactory);
 &lt;/code&gt;&lt;/pre&gt;
@@ -11113,7 +11116,7 @@ protected void prepareBeanFactory(ConfigurableListableBeanFactory beanFactory) {
    }
 }
 &lt;/code&gt;&lt;/pre&gt;
-&lt;h3 id=&#34;221-getbeanfactorypostprocessors&#34;&gt;2.2.1 getBeanFactoryPostProcessors&lt;/h3&gt;
+&lt;h3 id=&#34;getbeanfactorypostprocessors&#34;&gt;getBeanFactoryPostProcessors&lt;/h3&gt;
 &lt;p&gt;上述代码第 9 行中的 getBeanFactoryPostProcessors()：&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public List&amp;lt;BeanFactoryPostProcessor&amp;gt; getBeanFactoryPostProcessors() {
    return this.beanFactoryPostProcessors;
@@ -11122,8 +11125,8 @@ protected void prepareBeanFactory(ConfigurableListableBeanFactory beanFactory) {
 &lt;p&gt;beanFactoryPostProcessors 变量的定义如下：&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;private final List&amp;lt;BeanFactoryPostProcessor&amp;gt; beanFactoryPostProcessors = new ArrayList&amp;lt;&amp;gt;();
 &lt;/code&gt;&lt;/pre&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;2&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E8%87%AA%E5%AE%9A%E4%B9%89beanFactoryPostProcessor.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
-&lt;h3 id=&#34;222-invokebeanfactorypostprocessors&#34;&gt;2.2.2 invokeBeanFactoryPostProcessors&lt;/h3&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;1&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E8%87%AA%E5%AE%9A%E4%B9%89beanFactoryPostProcessor.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;h3 id=&#34;invokebeanfactorypostprocessors-2&#34;&gt;invokeBeanFactoryPostProcessors&lt;/h3&gt;
 &lt;p&gt;同样的 invokeBeanFactoryPostProcessors 方法的第 9 行：&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public static void invokeBeanFactoryPostProcessors(
       ConfigurableListableBeanFactory beanFactory, List&amp;lt;BeanFactoryPostProcessor&amp;gt; beanFactoryPostProcessors) {
@@ -11147,7 +11150,8 @@ protected void prepareBeanFactory(ConfigurableListableBeanFactory beanFactory) {
             registryProcessors.add(registryProcessor);
          }
          else {
-         // 如果 postProcessor 不是 BeanFactoryPostProcessor 的子类 BeanDefinitionRegistryPostProcessor，那 postProcessor 就一定是 BeanFactoryPostProcessor 类型，添加到 List&amp;lt;BeanFactoryPostProcessor&amp;gt; regularPostProcessors 中
+            // 如果 postProcessor 不是 BeanFactoryPostProcessor 的子类 BeanDefinitionRegistryPostProcessor，
+            // 那 postProcessor 就一定是 BeanFactoryPostProcessor 类型，添加到 List&amp;lt;BeanFactoryPostProcessor&amp;gt; regularPostProcessors 中
             regularPostProcessors.add(postProcessor);
          }
       }
@@ -11263,15 +11267,29 @@ protected void prepareBeanFactory(ConfigurableListableBeanFactory beanFactory) {
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;上述第 11、12、31 行分别定义了一个 List：&lt;/p&gt;
 &lt;ul&gt;
-&lt;li&gt;List&lt;BeanFactoryPostProcessor&gt; regularPostProcessors：放程序员手动添加的 BeanFactoryPostProcessor&lt;/li&gt;
-&lt;li&gt;List&lt;BeanDefinitionRegistryPostProcessor&gt; registryProcessors：放程序员手动添加的 BeanDefinitionRegistryPostProcessor&lt;/li&gt;
-&lt;li&gt;List&lt;BeanDefinitionRegistryPostProcessor&gt; currentRegistryProcessors：放 Spring 内部自己的 BeanDefinitionRegistryPostProcessor&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;List&amp;lt;BeanFactoryPostProcessor&amp;gt; regularPostProcessors&lt;/code&gt;：放程序员手动添加的 BeanFactoryPostProcessor&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;List&amp;lt;BeanDefinitionRegistryPostProcessor&amp;gt; registryProcessors&lt;/code&gt;：放程序员手动添加的 BeanDefinitionRegistryPostProcessor&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;List&amp;lt;BeanDefinitionRegistryPostProcessor&amp;gt; currentRegistryProcessors&lt;/code&gt;：放 Spring 内部自己的 BeanDefinitionRegistryPostProcessor&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;上述第 35-36 行代码：&lt;/p&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;3&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/currentRegistryProcessors.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;// 这个 currentRegistryProcessors 放的是 Spring 内部自己实现了 BeanDefinitionRegistryPostProcessor 接口的对象
+List&amp;lt;BeanDefinitionRegistryPostProcessor&amp;gt; currentRegistryProcessors = new ArrayList&amp;lt;&amp;gt;();
+&lt;/code&gt;&lt;/pre&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;2&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/currentRegistryProcessors.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
 &lt;p&gt;上述第 47-51 行代码：&lt;/p&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;4&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/postProcessorNames.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;String[] postProcessorNames = beanFactory.getBeanNamesForType(BeanDefinitionRegistryPostProcessor.class, true, false);
+for (String ppName : postProcessorNames) {
+	if (beanFactory.isTypeMatch(ppName, PriorityOrdered.class)) {
+		currentRegistryProcessors.add(beanFactory.getBean(ppName, BeanDefinitionRegistryPostProcessor.class));
+		processedBeans.add(ppName);
+	}	
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;3&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/postProcessorNames.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
 &lt;p&gt;上述代码第 58 行：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;invokeBeanDefinitionRegistryPostProcessors(currentRegistryProcessors, registry);
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;PostProcessorRegistrationDelegate#invokeBeanDefinitionRegistryPostProcessors：&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;private static void invokeBeanDefinitionRegistryPostProcessors(
       Collection&amp;lt;? extends BeanDefinitionRegistryPostProcessor&amp;gt; postProcessors, BeanDefinitionRegistry registry) {
    for (BeanDefinitionRegistryPostProcessor postProcessor : postProcessors) {
@@ -11279,8 +11297,10 @@ protected void prepareBeanFactory(ConfigurableListableBeanFactory beanFactory) {
    }
 }
 &lt;/code&gt;&lt;/pre&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;5&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/postProcessors.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
-&lt;p&gt;点进去上述第  5 行代码：&lt;/p&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;4&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/postProcessors.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;p&gt;点进去上述第  5 行代码：&lt;br&gt;
+ConfigurationClassPostProcessor#postProcessBeanDefinitionRegistry：&lt;br&gt;
+ConfigurationClassPostProcessor 实现了 BeanDefinitionRegistryPostProcessor 接口，这里调用的postProcessBeanDefinitionRegistry 方法即为 BeanDefinitionRegistryPostProcessor 扩展父类 BeanFactoryPostProcessor 的方法。&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;@Override
 public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) {
    int registryId = System.identityHashCode(registry);
@@ -11296,8 +11316,9 @@ public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) {
    processConfigBeanDefinitions(registry);
 }
 &lt;/code&gt;&lt;/pre&gt;
-&lt;h4 id=&#34;2221-processconfigbeandefinitions&#34;&gt;2.2.2.1 processConfigBeanDefinitions&lt;/h4&gt;
-&lt;p&gt;点进上述第 14 行代码：&lt;/p&gt;
+&lt;h4 id=&#34;processconfigbeandefinitions&#34;&gt;processConfigBeanDefinitions&lt;/h4&gt;
+&lt;p&gt;点进上述第 14 行代码：&lt;br&gt;
+ConfigurationClassPostProcessor#processConfigBeanDefinitions：&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public void processConfigBeanDefinitions(BeanDefinitionRegistry registry) {
    // app 提供的 bean：每扫描到添加了 @Configuraion 注解的类就添加到这个 set 集合中
    List&amp;lt;BeanDefinitionHolder&amp;gt; configCandidates = new ArrayList&amp;lt;&amp;gt;();
@@ -11357,8 +11378,8 @@ public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) {
          this.resourceLoader, this.componentScanBeanNameGenerator, registry);
    // 实例化 2 个 set，candidates 用于将之前加入的 configCandidates 进行去重
    // 因为可能有多个配置类重复了
-   // alreadyParsed 用户判断是否处理过
    Set&amp;lt;BeanDefinitionHolder&amp;gt; candidates = new LinkedHashSet&amp;lt;&amp;gt;(configCandidates);
+   // alreadyParsed 用户判断是否处理过
    Set&amp;lt;ConfigurationClass&amp;gt; alreadyParsed = new HashSet&amp;lt;&amp;gt;(configCandidates.size());
    do {
       parser.parse(candidates);
@@ -11406,15 +11427,18 @@ public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) {
    }
 }
 &lt;/code&gt;&lt;/pre&gt;
-&lt;figure data-type=&#34;image&#34; tabindex=&#34;6&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/getBeanDefinitionNames.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
-&lt;h5 id=&#34;22211-checkconfigurationclasscandidate&#34;&gt;2.2.2.1.1 checkConfigurationClassCandidate&lt;/h5&gt;
+&lt;figure data-type=&#34;image&#34; tabindex=&#34;5&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/getBeanDefinitionNames.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
+&lt;h5 id=&#34;checkconfigurationclasscandidate&#34;&gt;checkConfigurationClassCandidate&lt;/h5&gt;
 &lt;p&gt;上述代码第 19 行：&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;else if (ConfigurationClassUtils.checkConfigurationClassCandidate(beanDef, this.metadataReaderFactory)) {
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;// 判断这个 BeanDefinition 是否包含了 @Configuration、@Service 注解
+else if (ConfigurationClassUtils.checkConfigurationClassCandidate(beanDef, this.metadataReaderFactory)) {
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;refresh() 的主要功能是要解析类：Spring 认为添加了@Configuration、@Component、@Import...注解的类都是需要解析的类。&lt;br&gt;
 如何将一个 User 类变成 BeanDefinition：XxxBeanDefinition bd = new XxxBeanDefinition(user);&lt;/p&gt;
 &lt;p&gt;Spring 如何判断一个类是否是应该解析的类？&lt;/p&gt;
-&lt;p&gt;①判断一个 bd 是否被加了注解（AnnotatedBeanDefinition abd = new AnnotatedBeanDefinition(AppConfig.class); register.regisyBD(abd); ）；②把信息（元数据）拿出来；③根据信息判断加了什么注解&lt;/p&gt;
+&lt;p&gt;①判断一个 bd 是否被加了注解（AnnotatedBeanDefinition abd = new AnnotatedBeanDefinition(AppConfig.class); register.regisyBD(abd); ）；&lt;br&gt;
+②把信息（元数据）拿出来；&lt;br&gt;
+③根据信息判断加了什么注解&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public static boolean checkConfigurationClassCandidate(BeanDefinition beanDef, MetadataReaderFactory metadataReaderFactory) {
    String className = beanDef.getBeanClassName();
    if (className == null || beanDef.getFactoryMethodName() != null) {
@@ -11449,10 +11473,10 @@ public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) {
          return false;
       }
    }
-   // 判断当前这个 bd 中存在的类是不是加了 @Configuration 注解，但是如果加了 @Configuration，下面的这几个注解就不再判断，因为这是一个 if-else if 分支
+   // 判断当前这个 bd 中存在的类是不是加了 @Configuration 注解，但是如果加了 @Configuration，下面的这几个注解就不再判断，因为这是一个 if - else if 分支
    // 只有满足了 &amp;quot;没有加 @Configuration注解&amp;quot;，才会走 else 分支去判断是否添加了其他注解
    if (isFullConfigurationCandidate(metadata)) {
-      // 如果存在 Configuration 注解，则为 BeanDefinition 设置 configurationClass 属性为 FULL
+      // 如果存在 Configuration 注解，则为 BeanDefinition 设置 configurationClass 属性为 full
       beanDef.setAttribute(CONFIGURATION_CLASS_ATTRIBUTE, CONFIGURATION_CLASS_FULL);
    }
    // 判断是否加了以下注解，摘录 isLiteConfigurationCandidate 的源码
@@ -11512,7 +11536,7 @@ static {
    candidateIndicators.add(ImportResource.class.getName());
 }
 &lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;关于 39-48 行的 if-else if 判断是否添加注解，其中 &amp;quot;eles if&amp;quot; 分支的作用，补充说明：&lt;/p&gt;
+&lt;p&gt;关于 39-48 行的 if - else if 判断是否添加注解，其中 &amp;quot;eles if&amp;quot; 分支的作用，补充说明：&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;如果一个类添加了 @Configuration，Spring 把它扫描出来，知道它是一个配置类，然后再去解析这个类，就可以依次扫描到其他注解：@ComponentScan、@Import&lt;/li&gt;
 &lt;li&gt;但是如果一个类没有添加 @Configuration 注解，只加入了 @ImportResource(&amp;quot;spring.xml&amp;quot;) 注解，这时候就需要使用到上述的 eles if 分支单独进行处理。&lt;/li&gt;
@@ -11520,7 +11544,8 @@ static {
 &lt;p&gt;上述 processConfigBeanDefinitions 方法的第 79 行：&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;parser.parse(candidates);
 &lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;点进这个方法：&lt;/p&gt;
+&lt;p&gt;点进这个方法：&lt;br&gt;
+ConfigurationClassParser#parse：&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public void parse(Set&amp;lt;BeanDefinitionHolder&amp;gt; configCandidates) {
    this.deferredImportSelectors = new LinkedList&amp;lt;&amp;gt;();
    // 根据 BeanDefinition 的类型做不同的处理，一般都会调用 ConfigurationClassParse#parse 进行解析
@@ -11667,6 +11692,9 @@ protected final SourceClass doProcessConfigurationClass(ConfigurationClass confi
 }
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;上述代码第 47 行，判断有没有加 Import 标签&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;processImports(configClass, sourceClass, getImports(sourceClass), true);
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;ConfigurationClassParser#getImports：&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;private Set&amp;lt;SourceClass&amp;gt; getImports(SourceClass sourceClass) throws IOException {
    Set&amp;lt;SourceClass&amp;gt; imports = new LinkedHashSet&amp;lt;&amp;gt;();
    Set&amp;lt;SourceClass&amp;gt; visited = new LinkedHashSet&amp;lt;&amp;gt;();
@@ -11676,11 +11704,12 @@ protected final SourceClass doProcessConfigurationClass(ConfigurationClass confi
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;@Import 注解：&lt;/p&gt;
 &lt;ul&gt;
-&lt;li&gt;@Import(IndexDao.class)、&lt;/li&gt;
-&lt;li&gt;@Import(ImportSelector)、&lt;/li&gt;
+&lt;li&gt;@Import(IndexDao.class)&lt;/li&gt;
+&lt;li&gt;@Import(ImportSelector)&lt;/li&gt;
 &lt;li&gt;@Import(ImportBeanDefinitionRegistrar)&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;同样的上述代码第 47 行：&lt;/p&gt;
+&lt;p&gt;同样的上述代码第 47 行：&lt;br&gt;
+ConfigurationClassParser#processImports：&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;private void processImports(ConfigurationClass configClass, SourceClass currentSourceClass,
       Collection&amp;lt;SourceClass&amp;gt; importCandidates, boolean checkForCircularImports) {
    // 如果没有加@Import，直接返回
