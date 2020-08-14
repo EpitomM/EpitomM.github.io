@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://epitomm.github.io</id>
     <title>SSM</title>
-    <updated>2020-08-12T09:17:14.396Z</updated>
+    <updated>2020-08-14T09:20:33.585Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://epitomm.github.io"/>
     <link rel="self" href="https://epitomm.github.io/atom.xml"/>
@@ -5992,7 +5992,7 @@ public class IndexService {
 &lt;/dependency&gt;
 </code></pre>
 <p>log4j 配置文件：</p>
-<pre><code class="language-prolog">log4j.rootLogger=ERROR,stdout
+<pre><code class="language-properties">log4j.rootLogger=ERROR,stdout
 # 输出到控制台
 log4j.appender.stdout=org.apache.log4j.ConsoleAppender
 log4j.appender.stdout.target=System.out
@@ -7499,7 +7499,7 @@ public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, B
         </link>
         <updated>2020-05-15T15:32:41.000Z</updated>
         <content type="html"><![CDATA[<h1 id="processconfigurationclass">processConfigurationClass</h1>
-<p>context.<em>refresh</em>(); ---&gt; <em>invokeBeanFactoryPostProcessors</em>(beanFactory); ---&gt; PostProcessorRegistrationDelegate.invokeBeanFactoryPostProcessors(beanFactory, getBeanFactoryPostProcessors()); ---&gt;invokeBeanDefinitionRegistryPostProcessors(currentRegistryProcessors, registry); ---&gt; postProcessor.<em>postProcessBeanDefinitionRegistry</em>(registry); ---&gt; <em>processConfigBeanDefinitions</em>(registry);处理@Configuration ---&gt; parser.parse(candidates); 解析注解对象---&gt; parse(((AnnotatedBeanDefinition) bd).getMetadata(), holder.getBeanName()); ---&gt; processConfigurationClass(new ConfigurationClass(metadata, beanName)); 处理Import---&gt; sourceClass = doProcessConfigurationClass(configClass, sourceClass); ---&gt; this.componentScanParser.parse(componentScan, sourceClass.getMetadata().getClassName()); ---&gt; scanner.doScan(StringUtils.toStringArray(basePackages));扫描包</p>
+<p><code>AnnotationConfigApplicationContext#refresh</code> ---&gt; <code>AbstractApplicationContext#invokeBeanFactoryPostProcessors</code> ---&gt; <code>PostProcessorRegistrationDelegate#invokeBeanFactoryPostProcessors</code>---&gt;<code>PostProcessorRegistrationDelegate#invokeBeanDefinitionRegistryPostProcessors</code> ---&gt; <code>ConfigurationClassPostProcessor#postProcessBeanDefinitionRegistry</code> ---&gt; <code>ConfigurationClassPostProcessor#processConfigBeanDefinitions</code>： 处理@Configuration ---&gt; <code>ConfigurationClassParser#parse</code> ：解析注解对象---&gt; <code>ConfigurationClassPostProcessor#parse</code> ---&gt; <code>ConfigurationClassParser#processConfigurationClass</code> ：处理Import---&gt; <code>ConfigurationClassParser#doProcessConfigurationClass</code> ---&gt; <code>ComponentScanAnnotationParser#parse</code> ---&gt; <code>ClassPathBeanDefinitionScanner#doScan</code>：扫描包</p>
 <pre><code class="language-java">protected void processConfigurationClass(ConfigurationClass configClass) throws IOException {
    // 判断是否应该跳过解析
    if (this.conditionEvaluator.shouldSkip(configClass.getMetadata(), ConfigurationPhase.PARSE_CONFIGURATION)) {
