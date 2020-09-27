@@ -9,7 +9,7 @@
 <meta name="description" content="热心善良的老学姐">
 <meta name="theme-color" content="#000">
 <title>进程 | SSM</title>
-<link rel="shortcut icon" href="/favicon.ico?v=1600758637219">
+<link rel="shortcut icon" href="/favicon.ico?v=1601186997463">
 <link rel="stylesheet" href="/media/css/gemini.css">
 <link rel="stylesheet" href="/media/fonts/font-awesome.css">
 <link
@@ -6024,7 +6024,7 @@ public @interface MapperScan {
 &lt;/code&gt;&lt;/pre&gt;
 &lt;figure data-type=&#34;image&#34; tabindex=&#34;4&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/%E8%B0%83%E7%94%A8mapper%E7%9A%84list%E6%96%B9%E6%B3%95.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
 &lt;p&gt;&lt;strong&gt;当调用 userMapper.list() 时，实际执行的逻辑是实现 InvocationHandler 接口的类中的 invoke() 方法&lt;/strong&gt;。&lt;/p&gt;
-&lt;p&gt;mapperProxy 是一个 InvocationHandler：&lt;/p&gt;
+&lt;p&gt;MapperProxy 实现了 InvocationHandler 接口：&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class MapperProxy&amp;lt;T&amp;gt; implements InvocationHandler, Serializable {
     // ...
     @Override
@@ -6298,8 +6298,7 @@ DefaultSqlSession#selectList&lt;/p&gt;
 &lt;p&gt;MyBatis --&amp;gt; SqlSession --&amp;gt; DefaultSqlSession --&amp;gt; DefaultSqlSession.select(); --&amp;gt; SQL&lt;/p&gt;
 &lt;p&gt;spring-mybatis --&amp;gt; SqlSession --&amp;gt; SqlSessionTemplate --&amp;gt;  SqlSessionTemplate.selectList(); --&amp;gt;  sqlSessionProxy.selectList();&lt;/p&gt;
 &lt;h3 id=&#34;为什么-spring-当中-mybatis-一级缓存失效&#34;&gt;为什么 Spring 当中 MyBatis 一级缓存失效&lt;/h3&gt;
-&lt;p&gt;MyBatis 整合 Spring 时，MyBatis 为 Spring 提供了一个插件包：mybatis-spring，在 mybatis-spring 中提供了一个类：SqlSessionTemplate 替代了 MyBatis 中默认的 DefaultSqlSession，对&lt;/p&gt;
-&lt;p&gt;DefaultSqlSession 的增强，在代理的代码中把 SqlSession 关闭了。&lt;/p&gt;
+&lt;p&gt;MyBatis 整合 Spring 时，MyBatis 为 Spring 提供了一个插件包：mybatis-spring，在 mybatis-spring 中提供了一个类：SqlSessionTemplate 替代了 MyBatis 中默认的 DefaultSqlSession，对 DefaultSqlSession 的增强，在代理的代码中把 SqlSession 关闭了。&lt;/p&gt;
 &lt;h4 id=&#34;spring-为什么要关闭-sqlsession&#34;&gt;Spring 为什么要关闭 sqlSession？&lt;/h4&gt;
 &lt;p&gt;MyBatis 把 SqlSession 暴露出来，想什么时候关闭，就什么时候关闭。&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;SqlSession sqlSession = sqlSessionFactory.openSession();
@@ -6373,7 +6372,7 @@ public class IndexService {
 &lt;figure data-type=&#34;image&#34; tabindex=&#34;10&#34;&gt;&lt;img src=&#34;https://epitomm.github.io/post-images/MyBatis%E4%BA%8C%E7%BA%A7%E7%BC%93%E5%AD%98%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4%E7%9B%B8%E5%90%8C%E8%AF%BB%E6%95%B0%E6%8D%AE%E6%AD%A3%E7%A1%AE.png&#34; alt=&#34;图片&#34; loading=&#34;lazy&#34;&gt;&lt;/figure&gt;
 &lt;p&gt;分析：MyBatis 缓存是基于&lt;strong&gt;命名空间&lt;/strong&gt;的，当调用 indexDao.list() 查询出结果后，由于 IndexDao 添加了缓存 @CacheNamespace，把 list() 查询结果放到缓存中，存放形式：&amp;lt;&amp;quot;com.ssm.dao.IndexDao&amp;quot;, &amp;quot;list&amp;quot;&amp;gt;，当调用 update() 方法时，更新当前这个 update() 方法所在的命名空间，即 &amp;lt;&amp;quot;com.ssm.dao.IndexDao&amp;quot;, &amp;quot;更新后的list&amp;quot;&amp;gt;。&lt;/p&gt;
 &lt;h1 id=&#34;当调用-list-时已经拿到了-sql-语句&#34;&gt;当调用 list() 时，已经拿到了 sql 语句&lt;/h1&gt;
-&lt;p&gt;当实例化一个 MapperFactoryBean 时，MyBatis 初始化：解析注解：把接口 mapper 中的 method 中的注解拿出来，把&amp;lt;id,object&amp;gt;放到 map 中。&lt;/p&gt;
+&lt;p&gt;当实例化一个 MapperFactoryBean 时，MyBatis 初始化：解析注解：把接口 mapper 中的 method 中的注解拿出来，把&lt;code&gt;&amp;lt;id,object&amp;gt;&lt;/code&gt;放到 map 中。&lt;/p&gt;
 &lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;protected final Map&amp;lt;String, MappedStatement&amp;gt; mappedStatements = new StrictMap&amp;lt;MappedStatement&amp;gt;(&amp;quot;Mapped Statements collection&amp;quot;);
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;在调用方法前，就实例化 mappedStatements 了。当创建 Service 时，由于 Service 会调用 putVal，putVal 就会创建 mapper，当创建 mapper 时，就 put 了一个&amp;lt;id,object&amp;gt;&lt;br&gt;
@@ -6400,7 +6399,7 @@ public class IndexService implements InitializingBean {
 }
 &lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;打印结果：&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&#34;language-plain&#34;&gt;DEBUG [main] - Finished creating instance of bean &#39;userMapper&#39;
+&lt;pre&gt;&lt;code&gt;DEBUG [main] - Finished creating instance of bean &#39;userMapper&#39;
 DEBUG [main] - Autowiring by type from bean name &#39;indexService&#39; to bean named &#39;userMapper&#39;
 DEBUG [main] - Invoking afterPropertiesSet() on bean with name &#39;indexService&#39;
 app...
@@ -6493,7 +6492,7 @@ MapperFactoryBean#checkDaoConfig&lt;/p&gt;
 &lt;p&gt;2.把 mapper 变成 FactoryBean，MapperFactoryBean  和 BeanDefinition&lt;/p&gt;
 &lt;p&gt;3.为BeanDefinition 添加一个构造方法的值，因为 MyBatis 的 MapperFactoryBean 有一个有参构造方法，Spring 在实例化这个对象的时候需要一个构造方法的值，这个值是一个 class，后面 Spring 在实例化过程中根据这个 class 返回我们的代理对象&lt;/p&gt;
 &lt;h2 id=&#34;springbean-实例化之中和之后的工作&#34;&gt;SpringBean 实例化之中和之后的工作：&lt;/h2&gt;
-&lt;p&gt;mybatis 主要利用 spring 的初始方法扩展点来完成对 mapper 信息的初始化，比如 sql 语句的初始化。这里的 spring 扩展点主要就是 afterPropertiesSet，说白了就是利用 MapperFactoryBean 去实现 InitializingBean 接口，由于 MapperFactoryBean 是一个 FactoryBean，我们理解为就是一个 mapper，把 &amp;lt;id,object&amp;gt; 缓存到 map 中。&lt;/p&gt;
+&lt;p&gt;mybatis 主要利用 spring 的初始方法扩展点来完成对 mapper 信息的初始化，比如 sql 语句的初始化。这里的 spring 扩展点主要就是 afterPropertiesSet，说白了就是利用 MapperFactoryBean 去实现 InitializingBean 接口，由于 MapperFactoryBean 是一个 FactoryBean，我们理解为就是一个 mapper，把 &lt;code&gt;&amp;lt;id,object&amp;gt;&lt;/code&gt; 缓存到 map 中。&lt;/p&gt;
 ">MyBatis系列（二）MyBatis缓存</a>
       </div>
       
